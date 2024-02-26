@@ -1,0 +1,38 @@
+﻿@{
+    ViewData["Title"] = "价格管理 (Price)";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        <button type="button" class="btn btn-primary save" onclick="saveModelPrice()">
+            <i data-feather="save"></i>保存设置
+        </button>
+    </div>
+</div>
+<div class="card-body" style="margin-top:10px;">
+    <div class="card">
+        <div class="card-header">
+            <h6>
+                模型价格设置
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <table id="AddSt" class="form-table">
+                </table>
+                <button type="button" class="btn btn-success" onclick="addStLine()">
+                    <i data-feather="plus"></i>新增一行
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/system/js/openall/modelpricesetting.js"></script>

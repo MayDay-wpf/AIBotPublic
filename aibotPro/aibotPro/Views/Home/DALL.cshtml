@@ -1,0 +1,106 @@
+﻿@{
+    ViewData["Title"] = "DALL";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/system/css/dall.css" rel="stylesheet" />
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        <a href="#" class="header-help-link" onclick="DALLinfo()">
+            <i data-feather="help-circle">
+            </i>
+        </a>
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px;">
+    <div class="content-header">
+        <div>
+            @* <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+            <li class="breadcrumb-item" style="cursor:unset"><a href="#">AIBot-Pro</a></li>
+            <li class="breadcrumb-item"><a href="#">AI</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Midjourney</li>
+            </ol>
+            </nav> *@
+            <h4 class="content-title content-title-sm">
+                <b style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105));
+    -webkit-background-clip: text;
+    color: transparent;">DALL·E3</b>
+            </h4>
+        </div>
+    </div>
+    <div id="STEP">
+        <div class="card">
+            <div class="card-header">
+                <h5>第一步：输入提示词</h5>
+            </div>
+            <div class="card-body">
+                <div class="textarea-container">
+                    <textarea class="form-control" rows="5" maxlength="500"
+                              placeholder="请描述画面中的内容，描述的方式，顺序，措辞等都会对画面产生不同的影响效果" id="inputText"></textarea>
+                    <div class="char-count">
+                        <span id="charCount">0</span>/<span class="char-limit">500</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p></p>
+        <div class="card">
+            <div class="card-header">
+                <h5>
+                    第二步：选择绘制尺寸
+                </h5><br />
+                <div class="form-check mt-3">
+                    <input class="form-check-input" type="checkbox" id="qualityCheckbox" onchange="toggleQuality()">
+                    <label class="form-check-label" for="qualityCheckbox">高清生成</label>
+                </div>
+            </div>
+            <div class="card-body" style="text-align:center;">
+                <div class="imgsize size55" onclick="TabD3ImgSize('1024x1024','size55')"></div>
+                <div class="imgsize size75" onclick="TabD3ImgSize('1792x1024','size75')"></div>
+                <div class="imgsize size57" onclick="TabD3ImgSize('1024x1792','size57')"></div>
+            </div>
+        </div>
+        <p></p>
+        <div class="card">
+            <div class="card-header">
+                <h5>第三步：创建任务</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <button type="button" class="btn btn-success" id="createTaskBtn">
+                        <i data-feather="feather"></i>点击开始绘画
+                    </button>
+                </div>
+            </div>
+        </div>
+        <p></p>
+        <div class="card" id="resview" style="display:none">
+            <div class="card-header">
+                <h5>任务结果</h5>
+            </div>
+            <div class="card-body" style="text-align:center;">
+                <div id="resBox">
+                    <h4 id="nt"></h4>
+                    <div class="text-center mb-3">
+                        <a href="" id="resimgurl-a" class="image-popup">
+                            <img src="" id="resimgurl" class="img-fluid" style="width:30%;min-width:300px;"
+                                 alt="任务结果显示区，请稍候...">
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p></p>
+    </div>
+</div>
+<link rel="stylesheet" href="~/system/css/magnific-popup.min.css">
+<script src="~/system/js/jquery.magnific-popup.min.js"></script>
+<script src="~/system/js/dall.js"></script>

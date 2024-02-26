@@ -1,0 +1,222 @@
+﻿@{
+    ViewData["Title"] = "对话（Chat by 文件助手）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    MathJax = {
+        tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }
+    };
+</script>
+<link href="~/system/css/chat.css?v1" rel="stylesheet" />
+<script src="~/system/js/markdown-it.min.js"></script>
+<script src="~/system/js/tex-chtml.js"></script>
+<!-- 相机按钮点击弹窗 -->
+<div class="modal fade" id="uploadFileModel" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <!-- 弹窗头部 -->
+            <div class="modal-header">
+                <p class="modal-title" id="modalLabel">上传&素材选取</p>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <!-- 弹窗主体内容 -->
+            <div class="modal-body" style="display: flex; justify-content: center; align-items: center;">
+                <div style="text-align:center;" class="popup-item" data-type="upload">
+                    <i data-feather="upload" style="width:100%;height:60px;cursor:pointer;"></i>
+                    <p>上传</p>
+                </div>
+            </div>
+            <div id="filelibs" style="text-align:center;">
+                <b style="color:deepskyblue">可以勾选下方素材库文件,自动生效</b>
+                <ul class="list-group" id="fileslibsitem" style="max-height:500px;overflow-y:scroll;text-align:center;">
+                    <li>
+                        加载中...
+                    </li>
+                    <!-- 可添加更多列表项 -->
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="header header-chat">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        <div class="header-search">
+            <i data-feather="search">
+            </i>
+            <input type="search" class="form-control" placeholder="输入对话记录关键词，回车搜索" id="searchKey">
+        </div>
+        <button type="button" class="btn btn-danger" style="margin-left:10px;" onclick="deleteChatAll()"><i data-feather="trash-2"></i> 清空历史</button>
+    </div>
+    <div class="header-right">
+    </div>
+</div>
+<div class="content-body content-body-chat">
+    <div class="chat-panel">
+        <div class="chat-sidebar">
+            <div class="chat-sidebar-header">
+                <h6 class="tx-14 tx-color-01 mg-b-0">
+                    略懂文件的AI📄
+                </h6>
+                <div>
+                    @* <a href="" data-toggle="tooltip" title="New Conversation">
+                    <i data-feather="user-plus">
+                    </i>
+                    </a> *@
+                    <button type="button" class="btn btn-info" onclick="newChat()"><i data-feather="plus"></i> 新建会话</button>
+                </div>
+            </div>
+            <div class="chat-sidebar-body">
+                <ul class="chat-list">
+                </ul>
+            </div>
+            <div class="chat-sidebar-footer">
+                <button type="button" class="btn btn-primary" style="width:100%" id="loadMoreBtn" onclick="loadMoreHistory()"><i data-feather="loader" style="width:20px;"></i> 加载更多</button>
+                @* <div class="avatar avatar-sm avatar-online">
+                <img src="static/picture/fff.png" class="rounded-circle" alt="">
+                </div>
+                <h6 class="chat-loggeduser">
+                Louise Kate
+                <span>
+                (Me)
+                </span>
+                </h6>
+                <div>
+                <a href="" data-toggle="tooltip" title="Enable Mic">
+                <i data-feather="mic">
+                </i>
+                </a>
+                <a href="" data-toggle="tooltip" title="Settings">
+                <i data-feather="settings">
+                </i>
+                </a>
+                </div> *@
+            </div>
+        </div>
+        <div class="chat-body">
+            <div class="chat-body-header">
+                <div class="avatar avatar-xs">
+                    <span class="avatar-initial rounded-circle bg-dark" data-toggle="tooltip" title="收起">
+                        <i data-feather="chevron-left" id="hidehis" style="width:15px;cursor:pointer" onclick="hideHistoary()"></i>
+                    </span>
+                </div>
+                <div class="dropdown" style="text-align:center;width:auto;float:left" data-toggle="tooltip" title="切换模型">
+                    <a href="#" class="tx-14 tx-color-01 mg-b-0 mg-l-10" id="chatDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <span id="firstModel">ChatGPT 3.5</span>
+                        <i data-feather="chevron-down" style="width:20px;"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-left" aria-labelledby="chatDropdown" style="max-height: 505px;overflow-y:scroll" id="AIModel">
+                        @*<a class="dropdown-item font-14" href="#" onclick="changeModel('chat','ChatGPT3.5')">ChatGPT3.5</a>
+                        <a class="dropdown-item font-14" href="#" onclick="changeModel('chat16K','ChatGPT3.5-16K')">ChatGPT3.5-16K</a> *@
+                    </div>
+                </div>
+                <div class="dropdown" style="text-align:center;width:auto;float:left;display:none;" data-toggle="tooltip" title="选用的文件列表" id="onfilelist">
+                    <a href="#" style="color:deepskyblue" class="tx-14 tx-color-01 mg-b-0 mg-l-10" id="fileDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <span id="firstModel">已选用文件</span>
+                        <i data-feather="chevron-down" style="width:20px;"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-onfile" aria-labelledby="chatDropdown" style="max-height: 505px;width:300px;overflow-y:scroll;">
+                        <ul class="list-group" id="onfilesitem">
+                            @* <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                            <input type="checkbox">
+                            Item 1
+                            </div>
+                            <div>
+                            <i class="icon ion-close"></i>
+                            </div>
+                            </li>
+
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                            <input type="checkbox">
+                            Item 2
+                            </div>
+                            <div>
+                            <i class="icon ion-close"></i>
+                            </div>
+                            </li> *@
+
+                            <!-- 可添加更多列表项 -->
+                        </ul>
+                    </div>
+                </div>
+                @* <div class="chat-body-options">
+                <a href="" data-toggle="tooltip" title="Search messages">
+                <i data-feather="search">
+                </i>
+                </a>
+                <a href="" data-toggle="tooltip" title="Call">
+                <i data-feather="phone">
+                </i>
+                </a>
+                <a href="" data-toggle="tooltip" title="Video Call">
+                <i data-feather="video">
+                <i data-feather="video">
+                </i>
+                </a>
+                <a href="" data-toggle="tooltip" title="Info">
+                <i data-feather="info">
+                </i>
+                </a>
+                </div> *@
+            </div>
+
+            @* <li class="divider-text">
+            加载中...
+            </li> *@
+            <div class="chat-body-content">
+                @* <div class="chat-message">
+                <div class="avatar">U</div>
+                <div style="width:100%">
+                <pre style="display:inline">Hello!Hello!Hello!Hello!Hello!Hello!Hello!</pre>
+                </div>
+                </div>
+                <div class="chat-message">
+                <div class="avatar gpt-avatar">A</div>
+                <div style="width:100%">
+                <pre style="display:inline">Hello, how can I help you?</pre>
+                <svg width="30" height="30" style="display:inline">
+                <circle cx="15" cy="15" r="7.5" fill="black" class="blinking-dot" />
+                </svg>
+                </div>
+                </div> *@
+            </div>
+            <div class="chat-body-footer">
+                <div class="chat-body-options">
+                    @* <a href="#" data-toggle="tooltip" title="🖼️ 图片上传" onclick="showCameraMenu()" id="openCamera">
+                    <i data-feather="camera">
+                    </i>
+                    </a> *@
+                    <a href="#" data-toggle="tooltip" title="📎文件上传" onclick="showUploadFileMenu()">
+                        <i data-feather="paperclip">
+                        </i>
+                    </a>
+                </div>
+                <div class="form-group">
+                    <i data-feather="maximize-2" class="maximize-2" style="width:15px;float:right;cursor:pointer" onclick="max_textarea_Q()"></i>
+                    <textarea type="text" class="form-control" placeholder="输入问题，Enter发送，Ctrl+Enter或Shift+Enter换行" id="Q" style="max-height:200px;"></textarea>
+                </div>
+                <button class="btn btn-icon" data-toggle="tooltip" title="发送" id="sendBtn">
+                    <i data-feather="send"></i>
+                </button>
+            </div>
+            @* <button type="button" class="btn btn-danger" style="width:120px" id="stopBtn" onclick="stopGenerate()"><i data-feather="stop-circle"></i> 停止生成</button> *@
+        </div>
+    </div>
+</div>
+<script src="~/system/js/signalr.min.js"></script>
+<script src="~/system/js/fileschat.js"></script>
+<script src="~/system/js/marked.min.js"></script>
+<link href="~/system/css/atom-one-dark.min.css" rel="stylesheet" />
+<script src="~/system/js/highlight.min.js"></script>

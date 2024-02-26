@@ -1,0 +1,17 @@
+﻿.imgViewBox {
+    width: 100%;
+    text-align: center;
+    display: none;
+}
+
+.chatbtns {
+    display: inline;
+    color: rgb(135,136,154);
+    cursor: pointer;
+    width: 15px;
+    margin-right: 10px;
+}
+
+#Q {
+    resize: none;
+}

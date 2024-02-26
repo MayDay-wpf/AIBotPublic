@@ -1,0 +1,79 @@
+﻿@{
+    ViewData["Title"] = "消耗统计（Consumption）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/system/chart/daterangepicker.css" rel="stylesheet" />
+<script src="~/system/chart/echarts.min.js"></script>
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px;">
+    <div class="card">
+        <div class="card-header">
+            <h5>消耗分布</h5>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="nickname">筛选日期：</label>
+                <input type="text" name="daterange" class="form-control datepicker" style="width:200px;" />
+            </div>
+            <label for="nickname">统计方式：</label>
+            <select id="chartMode" class="form-control mb-3" style="width:200px;">
+                <option value="money" selected>金额消耗统计</option>
+                <option value="tokens">Token消耗统计</option>
+            </select>
+            <div id="pieChart" style="width: 100%; height: 400px;"></div>
+        </div>
+    </div>
+    <p></p>
+    <div class="card">
+        <div class="card-header">
+            <h5>消耗日志</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            <th>账号</th>
+                            <th>模型名称</th>
+                            <th>消耗金额</th>
+                            <th>输入Token</th>
+                            <th>输出Token</th>
+                            <th>时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logList">
+                        <tr>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <nav aria-label="Page navigation example">
+                    <ul class="pagination">
+                        <li class="page-item" id="previous-page"><a class="page-link" href="#">上一页</a></li>
+                        <!-- 页码链接将在这里动态插入 -->
+                        <li class="page-item" id="next-page"><a class="page-link" href="#">下一页</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/system/chart/moment.min.js"></script>
+<script src="~/system/chart/daterangepicker.min.js"></script>
+<script src="~/system/js/openall/consumption.js"></script>

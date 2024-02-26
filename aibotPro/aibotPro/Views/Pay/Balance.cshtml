@@ -1,0 +1,67 @@
+﻿@{
+    ViewData["Title"] = "余额充值（Recharge）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        @* <a href="#" class="header-help-link" onclick="DALLinfo()">
+        <i data-feather="help-circle">
+        </i>
+        </a> *@
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px">
+    <div class="content-header">
+        <div>
+            <h4 class="content-title content-title-sm">
+                <b style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105));
+    -webkit-background-clip: text;
+    color: transparent;">余额充值</b>
+            </h4>
+            <span>如果觉得我们做得还不错，请收购我们🤑🤑🤑</span>
+        </div>
+    </div>
+    <div class="container mt-5">
+        <div class="mb-3">
+            <h4>选择充值金额：</h4>
+            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                <label class="btn btn-outline-primary" onclick="setCustomAmount(5)">
+                    <input type="radio" name="amount" value="5" autocomplete="off"> 5元
+                </label>
+                <label class="btn btn-outline-primary" onclick="setCustomAmount(10)">
+                    <input type="radio" name="amount" value="10" autocomplete="off"> 10元
+                </label>
+                <label class="btn btn-outline-primary" onclick="setCustomAmount(20)">
+                    <input type="radio" name="amount" value="20" autocomplete="off"> 20元
+                </label>
+                <label class="btn btn-outline-primary" onclick="setCustomAmount(50)">
+                    <input type="radio" name="amount" value="50" autocomplete="off"> 50元
+                </label>
+                <label class="btn btn-outline-primary" onclick="setCustomAmount(90)">
+                    <input type="radio" name="amount" value="90" autocomplete="off"> 90元
+                </label>
+            </div>
+        </div>
+        <div class="mb-3">
+            <h4>或自定义金额：</h4>
+            <input type="number" class="form-control" id="customAmount" placeholder="输入自定义金额≥1的整数金额" min="1">
+        </div>
+        <h4>选择支付方式：</h4>
+        <!-- 支付方式按钮 -->
+        <div class="mb-3">
+            <button class="btn btn-success" onclick="Pay('wxpay')">微信支付</button>
+            <button class="btn btn-primary" onclick="Pay('alipay')">支付宝支付</button>
+        </div>
+    </div>
+</div>
+
+<script src="~/system/js/balance.js"></script>

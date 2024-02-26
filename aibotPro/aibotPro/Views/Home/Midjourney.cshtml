@@ -1,0 +1,140 @@
+﻿@{
+    ViewData["Title"] = "Midjourney";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/system/css/midjourney.css" rel="stylesheet" />
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        <a href="#" class="header-help-link" onclick="MJinfo()">
+            <i data-feather="help-circle">
+            </i>
+        </a>
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px;">
+    <div class="content-header">
+        <div>
+            @* <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+            <li class="breadcrumb-item" style="cursor:unset"><a href="#">AIBot-Pro</a></li>
+            <li class="breadcrumb-item"><a href="#">AI</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Midjourney</li>
+            </ol>
+            </nav> *@
+            <h4 class="content-title content-title-sm">
+                <b style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105));
+    -webkit-background-clip: text;
+    color: transparent;">Midjourney</b>
+            </h4>
+        </div>
+    </div>
+    <div id="STEP">
+        <div class="card">
+            <div class="card-header">
+                <h5>第一步：输入提示词</h5>
+            </div>
+            <div class="card-body">
+                <div class="textarea-container">
+                    <textarea class="form-control" rows="5" maxlength="500" placeholder="请描述画面中的内容，描述的方式，顺序，措辞等都会对画面产生不同的影响效果" id="inputText"></textarea>
+                    <div class="char-count">
+                        <span id="charCount">0</span>/<span class="char-limit">500</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p></p>
+        <div class="card">
+            <div class="card-header">
+                <h5>第二步：选择模型Bot</h5>
+            </div>
+            <div class="card-body">
+                <div class="component-section no-code">
+                    <h6 id="section1" class="tx-semibold">请选择用于绘画的bot类型</h6>
+                    <ul class="nav nav-tabs" id="myTab" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="MJ-tab" data-toggle="tab" href="#MJ" role="tab" aria-controls="MJ" aria-selected="true">Mid-Journey</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="NIJI-tab" data-toggle="tab" href="#NIJI" role="tab" aria-controls="NIJI" aria-selected="false">Niji-Journey</a>
+                        </li>
+                    </ul>
+                    <div class="tab-content bd bg-white bd-t-0 pd-20" id="myTabContent">
+                        <div class="tab-pane fade active show" id="MJ" role="tabpanel" aria-labelledby="MJ-tab" style="text-align:center;">
+                            <h5 class="MJtitle"><b>公认最强的AI绘画</b></h5>
+                            <p class="mg-b-0">
+                                <img src="~/system/images/m1.png" style="width:30%;max-width:400px" />
+                                <img src="~/system/images/m2.png" style="width:30%;max-width:400px" />
+                                <img src="~/system/images/m3.png" style="width:30%;max-width:400px" />
+                            </p>
+                        </div>
+                        <div class="tab-pane fade" id="NIJI" role="tabpanel" aria-labelledby="NIJI-tab" style="text-align:center;">
+                            <h5 class="NIJItitle"><b>魔法般的二次元AI绘画生成</b></h5>
+                            <p class="mg-b-0">
+                                <img src="~/system/images/n1.png" style="width:30%;max-width:400px" />
+                                <img src="~/system/images/n2.png" style="width:30%;max-width:400px" />
+                                <img src="~/system/images/n3.png" style="width:30%;max-width:400px" />
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p></p>
+        <div class="card">
+            <div class="card-header">
+                <h5>第三步（选填）：参考图上传</h5>
+            </div>
+            <div class="card-body">
+                <div class="container mt-5">
+                    <h6 id="section1" class="tx-semibold">注意这里不是PS，参考图只参考图片的风格</h6>
+                    <div class="input-group mb-3">
+                        <div class="custom-file">
+                            <input type="file" class="custom-file-input" id="fileInput">
+                            <label class="custom-file-label" for="fileInput">选择文件</label>
+                        </div>
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" type="button" id="uploadBtn">上传</button>
+                            <button class="btn btn-outline-secondary" type="button" id="clearBtn">清除</button>
+                        </div>
+                    </div>
+                    <div class="progress ht-20">
+                        <div id="p1" class="progress-bar wd-25p" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p></p>
+        <div class="card">
+            <div class="card-header">
+                <h5>第四步：创建任务</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <button type="button" class="btn btn-success" id="createTaskBtn"><i data-feather="feather"></i>点击创建绘画任务</button>
+                </div>
+                <p></p>
+                <div class="progress mb-3">
+                    <div id="p2" class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                </div>
+                <div class="log-container mb-3">
+                    <span style="cursor:pointer" id="TaskLogTitle"><b>任务日志</b> <i data-feather="chevron-right"></i></span> <button class="btn btn-warning" onclick="$('#log').val('')">清空日志</button>
+                    <textarea id="log" class="form-control" style="height:200px;background-color:antiquewhite;resize: none;display:none;" readonly="readonly"></textarea>
+                </div>
+            </div>
+        </div>
+        <p></p>
+
+    </div>
+</div>
+<link rel="stylesheet" href="/system/css/magnific-popup.min.css">
+<script src="/system/js/jquery.magnific-popup.min.js"></script>
+<script src="~/system/js/midjourney.js"></script>
+<script src="~/system/js/uploadlogic.js"></script>

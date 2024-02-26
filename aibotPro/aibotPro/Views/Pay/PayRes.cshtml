@@ -1,0 +1,74 @@
+﻿
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>充值结果</title>
+    <meta content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" name="viewport" />
+    <meta content="yes" name="apple-mobile-web-app-capable" />
+    <meta content="black" name="apple-mobile-web-app-status-bar-style" />
+    <meta content="telephone=no" name="format-detection" />
+    <link href="~/lib/pay/css/resstyle.css" rel="stylesheet" />
+    <script type="text/javascript" src="/lib/pay/js/jquery.min.js"></script>
+</head>
+<body>
+    <script>
+        function getParameterByName(name) {
+            name = name.replace(/[\[\]]/g, "\\$&");
+            var url = window.location.href;
+            var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, " "));
+        }
+        function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+        $(function () {
+            if (!isMobile()) {
+                $("body").css("width", "50%");
+                $("body").css("margin", "0 auto");
+            }
+            var success = getParameterByName("success");
+            var html;
+            if (success == "1") {
+                 html = `<div class="aui-back-pitch">
+                                <img src="/lib/pay/images/icon-pitch.png" />
+                            </div>
+                            <div class="aui-back-title">
+                                <h2>充值成功</h2>
+                                <p>感谢您的支持</p>
+                            </div>
+                            <div class="aui-back-button">
+                                <button onclick="window.location='/Home/Index'">返回</button>
+                            </div>`;
+            }
+            else {
+                 html = `<div class="aui-back-pitch">
+                                <img src="/lib/pay/images/error.png" />
+                            </div>
+                            <div class="aui-back-title">
+                                <h2>充值失败</h2>
+                                <p>请重试</p>
+                            </div>
+                            <div class="aui-back-button">
+                                        <button onclick="window.location='/Home/Index'">返回</button>
+                            </div>`;
+            }
+            $(".aui-back-box").html(html);
+        });
+    </script>
+    <section class="aui-flexView">
+        <section class="aui-scrollView">
+            <div class="aui-back-box">
+                
+            </div>
+        </section>
+    </section>
+</body>
+</html>

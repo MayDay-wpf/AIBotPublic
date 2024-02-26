@@ -1,0 +1,41 @@
+﻿@{
+    ViewData["Title"] = "邮件发送（mail）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px;">
+    <div class="card">
+        <div class="card-header">
+            <h5>发送邮件</h5>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="mailtitle">收件人：</label>
+                <input type="mail" class="form-control" id="tomail">
+            </div>
+            <div class="form-group">
+                <label for="mailtitle">邮件标题：</label>
+                <input type="text" class="form-control" id="mailtitle">
+            </div>
+            <div class="form-group">
+                <label for="mailcontent">邮件内容（支持HTML）：</label>
+                <textarea id="mailcontent" class="form-control" style="height:200px;"></textarea>
+            </div>
+            <div class="form-group">
+                <button class="btn btn-primary sendmail" onclick="sendmail()">发送</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/system/js/openall/mailnotice.js"></script>

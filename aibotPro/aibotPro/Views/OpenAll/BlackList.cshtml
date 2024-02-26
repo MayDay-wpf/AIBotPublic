@@ -1,0 +1,62 @@
+﻿@{
+    ViewData["Title"] = "黑名单（Blacklist）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px;">
+    <div class="card">
+        <div class="card-header">
+            <h5>用户列表</h5>
+        </div>
+        <div class="card-body">
+            <div class="header-search mb-4">
+                <i data-feather="search"></i>
+                <input type="search" class="form-control" placeholder="输入账号，回车搜索" id="name" style="width: 100%;">
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            <th>用户头像</th>
+                            <th>用户账号</th>
+                            <th>用户昵称</th>
+                            <th>用户余额</th>
+                            <th>注册时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersList">
+                        <tr>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <nav aria-label="Page navigation example">
+                    <ul class="pagination">
+                        <li class="page-item" id="previous-page"><a class="page-link" href="#">上一页</a></li>
+                        <!-- 页码链接将在这里动态插入 -->
+                        <li class="page-item" id="next-page"><a class="page-link" href="#">下一页</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/system/js/openall/blacklist.js"></script>
+

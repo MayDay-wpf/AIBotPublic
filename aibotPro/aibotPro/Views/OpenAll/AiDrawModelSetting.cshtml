@@ -1,0 +1,64 @@
+﻿@{
+    ViewData["Title"] = "绘画模型管理 (Draw Model)";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+    </div>
+</div>
+<div class="card-body" style="margin-top:10px;">
+    <div class="card">
+        <div class="card-header">
+            <h6>Midjourney API</h6>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="mj-baseurl">Base URL:</label>
+                <input type="text" class="form-control" maxlength="500" id="mj-baseurl"
+                       placeholder="自定义请求地址">
+            </div>
+            <div class="form-group">
+                <label for="mj-apikey">API Key:</label>
+                <input type="text" class="form-control" maxlength="500" id="mj-apikey"
+                       placeholder="自定义API KEY">
+            </div>
+            <div class="form-group">
+                <button type="button" class="btn btn-primary savemj" onclick="saveDrawSetting('Midjourney')">
+                    <i data-feather="save"></i>保存设置
+                </button>
+            </div>
+        </div>
+    </div>
+    <p></p>
+    <div class="card">
+        <div class="card-header">
+            <h6>DALL-E3 API</h6>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="dall-baseurl">Base URL:</label>
+                <input type="text" class="form-control" maxlength="500" id="dall-baseurl"
+                       placeholder="自定义请求地址">
+            </div>
+            <div class="form-group">
+                <label for="dall-apikey">API Key:</label>
+                <input type="text" class="form-control" maxlength="500" id="dall-apikey"
+                       placeholder="自定义API KEY">
+            </div>
+            <div class="form-group">
+                <button type="button" class="btn btn-primary saved3" onclick="saveDrawSetting('DALLE3')">
+                    <i data-feather="save"></i>保存设置
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/system/js/openall/aidrawmodelsetting.js"></script>

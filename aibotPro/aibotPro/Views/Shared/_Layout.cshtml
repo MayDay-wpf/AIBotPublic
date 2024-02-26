@@ -1,0 +1,298 @@
+﻿<!DOCTYPE html>
+
+<html>
+
+<head>
+    <title>@ViewBag.Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+    <meta name="description" content="Responsive Bootstrap 4 Dashboard and Admin Template">
+    <meta name="author" content="ThemePixels">
+    <link href="~/static/css/all.min.css" rel="stylesheet">
+    <link href="~/static/css/ionicons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/static/css/cassie.css?v1">
+    <link href="~/static/css/bootstrap-tagsinput.css" rel="stylesheet" />
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/static/js/bootstrap-tagsinput.min.js"></script>
+    <script src="~/static/js/bootstrap.bundle.min.js"></script>
+    <script src="~/static/js/feather.min.js"></script>
+    <script src="~/static/js/perfect-scrollbar.min.js"></script>
+    <script src="~/static/js/js.cookie.js"></script>
+    <script src="~/static/js/cassie.js"></script>
+    <script src="~/system/js/xlsx.full.min.js"></script>
+    <script src="~/system/js/system.js"></script>
+    <script src="~/system/js/balert.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-ajax-unobtrusive/3.2.6/jquery.unobtrusive-ajax.min.js"></script>
+    <script>
+        $(function () {
+            // 'use strict'const chatList = new PerfectScrollbar('.chat-sidebar-body', {
+            //     suppressScrollX: true
+            // });
+            // const msgContent = new PerfectScrollbar('.chat-body-content', {
+            //     suppressScrollX: true
+            // });
+        @* $('.chat-item').on('click',
+                function (e) {
+                $(this).addClass('selected').removeClass('unread');
+                $(this).siblings().removeClass('selected');
+                if (window.matchMedia('(max-width: 767px)').matches) {
+                $('body').addClass('chat-body-show');
+                $('#menuMain').addClass('d-none');
+                $('#menuBack').removeClass('d-none')
+                }
+                });
+                $('#menuBack').on('click',
+                function (e) {
+                e.preventDefault();
+                $('body').removeClass('chat-body-show');
+                $('#menuMain').removeClass('d-none');
+                $('#menuBack').addClass('d-none')
+                });
+                $('[data-toggle="tooltip"]').tooltip() *@
+                // 页面加载完成后恢复滚动位置
+                let savedScrollPosition = localStorage.getItem('sidebarScrollPosition');
+            if (savedScrollPosition) {
+                $('#dpSidebarBody').scrollTop(savedScrollPosition);
+            }
+        })
+        $(document).on('click', '.nav-link', function () {
+            let currentScrollPosition = $('#dpSidebarBody').scrollTop();
+            localStorage.setItem('sidebarScrollPosition', currentScrollPosition);
+        });
+    </script>
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div>
+                <a href="#" class="sidebar-logo">
+                    <span>
+                        Mufasa
+                    </span>
+                </a>
+                <small class="sidebar-logo-headline">
+                    AIBot Pro System
+                </small>
+            </div>
+        </div>
+        <div id="dpSidebarBody" class="sidebar-body">
+            <ul class="nav nav-sidebar" id="system-menu">
+                <li class="nav-item">
+                    <a href="" class="nav-link with-sub" id="ai-main-menu">
+                        <i data-feather="cpu"></i>
+                        AI
+                    </a>
+                    <nav class="nav nav-sub">
+                        @*<a href="app-calendar.html" class="nav-sub-link">
+                        Calendar
+                        </a>*@
+                        <a href="/Home/Index" class="nav-sub-link active" id="aichat-nav">
+                            对话（Chat）
+                        </a>
+                        <a href="/Home/Midjourney" class="nav-sub-link" id="midjourney-nav">
+                            绘画（Midjourney）
+                        </a>
+                        <a href="/Home/DALL" class="nav-sub-link" id="dall-nav">
+                            绘画（DALL-E3）
+                        </a>
+                        <a href="/Home/ChatSetting" class="nav-sub-link" id="chatsetting-nav">
+                            设置（Setting）
+                        </a>
+                        @*<a href="/Home/FromSton" class="nav-sub-link">
+                        绘画（FromSton&SD）
+                        </a>*@
+                    </nav>
+                </li>
+                <li class="nav-item">
+                    <a href="" class="nav-link with-sub" id="cygf-main-menu">
+                        <i data-feather="box">
+                        </i>
+                        创意工坊 (WorkShop)
+                    </a>
+                    <nav class="nav nav-sub">
+                        <a href="/WorkShop/WorkShopChat" class="nav-sub-link" id="chat-cygf-nav">
+                            对话（Chat by 创意工坊）
+                        </a>
+                        <a href="/WorkShop/WorkShopMarket" class="nav-sub-link" id="workshopmarket-cygf-nav">
+                            插件市场（Market）
+                        </a>
+                        <a href="/WorkShop/MyWork" class="nav-sub-link" id="mywork-cygf-nav">
+                            我的工作台（My Workbench）
+                        </a>
+                        <a href="/WorkShop/MyPlugins" class="nav-sub-link" id="myplugins-cygf-nav">
+                            我的插件（My Plugins）
+                        </a>
+                    </nav>
+                </li>
+                <li class="nav-item">
+                    <a href="" class="nav-link with-sub" id="role-main-menu">
+                        <i data-feather="users">
+                        </i>
+                        角色扮演 (Role Play)
+                    </a>
+                    <nav class="nav nav-sub">
+                        <a href="/Role/RoleChat" class="nav-sub-link" id="chat-role-nav">
+                            对话（Chat by 角色扮演）
+                        </a>
+                        <a href="/Role/RoleList" class="nav-sub-link" id="list-role-nav">
+                            角色列表（Role List）
+                        </a>
+                        <a href="/Role/CustomRole" class="nav-sub-link" id="custom-role-nav">
+                            自定义角色（Custom Role）
+                        </a>
+                    </nav>
+                </li>
+                <li class="nav-item">
+                    <a href="" class="nav-link with-sub" id="files-main-menu">
+                        <i data-feather="file-text">
+                        </i>
+                        文件助手 (File Helper)
+                    </a>
+                    <nav class="nav nav-sub">
+                        <a href="/FilesAI/FilesChat" class="nav-sub-link" id="chat-files-nav">
+                            对话（Chat by 文件助手）
+                        </a>
+                        <a href="/FilesAI/FilesLib" class="nav-sub-link" id="lib-files-nav">
+                            素材库（Material Library）
+                        </a>
+                    </nav>
+                </li>
+                <li class="nav-item">
+                    <a href="" class="nav-link with-sub" id="knowledge-main-menu">
+                        <i data-feather="database">
+                        </i>
+                        知识库 (Knowledge Base)
+                    </a>
+                    <nav class="nav nav-sub">
+                        <a href="/KnowledgeAI/KnowledgeChat" class="nav-sub-link" id="chat-knowledge-nav">
+                            对话 （Chat by 知识库）
+                        </a>
+                        <a href="/KnowledgeAI/KnowledgeManagement" class="nav-sub-link" id="management-knowledge-nav">
+                            知识库管理（Management）
+                        </a>
+                        <a href="/KnowledgeAI/KnowledgeBuild" class="nav-sub-link" id="build-knowledge-nav">
+                            知识库构建（Build）
+                        </a>
+                    </nav>
+                </li>
+                @* <li class="nav-item">
+                <a href="" class="nav-link with-sub" id="assistant-main-menu">
+                <i data-feather="cpu">
+                </i>
+                助理GPT (Assistant GPT)
+                </a>
+                <nav class="nav nav-sub">
+                <a href="/AssistantGPT/AssistantChat" class="nav-sub-link" id="chat-assistant-nav">
+                对话 （Chat by 助理GPT）
+                </a>
+                <a href="/AssistantGPT/AssistantSetting" class="nav-sub-link" id="setting-assistant-nav">
+                助理配置 (Setting)
+                </a>
+                </nav>
+                </li> *@
+                <li class="nav-item">
+                    <a href="" class="nav-link with-sub" id="product-main-menu">
+                        <i data-feather="package">
+                        </i>
+                        产品中心 (Product)
+                    </a>
+                    <nav class="nav nav-sub">
+                        <a href="/Product/ChatGrid" class="nav-sub-link" id="chatgrid-product-nav">
+                            图表绘制（ChatGrid）
+                        </a>
+                    </nav>
+                </li>
+                <li class="nav-item">
+                    <a href="" class="nav-link with-sub" id="pay-main-menu">
+                        <b style="color:deepskyblue">
+                            <i data-feather="dollar-sign">
+                            </i>
+                            充值中心 (Recharge)
+                        </b>
+                    </a>
+                    <nav class="nav nav-sub">
+                        <a href="/Pay/Balance" class="nav-sub-link" id="balance-pay-nav">
+                            余额充值（Recharge）
+                        </a>
+                        <a href="/Pay/VIP" class="nav-sub-link" id="vip-pay-nav">
+                            会员开通（VIP）
+                        </a>
+                    </nav>
+                </li>
+                <li class="nav-item">
+                    <a href="" class="nav-link with-sub" id="usercenter-main-menu">
+                        <i data-feather="user">
+                        </i>
+                        个人中心 (Personal)
+                    </a>
+                    <nav class="nav nav-sub">
+                        <a href="/Users/UserInfo" class="nav-sub-link" id="user_usercenter_nav">
+                            我的（My Profile）
+                        </a>
+                        <a href="/Users/Statistics" class="nav-sub-link" id="statistics_usercenter_nav">
+                            统计 (Statistics)
+                        </a>
+                        <a href="/Users/Gallery" class="nav-sub-link" id="gallery_usercenter_nav">
+                            图库（Gallery）
+                        </a>
+                    </nav>
+                </li>
+
+            </ul>
+            <hr class="mg-t-30 mg-b-25">
+            <ul class="nav nav-sidebar">
+                <li class="nav-item">
+                    <a href="#" class="nav-link" style="color:red" onclick="shutDown()">
+                        <i data-feather="alert-octagon">
+                        </i>
+                        退出登录 (Shut Down)
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" onclick="price()" class="nav-link">
+                        <i data-feather="help-circle">
+                        </i>
+                        计费说明 (Price)
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" onclick="aboutus()" class="nav-link">
+                        <i data-feather="aperture">
+                        </i>
+                        关于我们 (About Us)
+                    </a>
+                </li>
+                @*<li class="nav-item">
+                <a href="index.html" class="nav-link">
+                <i data-feather="help-circle">
+                </i>
+                文档 (Document)
+                </a>
+                </li>
+                <li class="nav-item">
+                <a href="themes.html" class="nav-link">
+                <i data-feather="github">
+                </i>
+                GitHub
+                </a>
+                </li>
+                <li class="nav-item">
+                <a href="themes.html" class="nav-link">
+                <i data-feather="edit">
+                </i>
+                意见&反馈 (Feedback)
+                </a>
+                </li>*@
+            </ul>
+        </div>
+    </div>
+    <div class="content">
+        @RenderBody()
+    </div>
+    <script>
+        function aboutus() {
+            showConfirmationModal('AIBot Pro System', 'AIBot Pro System 是一款基于OpenAI的对话系统<br>支持多种功能，包括创意工坊、角色扮演、文件助手、知识库、产品中心、充值中心、个人中心等<br>AIBot Pro由 MayMay团队开发运营，如果觉得我们做到还不错<br><b style="color:red">【请收购我们】</b>');
+        }
+    </script>
+</body>
+</html>

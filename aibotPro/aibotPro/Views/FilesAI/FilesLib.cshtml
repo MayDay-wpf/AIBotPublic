@@ -1,0 +1,62 @@
+﻿@{
+    ViewData["Title"] = "素材库（Material Library）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="/system/js/masonry.pkgd.min.js"></script>
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        <button type="button" class="btn btn-info clearRole" style="margin-left:10px;color:white" onclick="uploadFiles()"><i data-feather="file"></i> 文件上传</button>
+        @* <a href="#" class="header-help-link" onclick="DALLinfo()">
+        <i data-feather="help-circle">
+        </i>
+        </a> *@
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px;">
+    <div class="content-header">
+        <div>
+            <h4 class="content-title content-title-sm">
+                <b style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105));
+    -webkit-background-clip: text;
+    color: transparent;">素材库</b>
+            </h4>
+            <span>您可以在这里存储word，pdf，txt，ppt，excel🗄️</span>
+            <p></p>
+        </div>
+    </div>
+    <div class="content-main">
+        <div class="header-search mb-4">
+            <i data-feather="search"></i>
+            <input type="search" class="form-control" placeholder="输入文件名搜索文件，回车搜索" id="searchKey" style="width: 100%;">
+        </div>
+        <div class="row" id="masonry-layout">
+            <li class="divider-text">
+                加载中...
+            </li>
+            <!-- 第一个卡片 -->
+            @* <div class="col-lg-3 col-md-6 col-sm-12 mb-4 grid-item">
+            <div class="card h-100">
+            <img class="card-img-top" style="width: 50px;margin:10px auto;"
+            src="/files/pluginavatar/20240206/02f59659b3064b90bf3e4166716878c0.png" alt="插件名称1">
+            <div class="card-body">
+            <h5 class="card-title">插件名称1</h5>
+            <p class="card-text">这里是插件1的简介，简要介绍插件的主要功能和特点。这里是插件1的简介，简要介绍插件的主要功能和特点。</p>
+            <div class="d-flex justify-content-between flex-wrap">
+            <a href="#" class="btn btn-primary">安装</a>
+            <a href="#" class="btn btn-secondary">查看</a>
+            </div>
+            </div>
+            </div>
+            </div> *@
+        </div>
+    </div>
+</div>
+<script src="~/system/js/fileslib.js"></script>

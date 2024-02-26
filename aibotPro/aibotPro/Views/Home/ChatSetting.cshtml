@@ -1,0 +1,103 @@
+﻿@{
+    ViewData["Title"] = "设置（Setting）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="/system/css/chatsetting.css" rel="stylesheet" />
+
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        <button type="button" class="btn btn-primary" onclick="saveChatSetting()">
+            <i data-feather="save"></i>保存设置
+        </button>
+        <button type="button" class="btn btn-danger" onclick="clearChatSetting()">
+            <i data-feather="x-octagon"></i>清空设置
+        </button>
+    </div>
+</div>
+<div class="card-body" style="margin-top:10px;">
+    <div class="card">
+        <div class="card-header">
+            <h6>
+                自定义对话模型列表 <i data-feather="help-circle" style="cursor:pointer" onclick="whatMyChatSetting()"></i>
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <table id="AddSt" class="form-table">
+                </table>
+                <button type="button" class="btn btn-success" onclick="addStLine()">
+                    <i data-feather="plus"></i>新增一行
+                </button>
+            </div>
+        </div>
+    </div>
+    <p></p>
+    <div class="card">
+        <div class="card-header">
+            <h6>自定义Midjourney API</h6>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="mj-baseurl">Base URL:</label>
+                <input type="text" class="form-control" maxlength="500" id="mj-baseurl"
+                       placeholder="自定义请求地址">
+            </div>
+            <div class="form-group">
+                <label for="mj-apikey">API Key:</label>
+                <input type="text" class="form-control" maxlength="500" id="mj-apikey"
+                       placeholder="自定义API KEY">
+            </div>
+        </div>
+    </div>
+    <p></p>
+    <div class="card">
+        <div class="card-header">
+            <h6>自定义DALL-E3 API</h6>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="dall-baseurl">Base URL:</label>
+                <input type="text" class="form-control" maxlength="500" id="dall-baseurl"
+                       placeholder="自定义请求地址">
+            </div>
+            <div class="form-group">
+                <label for="dall-apikey">API Key:</label>
+                <input type="text" class="form-control" maxlength="500" id="dall-apikey"
+                       placeholder="自定义API KEY">
+            </div>
+        </div>
+    </div>
+    <p></p>
+    <div class="card">
+        <div class="card-header">
+            <h6>系统偏好设置</h6>
+        </div>
+        <div class="card-body">
+            <div class="card-body">
+                <div class="form-group">
+                    <input class="form-check-input" type="checkbox" id="useHistory" checked>
+                    <label for="useHistory">启用历史记录</label>
+                </div>
+                <div class="form-group">
+                    <label for="historyCount">历史记录长度:</label>
+                    <input type="number" class="form-control" min="1" max="99" id="historyCount" style="width:120px">
+                </div>
+                <div class="form-group">
+                    <input class="form-check-input" type="checkbox" id="scrolling">
+                    <label for="scrolling">屏幕自动滚动</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <p></p>
+</div>
+
+<script src="/system/js/chatsetting.js"></script>
