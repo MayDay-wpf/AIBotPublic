@@ -125,5 +125,10 @@ namespace aibotPro.Dtos
         public string question { get; set; }
         public string answer { get; set; }
     }
+    public class CombineMP3Request
+    {
+        public List<string> Pathlist { get; set; }
+    }
+
 }
 

@@ -1,5 +1,4 @@
-﻿
-@{
+﻿@{
     ViewData["Title"] = "知识库管理（Management）";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
@@ -32,7 +31,7 @@
             <p></p>
         </div>
     </div>
-    <div class="content-main">
+    <div class="content-main text-center">
         <div class="header-search mb-4">
             <i data-feather="search"></i>
             <input type="search" class="form-control" placeholder="输入文件名搜索文件，回车搜索" id="searchKey" style="width: 100%;">
@@ -56,6 +55,11 @@
             </div>
             </div>
             </div> *@
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <button class="btn btn-primary loadMore" onclick="getFiles('loadmore')">加载更多</button>
+            </div>
         </div>
     </div>
 </div>

@@ -25,5 +25,9 @@ namespace aibotPro.Interface
         string AiGet(string url, Dictionary<string, string> dic, Dictionary<string, string> headers = null, Dictionary<string, string> cookies = null);//get请求
         string AiPost(string url, Dictionary<string, string> parameters, Dictionary<string, string> headers = null, Dictionary<string, string> cookies = null);//post请求
         Task<List<AIdrawRe>> GetAIdrawResList(string account, int page, int pageSize);//获取AI画图结果列表
+
+        Task<string> GPTJsonModel(string systemprompt, string prompt, string model, string account);//JsonModel-GPT
+
+        Task<string> TTS(string text, string model, string voice);//TTS
     }
 }

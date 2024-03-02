@@ -8,6 +8,7 @@ namespace aibotPro.Interface
     {
         bool SendEmail(string toemail, string title, string content);//发送邮件
         Task WriteLog(string log, string logLevel, string CreateAccount);//写入日志
+        void WriteLogUnAsync(string log, string logLevel, string CreateAccount);//写入日志
         string GenerateCode(int length);//生成验证码
         string ConvertToMD5(string str, int length = 16, bool lower = false);//MD5加密
         string EncodeBase64(string source); //字符串编码base64

@@ -58,6 +58,18 @@
             let currentScrollPosition = $('#dpSidebarBody').scrollTop();
             localStorage.setItem('sidebarScrollPosition', currentScrollPosition);
         });
+        function clearCacheAndReload() {
+            // 清除浏览器缓存
+            if (window.location.search) {
+                window.location.search += '&nocache=' + Math.random();
+            } else {
+                window.location.search += '?nocache=' + Math.random();
+            }
+
+            // 刷新页面
+            window.location.reload(true);
+        }
+
     </script>
 </head>
 
@@ -200,6 +212,9 @@
                         <a href="/Product/ChatGrid" class="nav-sub-link" id="chatgrid-product-nav">
                             图表绘制（ChatGrid）
                         </a>
+                        <a href="/Product/AiMarketing" class="nav-sub-link" id="aimarketing-product-nav">
+                            营销号助手（AiMarketing）
+                        </a>
                     </nav>
                 </li>
                 <li class="nav-item">
@@ -235,12 +250,22 @@
                         <a href="/Users/Gallery" class="nav-sub-link" id="gallery_usercenter_nav">
                             图库（Gallery）
                         </a>
+                        <a href="/Users/Share" class="nav-sub-link" id="user_share_nav">
+                            分享共盈（Share）
+                        </a>
                     </nav>
                 </li>
 
             </ul>
             <hr class="mg-t-30 mg-b-25">
             <ul class="nav nav-sidebar">
+                <li class="nav-item">
+                    <a href="#" class="nav-link" style="color:purple" onclick="clearCacheAndReload()">
+                        <i data-feather="refresh-cw">
+                        </i>
+                        清除缓存刷新 (Refurbish)
+                    </a>
+                </li>
                 <li class="nav-item">
                     <a href="#" class="nav-link" style="color:red" onclick="shutDown()">
                         <i data-feather="alert-octagon">
@@ -253,6 +278,13 @@
                         <i data-feather="help-circle">
                         </i>
                         计费说明 (Price)
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="https://qm.qq.com/q/gNwQHVDhkc" style="color:rgb(23,223,135)" class="nav-link">
+                        <i data-feather="message-circle">
+                        </i>
+                        QQ群：833716234
                     </a>
                 </li>
                 <li class="nav-item">

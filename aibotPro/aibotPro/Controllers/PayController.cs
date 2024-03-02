@@ -80,6 +80,13 @@ namespace aibotPro.Controllers
                             vip.CreateTime = DateTime.Now;
                             _context.VIPs.Add(vip);
                         }
+                        //查询是否有上级
+                        var shareinfo = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == username);
+                        if (shareinfo != null && shareinfo.ParentAccount != "admin")
+                        {
+                            var parentShareCode = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == shareinfo.ParentAccount);
+                            _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, 15m * 0.15m);
+                        }
                     }
                     else if (param.Contains("VIP|90") && intomoney == 90)
                     {
@@ -106,11 +113,25 @@ namespace aibotPro.Controllers
                             vip.CreateTime = DateTime.Now;
                             _context.VIPs.Add(vip);
                         }
+                        //查询是否有上级
+                        var shareinfo = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == username);
+                        if (shareinfo != null && shareinfo.ParentAccount != "admin")
+                        {
+                            var parentShareCode = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == shareinfo.ParentAccount);
+                            _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, 90m * 0.15m);
+                        }
                         user.Mcoin = user.Mcoin + intomoney + 10;
                         _context.Users.Update(user);
                     }
                     else
                     {
+                        //查询是否有上级
+                        var shareinfo = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == username);
+                        if (shareinfo != null && shareinfo.ParentAccount != "admin")
+                        {
+                            var parentShareCode = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == shareinfo.ParentAccount);
+                            _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, (decimal)intomoney * 0.15m);
+                        }
                         //更新用户余额
                         user.Mcoin = user.Mcoin + intomoney;
                         _context.Users.Update(user);
@@ -166,6 +187,13 @@ namespace aibotPro.Controllers
                             vip.CreateTime = DateTime.Now;
                             _context.VIPs.Add(vip);
                         }
+                        //查询是否有上级
+                        var shareinfo = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == username);
+                        if (shareinfo != null && shareinfo.ParentAccount != "admin")
+                        {
+                            var parentShareCode = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == shareinfo.ParentAccount);
+                            _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, 15m * 0.15m);
+                        }
                     }
                     else if (param.Contains("VIP|90") && intomoney == 90)
                     {
@@ -192,11 +220,25 @@ namespace aibotPro.Controllers
                             vip.CreateTime = DateTime.Now;
                             _context.VIPs.Add(vip);
                         }
+                        //查询是否有上级
+                        var shareinfo = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == username);
+                        if (shareinfo != null && shareinfo.ParentAccount != "admin")
+                        {
+                            var parentShareCode = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == shareinfo.ParentAccount);
+                            _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, 90m * 0.15m);
+                        }
                         user.Mcoin = user.Mcoin + intomoney + 10;
                         _context.Users.Update(user);
                     }
                     else
                     {
+                        //查询是否有上级
+                        var shareinfo = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == username);
+                        if (shareinfo != null && shareinfo.ParentAccount != "admin")
+                        {
+                            var parentShareCode = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == shareinfo.ParentAccount);
+                            _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, (decimal)intomoney * 0.15m);
+                        }
                         //更新用户余额
                         user.Mcoin = user.Mcoin + intomoney;
                         _context.Users.Update(user);

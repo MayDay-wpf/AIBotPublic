@@ -179,7 +179,7 @@ namespace aibotPro.Service
             if (modelPriceList == null)
             {
                 //如果缓存中没有模型定价列表，则从数据库中获取
-                modelPriceList = await _context.ModelPrices.ToListAsync();
+                modelPriceList = await _context.ModelPrices.AsNoTracking().ToListAsync();
                 //将模型定价列表存入缓存
                 await _redisService.SetAsync("ModelPriceList", JsonConvert.SerializeObject(modelPriceList));
             }
@@ -197,7 +197,7 @@ namespace aibotPro.Service
             if (modelPriceList == null)
             {
                 //如果缓存中没有模型定价列表，则从数据库中获取
-                modelPriceList = await _context.ModelPrices.ToListAsync();
+                modelPriceList = await _context.ModelPrices.AsNoTracking().ToListAsync();
                 //将模型定价列表存入缓存
                 await _redisService.SetAsync("ModelPriceList", JsonConvert.SerializeObject(modelPriceList));
             }
@@ -214,7 +214,7 @@ namespace aibotPro.Service
             if (payInfo == null)
             {
                 //如果缓存中没有支付通道信息，则从数据库中获取
-                easyPaySetting = _context.EasyPaySettings.FirstOrDefault();
+                easyPaySetting = _context.EasyPaySettings.AsNoTracking().FirstOrDefault();
                 //将支付通道信息存入缓存
                 _redisService.SetAsync("PayInfo", JsonConvert.SerializeObject(easyPaySetting));
             }
@@ -344,6 +344,18 @@ namespace aibotPro.Service
             var usedData = await _context.UseUpLogs.Where(x => x.CreateTime >= startTime && x.CreateTime <= endTime && x.Account == account).ToListAsync();
             return usedData;
         }
+        public bool CreateTXorder(string account, string aliAccount, decimal money)
+        {
+            TxOrder txOrder = new TxOrder();
+            txOrder.Account = account;
+            txOrder.AliAccount = aliAccount;
+            txOrder.Money = money;
+            txOrder.IsOver = 0;
+            txOrder.CreateTime = DateTime.Now;
+            _context.TxOrders.Add(txOrder);
+            return _context.SaveChanges() > 0;
+        }
+
         private static string GenerateSign(IDictionary<string, string> parameters, string key)
         {
             // 第一步：按照参数名ASCII码从小到大排序

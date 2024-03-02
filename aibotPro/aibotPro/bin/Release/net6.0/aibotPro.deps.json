@@ -32,6 +32,7 @@
           "Spire.Presentation": "9.2.0",
           "StackExchange.Redis": "2.7.17",
           "TiktokenSharp": "1.0.8",
+          "Xabe.FFmpeg": "5.2.6",
           "iTextSharp": "5.5.13.3"
         },
         "runtime": {
@@ -3194,6 +3195,17 @@
             "fileVersion": "1.0.7.0"
           }
         }
+      },
+      "Xabe.FFmpeg/5.2.6": {
+        "dependencies": {
+          "Newtonsoft.Json": "13.0.3"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Xabe.FFmpeg.dll": {
+            "assemblyVersion": "5.2.6.0",
+            "fileVersion": "5.2.6.0"
+          }
+        }
       }
     }
   },
@@ -5218,6 +5230,13 @@
       "sha512": "sha512-m2P1W8mrQtI9E1D5iP+SNNWMeYQEERFJDv9UyuJK1OeRb6q2EDa6dA3cvM0nmf9sbLXLnIZyRdvHtO+dh799cg==",
       "path": "tiktokensharp/1.0.8",
       "hashPath": "tiktokensharp.1.0.8.nupkg.sha512"
+    },
+    "Xabe.FFmpeg/5.2.6": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-AFT06eHAZ4OV3s6H2dZWeRQ6kkdWkY1dGq76iFprlOG6quB7V7Nm8wWhEF63As1txsh/8kwAbybtffrgqfQ0dg==",
+      "path": "xabe.ffmpeg/5.2.6",
+      "hashPath": "xabe.ffmpeg.5.2.6.nupkg.sha512"
     }
   }
 }

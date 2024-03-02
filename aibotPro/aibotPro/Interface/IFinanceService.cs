@@ -19,6 +19,7 @@ namespace aibotPro.Interface
         List<Order> GetOrders(string account, int page, int size, out int total);//获取订单列表
         Task<List<UseUpLog>> GetUsedData(DateTime startTime, DateTime endTime, string account);//获取消耗记录
         List<UseUpLog> GetLogs(string account, int page, int size, out int total);//获取消耗记录-分页
+        bool CreateTXorder(string account, string aliAccount, decimal money);//创建提现订单
     }
 }
 

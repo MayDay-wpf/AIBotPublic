@@ -60,6 +60,10 @@ namespace aibotPro.Controllers
         {
             return View();
         }
+        public IActionResult Share()
+        {
+            return View();
+        }
         /// <summary>
         /// 注册
         /// </summary>
@@ -67,7 +71,7 @@ namespace aibotPro.Controllers
         /// <param name="checkCode">验证码</param>
         /// <returns></returns>
         [HttpPost]
-        public IActionResult Regiest(User users, string checkCode)
+        public IActionResult Regiest(User users, string checkCode, string shareCode)
         {
             string errormsg = string.Empty;
             if (string.IsNullOrEmpty(checkCode)) { errormsg = "验证码不能为空"; return Json(new { success = false, msg = errormsg }); }
@@ -75,7 +79,7 @@ namespace aibotPro.Controllers
             if (string.IsNullOrEmpty(users.Password)) { errormsg = "密码不能为空"; return Json(new { success = false, msg = errormsg }); }
             if (string.IsNullOrEmpty(users.Nick)) { errormsg = "昵称不能为空"; return Json(new { success = false, msg = errormsg }); }
             if (string.IsNullOrEmpty(users.Sex)) { errormsg = "性别不能为空"; return Json(new { success = false, msg = errormsg }); }
-            if (_usersService.Regiest(users, checkCode, out errormsg))
+            if (_usersService.Regiest(users, checkCode, shareCode, out errormsg))
             {
                 //return RedirectToAction("Login");
                 return Json(new { success = true });
@@ -509,6 +513,13 @@ namespace aibotPro.Controllers
                         vip.CreateTime = DateTime.Now;
                         _context.VIPs.Add(vip);
                     }
+                    //查询是否有上级
+                    var shareinfo = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == username);
+                    if (shareinfo != null && shareinfo.ParentAccount != "admin")
+                    {
+                        var parentShareCode = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == shareinfo.ParentAccount);
+                        _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, 15m * 0.15m);
+                    }
                 }
                 else if (thisorder.OrderType.Contains("VIP|90") && intomoney == 90)
                 {
@@ -535,11 +546,25 @@ namespace aibotPro.Controllers
                         vip.CreateTime = DateTime.Now;
                         _context.VIPs.Add(vip);
                     }
+                    //查询是否有上级
+                    var shareinfo = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == username);
+                    if (shareinfo != null && shareinfo.ParentAccount != "admin")
+                    {
+                        var parentShareCode = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == shareinfo.ParentAccount);
+                        _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, 90m * 0.15m);
+                    }
                     user.Mcoin = user.Mcoin + intomoney + 10;
                     _context.Users.Update(user);
                 }
                 else
                 {
+                    //查询是否有上级
+                    var shareinfo = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == username);
+                    if (shareinfo != null && shareinfo.ParentAccount != "admin")
+                    {
+                        var parentShareCode = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == shareinfo.ParentAccount);
+                        _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, (decimal)intomoney * 0.15m);
+                    }
                     //更新用户余额
                     user.Mcoin = user.Mcoin + intomoney;
                     _context.Users.Update(user);
@@ -792,6 +817,147 @@ namespace aibotPro.Controllers
                 success = true,
                 msg = "兑换成功"
             });
+        }
+        [Authorize]
+        [HttpPost]
+        public IActionResult CreateShareLink()
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var shareLink = _usersService.CreateShareLink(username);
+            return Json(new
+            {
+                success = true,
+                msg = "获取成功",
+                data = shareLink
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public IActionResult GetShareInfo()
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var shareInfo = _usersService.GetShareInfo(username);
+            return Json(new
+            {
+                success = true,
+                msg = "获取成功",
+                data = shareInfo
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public IActionResult GetMyShare(int page, int pageSize)
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            int total = 0;
+            var shareInfo = _usersService.GetMyShare(username, page, pageSize, out total);
+            List<Share> share = new List<Share>();
+            foreach (var item in shareInfo)
+            {
+                //隐藏账号
+                var account = item.Account.Substring(0, 3) + "****";
+                share.Add(
+                new Share
+                {
+                    Account = account,
+                    CreateTime = item.CreateTime
+                });
+            }
+            return Json(new
+            {
+                success = true,
+                msg = "获取成功",
+                data = share,
+                total = total
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public IActionResult GetShareLog(int page, int pageSize)
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            int total = 0;
+            var shareLog = _usersService.GetShareLog(username, page, pageSize, out total);
+            return Json(new
+            {
+                success = true,
+                msg = "获取成功",
+                data = shareLog,
+                total = total
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public IActionResult McoinToMcoin()
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var shareInfo = _usersService.GetShareInfo(username);
+            if (shareInfo.Mcoin > 0)
+            {
+                var mcoin = shareInfo.Mcoin.Value;
+                _usersService.UpdateShareMcoinAndWriteLog(shareInfo.ShareCode, -mcoin);
+                _financeService.UpdateUserMoney(username, mcoin, "add", out string err);
+                return Json(new
+                {
+                    success = true,
+                    msg = "转换成功"
+                });
+            }
+            else
+            {
+                return Json(new
+                {
+                    success = false,
+                    msg = "没有可转换余额"
+                });
+            }
+        }
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> McoinToMoney(string aliAccount)
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var shareInfo = _usersService.GetShareInfo(username);
+            if (shareInfo.Mcoin > 0)
+            {
+                if (shareInfo.Mcoin < 10)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        msg = "余额不足10元，无法提现"
+                    });
+                }
+                var mcoin = shareInfo.Mcoin.Value;
+                _usersService.UpdateShareMcoinAndWriteLog(shareInfo.ShareCode, -mcoin);
+                if (_financeService.CreateTXorder(username, aliAccount, mcoin))
+                {
+                    //发送邮件给管理员
+                    _systemService.SendEmail("maymay5jace@gmail.com", "提现申请", $"账号【{username}】，有一笔【{mcoin}】元的提现订单待处理");
+                    await _systemService.WriteLog($"账号【{username}】，有一笔【{mcoin}】元的提现订单待处理", Dtos.LogLevel.Info, username);
+                    return Json(new
+                    {
+                        success = true,
+                        msg = "提现申请已提交"
+                    });
+                }
+                else
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        msg = "提现申请提交失败"
+                    });
+                }
+            }
+            else
+            {
+                return Json(new
+                {
+                    success = false,
+                    msg = "没有提现换余额"
+                });
+            }
         }
     }
 }

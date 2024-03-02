@@ -2,23 +2,27 @@
 using aibotPro.Dtos;
 using aibotPro.Interface;
 using aibotPro.Models;
+using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using RestSharp;
 using StackExchange.Redis;
 using System;
 using System.Net;
 using System.Security.Policy;
+using System.Security.Principal;
 using System.Text;
+using TiktokenSharp;
 
 namespace aibotPro.Service
 {
     public class AiServer : IAiServer
     {
-        readonly ISystemService _systemService;
-        readonly AIBotProContext _context;
-        readonly IRedisService _redis;
+        private readonly ISystemService _systemService;
+        private readonly AIBotProContext _context;
+        private readonly IRedisService _redis;
         public AiServer(ISystemService systemService, AIBotProContext context, IRedisService redis)
         {
             _systemService = systemService;
@@ -207,8 +211,7 @@ namespace aibotPro.Service
             List<ChatHistory> chatHistories = new List<ChatHistory>();
             //从数据库加载
             chatHistories = _context.ChatHistories
-                                     .AsNoTracking()
-                                     .Where(x => x.ChatId == chatId && x.IsDel == 0).ToList();
+                                     .Where(x => x.ChatId == chatId && x.IsDel == 0 && x.Account == account).ToList();
             //写入缓存
             _redis.SetAsync(chatId, JsonConvert.SerializeObject(chatHistories), TimeSpan.FromHours(1));
 
@@ -268,7 +271,6 @@ namespace aibotPro.Service
             {
                 throw e;
             }
-            var url = baseUrl + "/v1/chat/completions";
             var client = new RestClient(baseUrl + "/v1/images/generations");
             var request = new RestRequest("", Method.Post);
             request.AddHeader("Content-Type", "application/json");
@@ -528,6 +530,236 @@ namespace aibotPro.Service
                                 .ToList(); // 直到调用ToList，查询才真正执行
 
             return aidrawRes;
+        }
+
+        public async Task<string> GPTJsonModel(string systemprompt, string prompt, string model, string account)
+        {
+            //查询AIModel
+            var aiModel = _systemService.GetAImodel();
+            var modelCfg = aiModel.FirstOrDefault(x => x.ModelName == model);
+            if (modelCfg == null)
+                return "未找到AIModel";
+            string baseUrl = modelCfg.BaseUrl;
+            try
+            {
+                if (baseUrl.EndsWith("/"))
+                {
+                    baseUrl = baseUrl.TrimEnd('/');
+                }
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+
+            var url = baseUrl + "/v1/chat/completions";
+            var client = new RestClient(url);
+            var request = new RestRequest("", Method.Post);
+            request.AddHeader("Authorization", $"Bearer {modelCfg.ApiKey}");
+            request.AddHeader("Content-Type", "application/json");
+            request.AddHeader("Accept", "*/*");
+            request.AddHeader("Connection", "keep-alive");
+            var body = @"{
+                            " + "\n" +
+                                        $@"  ""model"": ""{model}"",
+                            " + "\n" +
+                                        @"  ""response_format"": {
+                            " + "\n" +
+                                        @"    ""type"": ""json_object""
+                            " + "\n" +
+                                        @"  },
+                            " + "\n" +
+                                        @"  ""messages"": [
+                            " + "\n" +
+                                        @"    {
+                            " + "\n" +
+                                        @"      ""role"": ""system"",
+                            " + "\n" +
+                                        $@"      ""content"": ""{systemprompt}""
+                            " + "\n" +
+                                        @"    },
+                            " + "\n" +
+                                        @"    {
+                            " + "\n" +
+                                        @"      ""role"": ""user"",
+                            " + "\n" +
+                                        $@"      ""content"": ""{prompt}""
+                            " + "\n" +
+                                        @"    }
+                            " + "\n" +
+                                        @"  ],
+                            " + "\n" +
+                                        @"  ""stream"": false
+                            " + "\n" +
+                                        @"}";
+            request.AddParameter("application/json", body, ParameterType.RequestBody);
+            RestResponse response = client.Execute(request);
+            if (response.IsSuccessful)
+            {
+                JObject jsonObj = JsonConvert.DeserializeObject<JObject>(response.Content);
+                string content = jsonObj["choices"][0]["message"]["content"].ToString();
+                if (!string.IsNullOrEmpty(content) && model == "gpt-4-turbo-preview")
+                {
+                    TikToken tikToken = TikToken.GetEncoding("cl100k_base");
+                    await CreateUseLogAndUpadteMoney(account, model, tikToken.Encode(systemprompt + prompt).Count, tikToken.Encode(content).Count);
+                }
+                return content;
+            }
+            else
+                return "";
+
+        }
+        private async Task<bool> IsVip(string account)
+        {
+            //查询用户是否是VIP
+            var vip = await _context.VIPs.Where(x => x.Account == account).ToListAsync();
+            //遍历VIP列表，如果有一个VIP未过期，则返回true
+            if (vip.Count == 0)
+            {
+                return false;
+            }
+            foreach (var item in vip)
+            {
+                if (item.EndTime > DateTime.Now)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        private async Task<List<ModelPrice>> GetModelPriceList()
+        {
+            //尝试从缓存中获取模型定价列表
+            List<ModelPrice> modelPriceList = null;
+            var modelPriceList_str = await _redis.GetAsync("ModelPriceList");
+            if (modelPriceList == null)
+            {
+                //如果缓存中没有模型定价列表，则从数据库中获取
+                modelPriceList = await _context.ModelPrices.AsNoTracking().ToListAsync();
+                //将模型定价列表存入缓存
+                await _redis.SetAsync("ModelPriceList", JsonConvert.SerializeObject(modelPriceList));
+            }
+            else
+            {
+                modelPriceList = JsonConvert.DeserializeObject<List<ModelPrice>>(modelPriceList_str);
+            }
+            return modelPriceList;
+        }
+        public async Task<string> TTS(string text, string model, string voice)
+        {
+            //查询AIModel
+            var aiModel = _systemService.GetAImodel();
+            var modelCfg = aiModel.FirstOrDefault();
+            if (modelCfg == null)
+                return "未找到AIModel";
+            string baseUrl = modelCfg.BaseUrl;
+            try
+            {
+                if (baseUrl.EndsWith("/"))
+                {
+                    baseUrl = baseUrl.TrimEnd('/');
+                }
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+            var url = baseUrl + "/v1/audio/speech";
+            var client = new RestClient(url);
+            var request = new RestRequest("", Method.Post);
+            request.AddHeader("Content-Type", "application/json");
+            request.AddHeader("Authorization", $"Bearer {modelCfg.ApiKey}");
+            request.AddHeader("Accept", "*/*");
+            request.AddHeader("Connection", "keep-alive");
+            text = text.Replace("\r", "\\n").Replace("\n", "\\n");
+            var body = @"{" + "\n" +
+            @$"  ""model"": ""{model}""," + "\n" +
+            @$"  ""input"": ""{text}""," + "\n" +
+            @$"  ""voice"": ""{voice}""" + "\n" +
+            @"}";
+            request.AddParameter("application/json", body, ParameterType.RequestBody);
+            RestResponse response = await client.ExecuteAsync(request);
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
+                //保存返回的音频文件
+                string savePath = Path.Combine("wwwroot", $"files/audio/{DateTime.Now.ToString("yyyyMMdd")}");
+                if (!Directory.Exists(savePath))
+                {
+                    Directory.CreateDirectory(savePath);
+                }
+                string fileName = Guid.NewGuid().ToString() + ".mp3";
+                savePath = Path.Combine(savePath, fileName);
+                using (FileStream fs = new FileStream(savePath, FileMode.Create))
+                {
+                    fs.Write(response.RawBytes, 0, response.RawBytes.Length);
+                }
+                return savePath;
+            }
+            else
+            {
+                await _systemService.WriteLog(response.Content, Dtos.LogLevel.Error, "system");
+                return "";
+            }
+        }
+
+        private async Task<bool> CreateUseLogAndUpadteMoney(string account, string modelName, int inputCount, int outputCount, bool isdraw = false)
+        {
+            var user = _context.Users.Where(x => x.Account == account).FirstOrDefault();
+            if (user == null)
+            {
+                return false;
+            }
+            decimal? realOutputMoney = 0m;
+            //尝试从缓存中获取模型定价列表
+            List<ModelPrice> modelPriceList = await GetModelPriceList();
+            //根据模型名称获取模型定价
+            var modelPrice = modelPriceList.Where(x => x.ModelName == modelName).FirstOrDefault();
+            if (modelPrice != null)//如果不存在就是不扣费
+            {
+                //查询用户是否是VIP
+                bool vip = await IsVip(account);
+                if (vip)
+                {
+                    //如果是VIP，使用VIP价格
+                    modelPrice.ModelPriceInput = modelPrice.VipModelPriceInput;
+                    modelPrice.ModelPriceOutput = modelPrice.VipModelPriceOutput;
+                    modelPrice.Rebate = modelPrice.VipRebate;
+                }
+                //如果是绘画
+                if (isdraw)
+                {
+                    realOutputMoney = modelPrice.ModelPriceOutput * modelPrice.Rebate;
+                }
+                else
+                {
+                    //更新用户余额,字数要除以1000
+                    var inputMoney = modelPrice.ModelPriceInput * inputCount / 1000;
+                    var outputMoney = modelPrice.ModelPriceOutput * outputCount / 1000;
+                    //根据折扣计算实际扣费
+                    var rebate = modelPrice.Rebate;
+                    realOutputMoney = (inputMoney + outputMoney) * rebate;
+                }
+                //扣除用户余额
+                user.Mcoin -= realOutputMoney;
+                if (user.Mcoin < 0)
+                {
+                    user.Mcoin = 0;
+                }
+                //标记实体状态为已修改
+                _context.Entry(user).State = EntityState.Modified;
+            }
+            var log = new UseUpLog
+            {
+                Account = account,
+                InputCount = inputCount,
+                OutputCount = outputCount,
+                UseMoney = realOutputMoney,
+                CreateTime = DateTime.Now,
+                ModelName = modelName
+            };
+            _context.UseUpLogs.Add(log);
+            //保存变更到数据库
+            return await _context.SaveChangesAsync() > 0;
         }
     }
 }

@@ -43,9 +43,12 @@ namespace aibotPro.Models
         public virtual DbSet<PluginsParam> PluginsParams { get; set; }
         public virtual DbSet<RoleChat> RoleChats { get; set; }
         public virtual DbSet<RoleSetting> RoleSettings { get; set; }
+        public virtual DbSet<Share> Shares { get; set; }
+        public virtual DbSet<ShareLog> ShareLogs { get; set; }
         public virtual DbSet<SignIn> SignIns { get; set; }
         public virtual DbSet<SystemCfg> SystemCfgs { get; set; }
         public virtual DbSet<SystemLog> SystemLogs { get; set; }
+        public virtual DbSet<TxOrder> TxOrders { get; set; }
         public virtual DbSet<UseUpLog> UseUpLogs { get; set; }
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<UserSetting> UserSettings { get; set; }

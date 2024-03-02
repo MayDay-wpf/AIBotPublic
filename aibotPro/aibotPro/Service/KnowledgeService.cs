@@ -2,6 +2,7 @@
 using aibotPro.Interface;
 using aibotPro.Models;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using RestSharp;
 using System.Collections;
 using System.Security.Principal;
@@ -126,6 +127,7 @@ namespace aibotPro.Service
                 catch (Exception e)
                 {
                     await _redisService.DeleteAsync($"{account}_wikiuploadlog");
+                    await _systemService.WriteLog(e.Message, Dtos.LogLevel.Error, account);
                     throw;
                 }
 
@@ -226,5 +228,6 @@ namespace aibotPro.Service
             await _redisService.DeleteAsync($"{account}_wikiuploadlog");
             _context.SaveChanges();
         }
+
     }
 }

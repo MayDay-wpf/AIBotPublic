@@ -789,5 +789,47 @@ namespace aibotPro.Controllers
                 data = cards
             });
         }
+        [Authorize]
+        [HttpPost]
+        public IActionResult DeleteAdmin(int id)
+        {
+            var admin = _context.Admins.FirstOrDefault(x => x.Id == id);
+            if (admin == null)
+            {
+                return Json(new
+                {
+                    success = false,
+                    msg = "管理员不存在"
+                });
+            }
+            _context.Admins.Remove(admin);
+            _context.SaveChanges();
+            return Json(new
+            {
+                success = true,
+                msg = "删除成功",
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public IActionResult DeleteVip(string account)
+        {
+            var vip = _context.VIPs.FirstOrDefault(x => x.Account == account);
+            if (vip == null)
+            {
+                return Json(new
+                {
+                    success = false,
+                    msg = "VIP不存在"
+                });
+            }
+            _context.VIPs.Remove(vip);
+            _context.SaveChanges();
+            return Json(new
+            {
+                success = true,
+                msg = "删除成功",
+            });
+        }
     }
 }

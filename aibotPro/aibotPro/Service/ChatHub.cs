@@ -59,7 +59,7 @@ namespace aibotPro.Service
             var user = _usersService.GetUserData(Account);
             string chatId = string.Empty;
             bool newChat = false;
-            if (string.IsNullOrEmpty(chatDto.chatid) && chatDto.chatid != "gridview")
+            if (string.IsNullOrEmpty(chatDto.chatid))
             {
                 chatId = Guid.NewGuid().ToString().Replace("-", "");//创建chatid头部
                 chatId = $"{chatId}U{Account}IP{chatDto.ip}";
@@ -80,8 +80,9 @@ namespace aibotPro.Service
             //检查该模型是否需要收费
             var modelPrice = await _financeService.ModelPrice(chatDto.aiModel);
             bool isVip = await _financeService.IsVip(Account);
-            bool shouldCharge = !isVip && modelPrice != null &&
-                                (modelPrice.VipModelPriceInput > 0 || modelPrice.ModelPriceOutput > 0);
+            bool shouldCharge = modelPrice != null && (
+                        (!isVip && modelPrice.ModelPriceOutput > 0) || // 非VIP用户，且模型有非VIP价格
+                        (isVip && modelPrice.VipModelPriceInput > 0)); // VIP用户，且模型对VIP也有价格
 
             // 检查用户余额是否不足，只有在需要收费时检查
             if (shouldCharge && user.Mcoin <= 0)
@@ -175,6 +176,8 @@ namespace aibotPro.Service
                 aiChat.Model = chatDto.aiModel;
                 List<VisionChatMesssage> tmpmsg_v = new List<VisionChatMesssage>();
                 List<Message> messages = new List<Message>();
+                if (chatDto.chatid.Contains("gridview"))
+                    newChat = true;
                 if (newChat)
                 {
                     if (!isVisionModel)
@@ -356,8 +359,9 @@ namespace aibotPro.Service
                 await _aiServer.SaveChatHistory(Account, chatId, sysmsg, chatDto.msgid_g, chatDto.chatgroupid, "assistant", chatDto.aiModel);
                 if (!useMyKey && !string.IsNullOrEmpty(sysmsg))
                     await _financeService.CreateUseLogAndUpadteMoney(Account, chatDto.aiModel, tikToken.Encode(input + promptHeadle).Count, tikToken.Encode(output).Count);
-                if (chatDto.chatid == "gridview")
+                if (chatDto.chatid.Contains("gridview"))
                 {
+                    sysmsg = sysmsg.ToLower();
                     if (sysmsg.Contains("```json"))
                     {
                         sysmsg = sysmsg.Split("```json")[1];
@@ -568,8 +572,6 @@ namespace aibotPro.Service
                                 await Clients.Group(chatId).SendAsync("ReceiveWorkShopMessage", chatRes);
                             }
                             var tools = choice.Message.ToolCalls;
-                            if (!string.IsNullOrEmpty(sysmsg))
-                                await _financeService.CreateUseLogAndUpadteMoney(Account, chatDto.aiModel, tikToken.Encode(promptHeadle).Count, tikToken.Encode(output).Count);
                             if (tools != null)
                             {
                                 //函数并行待定......

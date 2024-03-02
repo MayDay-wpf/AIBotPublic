@@ -37,9 +37,11 @@
     <PackageReference Include="Spire.Presentation" Version="9.2.0" />
     <PackageReference Include="StackExchange.Redis" Version="2.7.17" />
     <PackageReference Include="TiktokenSharp" Version="1.0.8" />
+    <PackageReference Include="Xabe.FFmpeg" Version="5.2.6" />
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="wwwroot\files\audio\" />
     <Folder Include="wwwroot\files\uploadImg\" />
     <Folder Include="wwwroot\files\referencedrawing\" />
     <Folder Include="wwwroot\files\mjres\" />

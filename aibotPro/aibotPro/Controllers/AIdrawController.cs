@@ -2,6 +2,7 @@
 using aibotPro.Interface;
 using aibotPro.Models;
 using aibotPro.Service;
+using Humanizer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -59,10 +60,12 @@ namespace aibotPro.Controllers
             if (aiModel == null)
                 return Ok(new { success = false, msg = "AI模型不存在" });
             var chatSetting = _usersService.GetChatSetting(username);
+            var needToPay = true;
             if (chatSetting != null && chatSetting.MyMidjourney != null && !string.IsNullOrEmpty(chatSetting.MyMidjourney.BaseURL) && !string.IsNullOrEmpty(chatSetting.MyMidjourney.ApiKey))
             {
                 aiModel.BaseUrl = chatSetting.MyDall.BaseURL;
                 aiModel.ApiKey = chatSetting.MyDall.ApiKey;
+                needToPay = false;
             }
             //如果有参考图，则转base64
             string[] imageData = { };
@@ -76,7 +79,8 @@ namespace aibotPro.Controllers
             string taskId = await _ai.CreateMJdraw(prompt, botType, imageData, aiModel.BaseUrl, aiModel.ApiKey);
             if (string.IsNullOrEmpty(taskId))
                 return Ok(new { success = false, msg = "AI任务创建失败" });
-            await _financeService.CreateUseLogAndUpadteMoney(username, "Midjourney", 0, 0, true);
+            if (needToPay)
+                await _financeService.CreateUseLogAndUpadteMoney(username, "Midjourney", 0, 0, true);
             return Ok(new { success = true, msg = "AI任务创建成功", taskId = taskId });
         }
         [Authorize]
@@ -89,16 +93,19 @@ namespace aibotPro.Controllers
             if (aiModel == null)
                 return Ok(new { success = false, msg = "AI模型不存在" });
             var chatSetting = _usersService.GetChatSetting(username);
+            var needToPay = true;
             if (chatSetting != null && chatSetting.MyMidjourney != null && !string.IsNullOrEmpty(chatSetting.MyMidjourney.BaseURL) && !string.IsNullOrEmpty(chatSetting.MyMidjourney.ApiKey))
             {
                 aiModel.BaseUrl = chatSetting.MyDall.BaseURL;
                 aiModel.ApiKey = chatSetting.MyDall.ApiKey;
+                needToPay = false;
             }
             //发起请求
             string newTaskId = await _ai.CreateMJchange(action, index, taskId, aiModel.BaseUrl, aiModel.ApiKey);
             if (string.IsNullOrEmpty(newTaskId))
                 return Ok(new { success = false, msg = "AI任务创建失败" });
-            await _financeService.CreateUseLogAndUpadteMoney(username, action, 0, 0, true);
+            if (needToPay)
+                await _financeService.CreateUseLogAndUpadteMoney(username, action, 0, 0, true);
             return Ok(new { success = true, msg = "AI任务创建成功", taskId = newTaskId });
         }
 
@@ -124,7 +131,7 @@ namespace aibotPro.Controllers
                 //生成完毕，下载图片
                 string imgPath = taskResponse.imageUrl;
                 //获取用户名
-                string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "") + ".jpg";
+                string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "") + ".png";
                 string savePath = Path.Combine("wwwroot", "files/mjres", username);
                 await _ai.DownloadImageAsync(imgPath, savePath, newFileName);
                 string imgResPath = Path.Combine("/files/mjres", username, newFileName);
@@ -142,7 +149,7 @@ namespace aibotPro.Controllers
                 return Ok(new { success = false, msg = "获取任务状态失败" });
             }
         }
-
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> CreateDALLTask(string prompt, string imgSize, string quality)
         {
@@ -155,10 +162,12 @@ namespace aibotPro.Controllers
                 return Ok(new { success = false, msg = "AI模型不存在" });
             //获取对话设置
             var chatSetting = _usersService.GetChatSetting(username);
+            var needToPay = true;
             if (chatSetting != null && chatSetting.MyDall != null && !string.IsNullOrEmpty(chatSetting.MyDall.BaseURL) && !string.IsNullOrEmpty(chatSetting.MyDall.ApiKey))
             {
                 aiModel.BaseUrl = chatSetting.MyDall.BaseURL;
                 aiModel.ApiKey = chatSetting.MyDall.ApiKey;
+                needToPay = false;
             }
             //发起请求
             string imgurl = await _ai.CreateDALLdraw(prompt, imgSize, quality, aiModel.BaseUrl, aiModel.ApiKey);
@@ -169,19 +178,19 @@ namespace aibotPro.Controllers
 
                 // 直接返回在线图片链接给客户端
                 // 注意：这里返回的是原始的在线图片链接
-                var response = new { success = true, msg = "AI任务创建成功", imgurl = imgurl };
-                await _financeService.CreateUseLogAndUpadteMoney(username, "DALLE3", 0, 0, true);
+                if (needToPay)
+                    await _financeService.CreateUseLogAndUpadteMoney(username, "DALLE3", 0, 0, true);
+                string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "") + ".png";
+                string imgResPath = Path.Combine("/files/dallres", username, newFileName);
+                var response = new { success = true, msg = "AI任务创建成功", imgurl = imgurl, localhosturl = imgResPath };
                 // 在后台启动一个任务下载图片
                 Task.Run(async () =>
                 {
                     using (var scope = _serviceProvider.CreateScope()) // _serviceProvider 是 IServiceProvider 的一个实例。
                     {
-                        string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "") + ".jpg";
+                        // 这里做一些后续处理，比如更新数据库记录等
                         string savePath = Path.Combine("wwwroot", "files/dallres", username);
                         await _ai.DownloadImageAsync(imgurl, savePath, newFileName);
-                        string imgResPath = Path.Combine("/files/dallres", username, newFileName);
-
-                        // 这里做一些后续处理，比如更新数据库记录等
                         var aiSaveService = scope.ServiceProvider.GetRequiredService<IAiServer>(); // 假设保存记录方法在IAiSaveService中。
                         aiSaveService.SaveAiDrawResult(username, "DALLE3", imgResPath, prompt, prompt);
                     }

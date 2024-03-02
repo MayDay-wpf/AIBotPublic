@@ -23,7 +23,8 @@ namespace aibotPro.Service
         private readonly IUsersService _usersService;
         private readonly IRedisService _redisService;
         private readonly IFinanceService _financeService;
-        public WorkShopService(AIBotProContext context, ISystemService systemService, IAiServer aiServer, IUsersService usersService, IRedisService redisService, IFinanceService financeService)
+        private readonly IServiceProvider _serviceProvider;
+        public WorkShopService(AIBotProContext context, ISystemService systemService, IAiServer aiServer, IUsersService usersService, IRedisService redisService, IFinanceService financeService, IServiceProvider serviceProvider)
         {
             _context = context;
             _systemService = systemService;
@@ -31,6 +32,7 @@ namespace aibotPro.Service
             _usersService = usersService;
             _redisService = redisService;
             _financeService = financeService;
+            _serviceProvider = serviceProvider;
         }
         public bool InstallPlugin(string account, int pluginId, out string errormsg)
         {
@@ -312,13 +314,10 @@ namespace aibotPro.Service
                 string apiKey = string.Empty;
                 //获取对话设置
                 var chatSetting = _usersService.GetChatSetting(account);
-                if (chatSetting != null)
+                if (chatSetting != null && chatSetting.MyDall != null && chatSetting.MyDall.ApiKey != null && chatSetting.MyDall.BaseURL != null)
                 {
-                    if (chatSetting.MyDall != null && !string.IsNullOrEmpty(chatSetting.MyDall.BaseURL) && !string.IsNullOrEmpty(chatSetting.MyDall.ApiKey))
-                    {
-                        baseUrl = chatSetting.MyDall.BaseURL;
-                        apiKey = chatSetting.MyDall.ApiKey;
-                    }
+                    baseUrl = chatSetting.MyDall.BaseURL;
+                    apiKey = chatSetting.MyDall.ApiKey;
                 }
                 else
                 {
@@ -348,13 +347,17 @@ namespace aibotPro.Service
                 // 在后台启动一个任务下载图片
                 Task.Run(async () =>
                 {
-                    string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "") + ".jpg";
-                    string savePath = Path.Combine("wwwroot", "files/dallres", account);
-                    await _aiServer.DownloadImageAsync(pluginResDto.result, savePath, newFileName);
-                    string imgResPath = Path.Combine("/files/dallres", account, newFileName);
+                    using (var scope = _serviceProvider.CreateScope()) // _serviceProvider 是 IServiceProvider 的一个实例。
+                    {
+                        string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "") + ".jpg";
+                        string savePath = Path.Combine("wwwroot", "files/dallres", account);
+                        await _aiServer.DownloadImageAsync(pluginResDto.result, savePath, newFileName);
+                        string imgResPath = Path.Combine("/files/dallres", account, newFileName);
 
-                    // 这里做一些后续处理，比如更新数据库记录等
-                    _aiServer.SaveAiDrawResult(account, "DALLE3", imgResPath, prompt, prompt);
+                        // 这里做一些后续处理，比如更新数据库记录等
+                        var aiSaveService = scope.ServiceProvider.GetRequiredService<IAiServer>(); // 假设保存记录方法在IAiSaveService中。
+                        aiSaveService.SaveAiDrawResult(account, "DALLE3", imgResPath, prompt, prompt);
+                    }
                 });
 
             }

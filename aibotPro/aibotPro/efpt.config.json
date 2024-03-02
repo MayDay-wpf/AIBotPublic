@@ -112,6 +112,14 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[Share]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ShareLog]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[SignIn]",
          "ObjectType": 0
       },
@@ -121,6 +129,10 @@
       },
       {
          "Name": "[dbo].[SystemLog]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[TxOrders]",
          "ObjectType": 0
       },
       {

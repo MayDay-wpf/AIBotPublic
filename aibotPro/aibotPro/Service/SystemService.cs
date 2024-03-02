@@ -81,6 +81,16 @@ namespace aibotPro.Service
             await _context.SystemLogs.AddAsync(systemLog);
             await _context.SaveChangesAsync();
         }
+        public void WriteLogUnAsync(string log, string logLevel, string CreateAccount)
+        {
+            SystemLog systemLog = new SystemLog();
+            systemLog.LogTxt = log;
+            systemLog.CreateTime = DateTime.Now;
+            systemLog.CreateAccount = CreateAccount;
+            systemLog.LogLevel = logLevel;
+            _context.SystemLogs.Add(systemLog);
+            _context.SaveChanges();
+        }
         public string GenerateCode(int length)
         {
             // 包含数字和小写字母的字符集
@@ -174,6 +184,9 @@ namespace aibotPro.Service
         }
         public string EncodeBase64(string source)
         {
+            //非空判断
+            if (string.IsNullOrEmpty(source))
+                return string.Empty;
             byte[] bytes = Encoding.UTF8.GetBytes(source);
             return Convert.ToBase64String(bytes);
         }
