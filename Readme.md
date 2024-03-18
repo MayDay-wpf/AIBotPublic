@@ -1,5 +1,5 @@
 # AIBotPro 开源版
-## 作者运营地址：https://aibotpro.com
+## 作者运营地址：https://aibotpro.cn
 ## QQ交流群：833716234（群内免费提供技术支持，任何问题都会得到解答）
 ## 技术栈
 * 前端：bootstrap4
