@@ -14,9 +14,9 @@ namespace aibotPro.Models
         public int Id { get; set; }
         [StringLength(50)]
         public string Account { get; set; }
-        [StringLength(50)]
+        [StringLength(100)]
         public string AssisId { get; set; }
-        [StringLength(50)]
+        [StringLength(200)]
         public string FileId { get; set; }
         [StringLength(500)]
         public string FileName { get; set; }

@@ -8,15 +8,17 @@
     getRoleList('init');
 });
 let page = 1;
-let pageSize = 10;
+let pageSize = 12;
 let noMoreData = false;
 function getRoleList(type) {
+    loadingOverlay.show();
     var name = $('#searchKey').val();
     if (type == 'init') {
         page = 1;
-        pageSize = 10;
+        pageSize = 12;
     }
     if (type == 'loadmore' && noMoreData) { // 加载更多但标志已表示没有更多数据
+        loadingOverlay.hide();
         balert('没有更多了', "info", false, 1500, "center");
         return; // 直接返回，不再进行请求
     }
@@ -33,6 +35,7 @@ function getRoleList(type) {
         url: '/Role/GetRoleList',
         data: data,
         success: function (res) {
+            loadingOverlay.hide();
             if (res.success) {
                 var html = '';
                 for (var i = 0; i < res.data.length; i++) {
@@ -55,9 +58,16 @@ function getRoleList(type) {
                     if (res.data.length < pageSize) {
                         noMoreData = true;
                     }
-                } else
+                } else {
                     $('#masonry-layout').html(html);
+                    if (res.data.length < pageSize) {
+                        noMoreData = true;
+                    }
+                }
             }
+        },
+        error: function (res) {
+            loadingOverlay.hide();
         }
     });
 }

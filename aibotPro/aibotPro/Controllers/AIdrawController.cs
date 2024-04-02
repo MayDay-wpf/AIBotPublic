@@ -55,6 +55,15 @@ namespace aibotPro.Controllers
         public async Task<IActionResult> CreateMJTask(string prompt, string botType, string referenceImgPath)
         {
             var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var user = _usersService.GetUserData(username);
+            if (user.Mcoin <= 0)
+            {
+                return Ok(new
+                {
+                    success = false,
+                    msg = "余额不足，请充值后再使用"
+                });
+            }
             //从数据库获取AIdraw模型
             var aiModel = _context.AIdraws.AsNoTracking().Where(x => x.ModelName == "Midjourney").FirstOrDefault();
             if (aiModel == null)
@@ -88,6 +97,15 @@ namespace aibotPro.Controllers
         public async Task<IActionResult> CreateMJChange(string action, int index, string taskId)
         {
             var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var user = _usersService.GetUserData(username);
+            if (user.Mcoin <= 0)
+            {
+                return Ok(new
+                {
+                    success = false,
+                    msg = "余额不足，请充值后再使用"
+                });
+            }
             //从数据库获取AIdraw模型
             var aiModel = _context.AIdraws.AsNoTracking().Where(x => x.ModelName == "Midjourney").FirstOrDefault();
             if (aiModel == null)
@@ -113,41 +131,50 @@ namespace aibotPro.Controllers
         [HttpPost]
         public async Task<IActionResult> GetMJTaskResponse(string taskId)
         {
-            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
-            //从数据库获取AIdraw模型
-            var aiModel = _context.AIdraws.AsNoTracking().Where(x => x.ModelName == "Midjourney").FirstOrDefault();
-            if (aiModel == null)
-                return Ok(new { code = 1, msg = "AI模型不存在" });
-            //获取对话设置
-            var chatSetting = _usersService.GetChatSetting(username);
-            if (chatSetting != null && chatSetting.MyDall != null && !string.IsNullOrEmpty(chatSetting.MyDall.BaseURL) && !string.IsNullOrEmpty(chatSetting.MyDall.ApiKey))
+            try
             {
-                aiModel.BaseUrl = chatSetting.MyDall.BaseURL;
-                aiModel.ApiKey = chatSetting.MyDall.ApiKey;
+                var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+                //从数据库获取AIdraw模型
+                var aiModel = _context.AIdraws.AsNoTracking().Where(x => x.ModelName == "Midjourney").FirstOrDefault();
+                if (aiModel == null)
+                    return Ok(new { code = 1, msg = "AI模型不存在" });
+                //获取对话设置
+                var chatSetting = _usersService.GetChatSetting(username);
+                if (chatSetting != null && chatSetting.MyDall != null && !string.IsNullOrEmpty(chatSetting.MyDall.BaseURL) && !string.IsNullOrEmpty(chatSetting.MyDall.ApiKey))
+                {
+                    aiModel.BaseUrl = chatSetting.MyDall.BaseURL;
+                    aiModel.ApiKey = chatSetting.MyDall.ApiKey;
+                }
+                TaskResponse taskResponse = await _ai.GetMJTaskResponse(taskId, aiModel.BaseUrl, aiModel.ApiKey);
+                if (taskResponse.status == "SUCCESS")
+                {
+                    //生成完毕，下载图片
+                    string imgPath = taskResponse.imageUrl;
+                    //获取用户名
+                    string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "");
+                    string savePath = Path.Combine("wwwroot", "files/mjres", username);
+                    await _ai.DownloadImageAsync(imgPath, savePath, newFileName);
+                    string imgResPath = Path.Combine("/files/mjres", username, newFileName + ".png");
+                    taskResponse.imageUrl = imgResPath;
+                    //保存结果到数据库
+                    await _ai.SaveAiDrawResult(username, "Midjourney", imgResPath, taskResponse.prompt, taskResponse.promptEn);
+                    return Ok(new { success = true, msg = "获取任务状态成功", taskResponse = taskResponse });
+                }
+                if (taskResponse != null)
+                {
+                    return Ok(new { success = true, msg = "获取任务状态成功", taskResponse = taskResponse });
+                }
+                else
+                {
+                    return Ok(new { success = false, msg = "获取任务状态失败" });
+                }
             }
-            TaskResponse taskResponse = await _ai.GetMJTaskResponse(taskId, aiModel.BaseUrl, aiModel.ApiKey);
-            if (taskResponse.status == "SUCCESS")
+            catch (Exception e)
             {
-                //生成完毕，下载图片
-                string imgPath = taskResponse.imageUrl;
-                //获取用户名
-                string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "") + ".png";
-                string savePath = Path.Combine("wwwroot", "files/mjres", username);
-                await _ai.DownloadImageAsync(imgPath, savePath, newFileName);
-                string imgResPath = Path.Combine("/files/mjres", username, newFileName);
-                taskResponse.imageUrl = imgResPath;
-                //保存结果到数据库
-                _ai.SaveAiDrawResult(username, "Midjourney", imgResPath, taskResponse.prompt, taskResponse.promptEn);
-                return Ok(new { success = true, msg = "获取任务状态成功", taskResponse = taskResponse });
+                _systemService.WriteLogUnAsync($"MJ绘画失败：{e.Message}", Dtos.LogLevel.Error, "system");
+                return Ok(new { success = false, msg = $"绘制失败：{e.Message}" });
             }
-            if (taskResponse != null)
-            {
-                return Ok(new { success = true, msg = "获取任务状态成功", taskResponse = taskResponse });
-            }
-            else
-            {
-                return Ok(new { success = false, msg = "获取任务状态失败" });
-            }
+
         }
         [Authorize]
         [HttpPost]
@@ -156,6 +183,15 @@ namespace aibotPro.Controllers
 
             // 获取用户名
             var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var user = _usersService.GetUserData(username);
+            if (user.Mcoin <= 0)
+            {
+                return Ok(new
+                {
+                    success = false,
+                    msg = "余额不足，请充值后再使用"
+                });
+            }
             //从数据库获取AIdraw模型
             var aiModel = _context.AIdraws.AsNoTracking().Where(x => x.ModelName == "DALLE3").FirstOrDefault();
             if (aiModel == null)
@@ -180,8 +216,8 @@ namespace aibotPro.Controllers
                 // 注意：这里返回的是原始的在线图片链接
                 if (needToPay)
                     await _financeService.CreateUseLogAndUpadteMoney(username, "DALLE3", 0, 0, true);
-                string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "") + ".png";
-                string imgResPath = Path.Combine("/files/dallres", username, newFileName);
+                string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "");
+                string imgResPath = Path.Combine("/files/dallres", username, newFileName + ".png");
                 var response = new { success = true, msg = "AI任务创建成功", imgurl = imgurl, localhosturl = imgResPath };
                 // 在后台启动一个任务下载图片
                 Task.Run(async () =>
@@ -192,7 +228,7 @@ namespace aibotPro.Controllers
                         string savePath = Path.Combine("wwwroot", "files/dallres", username);
                         await _ai.DownloadImageAsync(imgurl, savePath, newFileName);
                         var aiSaveService = scope.ServiceProvider.GetRequiredService<IAiServer>(); // 假设保存记录方法在IAiSaveService中。
-                        aiSaveService.SaveAiDrawResult(username, "DALLE3", imgResPath, prompt, prompt);
+                        await aiSaveService.SaveAiDrawResult(username, "DALLE3", imgResPath, prompt, prompt);
                     }
                 });
 

@@ -186,7 +186,7 @@ function runTestRole() {
         success: function (res) {
             unloadingBtn('.testBtn');
             if (res.success) {
-                window.location.href = '/Role/RoleChat?test=true';
+                window.location.href = '/Role/RoleChat?type=test';
             }
             else {
                 balert(res.msg, 'danger', false, 1500, 'center');

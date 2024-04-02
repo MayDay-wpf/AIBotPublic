@@ -8,7 +8,7 @@
     getFiles('init');
 });
 let page = 1;
-let pageSize = 10;
+let pageSize = 12;
 let noMoreData = false;
 async function uploadChunk(file, chunk, chunks, start, chunkSize) {
     var end = Math.min(start + chunkSize, file.size);
@@ -88,12 +88,14 @@ async function uploadFiles() {
     fileInput.click();
 }
 function getFiles(type) {
+    loadingOverlay.show();
     var name = $('#searchKey').val();
     if (type == 'init') {
         page = 1;
-        pageSize = 10;
+        pageSize = 12;
     }
     if (type == 'loadmore' && noMoreData) { // 加载更多但标志已表示没有更多数据
+        loadingOverlay.hide();
         balert('没有更多了', "info", false, 1500, "center");
         return; // 直接返回，不再进行请求
     }
@@ -110,6 +112,7 @@ function getFiles(type) {
         url: '/FilesAI/GetFilesLibs',
         data: data,
         success: function (res) {
+            loadingOverlay.hide();
             if (res.success) {
                 var html = '';
                 for (var i = 0; i < res.data.length; i++) {
@@ -146,9 +149,16 @@ function getFiles(type) {
                     if (res.data.length < pageSize) {
                         noMoreData = true;
                     }
-                } else
+                } else {
                     $('#masonry-layout').html(html);
+                    if (res.data.length < pageSize) {
+                        noMoreData = true;
+                    }
+                }
             }
+        },
+        error: function (res) {
+            loadingOverlay.hide();
         }
     });
 }

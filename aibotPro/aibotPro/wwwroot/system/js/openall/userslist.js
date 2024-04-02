@@ -100,12 +100,12 @@ function updatePagination(currentPage, totalPages) {
 
         if (currentPage <= maxPagesBeforeCurrentPage) {
             startPage = 1;
-            endPage = maxPagesToShow;
+            endPage = maxPagesToShow - 1;
         } else if (currentPage + maxPagesAfterCurrentPage >= totalPages) {
-            startPage = totalPages - maxPagesToShow + 1;
+            startPage = totalPages - maxPagesToShow + 2;
             endPage = totalPages;
         } else {
-            startPage = currentPage - maxPagesBeforeCurrentPage;
+            startPage = currentPage - maxPagesBeforeCurrentPage + 1;
             endPage = currentPage + maxPagesAfterCurrentPage;
         }
     }
@@ -127,7 +127,7 @@ function updatePagination(currentPage, totalPages) {
 
     // 处理省略的显示
     if (startPage > 1) {
-        $('<li class="page-item dynamic"><span class="page-link">...</span></li>').insertBefore('#next-page');
+        $('<li class="page-item dynamic"><span class="page-link">...</span></li>').insertBefore('.page-item.dynamic:first');
     }
 
     if (endPage < totalPages) {
@@ -151,7 +151,24 @@ function updatePagination(currentPage, totalPages) {
             loadUsersList(currentPage + 1, page_size);
         });
     }
+    // 更新首页和尾页的状态
+    $('#first-page').off('click').toggleClass('disabled', currentPage === 1);
+    if (currentPage > 1) {
+        $('#first-page').click(function (e) {
+            e.preventDefault();
+            loadUsersList(1, page_size);  // 跳转到首页
+        });
+    }
+
+    $('#last-page').off('click').toggleClass('disabled', currentPage === totalPages);
+    if (currentPage < totalPages) {
+        $('#last-page').click(function (e) {
+            e.preventDefault();
+            loadUsersList(totalPages, page_size);  // 跳转到尾页
+        });
+    }
 }
+
 
 function editUserEdit(id, type) {
     loadingOverlay.show();

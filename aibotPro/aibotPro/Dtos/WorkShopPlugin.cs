@@ -18,14 +18,17 @@
         public List<PluginHeaderDto> Pheaders { get; set; }
         public List<PluginCookieDto> Pcookies { get; set; }
         public string Pjscode { get; set; }
+        public string JsonPr { get; set; }
         public string PrunLocation { get; set; }
         public string Pusehtml { get; set; }
         public string IsPublic { get; set; }
         public System.DateTime? CreateTime { get; set; }
+        public string WorkFlowCode { get; set; }
     }
     public class PluginParamDto
     {
         public string ParamCode { get; set; }
+        public string ParamType { get; set; }
         public string ParamInfo { get; set; }
         public string ParamName { get; set; }
         public string ParamConst { get; set; }

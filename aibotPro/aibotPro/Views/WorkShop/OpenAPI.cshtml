@@ -1,0 +1,120 @@
+﻿@{
+    ViewData["Title"] = "Open API 开放平台";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        @* <a href="#" class="header-help-link" onclick="DALLinfo()">
+        <i data-feather="help-circle">
+        </i>
+        </a> *@
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px;">
+    <div class="content-header">
+        <div>
+            <h4 class="content-title content-title-sm">
+                <b style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105));
+    -webkit-background-clip: text;
+    color: transparent;">Open API 开放平台</b>
+            </h4>
+            <span>您可以在本站外部调用创意工坊的内容🛅🔢🔣</span>
+            <p></p>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <h5>创建一个API KEY</h5>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="apiurl">API Key</label>
+                <input type="text" class="form-control" maxlength="200" id="apikey" placeholder="暂无apikey，请点击下方创建" readonly="readonly" style="background-color:rgb(243,243,251)">
+            </div>
+            <button class="btn btn-success" onclick="createApiKey()">创建</button>
+            <button class="btn btn-info" onclick="copyText($('#apikey').val())">复制</button>
+        </div>
+    </div>
+    <p></p>
+    <div class="card">
+        <div class="card-header">
+            <h5>系统插件选用</h5>
+        </div>
+        <div class="card-body">
+            <div class="form-group mg-b-30">
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="search_google_when_gpt_cannot_answer">
+                    <label class="custom-control-label tx-sm" for="search_google_when_gpt_cannot_answer">
+                        联网搜索
+                    </label>
+                </div>
+            </div>
+            <div class="form-group mg-b-30">
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="use_dalle3_withpr">
+                    <label class="custom-control-label tx-sm" for="use_dalle3_withpr">
+                        DALL-E3绘画
+                    </label>
+                </div>
+            </div>
+            <div class="form-group mg-b-30">
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="search_knowledge_base">
+                    <label class="custom-control-label tx-sm" for="search_knowledge_base">
+                        知识库检索
+                    </label>
+                </div>
+            </div>
+            <p class="tx-info">第三方插件请前往<a href="/WorkShop/WorkShopMarket">【插件市场】</a>安装即可生效，同理卸载即失效</p>
+        </div>
+    </div>
+    <p></p>
+    <div class="card">
+        <div class="card-header">
+            <h5>请求示例</h5>
+            <p>完全遵循OpenAI请求方式，您可以使用OpenAI SDK进行调用</p>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="apiurl">请求地址：https://aibotpro.cn/v1/chat/completions</label>
+            </div>
+            <div class="form-group">
+                <label for="apiurl">API Key 填写在 Headers 的Authorization 注意 需要添加Bearer</label>
+            </div>
+            <div class="form-group">
+                <label for="apiurl">可选模型：<b id="canUseModel">--</b></label>
+            </div>
+            <div class="form-group">
+                <b>cURL示例</b>
+                <pre style="background-color:antiquewhite;color:black;font-size:18px;">
+curl --location --request POST 'https://aibotpro.cn/v1/chat/completions' \
+--header 'Authorization: Bearer sk-3ce2284b*************' \
+--header 'User-Agent: Apifox/1.0.0 (https://apifox.com)' \
+--header 'Content-Type: application/json' \
+--header 'Accept: */*' \
+--header 'Host: aibotpro.cn' \
+--header 'Connection: keep-alive' \
+--data-raw '{
+  "model": "gpt-3.5-turbo-0125",
+  "messages": [
+    {
+      "role": "user",
+      "content": "你好"
+    }
+  ],
+  "stream": false
+}'
+                </pre>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/system/js/openapi.js"></script>

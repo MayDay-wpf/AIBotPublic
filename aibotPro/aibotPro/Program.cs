@@ -32,6 +32,7 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IFinanceService, FinanceService>();
 builder.Services.AddScoped<IAdminsService, AdminService>();
 builder.Services.AddScoped<IAuthorizationHandler, AdminRequirementHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, APIRequirementHandler>();
 builder.Services.AddMemoryCache();
 builder.Services.AddSignalR();
 
@@ -60,6 +61,10 @@ builder.Services.AddAuthorization(options =>
     {
         policy.Requirements.Add(new AdminRequirement());
     });
+    options.AddPolicy("APIOnly", policy =>
+    {
+        policy.Requirements.Add(new APIRequirement());
+    });
 });
 
 
@@ -83,6 +88,14 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
 }
+//配置跨域
+app.UseCors(builder =>
+{
+    builder.AllowAnyOrigin()
+           .AllowAnyMethod()
+           .AllowAnyHeader();
+});
+
 app.UseStaticFiles();
 
 app.UseRouting();

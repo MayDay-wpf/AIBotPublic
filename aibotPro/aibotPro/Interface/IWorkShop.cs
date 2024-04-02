@@ -32,6 +32,9 @@ namespace aibotPro.Interface
 
         //获取插件的参数列表
         List<PluginParamDto> GetPluginParams(int pluginId);
+
+        //获取自定义的结构化json
+        PluginsJsonPr GetPluginsJsonPr(int pluginId);
         //获取插件的headers列表
         List<PluginHeaderDto> GetPluginHeaders(int pluginId);
         //获取插件的cookies列表
@@ -39,5 +42,8 @@ namespace aibotPro.Interface
 
         //运行插件
         Task<PluginResDto> RunPlugin(string account, FunctionCall fn);
+
+        //获取工作流节点数据
+        Task<string> GetWorkFlowNodeData(string workflowcode);
     }
 }

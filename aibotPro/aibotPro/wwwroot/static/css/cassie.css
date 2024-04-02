@@ -50,6 +50,7 @@ html {
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
     overflow-x: hidden;
+    scrollbar-width: none;
 }
 
 article,
@@ -65,6 +66,7 @@ section {
     display: block
 }
 
+
 body {
     margin: 0;
     font-family: "Roboto", sans-serif;
@@ -73,7 +75,7 @@ body {
     line-height: 1.5;
     color: #373857;
     text-align: left;
-    background-color: #fff
+    background-color: #fff;
 }
 
 [tabindex="-1"]:focus {
@@ -198,7 +200,7 @@ pre,
 code,
 kbd,
 samp {
-    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-family: YouYuan, monospace;
     font-size: 1em
 }
 
@@ -12951,7 +12953,8 @@ textarea.form-control {
     .avatar img {
         width: 100%;
         height: 100%;
-        object-fit: cover
+        object-fit: cover;
+        border-radius: 50%;
     }
 
 .avatar-initial {
@@ -72333,8 +72336,8 @@ button.bg-twitter:focus,
 }
 
 .avatar {
-    width: 20px;
-    height: 20px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     display: flex;
     top: 0;
@@ -72342,10 +72345,10 @@ button.bg-twitter:focus,
     justify-content: center;
     font-weight: bold;
     color: white;
-    background-color: #007bff;
+    background-color: #f5f5f5;
     margin-right: 10px;
     flex-shrink: 0;
-    /* 防止头像大小随周围内容改变 */
+    /*  防止头像大小随周围内容改变 */
     margin-bottom: 5px;
 }
 
@@ -72356,122 +72359,132 @@ button.bg-twitter:focus,
 .chat-message-box {
     width: 100%;
     word-wrap: break-word;
+    overflow-x: scroll;
+    -ms-overflow-style: none;
 }
 
-    .chat-message-box code {
-        overflow: auto;
-        white-space: pre;
+    .chat-message-box::-webkit-scrollbar {
+        display: none;
     }
 
-    .chat-message-box pre {
-        margin: 0;
-        font-family: inherit;
-        white-space: pre-wrap;
-        background-color: transparent;
-        /*padding: 10px;*/
-        /* border-radius: 10px;
+.chat-body-content::-webkit-scrollbar {
+    display: none;
+}
+
+.chat-message-box code {
+    overflow: auto;
+    white-space: pre;
+}
+
+.chat-message-box pre {
+    margin: 0;
+    font-family: inherit;
+    white-space: pre-wrap;
+    background-color: transparent;
+    /*padding: 10px;*/
+    /* border-radius: 10px;
      border: 1px solid #ccc; */
-        color: #333;
-        font-size: 15px;
-        overflow: scroll;
-        /* 防止内容溢出 */
-        flex-grow: 1;
-        /* 允许文本区域填充剩余空间 */
-        display: inline;
-    }
+    color: #333;
+    font-size: 15px;
+    overflow: scroll;
+    /* 防止内容溢出 */
+    flex-grow: 1;
+    /* 允许文本区域填充剩余空间 */
+    display: inline;
+}
 
-    .chat-message-box p {
-        margin: 0;
-        font-family: inherit;
-        white-space: pre-wrap;
-        background-color: transparent;
-        /* padding: 5px;*/
-        /* border-radius: 10px;
+.chat-message-box p {
+    margin: 0;
+    font-family: inherit;
+    white-space: pre-wrap;
+    background-color: transparent;
+    /* padding: 5px;*/
+    /* border-radius: 10px;
      border: 1px solid #ccc; */
-        color: #333;
-        font-size: 15px;
-        overflow: scroll;
-        /* 防止内容溢出 */
-        flex-grow: 1;
-        /* 允许文本区域填充剩余空间 */
-        display: inline;
-    }
+    color: #333;
+    font-size: 15px;
+    overflow: scroll;
+    /* 防止内容溢出 */
+    flex-grow: 1;
+    /* 允许文本区域填充剩余空间 */
+    display: inline;
+}
 
-    /* 将.chat-message-box中的所有元素设为inline */
-    /*.chat-message-box * {
+/* 将.chat-message-box中的所有元素设为inline */
+/*.chat-message-box * {
     display: inline;
 }*/
 
-    /* 重置table元素及其子元素的display属性 */
-    .chat-message-box table,
-    .chat-message-box tr,
-    .chat-message-box td,
-    .chat-message-box th,
-    .chat-message-box thead,
-    .chat-message-box tbody,
-    .chat-message-box tfoot,
-    .chat-message-box caption,
-    .chat-message-box colgroup {
-        display: table;
-        /* 对table本身应用 */
-    }
+/* 重置table元素及其子元素的display属性 */
+.chat-message-box table,
+.chat-message-box tr,
+.chat-message-box td,
+.chat-message-box th,
+.chat-message-box thead,
+.chat-message-box tbody,
+.chat-message-box tfoot,
+.chat-message-box caption,
+.chat-message-box colgroup {
+    display: table;
+    /* 对table本身应用 */
+}
 
-    /* 设置table行相关元素的display属性 */
-    .chat-message-box tr {
-        display: table-row;
-    }
+/* 设置table行相关元素的display属性 */
+.chat-message-box tr {
+    display: table-row;
+}
 
-    /* 设置table单元格相关元素的display属性 */
-    .chat-message-box td,
-    .chat-message-box th {
-        display: table-cell;
-    }
+/* 设置table单元格相关元素的display属性 */
+.chat-message-box td,
+.chat-message-box th {
+    display: table-cell;
+}
 
-    /* 设置table head, body 与 foot的display属性 */
-    .chat-message-box thead,
-    .chat-message-box tbody,
-    .chat-message-box tfoot {
-        display: table-row-group;
-    }
+/* 设置table head, body 与 foot的display属性 */
+.chat-message-box thead,
+.chat-message-box tbody,
+.chat-message-box tfoot {
+    display: table-row-group;
+}
 
-    /* 设置table标题相关元素的display属性 */
-    .chat-message-box caption {
-        display: table-caption;
-    }
+/* 设置table标题相关元素的display属性 */
+.chat-message-box caption {
+    display: table-caption;
+}
 
-    /* 设置table列组相关元素的display属性 */
-    .chat-message-box colgroup {
-        display: table-column-group;
-    }
+/* 设置table列组相关元素的display属性 */
+.chat-message-box colgroup {
+    display: table-column-group;
+}
 
-    .chat-message-box table {
-        border-collapse: collapse;
-        width: 100%;
-        display: table;
-    }
+.chat-message-box table {
+    border-collapse: collapse;
+    width: 100%;
+    display: table;
+}
 
-    .chat-message-box th,
-    td {
-        border: 1px solid #ddd;
-        padding: 8px;
-        text-align: left;
-        display: table-row;
-        display: table-cell;
-    }
+.chat-message-box th,
+td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+    display: table-row;
+    display: table-cell;
+}
 
-    .chat-message-box th {
-        background-color: #f2f2f2;
-        display: table-cell;
-    }
+.chat-message-box th {
+    background-color: #f2f2f2;
+    display: table-cell;
+}
 
-    .chat-message-box tr:nth-child(even) {
-        background-color: #f9f9f9;
-    }
+.chat-message-box tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
 
 
-    .chat-message-box svg {
-        display: inline;
-    }
+.chat-message-box svg {
+    display: inline;
+}
 
 code {
     font-size: 87.5%;

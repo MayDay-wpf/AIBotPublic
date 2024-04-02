@@ -30,5 +30,6 @@
         public int UseHistory { get; set; }
         public int HistoryCount { get; set; }
         public int Scrolling { get; set; }
+        public int GoodHistory { get; set; }
     }
 }

@@ -19,8 +19,8 @@ namespace aibotPro.Service
         {
 
             List<SystemCfg> systemConfig = _systemService.GetSystemCfgs();
-            string AK = systemConfig.Find(x => x.CfgKey == "Baidu_AK").CfgValue;
-            string SK = systemConfig.Find(x => x.CfgKey == "Baidu_SK").CfgValue;
+            string AK = systemConfig.Find(x => x.CfgKey == "Baidu_TXT_AK").CfgValue;
+            string SK = systemConfig.Find(x => x.CfgKey == "Baidu_TXT_SK").CfgValue;
             string AT = GetAccessToken(AK, SK);
             var client = new RestClient($"https://aip.baidubce.com/rest/2.0/ocr/v1/accurate_basic?access_token={AT}");
             var request = new RestRequest("", RestSharp.Method.Post);
@@ -36,8 +36,8 @@ namespace aibotPro.Service
         public string GetRes(string Imgbase64)
         {
             List<SystemCfg> systemConfig = _systemService.GetSystemCfgs();
-            string AK = systemConfig.Find(x => x.CfgKey == "Baidu_AK").CfgValue;
-            string SK = systemConfig.Find(x => x.CfgKey == "Baidu_SK").CfgValue;
+            string AK = systemConfig.Find(x => x.CfgKey == "Baidu_OBJ_AK").CfgValue;
+            string SK = systemConfig.Find(x => x.CfgKey == "Baidu_OBJ_SK").CfgValue;
             string AT = GetAccessToken(AK, SK);
             var client = new RestClient($"https://aip.baidubce.com/rest/2.0/image-classify/v2/advanced_general?access_token={AT}");
             var request = new RestRequest("", RestSharp.Method.Post);

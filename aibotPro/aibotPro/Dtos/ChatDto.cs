@@ -14,6 +14,8 @@ namespace aibotPro.Dtos
         public string? image_path { get; set; }
         public List<string> file_list { get; set; }
         public string? system_prompt { get; set; }
+        public bool isbot { get; set; } = false;
+        public string threadid { get; set; }
     }
     public class ChatRes
     {
@@ -21,6 +23,8 @@ namespace aibotPro.Dtos
         public string chatid { get; set; }
         public string jscode { get; set; }
         public bool isfinish { get; set; } = false;
+        public string threadid { get; set; }
+        public string file_id { get; set; }
     }
     public class AiChat
     {
@@ -128,6 +132,13 @@ namespace aibotPro.Dtos
     public class CombineMP3Request
     {
         public List<string> Pathlist { get; set; }
+    }
+
+    public class ChatModelSeq
+    {
+        public string ModelNick { get; set; }
+        public string ModelName { get; set; }
+        public int Seq { get; set; }
     }
 
 }

@@ -179,7 +179,7 @@ function queryTaskStatus(taskId, tasktype) {
                                         </div>
                                         <p></p>`;
                             $("#STEP").append(html);
-
+                            $('.image-popup').magnificPopup({ type: 'image' });
                         } else {
                             var html = `<div class="card">
                                             <div class="card-header">
@@ -197,8 +197,8 @@ function queryTaskStatus(taskId, tasktype) {
                                         </div>
                                         <p></p>`;
                             $("#STEP").append(html);
+                            $('.image-popup').magnificPopup({ type: 'image' });
                         }
-
                         $('html, body').animate({ scrollTop: $('.content-body').height() }, 1000);
                         return;
                     }

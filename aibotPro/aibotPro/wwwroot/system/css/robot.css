@@ -1,0 +1,599 @@
+﻿@keyframes blink-eye {
+    0%, 90%, 100% {
+        transform: scaleY(1);
+    }
+
+    95% {
+        transform: scaleY(0.1);
+    }
+}
+
+/* 给左右眼添加眨眼动画 */
+.robot__head__eye--right,
+.robot__head__eye--left {
+    animation: blink-eye 3s ease-in-out infinite;
+}
+
+@keyframes wave {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+
+    50% {
+        transform: rotate(-15deg);
+    }
+}
+
+@keyframes wave-left {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+
+    50% {
+        transform: rotate(15deg);
+    }
+}
+/* 给左手添加挥手动画 */
+.robot__body__hand--left {
+    animation: wave-left 3s ease-in-out infinite;
+    transform-origin: top left;
+}
+
+/* 给右手添加挥手动画 */
+.robot__body__hand--right {
+    animation: wave 3s ease-in-out infinite;
+    transform-origin: top left;
+}
+
+
+@media screen and (max-width: 600px) {
+    .robot-container {
+        display: none;
+    }
+}
+
+@font-face {
+    font-family: 'Open Sans';
+    font-style: normal;
+    font-weight: 300;
+    font-stretch: normal;
+    src: url(../../static/font/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsg-1x4gaVc.ttf) format('truetype');
+}
+
+@font-face {
+    font-family: 'Open Sans';
+    font-style: normal;
+    font-weight: 700;
+    font-stretch: normal;
+    src: url(../../static/font/memSYaGs126MiZpBA-UvWbX2vVnXBbObj2OVZyOOSr4dVJWUgsiH0B4gaVc.ttf) format('truetype');
+}
+
+.frame {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px;
+    height: 600px;
+    border-radius: 2px;
+    box-shadow: 4px 8px 16px 0 rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    background: #fff;
+    color: #333;
+    font-family: 'Open Sans', Helvetica, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.robot-container {
+    position: fixed;
+    z-index: 99;
+    cursor: move;
+    height: 200px;
+}
+
+.robot {
+    position: relative;
+    height: 500px; /* 保持原始的设计高度 */
+    width: 360px; /* 保持原始的设计宽度 */
+    margin: 50px 0 0 120px;
+    transform: scale(0.2); /* 新增的缩放比例 */
+    transform-origin: top left; /* 从左上角开始缩放 */
+    pointer-events: none;
+}
+
+.robot__head,
+.robot__body,
+.robot__shadow {
+    pointer-events: none;
+}
+
+.speech-bubble {
+    position: absolute;
+    top: -40px;
+    left: 30%;
+    transform: translateX(-50%);
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 10px;
+    max-width: 300px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+    .speech-bubble::before {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-width: 10px 10px 0;
+        border-style: solid;
+        border-color: #fff transparent transparent;
+    }
+
+
+.speech-bubble-left {
+    position: absolute;
+    top: 50px;
+    left: 0%;
+    transform: translateX(-50%);
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 10px;
+    max-width: 200px;
+    max-height: 150px;
+    overflow-y: scroll;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+    .speech-bubble-left::-webkit-scrollbar {
+        display: none;
+    }
+
+
+.bot-chat-window {
+    display: none;
+    position: absolute;
+    width: 300px;
+    height: 430px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    z-index: 9999;
+    overflow: hidden;
+}
+
+.bot-chat-header {
+    background-color: #f1f1f1;
+    padding: 10px;
+    font-weight: bold;
+    position: relative;
+    cursor: move;
+}
+
+.bot-close-btn {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    cursor: pointer;
+    font-size: 20px;
+}
+
+.bot-chat-body {
+    height: 340px;
+    overflow-y: scroll;
+    padding: 10px;
+}
+
+.bot-chat-input {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    outline: none;
+    border-top: 1px solid #ccc;
+}
+
+.bot-message {
+    background-color: #f1f1f1;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+}
+
+.user-message {
+    background-color: #c9eaf5;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    text-align: left;
+}
+
+
+
+
+.robot__head {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: #e3e5e1;
+    width: 360px;
+    height: 220px;
+    border-radius: 100px;
+    will-change: transform;
+    -webkit-animation: head_float 2s ease-in-out 0.4s infinite alternate;
+    animation: head_float 2s ease-in-out 0.4s infinite alternate;
+}
+
+    .robot__head::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 0;
+        background-color: #b3b0a9;
+        width: 180px;
+        height: 220px;
+        border-bottom-right-radius: 100px;
+        border-top-right-radius: 100px;
+    }
+
+.robot__head__ears {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: transparent;
+    width: 420px;
+    height: 50px;
+    border-radius: 20px;
+    border-right: 40px solid #b3b0a9;
+    border-left: 40px solid #b3b0a9;
+}
+
+.robot__head__mask {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #e3e5e1;
+    width: 300px;
+    height: 180px;
+    border-radius: 100px;
+    background-color: #292345;
+    /*border-top: 20px solid #17152e;*/
+}
+
+    .robot__head__mask::before {
+        content: "";
+        position: absolute;
+        top: calc(50% - 10px);
+        right: 0%;
+        transform: translateY(-50%);
+        width: 150px;
+        height: 160px;
+        border-bottom-right-radius: 100px;
+        border-top-right-radius: 100px;
+        background-color: #17152e;
+    }
+
+    .robot__head__mask::after {
+        content: "";
+        position: absolute;
+        bottom: -20px;
+        left: 80px;
+        width: 0;
+        height: 0;
+        border-top: 30px solid transparent;
+        border-bottom: 30px solid transparent;
+        border-left: 40px solid #292345;
+    }
+
+.robot__head__eye--right {
+    position: absolute;
+    top: 80px;
+    right: 80px;
+    width: 50px;
+    height: 50px;
+    background-color: #8ad1c0;
+    border-radius: 50%;
+}
+
+.robot__head__eye--left {
+    position: absolute;
+    top: 80px;
+    left: 80px;
+    width: 50px;
+    height: 50px;
+    background-color: #8ad1c0;
+    border-radius: 50%;
+}
+
+.robot__head__mouth {
+    position: absolute;
+    top: 130px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #f5f5f5;
+    width: 50px;
+    height: 25px;
+    border-bottom-right-radius: 100px;
+    border-bottom-left-radius: 100px;
+}
+
+.robot__body {
+    position: absolute;
+    top: 240px;
+    left: 90px;
+    background-color: #e3e5e1;
+    width: 180px;
+    height: 180px;
+    border-top-left-radius: 60px;
+    border-top-right-radius: 60px;
+    border-bottom-left-radius: 100px;
+    border-bottom-right-radius: 100px;
+    will-change: transform;
+    -webkit-animation: body_float 2s ease-in-out infinite alternate;
+    animation: body_float 2s ease-in-out infinite alternate;
+}
+
+    .robot__body::before {
+        content: "";
+        position: absolute;
+        top: 0px;
+        right: 0;
+        background-color: #b3b0a9;
+        width: 90px;
+        height: 180px;
+        border-top-right-radius: 60px;
+        border-bottom-right-radius: 100px;
+    }
+
+    .robot__body::after {
+        content: "";
+        position: absolute;
+        top: 40px;
+        left: 20px;
+        background-color: #b3b0a9;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+    }
+
+.robot__body__hand--left {
+    position: absolute;
+    top: 0px;
+    left: -60px;
+    background-color: #e3e5e1;
+    width: 140px;
+    height: 120px;
+    border-top-left-radius: 180px;
+    border-top-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 180px;
+    transform-origin: top right;
+    transform: rotate(5deg);
+}
+
+.robot__body__hand--right {
+    position: absolute;
+    top: 0px;
+    right: -60px;
+    background-color: #b3b0a9;
+    width: 140px;
+    height: 120px;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 180px;
+    border-bottom-left-radius: 180px;
+    border-bottom-right-radius: 5px;
+    transform-origin: top left;
+    transform: rotate(-5deg);
+}
+
+.robot__shadow {
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: #f6f6f5;
+    will-change: transform;
+    -webkit-animation: shadow_grow 2s ease-in-out infinite alternate;
+    animation: shadow_grow 2s ease-in-out infinite alternate;
+}
+
+.robot.happy .robot__body__hand--right {
+    -webkit-animation: moving_right-hand 0.2s ease-in-out infinite alternate;
+    animation: moving_right-hand 0.2s ease-in-out infinite alternate;
+}
+
+.robot.happy .robot__body__hand--left {
+    -webkit-animation: moving_left-hand 0.2s ease-in-out infinite alternate;
+    animation: moving_left-hand 0.2s ease-in-out infinite alternate;
+}
+
+.robot.happy .robot__head__eye--right {
+    position: absolute;
+    top: 80px;
+    right: 80px;
+    width: 40px;
+    height: 40px;
+    background-color: transparent;
+    border-radius: 50%;
+    border: 10px solid transparent;
+    border-top: 10px solid #8ad1c0;
+    border-right: 10px solid #8ad1c0;
+    transform: rotate(-45deg);
+}
+
+.robot.happy .robot__head__eye--left {
+    position: absolute;
+    top: 80px;
+    left: 80px;
+    width: 40px;
+    height: 40px;
+    background-color: transparent;
+    border-radius: 50%;
+    border: 10px solid transparent;
+    border-top: 10px solid #8ad1c0;
+    border-right: 10px solid #8ad1c0;
+    transform: rotate(-45deg);
+}
+
+.robot.talking .robot__head__mouth {
+    border-top-right-radius: 20px;
+    border-top-left-radius: 20px;
+    border-bottom-right-radius: 40px;
+    border-bottom-left-radius: 40px;
+    -webkit-animation: talking 0.4s linear infinite alternate;
+    animation: talking 0.4s linear infinite alternate;
+}
+
+@-webkit-keyframes head_float {
+    0% {
+        transform: translateY(0px);
+    }
+
+    100% {
+        transform: translateY(30px);
+    }
+}
+
+@keyframes head_float {
+    0% {
+        transform: translateY(0px);
+    }
+
+    100% {
+        transform: translateY(30px);
+    }
+}
+
+@-webkit-keyframes body_float {
+    0% {
+        transform: translateY(0px);
+    }
+
+    100% {
+        transform: translateY(30px);
+    }
+}
+
+@keyframes body_float {
+    0% {
+        transform: translateY(0px);
+    }
+
+    100% {
+        transform: translateY(30px);
+    }
+}
+
+@-webkit-keyframes shadow_grow {
+    0% {
+        width: 100px;
+    }
+
+    100% {
+        width: 140px;
+    }
+}
+
+@keyframes shadow_grow {
+    0% {
+        width: 100px;
+    }
+
+    100% {
+        width: 140px;
+    }
+}
+
+@-webkit-keyframes moving_right-hand {
+    0% {
+        transform: rotate(-15deg);
+    }
+
+    100% {
+        transform: rotate(-5deg);
+    }
+}
+
+@keyframes moving_right-hand {
+    0% {
+        transform: rotate(-15deg);
+    }
+
+    100% {
+        transform: rotate(-5deg);
+    }
+}
+
+@-webkit-keyframes moving_left-hand {
+    0% {
+        transform: rotate(15deg);
+    }
+
+    100% {
+        transform: rotate(5deg);
+    }
+}
+
+@keyframes moving_left-hand {
+    0% {
+        transform: rotate(15deg);
+    }
+
+    100% {
+        transform: rotate(5deg);
+    }
+}
+
+@-webkit-keyframes talking {
+    50% {
+        width: 50px;
+        height: 20px;
+        border-top-right-radius: 20px;
+        border-top-left-radius: 20px;
+        border-bottom-right-radius: 40px;
+        border-bottom-left-radius: 40px;
+    }
+
+    100% {
+        width: 50px;
+        height: 22px;
+        border-top-right-radius: 20px;
+        border-top-left-radius: 20px;
+        border-bottom-right-radius: 40px;
+        border-bottom-left-radius: 40px;
+    }
+}
+
+@keyframes talking {
+    50% {
+        width: 50px;
+        height: 20px;
+        border-top-right-radius: 20px;
+        border-top-left-radius: 20px;
+        border-bottom-right-radius: 40px;
+        border-bottom-left-radius: 40px;
+    }
+
+    100% {
+        width: 50px;
+        height: 22px;
+        border-top-right-radius: 20px;
+        border-top-left-radius: 20px;
+        border-bottom-right-radius: 40px;
+        border-bottom-left-radius: 40px;
+    }
+}

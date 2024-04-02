@@ -9,6 +9,8 @@ using aibotPro.Service;
 using aibotPro.Dtos;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
+using System.Security.Principal;
 
 namespace aibotPro.Controllers
 {
@@ -30,6 +32,14 @@ namespace aibotPro.Controllers
             _jwtTokenManager = jwtTokenManager;
             _usersService = usersService;
             _ai = ai;
+        }
+        [Route("install.html")]
+        public IActionResult Install()
+        {
+            //检查是否已经安装，验证aibotinstall.lock 文件是否存在
+            if (System.IO.File.Exists("aibotinstall.lock"))
+                return Redirect("/Home/Index");
+            return View();
         }
         public IActionResult Index()
         {
@@ -81,6 +91,19 @@ namespace aibotPro.Controllers
             }
             else
                 aiModel_lst = _systemService.GetAImodel();
+            var aiModelSeq = _systemService.GetAImodelSeq(username);
+            //如果有设置模型顺序，则按照设置的顺序返回
+            if (aiModelSeq != null && aiModelSeq.Count > 0)
+            {
+                foreach (var item in aiModelSeq)
+                {
+                    var model = aiModel_lst.Find(x => x.ModelName == item.ModelName);
+                    if (model != null)
+                        model.Seq = item.Seq;
+                }
+            }
+            //重新排序
+            aiModel_lst.Sort((x, y) => x.Seq.GetValueOrDefault().CompareTo(y.Seq));
             //移除BaseURL和ApiKey
             aiModel_lst.ForEach(x =>
             {
@@ -180,8 +203,9 @@ namespace aibotPro.Controllers
         public IActionResult SaveImg(IFormFile file, string thisAiModel)
         {
             //以年月日生成文件路径
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
             string path = Path.Combine("wwwroot", "files/uploadImg", DateTime.Now.ToString("yyyyMMdd"));
-            string fileName = _systemService.SaveFiles(path, file);
+            string fileName = _systemService.SaveFiles(path, file, username);
             //返回文件名
             return Json(new
             {
@@ -266,6 +290,8 @@ namespace aibotPro.Controllers
                 data = notice.NoticeContent
             });
         }
+        [Authorize]
+        [HttpPost]
         public IActionResult GetModelPrice()
         {
             var modelPrice = _context.ModelPrices.AsNoTracking().ToList();
@@ -274,6 +300,73 @@ namespace aibotPro.Controllers
                 success = true,
                 msg = "获取成功",
                 data = modelPrice
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public IActionResult SaveModelSeq(List<ChatModelSeq> ChatModelSeq)
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            return Json(new
+            {
+                success = _usersService.SaveModelSeq(username, ChatModelSeq, out string errormsg),
+                msg = errormsg
+            });
+        }
+
+        public IActionResult CheckDataBaseServer()
+        {
+            bool result;
+            result = _systemService.CheckDataBaseServer();
+            return Json(new
+            {
+                success = result,
+                msg = result ? "数据库连接正常" : "数据库连接异常"
+            });
+        }
+        public IActionResult CheckRedis()
+        {
+            bool result;
+            result = _systemService.CheckRedis();
+            return Json(new
+            {
+                success = result,
+                msg = result ? "Redis连接正常" : "Redis连接异常"
+            });
+        }
+        [HttpPost]
+        public IActionResult CreateAdmin(string Account, string Password)
+        {
+            //检查是否已经安装，验证aibotinstall.lock 文件是否存在
+            if (System.IO.File.Exists("aibotinstall.lock"))
+                return Json(new
+                {
+                    success = false,
+                    msg = "非法请求"
+                });
+            //创建管理员
+            var result = _systemService.CreateAdmin(Account, Password);
+            return Json(new
+            {
+                success = result,
+                msg = result ? $"创建管理员{Account}:{Password}成功" : "创建管理员失败"
+            });
+        }
+        [HttpPost]
+        public IActionResult CreateSystemCfg()
+        {
+            //检查是否已经安装，验证aibotinstall.lock 文件是否存在
+            if (System.IO.File.Exists("aibotinstall.lock"))
+                return Json(new
+                {
+                    success = false,
+                    msg = "非法请求"
+                });
+            var result = _systemService.CreateSystemCfg();
+            return Json(new
+            {
+                success = result,
+                msg = result ? $"创建系统配置成功" : "创建系统配置失败"
             });
         }
     }

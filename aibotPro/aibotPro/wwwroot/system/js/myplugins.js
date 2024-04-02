@@ -8,22 +8,22 @@ $(function () {
     getMyInstall();
 });
 
-window.onload = function () {
-    var elem = document.querySelector('#masonry-layout');
-    new Masonry(elem, {
-        // 选项
-        itemSelector: '.grid-item',
-        columnWidth: '.grid-item',
-        percentPosition: true
-    });
-    var elem_mine = document.querySelector('#masonry-layout-mine');
-    new Masonry(elem_mine, {
-        // 选项
-        itemSelector: '.grid-item',
-        columnWidth: '.grid-item',
-        percentPosition: true
-    });
-};
+//window.onload = function () {
+//    var elem = document.querySelector('#masonry-layout');
+//    new Masonry(elem, {
+//        // 选项
+//        itemSelector: '.grid-item',
+//        columnWidth: '.grid-item',
+//        percentPosition: true
+//    });
+//    var elem_mine = document.querySelector('#masonry-layout-mine');
+//    new Masonry(elem_mine, {
+//        // 选项
+//        itemSelector: '.grid-item',
+//        columnWidth: '.grid-item',
+//        percentPosition: true
+//    });
+//};
 $('#myTab .nav-link').on('click', function (e) {
     var tabText = $(this).data('info');
     if (tabText === 'myinstall') {
@@ -48,9 +48,9 @@ function getMyInstall() {
                                         src="`+ item.pavatar + `">
                                     <div class="card-body">
                                         <h5 class="card-title">`+ item.pnickname + `</h5>
-                                        <p class="card-text">`+ item.pfunctioninfo + `</p>
+                                        <p class="card-text" style="max-height: 100px; overflow: auto;">`+ item.pfunctioninfo + `</p>
                                         <div class="d-flex justify-content-center flex-wrap">
-                                            <a href="#" class="btn btn-sm btn-secondary" onclick="uninstallPlugin(`+ item.id + `)">卸载</a>
+                                            <button class="btn btn-sm btn-secondary" onclick="uninstallPlugin(`+ item.id + `)">卸载</button>
                                         </div>
                                     </div>
                                 </div>
@@ -60,13 +60,13 @@ function getMyInstall() {
                     html += '<div class="col-12 text-center grid-item">暂无数据</div>';
                 }
                 $('#masonry-layout').html(html);
-                var elem = document.querySelector('#masonry-layout');
-                new Masonry(elem, {
-                    // 选项
-                    itemSelector: '.grid-item',
-                    columnWidth: '.grid-item',
-                    percentPosition: true
-                });
+                //var elem = document.querySelector('#masonry-layout');
+                //new Masonry(elem, {
+                //    // 选项
+                //    itemSelector: '.grid-item',
+                //    columnWidth: '.grid-item',
+                //    percentPosition: true
+                //});
             }
         }
     });
@@ -87,12 +87,12 @@ function getPlugins() {
                                         src="`+ item.pavatar + `">
                                     <div class="card-body">
                                         <h5 class="card-title">`+ item.pnickname + `</h5>
-                                        <p class="card-text">`+ item.pfunctioninfo + `</p>
+                                        <p class="card-text" style="max-height: 100px; overflow: auto;">`+ item.pfunctioninfo + `</p>
                                         <div class="d-flex justify-content-center flex-wrap">
-                                            <a href="#" class="btn btn-sm btn-primary" style="margin-right:10px" onclick="editPlugin('`+ item.pcode + `',` + item.id + `)">编辑</a>
-                                            <a href="#" class="btn btn-sm btn-success" style="margin-right:10px" onclick="insertMyPlugin(` + item.id + `)">安装</a>
-                                            <a href="#" class="btn btn-sm btn-warning" style="margin-right:10px" onclick="closeRelease(`+ item.id + `)">下架</a>
-                                            <a href="#" class="btn btn-sm btn-secondary" onclick="deletePlugin(`+ item.id + `)">删除</a>
+                                            <button class="btn btn-sm btn-primary" style="margin-right:10px" onclick="editPlugin('`+ item.pcode + `',` + item.id + `)">编辑</button>
+                                            <button class="btn btn-sm btn-success" style="margin-right:10px" onclick="insertMyPlugin(` + item.id + `)">安装</button>
+                                            <button class="btn btn-sm btn-warning" style="margin-right:10px" onclick="closeRelease(`+ item.id + `)">下架</button>
+                                            <button class="btn btn-sm btn-secondary" onclick="deletePlugin(`+ item.id + `)">删除</button>
                                         </div>
                                     </div>
                                 </div>
@@ -102,14 +102,14 @@ function getPlugins() {
                     html += '<div class="col-12 text-center grid-item">暂无数据</div>';
                 }
                 $('#masonry-layout-mine').html(html);
-                setTimeout(function () {
-                    var elem_mine = document.querySelector('#masonry-layout-mine');
-                    new Masonry(elem_mine, {
-                        itemSelector: '.grid-item',
-                        columnWidth: '.grid-item',
-                        percentPosition: true
-                    });
-                }, 100); // 延迟100毫秒
+                //setTimeout(function () {
+                //    var elem_mine = document.querySelector('#masonry-layout-mine');
+                //    new Masonry(elem_mine, {
+                //        itemSelector: '.grid-item',
+                //        columnWidth: '.grid-item',
+                //        percentPosition: true
+                //    });
+                //}, 100); // 延迟100毫秒
             }
         }
     });
@@ -160,6 +160,7 @@ function deletePlugin(id) {
             data: { id: id },
             success: function (res) {
                 if (res.success) {
+                    balert('删除成功', 'success', false, 1500, 'center');
                     getPlugins();
                 }
                 else

@@ -7,10 +7,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
     <meta name="description" content="Responsive Bootstrap 4 Dashboard and Admin Template">
     <meta name="author" content="ThemePixels">
+    <meta name="description" content="免费使用AI工具如ChatGPT, GPT4, MJ绘画, SD绘画, Midjourney, DALL-E3等。提供AI文件处理, AI文件上传以及GPT免费使用。丰富的AI知识库,助您掌握人工智能技术。">
+    <meta name="keywords" content="AI, ChatGPT, GPT4, MJ绘画, SD绘画, Midjourney, DALL-E3, 知识库, 免费, AI文件处理, AI文件上传, GPT免费">
     <link href="~/static/css/all.min.css" rel="stylesheet">
     <link href="~/static/css/ionicons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="~/static/css/cassie.css?v1">
     <link href="~/static/css/bootstrap-tagsinput.css" rel="stylesheet" />
+    <link href="~/system/css/robot.css" rel="stylesheet" />
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/static/js/bootstrap-tagsinput.min.js"></script>
     <script src="~/static/js/bootstrap.bundle.min.js"></script>
@@ -21,35 +24,11 @@
     <script src="~/system/js/xlsx.full.min.js"></script>
     <script src="~/system/js/system.js"></script>
     <script src="~/system/js/balert.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-ajax-unobtrusive/3.2.6/jquery.unobtrusive-ajax.min.js"></script>
+    <script src="~/system/js/markdown-it.min.js"></script>
     <script>
         $(function () {
-            // 'use strict'const chatList = new PerfectScrollbar('.chat-sidebar-body', {
-            //     suppressScrollX: true
-            // });
-            // const msgContent = new PerfectScrollbar('.chat-body-content', {
-            //     suppressScrollX: true
-            // });
-        @* $('.chat-item').on('click',
-                function (e) {
-                $(this).addClass('selected').removeClass('unread');
-                $(this).siblings().removeClass('selected');
-                if (window.matchMedia('(max-width: 767px)').matches) {
-                $('body').addClass('chat-body-show');
-                $('#menuMain').addClass('d-none');
-                $('#menuBack').removeClass('d-none')
-                }
-                });
-                $('#menuBack').on('click',
-                function (e) {
-                e.preventDefault();
-                $('body').removeClass('chat-body-show');
-                $('#menuMain').removeClass('d-none');
-                $('#menuBack').addClass('d-none')
-                });
-                $('[data-toggle="tooltip"]').tooltip() *@
-                // 页面加载完成后恢复滚动位置
-                let savedScrollPosition = localStorage.getItem('sidebarScrollPosition');
+            // 页面加载完成后恢复滚动位置
+            let savedScrollPosition = localStorage.getItem('sidebarScrollPosition');
             if (savedScrollPosition) {
                 $('#dpSidebarBody').scrollTop(savedScrollPosition);
             }
@@ -134,6 +113,12 @@
                         <a href="/WorkShop/MyPlugins" class="nav-sub-link" id="myplugins-cygf-nav">
                             我的插件（My Plugins）
                         </a>
+                        <a href="/WorkShop/OpenAPI" class="nav-sub-link" id="openapi-cygf-nav">
+                            开放平台（Open API）
+                        </a>
+                        @* <a href="/WorkShop/WorkFlow" class="nav-sub-link" id="workflow-cygf-nav" target="_blank">
+                        工作流（WorkFlow）
+                        </a> *@
                     </nav>
                 </li>
                 <li class="nav-item">
@@ -187,21 +172,21 @@
                         </a>
                     </nav>
                 </li>
-                @* <li class="nav-item">
-                <a href="" class="nav-link with-sub" id="assistant-main-menu">
-                <i data-feather="cpu">
-                </i>
-                助理GPT (Assistant GPT)
-                </a>
-                <nav class="nav nav-sub">
-                <a href="/AssistantGPT/AssistantChat" class="nav-sub-link" id="chat-assistant-nav">
-                对话 （Chat by 助理GPT）
-                </a>
-                <a href="/AssistantGPT/AssistantSetting" class="nav-sub-link" id="setting-assistant-nav">
-                助理配置 (Setting)
-                </a>
-                </nav>
-                </li> *@
+                <li class="nav-item">
+                    <a href="" class="nav-link with-sub" id="assistant-main-menu">
+                        <i data-feather="cpu">
+                        </i>
+                        助理GPT (Assistant GPT)
+                    </a>
+                    <nav class="nav nav-sub">
+                        <a href="/AssistantGPT/AssistantChat" class="nav-sub-link" id="chat-assistant-nav">
+                            对话 （Chat by 助理GPT）
+                        </a>
+                        <a href="/AssistantGPT/AssistantSetting" class="nav-sub-link" id="setting-assistant-nav">
+                            助理配置 (Setting)
+                        </a>
+                    </nav>
+                </li>
                 <li class="nav-item">
                     <a href="" class="nav-link with-sub" id="product-main-menu">
                         <i data-feather="package">
@@ -214,6 +199,9 @@
                         </a>
                         <a href="/Product/AiMarketing" class="nav-sub-link" id="aimarketing-product-nav">
                             营销号助手（AiMarketing）
+                        </a>
+                        <a href="/Product/AiDoc" class="nav-sub-link" id="aidoc-product-nav">
+                            无边记（AiDoc）
                         </a>
                     </nav>
                 </li>
@@ -318,9 +306,42 @@
             </ul>
         </div>
     </div>
+    <div class="robot-container" style="display:none">
+        <div class="robot">
+            <div class="robot__head">
+                <div class="robot__head__ears"></div>
+                <div class="robot__head__mask"></div>
+                <div class="robot__head__eye--right"></div>
+                <div class="robot__head__eye--left"></div>
+                <div class="robot__head__mouth"></div>
+            </div>
+            <div class="robot__body">
+                <div class="robot__body__hand--right"></div>
+                <div class="robot__body__hand--left"></div>
+            </div>
+            <div class="robot__shadow"></div>
+        </div>
+        <div class="speech-bubble">我是AIBot,可以拖动我哦😘<br />双击我，可以跟我交流😉<br />在设置中可以关闭我🥺</div>
+        <div class="speech-bubble-left">加载系统通知中...</div>
+    </div>
+    <div class="bot-chat-window">
+        <div class="bot-chat-header">
+            AIBot用户引导助手
+            <span class="bot-close-btn">&times;</span>
+        </div>
+        <div class="bot-chat-body">
+            <div class="bot-message">Hi~有什么我可以帮助你的？关于AIBot的问题，你可以随时问我😉</div>
+        </div>
+        <input type="text" id="botQ" class="bot-chat-input" placeholder="输入提问，回车发送">
+    </div>
     <div class="content">
         @RenderBody()
     </div>
+    <script src="~/system/js/signalr.min.js"></script>
+    <script src="~/system/js/robot.js"></script>
+    <script src="~/system/js/marked.min.js"></script>
+    <link href="~/system/css/atom-one-dark.min.css" rel="stylesheet" />
+    <script src="~/system/js/highlight.min.js"></script>
     <script>
         function aboutus() {
             showConfirmationModal('AIBot Pro System', 'AIBot Pro System 是一款基于OpenAI的对话系统<br>支持多种功能，包括创意工坊、角色扮演、文件助手、知识库、产品中心、充值中心、个人中心等<br>AIBot Pro由 MayMay团队开发运营，如果觉得我们做到还不错<br><b style="color:red">【请收购我们】</b>');

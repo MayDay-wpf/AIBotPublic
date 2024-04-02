@@ -137,7 +137,7 @@ namespace aibotPro.Service
                             " + "\n" +
                                         @"      ""role"": ""system"",
                             " + "\n" +
-                                        @"      ""content"": ""你是一个有用的问题归纳机器人，请你根据文本内容提出问题并解答以Q/A形式，并以JSON格式输出，格式示例：['QA':{'question':'什么是ChatGPT','answer':'ChatGPT是由OpenAI公司开发并运用的AI自然语言交互服务'}]""
+                                        @"      ""content"": ""你是一个有用的问题归纳机器人，请你根据文本内容提出问题并解答以Q/A形式，并以JSON格式输出，格式示例：{'QA':[{'question':'什么是ChatGPT','answer':'ChatGPT是由OpenAI公司开发并运用的AI自然语言交互服务'},{'question':'ChatGPT能帮你做什么','answer':'ChatGPT可以帮助你编程，润色文章，发送邮件等等'}]}""
                             " + "\n" +
                                         @"    },
                             " + "\n" +

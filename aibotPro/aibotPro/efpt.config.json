@@ -32,11 +32,23 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[AImodelsUserSeq]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[APIKEY]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[AssistantFiles]",
          "ObjectType": 0
       },
       {
          "Name": "[dbo].[AssistantGPT]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[AssistantModelPrice]",
          "ObjectType": 0
       },
       {
@@ -100,6 +112,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[PluginsJsonPr]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[PluginsParams]",
          "ObjectType": 0
       },
@@ -132,6 +148,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[SystemPlugins]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[TxOrders]",
          "ObjectType": 0
       },
@@ -149,6 +169,10 @@
       },
       {
          "Name": "[dbo].[VIP]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[WorkFlow]",
          "ObjectType": 0
       },
       {

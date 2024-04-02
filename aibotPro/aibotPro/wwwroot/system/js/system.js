@@ -1,7 +1,8 @@
-﻿// 在页面加载完成后设置全局的jQuery AJAX预过滤器
+// 在页面加载完成后设置全局的jQuery AJAX预过滤器
 var IP;
 var Address;
 var Scrolling;
+var HeadImgPath;
 $(document).ready(function () {
     let savedScrollPosition = localStorage.getItem('sidebarScrollPosition');
     if (savedScrollPosition) {
@@ -13,15 +14,36 @@ $(document).ready(function () {
         if (token) {
             // 添加 Authorization 头部，携带JWT token
             xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+            //token写入cookie
+            Cookies.set('token', token, { expires: 30 });
+        } else {
+            window.location.herf = "/Users/Login"
         }
-        //token写入cookie
-        Cookies.set('token', token, { expires: 7 });
     });
+    IsLogin();
     getIpInfo();
     isVipExpired();
     getUserSetting();
-    isAdmin();
+    var pathname = window.location.pathname;
+    pathname = pathname.toLowerCase();
+    if (pathname != "/workshop/workflow")
+        isAdmin();
     IsBlackUser();
+    getUserInfo();
+    if (isMobile()) {
+        $('.chat-body-footer').css({
+            'position': 'fixed',
+            'bottom': '0',
+            'left': '0',
+            'right': '0'
+        });
+        $('.content-body-chat').css({
+            'padding': 0
+        });
+        $('.content-body').css({
+            'padding': 0
+        });
+    }
 });
 
 //判断是否为移动端
@@ -330,6 +352,9 @@ function isAdmin() {
                             <a href="/OpenAll/WorkShopModelSetting" class="nav-sub-link" id="workshopmodel_aisystem_nav">
                                 工坊模型管理 (WorkShop Model)
                             </a>
+                            <a href="/OpenAll/AssistantSetting" class="nav-sub-link" id="assistantmodel_aisystem_nav">
+                                助理模型管理 (Assistant Model)
+                            </a>
                             <a href="/OpenAll/ModelPriceSetting" class="nav-sub-link" id="modelprice_aisystem_nav">
                                 价格管理 (Price)
                             </a>
@@ -354,24 +379,61 @@ function isAdmin() {
                         </nav>
                     </li>`);
                     //恢复菜单的功能
-                    $('#system-menu').on('click', '.nav-link.with-sub', function (e) {
-                        e.preventDefault(); // 阻止默认的导航行为
-                        var $subMenu = $(this).next('.nav-sub');
+                    //$('#system-menu').on('click', '.nav-link.with-sub', function (e) {
+                    //    e.preventDefault(); // 阻止默认的导航行为
+                    //    var $subMenu = $(this).next('.nav-sub');
 
-                        // 切换.show类来控制菜单的展开和折叠
-                        if ($subMenu.hasClass('show')) {
-                            $subMenu.removeClass('show').slideUp();  // 如果是展开的，折叠它
-                        } else {
-                            // 如果是折叠的，先把其他所有已展开的子菜单折叠，再展开当前点击的子菜单
-                            $('.nav-sub.show').removeClass('show').slideUp();
-                            $subMenu.addClass('show').slideDown();  // 展开它
-                        }
-                    });
+                    //    // 切换.show类来控制菜单的展开和折叠
+                    //    if ($subMenu.hasClass('show')) {
+                    //        $subMenu.removeClass('show').slideUp();  // 如果是展开的，折叠它
+                    //    } else {
+                    //        // 如果是折叠的，先把其他所有已展开的子菜单折叠，再展开当前点击的子菜单
+                    //        $('.nav-sub.show').removeClass('show').slideUp();
+                    //        $subMenu.addClass('show').slideDown();  // 展开它
+                    //    }
+                    //});
                     feather.replace();
                 }
             } else {
                 $(".system-admin-aibot-pro").remove();
             }
+            const psSidebarBody = new PerfectScrollbar('#dpSidebarBody', {
+                suppressScrollX: false
+            });
+            $('.nav-sidebar .with-sub').on('click', function (e) {
+                e.preventDefault();
+
+                var $this = $(this);
+                var $parentLi = $this.parent();
+                var $subMenu = $parentLi.find('.nav-sub');
+                var wasVisible = $subMenu.is(':visible');
+
+                // 首先折叠所有其他已经展开的兄弟子菜单
+                //$parentLi.siblings('.show').removeClass('show').children('.nav-sub').slideUp(300, function () {
+                //    if (psSidebarBody && typeof psSidebarBody.update === 'function') {
+                //        psSidebarBody.update();
+                //    }
+                //});
+
+                // 处理当前点击的子菜单
+                if (!wasVisible) {
+                    // 如果子菜单之前不可见（收起状态），则把它展开
+                    $subMenu.slideDown(300, function () {
+                        $parentLi.addClass('show');
+                        if (psSidebarBody && typeof psSidebarBody.update === 'function') {
+                            psSidebarBody.update();
+                        }
+                    });
+                } else {
+                    // 如果子菜单之前可见（展开状态），则把它收起
+                    $subMenu.slideUp(300, function () {
+                        $parentLi.removeClass('show');
+                        if (psSidebarBody && typeof psSidebarBody.update === 'function') {
+                            psSidebarBody.update();
+                        }
+                    });
+                }
+            });
         },
         error: function (res) {
             $(".system-admin-aibot-pro").remove();
@@ -418,7 +480,7 @@ function price() {
         success: function (res) {
             if (res.success) {
                 res = res.data;
-                var str = '<div style="max-height:500px;overflow-y: scroll;"><p>我们的原则是：<b>不限期无理由退款,用户体验第一</b></p><p>退款方式：加左下角QQ群找<b>群主</b></p><p>退款金额=充值-使用-所有赠送金额</p><p>1k token≈600汉字，下方的输入输出价格皆以1k token 为标准<p><p>计费算法=(输入+输出)*倍率，倍率小于1则是有折扣<p><table><tr><td>模型</td><td>输入价格</td><td>输出价格</td><td>VIP输入价格</td><td>VIP输出价格</td><td>普通用户倍率</td><td>VIP倍率</td></tr>';
+                var str = '<div style="max-height:500px;overflow-y: scroll;"><p>我们的原则是：<b>不限期无理由退款,用户体验第一</b></p><p>退款方式：加左下角QQ群找<b>群主</b></p><p>退款金额=充值-使用-所有赠送金额</p><p>1k token≈600汉字，下方的输入输出价格皆以1k token 为标准<p><p>计费算法=(输入+输出)*倍率，倍率小于1则是有折扣<p><p style="color:orangered"><b>各模型价格受OpenAI等官方影响存在不稳定性，以及特殊活动，模型价格也会有差异，本站保留在合理范围内，随时涨价或降价或上架或下架各模型的权力</b></p><table><tr><td>模型</td><td>输入价格</td><td>输出价格</td><td>VIP输入价格</td><td>VIP输出价格</td><td>普通用户倍率</td><td>VIP倍率</td></tr>';
                 for (var i = 0; i < res.length; i++) {
                     str += `<tr><td>${res[i].modelName}</td><td>${res[i].modelPriceInput}</td><td>${res[i].modelPriceOutput}</td><td>${res[i].vipModelPriceInput}</td><td>${res[i].vipModelPriceOutput}</td><td>${res[i].rebate}</td><td>${res[i].vipRebate}</td></tr>`;
                 }
@@ -442,4 +504,45 @@ function copyText(txt) {
         balert('复制失败', 'danger', false, 1500, 'center');
     }
     document.body.removeChild(input);
+}
+
+function getUserInfo() {
+    $.ajax({
+        url: "/Users/GetUserInfo",
+        type: "post",
+        dataType: "json",//返回对象
+        success: function (res) {
+            if (res.success) {
+                res = res.data;
+                HeadImgPath = res.headImg;
+            }
+        }
+    });
+}
+function IsLogin() {
+    $.ajax({
+        url: "/Users/IsLogin",
+        type: "post",
+        dataType: "json",//返回对象
+        success: function (res) {
+            if (!res.success) {
+                window.location.href = "/Users/Login"
+            }
+        }, error: function (err) {
+            window.location.href = "/Users/Login"
+        }
+    });
+}
+// 改进后的Base64编码函数，可以处理中文字符
+function encodeBase64(str) {
+    // 使用encodeURIComponent先将非ASCII字符编码，然后转成base64
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
+}
+
+// 改进后的Base64解码函数，可以处理中文字符
+function decodeBase64(encodedStr) {
+    // 先将base64解码，然后使用decodeURIComponent将编码的字符还原
+    return decodeURIComponent(Array.from(atob(encodedStr)).map(c =>
+        '%' + c.charCodeAt(0).toString(16).padStart(2, '0')
+    ).join(''));
 }

@@ -1,0 +1,119 @@
+﻿@{
+    ViewData["Title"] = "无边记";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/system/js/aidoc/normalize.min.css" rel="stylesheet" />
+<link href="~/system/js/aidoc/style.css" rel="stylesheet" />
+<link href="~/system/js/aidoc/site.css" rel="stylesheet" />
+<script src="~/system/js/signalr.min.js"></script>
+<script src="~/system/js/aidoc/html-docx.js"></script>
+<script src="~/system/js/aidoc/filesaver.js"></script>
+<script src="~/system/js/aidoc/copy.js"></script>
+<script src="~/system/js/markdown-it.min.js"></script>
+<script src="~/system/js/highlight.min.js"></script>
+<script src="~/system/js/aidoc.js"></script>
+<script src="~/system/js/aidoc/plugin.js"></script>
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        @* <a href="#" class="header-help-link" onclick="DALLinfo()">
+        <i data-feather="help-circle">
+        </i>
+        </a> *@
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px">
+    <div style="border-bottom: 1px solid #e8e8e8;">
+        <div id="editor-toolbar"></div>
+    </div>
+    <div id="content">
+        <div id="editor-container">
+            @*<div id="title-container">
+            <input placeholder="Page title...">
+            </div>*@
+            <div id="editor-text-area"></div>
+        </div>
+    </div>
+</div>
+<script src="~/system/js/aidoc/index.js"></script>
+<script>
+    const E = window.wangEditor
+    const SaveConf = {
+        key: 'saveBtn', // 定义 menu key ：要保证唯一、不重复（重要）
+        factory() {
+            return new SaveButtonMenu() // 把 `YourMenuClass` 替换为你菜单的 class
+        }
+    }
+    const AIConf = {
+        key: 'aiBtn', // 定义 menu key ：要保证唯一、不重复（重要）
+        factory() {
+            return new AIButtonMenu() // 把 `YourMenuClass` 替换为你菜单的 class
+        }
+    }
+    const module = {
+        menus: [SaveConf, AIConf],
+    }
+    E.Boot.registerModule(module)
+
+    // 切换语言
+    const LANG = location.href.indexOf('lang=en') > 0 ? 'en' : 'zh-CN'
+    E.i18nChangeLanguage(LANG)
+
+    const editorConfig = {
+        placeholder: '写点什么？',
+        scroll: false, // 禁止编辑器滚动
+        MENU_CONF: {
+            uploadImage: {
+                fieldName: 'your-fileName',
+                base64LimitSize: 10 * 1024 * 1024 // 10M 以下插入 base64
+            }
+        },
+        hoverbarKeys: {
+
+        },
+        onChange(editor) {
+            //console.log(editor.getHtml())
+        },
+    }
+    editorConfig.hoverbarKeys = {
+        'text': {
+            menuKeys: ["headerSelect", "insertLink", "bulletedList", "|", "bold", "through", "color", "bgColor", "clearStyle", "aiBtn"],
+        }
+    }
+    // 先创建 editor
+    const editor = E.createEditor({
+        selector: '#editor-text-area',
+        content: [],
+        // html: '',
+        config: editorConfig
+    })
+    // 创建 toolbar
+    const toolbar = E.createToolbar({
+        editor,
+        selector: '#editor-toolbar',
+        config: {
+            excludeKeys: 'fullScreen',
+        }
+    })
+    toolbar.config.insertKeys = {
+        index: 30,
+        keys: ['saveBtn']
+    }
+    // 点击空白处 focus 编辑器
+    document.getElementById('editor-text-area').addEventListener('click', e => {
+        if (e.target.id === 'editor-text-area') {
+            editor.blur()
+            editor.focus(true) // focus 到末尾
+        }
+    })
+</script>
+<script src="~/system/js/marked.min.js"></script>
+<link href="~/system/css/atom-one-dark.min.css" rel="stylesheet" />
+

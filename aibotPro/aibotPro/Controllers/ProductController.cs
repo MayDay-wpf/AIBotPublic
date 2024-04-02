@@ -15,17 +15,25 @@ namespace aibotPro.Controllers
         private readonly IAiServer _aiServer;
         private readonly ISystemService _systemService;
         private readonly JwtTokenManager _jwtTokenManager;
-        public ProductController(IAiServer aiServer, ISystemService systemService, JwtTokenManager jwtTokenManager)
+        private readonly IFinanceService _financeService;
+        private readonly IUsersService _usersService;
+        public ProductController(IAiServer aiServer, ISystemService systemService, JwtTokenManager jwtTokenManager, IFinanceService financeService, IUsersService usersService)
         {
             _aiServer = aiServer;
             _systemService = systemService;
             _jwtTokenManager = jwtTokenManager;
+            _financeService = financeService;
+            _usersService = usersService;
         }
         public IActionResult ChatGrid()
         {
             return View();
         }
         public IActionResult AiMarketing()
+        {
+            return View();
+        }
+        public IActionResult AiDoc()
         {
             return View();
         }
@@ -83,6 +91,32 @@ namespace aibotPro.Controllers
         {
             //testModel:gpt-4-turbo-preview
             var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var user = _usersService.GetUserData(username);
+            //检查该模型是否需要收费
+            var modelPrice = await _financeService.ModelPrice(model);
+            bool isVip = await _financeService.IsVip(username);
+            bool shouldCharge = !isVip && modelPrice != null &&
+                                (modelPrice.VipModelPriceInput > 0 || modelPrice.ModelPriceOutput > 0);
+
+            //不是会员且余额为0时不提供服务
+            if (!isVip && user.Mcoin <= 0)
+            {
+                return Json(new
+                {
+                    success = false,
+                    data = "本站已停止向【非会员且余额为0】的用户提供服务，您可以前往充值1元及以上，长期使用本站的免费服务"
+                });
+            }
+
+            // 检查用户余额是否不足，只有在需要收费时检查
+            if (shouldCharge && user.Mcoin <= 0)
+            {
+                return Json(new
+                {
+                    success = false,
+                    data = "余额不足，请充值后再使用"
+                });
+            }
             //去除text中的换行
             text = text.Replace("\r\n", " ").Replace("\n", " ");
             var result = await _aiServer.GPTJsonModel(systemPrompt, text, model, username);

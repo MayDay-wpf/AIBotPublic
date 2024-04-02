@@ -101,12 +101,12 @@ function updatePagination(currentPage, totalPages) {
 
         if (currentPage <= maxPagesBeforeCurrentPage) {
             startPage = 1;
-            endPage = maxPagesToShow;
+            endPage = maxPagesToShow - 1;
         } else if (currentPage + maxPagesAfterCurrentPage >= totalPages) {
-            startPage = totalPages - maxPagesToShow + 1;
+            startPage = totalPages - maxPagesToShow + 2;
             endPage = totalPages;
         } else {
-            startPage = currentPage - maxPagesBeforeCurrentPage;
+            startPage = currentPage - maxPagesBeforeCurrentPage + 1;
             endPage = currentPage + maxPagesAfterCurrentPage;
         }
     }
@@ -128,7 +128,7 @@ function updatePagination(currentPage, totalPages) {
 
     // 处理省略的显示
     if (startPage > 1) {
-        $('<li class="page-item dynamic"><span class="page-link">...</span></li>').insertBefore('#next-page');
+        $('<li class="page-item dynamic"><span class="page-link">...</span></li>').insertBefore('.page-item.dynamic:first');
     }
 
     if (endPage < totalPages) {
@@ -152,7 +152,24 @@ function updatePagination(currentPage, totalPages) {
             loadMyShareList(currentPage + 1, page_size);
         });
     }
+    // 更新首页和尾页的状态
+    $('#first-page').off('click').toggleClass('disabled', currentPage === 1);
+    if (currentPage > 1) {
+        $('#first-page').click(function (e) {
+            e.preventDefault();
+            loadMyShareList(1, page_size);  // 跳转到首页
+        });
+    }
+
+    $('#last-page').off('click').toggleClass('disabled', currentPage === totalPages);
+    if (currentPage < totalPages) {
+        $('#last-page').click(function (e) {
+            e.preventDefault();
+            loadMyShareList(totalPages, page_size);  // 跳转到尾页
+        });
+    }
 }
+
 
 
 function loadLogList(page_log, page_size_log) {
@@ -266,6 +283,22 @@ function updateLogPagination(currentPage, totalPages) {
             loadLogList(currentPage + 1, page_size_log);
         });
     }
+    // 更新首页和尾页的状态
+    $('#first-page-log').off('click').toggleClass('disabled', currentPage === 1);
+    if (currentPage > 1) {
+        $('#first-page').click(function (e) {
+            e.preventDefault();
+            loadLogs(1, page_size);  // 跳转到首页
+        });
+    }
+
+    $('#last-page-log').off('click').toggleClass('disabled', currentPage === totalPages);
+    if (currentPage < totalPages) {
+        $('#last-page-log').click(function (e) {
+            e.preventDefault();
+            loadLogs(totalPages, page_size);  // 跳转到尾页
+        });
+    }
 }
 
 function mcoinToMcoin() {
@@ -327,7 +360,7 @@ function ShareInfo() {
                  <p><b>充值奖励</b></p>
                   <table>
                    <tbody><tr><td>分享者</td><td>新用户</td></tr>
-                   <tr><td>获得15元</td><td>充值100元，获得110Mcoin</td></tr>
+                   <tr><td>获得15元</td><td>充值100元，获得110Mcoin（如未获得10奖励，请联系站长：QQ群主）</td></tr>
                   </tbody></table>
                  <p>邀请人永久获利分享注册用户充值的15%</p>
                  <p style="color:red">注意：金额满10元即可提现，无法部分提现，仅可全部提现，我们对于恶意刷邀请行为，会给予能力范围内最严重的惩罚！！！</p>

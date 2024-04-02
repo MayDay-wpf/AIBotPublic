@@ -69,7 +69,7 @@
                     </div>
                     <div class="form-group">
                         <label for="nickname">插件昵称 <span class="tx-danger">*</span></label>
-                        <input type="text" class="form-control" maxlength="12" id="nickname"
+                        <input type="text" class="form-control" maxlength="50" id="nickname"
                                placeholder="为插件取一个易于识别的昵称">
                     </div>
                     <div class="form-group">
@@ -114,12 +114,10 @@
             </div>
             <div class="card-body">
                 <div class="btn-group" role="group" aria-label="Plugin Development Modes">
-                    <button type="button" class="btn btn-primary" onclick="selectMode('plugin-online')">线上API模式</button>
-                    <button type="button" class="btn btn-secondary"
-                            onclick="selectMode('plugin-offline')">
-                        离线JavaScript模式
-                    </button>
-                    <button type="button" class="btn btn-info" onclick="selectMode('plugin-mixed')">脚本回调模式</button>
+                    <button type="button" class="btn btn-primary" onclick="selectMode('plugin-online')">线上API</button>
+                    <button type="button" class="btn btn-secondary" onclick="selectMode('plugin-offline')">离线JavaScript</button>
+                    <button type="button" class="btn btn-info" onclick="selectMode('plugin-mixed')">脚本回调</button>
+                    <button type="button" class="btn btn-danger" onclick="selectMode('plugin-workflow')">工作流</button>
                 </div>
             </div>
         </div>
@@ -158,6 +156,10 @@
                         <button type="button" class="btn btn-success" onclick="addPrLine()">
                             <i data-feather="plus"></i>新增一行
                         </button>
+                    </div>
+                    <div class="form-group" id="JsonPrGroup">
+                        <label for="JsonPr">使用模板语法结构化Josn参数（选填）</label>
+                        <textarea class="form-control" id="JsonPr" style="height:200px;" placeholder="此处可将AI生成的参数，插入Json结构以发送复杂数据结构的请求，模板语法：{{参数}}"></textarea>
                     </div>
                     <div class="form-group">
                         <label for="functionname">请求Headers（选填）</label>
@@ -295,6 +297,10 @@
                             <i data-feather="plus"></i>新增一行
                         </button>
                     </div>
+                    <div class="form-group" id="JsonPrGroup2">
+                        <label for="JsonPr2">使用模板语法结构化Josn参数（选填）</label>
+                        <textarea class="form-control" id="JsonPr2" style="height:200px;" placeholder="此处可将AI生成的参数，插入Json结构以发送复杂数据结构的请求，模板语法：{{参数}}"></textarea>
+                    </div>
                     <div class="form-group">
                         <label for="functionname">请求Headers（选填）</label>
                         <table id="AddHd2" class="form-table">
@@ -352,6 +358,30 @@
                         <div class="form-check mt-3">
                             <input class="form-check-input" type="checkbox" id="usehtml3">
                             <label class="form-check-label" for="usehtml3">直接渲染html</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="btn btn-primary uploadPluginBtn" onclick="PostPlugin('')">
+                            <i data-feather="upload"></i> 发布到市场
+                        </button>
+                        <button type="button" class="btn btn-success savePluginBtn" onclick="PostPlugin('test')">
+                            <i data-feather="save"></i> 发布测试
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <p></p>
+        <div class="card" id="plugin-workflow" style="display:none">
+            <div class="card-header">
+                <h5>第三步：工作流配置信息</h5>
+            </div>
+            <div class="card-body">
+                <form>
+                    <div class="form-group">
+                        <div id="workflowBox" onclick="workflowDrive()">
+                            <img src="~/system/images/addflow.png" />
+                            <p>新建工作流</p>
                         </div>
                     </div>
                     <div class="form-group">

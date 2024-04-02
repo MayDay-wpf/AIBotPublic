@@ -66,7 +66,6 @@
             <button class="btn btn-info dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i data-feather="bell"></i> 系统通知有惊喜</button>
             <div class="dropdown-menu tx-14" x-placement="bottom-start" style="position: absolute; will-change: transform; top: 0px; left: 0px; transform: translate3d(0px, 37px, 0px);">
                 <div class="wd-300 pd-15" id="notice-box">
-                    
                 </div>
             </div>
         </div>
@@ -124,7 +123,7 @@
                 </div>
                 <div class="dropdown" style="text-align:center;width:auto;float:left" data-toggle="tooltip" title="切换模型">
                     <a href="#" class="tx-14 tx-color-01 mg-b-0 mg-l-10" id="chatDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <span id="firstModel">ChatGPT 3.5</span>
+                        <span id="firstModel">---</span>
                         <i data-feather="chevron-down" style="width:20px;"></i>
                     </a>
                     <div class="dropdown-menu dropdown-menu-left" aria-labelledby="chatDropdown" style="max-height: 505px;overflow-y:scroll" id="AIModel">
@@ -132,6 +131,11 @@
                         <a class="dropdown-item font-14" href="#" onclick="changeModel('chat16K','ChatGPT3.5-16K')">ChatGPT3.5-16K</a> *@
                     </div>
                 </div>
+                &nbsp;&nbsp;
+                <a href="#" data-toggle="tooltip" title="新建会话" onclick="newChat()">
+                    <i data-feather="plus">
+                    </i>
+                </a>
                 @* <div class="chat-body-options">
                 <a href="" data-toggle="tooltip" title="Search messages">
                 <i data-feather="search">

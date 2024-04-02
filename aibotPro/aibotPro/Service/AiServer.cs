@@ -15,6 +15,14 @@ using System.Security.Policy;
 using System.Security.Principal;
 using System.Text;
 using TiktokenSharp;
+using SixLabors.ImageSharp; // 添加ImageSharp的引用
+using SixLabors.ImageSharp.Formats.Png; // 对PNG文件格式的引用
+using SixLabors.ImageSharp.Processing; // 如果需要进行图像处理
+using SixLabors.ImageSharp.Advanced; // 高级操作
+using SixLabors.ImageSharp.PixelFormats;
+using OpenAI;
+using OpenAI.ObjectModels.RequestModels;
+using OpenAI.Managers; // 像素格式
 
 namespace aibotPro.Service
 {
@@ -103,6 +111,35 @@ namespace aibotPro.Service
             }
         }
 
+        public async Task<string> CallingAINotStream(string prompt, string model)
+        {
+            var aImodels = _systemService.GetWorkShopAImodel();
+            OpenAiOptions openAiOptions = new OpenAiOptions();
+            openAiOptions.BaseDomain = aImodels.Where(x => x.ModelName == model).FirstOrDefault().BaseUrl;
+            openAiOptions.ApiKey = aImodels.Where(x => x.ModelName == model).FirstOrDefault().ApiKey;
+            OpenAIService openAIService = new OpenAIService(openAiOptions);
+            var completionResult = await openAIService.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
+            {
+                Messages = new List<ChatMessage>
+                    {
+                        ChatMessage.FromUser(prompt)
+                    },
+                Model = model
+            });
+            if (completionResult.Successful)
+            {
+                return completionResult.Choices.First().Message.Content;
+            }
+            else
+            {
+                if (completionResult.Error == null)
+                {
+                    throw new Exception("Unknown Error");
+                }
+
+                throw new Exception($"{completionResult.Error.Code}: {completionResult.Error.Message}");
+            }
+        }
         public async Task<bool> SaveChatHistory(string account, string chatId, string content, string chatCode, string chatGroupId, string role, string model)
         {
             ChatHistory chatHistory = new ChatHistory();
@@ -326,39 +363,52 @@ namespace aibotPro.Service
                 return null;
             }
         }
-        public async Task DownloadImageAsync(string imageUrl, string savePath, string fileName)
+
+        public async Task DownloadImageAsync(string imageUrl, string savePath, string fileNameWithoutExtension)
         {
-            //如果文件夹不存在则创建
+            // 如果文件夹不存在则创建
             if (!Directory.Exists(savePath))
             {
                 Directory.CreateDirectory(savePath);
             }
+
+            string fullPath = Path.Combine(savePath, $"{fileNameWithoutExtension}.png");
+
             try
             {
-                //拼接文件名
-                savePath = Path.Combine(savePath, fileName);
                 using (HttpClient client = new HttpClient())
                 {
                     using (HttpResponseMessage response = await client.GetAsync(imageUrl))
                     {
-                        using (Stream streamToReadFrom = await response.Content.ReadAsStreamAsync())
+                        if (response.IsSuccessStatusCode)
                         {
-                            using (Stream streamToWriteTo = File.Open(savePath, FileMode.Create))
+                            using (var streamToReadFrom = await response.Content.ReadAsStreamAsync())
                             {
-                                await streamToReadFrom.CopyToAsync(streamToWriteTo);
+                                // 使用ImageSharp库加载图像
+                                using (var image = Image.Load(streamToReadFrom))
+                                {
+                                    // 转换并保存为PNG格式
+                                    image.SaveAsPng(fullPath);
+                                }
                             }
+                        }
+                        else
+                        {
+                            await _systemService.WriteLog($"Error while downloading image: {response.StatusCode}", Dtos.LogLevel.Error, "system");
+                            throw new Exception($"Error while downloading image: {response.StatusCode}");
                         }
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
+                await _systemService.WriteLog($"Error while downloading or saving the image: {ex.Message}", Dtos.LogLevel.Error, "system");
+                // 这里可以添加一些异常处理的代码，如记录日志等
                 throw;
             }
         }
 
-        public bool SaveAiDrawResult(string account, string model, string savePath, string prompt, string referenceImgPath)
+        public async Task<bool> SaveAiDrawResult(string account, string model, string savePath, string prompt, string referenceImgPath)
         {
             try
             {
@@ -484,7 +534,7 @@ namespace aibotPro.Service
             }
             return result;
         }
-        public string AiPost(string url, Dictionary<string, string> parameters, Dictionary<string, string> headers = null, Dictionary<string, string> cookies = null)
+        public string AiPost(string url, Dictionary<string, string> parameters, Dictionary<string, string> headers = null, Dictionary<string, string> cookies = null, string jsonBody = "")
         {
             var client = new RestClient(url);
             var request = new RestRequest("", Method.Post);
@@ -505,8 +555,15 @@ namespace aibotPro.Service
             request.AddHeader("Content-Type", "application/json");
             request.AddHeader("Accept", "*/*");
             request.AddHeader("Connection", "keep-alive");
-            var body = System.Text.Json.JsonSerializer.Serialize(parameters);
-            request.AddParameter("application/json", body, ParameterType.RequestBody);
+            if (!string.IsNullOrEmpty(jsonBody))
+            {
+                request.AddParameter("application/json", jsonBody, ParameterType.RequestBody);
+            }
+            else
+            {
+                var body = System.Text.Json.JsonSerializer.Serialize(parameters);
+                request.AddParameter("application/json", body, ParameterType.RequestBody);
+            }
             RestResponse response = client.Execute(request);
 
             if (response.IsSuccessStatusCode)

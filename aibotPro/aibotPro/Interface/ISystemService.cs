@@ -15,6 +15,7 @@ namespace aibotPro.Interface
         string DecodeBase64(string result); //字符串解码base64
         bool SaveIP(string ip, string address);//保存IP地址
         List<AImodel> GetAImodel();//获取AI模型
+        List<AImodelsUserSeq> GetAImodelSeq(string account);//获取AI模型序列
         List<WorkShopAIModel> GetWorkShopAImodel();//获取插件基底模型
         string SaveFiles(string path, IFormFile file, string Account = ""); //保存文件到指定路径,返回图片路径
         string ImgConvertToBase64(string imagePath);//图片转base64
@@ -27,5 +28,9 @@ namespace aibotPro.Interface
         Task<string> GetFileText(string path);//获取文件内容
         string UrlEncode(string text);//url编码
         string UrlDecode(string encodedText);//url解码
+        bool CheckDataBaseServer();//检查数据库连接
+        bool CheckRedis();//检查Redis连接
+        bool CreateAdmin(string account, string password);//创建管理员
+        bool CreateSystemCfg();//创建系统配置
     }
 }

@@ -102,11 +102,6 @@ function login() {
             balert('账号长度异常', 'danger', true, 2000, "top");
             return;
         }
-        //密码小于6个字符或者大于16个字符
-        if (password.length < 6 || password.length > 16) {
-            balert('密码长度应该在6-16之间', 'danger', true, 2000, "top");
-            return;
-        }
         //密码只允许数字和字母
         //var reg = /^[0-9a-zA-Z]+$/;
         //if (!reg.test(password)) {
@@ -247,7 +242,7 @@ async function sendFindPasswordEmail(captchaVerifyParam) {
     });
     const verifyResult = {
         captchaResult: result.captchaVerifyResult, // 这里应替换为您的逻辑
-        bizResult: result.captchaVerifyResult,
+        bizResult: result.success,
     };
     return verifyResult;
 }
@@ -269,7 +264,7 @@ async function sendCheckCode(captchaVerifyParam) {
     });
     const verifyResult = {
         captchaResult: result.captchaVerifyResult,
-        bizResult: result.captchaVerifyResult,
+        bizResult: result.success,
     };
     return verifyResult;
 }
@@ -295,7 +290,7 @@ function disableBtn(success) {
         disableButtonAndStartCountdown();
     }
     else {
-        balert('邮件发送失败', 'danger', true, 2000, "top");
+        balert('邮件发送失败,只允许使用qq,gmail,163,126邮箱', 'danger', true, 2000, "top");
     }
 }
 

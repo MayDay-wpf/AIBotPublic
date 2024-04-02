@@ -1,16 +1,21 @@
-﻿using aibotPro.Dtos;
+﻿using aibotPro.AppCode;
+using aibotPro.Dtos;
 using aibotPro.Interface;
 using aibotPro.Models;
 using iTextSharp.text.pdf.qrcode;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.CodeAnalysis;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using NuGet.Configuration;
 using OpenAI;
 using OpenAI.Builders;
 using OpenAI.Managers;
 using OpenAI.ObjectModels.RequestModels;
 using OpenAI.ObjectModels.SharedModels;
+using Spire.Presentation.Charts;
+using System.Security.Principal;
 using System.Text;
 using System.Text.RegularExpressions;
 using TiktokenSharp;
@@ -29,7 +34,8 @@ namespace aibotPro.Service
         private readonly IFilesAIService _filesAIService;
         private readonly AIBotProContext _context;
         private readonly IFinanceService _financeService;
-        public ChatHub(JwtTokenManager jwtTokenManager, IUsersService usersService, ISystemService systemService, IRedisService redisService, IAiServer aiServer, IBaiduService baiduService, IWorkShop workShop, IFilesAIService filesAIService, AIBotProContext context, IFinanceService financeService)
+        private readonly IAssistantService _assistantService;
+        public ChatHub(JwtTokenManager jwtTokenManager, IUsersService usersService, ISystemService systemService, IRedisService redisService, IAiServer aiServer, IBaiduService baiduService, IWorkShop workShop, IFilesAIService filesAIService, AIBotProContext context, IFinanceService financeService, IAssistantService assistantService)
         {
             _jwtTokenManager = jwtTokenManager;
             _usersService = usersService;
@@ -41,6 +47,8 @@ namespace aibotPro.Service
             _filesAIService = filesAIService;
             _context = context;
             _financeService = financeService;
+            _assistantService = assistantService;
+
         }
         //基础对话模型交互
         public async Task SendMessage(ChatDto chatDto)
@@ -55,7 +63,11 @@ namespace aibotPro.Service
                 return;
             }
             //从token中获取账号信息
-            string Account = _jwtTokenManager.ValidateToken(token).Identity.Name;
+            string Account = string.Empty;
+            if (!chatDto.isbot)
+                Account = _jwtTokenManager.ValidateToken(token).Identity.Name;
+            else
+                Account = "robot_AIBOT";
             var user = _usersService.GetUserData(Account);
             string chatId = string.Empty;
             bool newChat = false;
@@ -70,8 +82,11 @@ namespace aibotPro.Service
             await Groups.AddToGroupAsync(Context.ConnectionId, chatId);
             ChatRes chatRes = new ChatRes();
             chatRes.chatid = chatId;
+            string senMethod = "ReceiveMessage";
+            if (chatDto.isbot)
+                senMethod = "ReceiveMessage_bot";
             //回应客户端就绪状态
-            await Clients.Group(chatId).SendAsync("ReceiveMessage", chatRes);
+            await Clients.Group(chatId).SendAsync(senMethod, chatRes);
             bool isVisionModel = false;
             bool useMyKey = false;
             string imgTxt = string.Empty;
@@ -84,14 +99,34 @@ namespace aibotPro.Service
                         (!isVip && modelPrice.ModelPriceOutput > 0) || // 非VIP用户，且模型有非VIP价格
                         (isVip && modelPrice.VipModelPriceInput > 0)); // VIP用户，且模型对VIP也有价格
 
+            //不是会员且余额为0时不提供服务
+            if (!isVip && user.Mcoin <= 0)
+            {
+                chatRes.message = "本站已停止向【非会员且余额为0】的用户提供服务，您可以<a href='/Pay/Balance'>点击这里</a>前往充值1元及以上，长期使用本站的免费服务";
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                chatRes.message = "";
+                chatRes.isfinish = true;
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                return;
+            }
             // 检查用户余额是否不足，只有在需要收费时检查
             if (shouldCharge && user.Mcoin <= 0)
             {
                 chatRes.message = "余额不足，请充值后再使用，您可以<a href='/Pay/Balance'>点击这里</a>前往充值";
-                await Clients.Group(chatId).SendAsync("ReceiveMessage", chatRes);
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                 chatRes.message = "";
                 chatRes.isfinish = true;
-                await Clients.Group(chatId).SendAsync("ReceiveMessage", chatRes);
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                return;
+            }
+            if (chatDto.isbot && !chatDto.aiModel.Contains("gpt-3.5"))
+            {
+                chatRes.message = "您正在使用非正当手段修改我的基底模型，我们允许且欢迎您寻找本站的BUG，但很明显，这个漏洞已经被开发团队修复，请您不要再继续尝试，本站不会记录任何用户的正常行为，但是对于异常行为有着详细的日志信息和风控手段，感谢您的合作与支持，如果您还有其他问题，请询问我。";
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                chatRes.message = "";
+                chatRes.isfinish = true;
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                await _systemService.WriteLog("异常行为：用户尝试修改Robot的基底模型", Dtos.LogLevel.Fatal, Account);
                 return;
             }
             try
@@ -146,13 +181,13 @@ namespace aibotPro.Service
                         imgRes = _baiduService.GetRes(imageData);
                         promptHeadle = $"请你充当图片内容分析师，图像中的文字识别结果为：{imgTxt},图像中物体和场景识别结果为：{imgRes},请根据识别结果进行专业的分析回答:{promptHeadle}";
                     }
-                    else if (chatDto.aiModel == "gpt-4-all")
+                    if (chatDto.aiModel == "gpt-4-all")
                     {
-                        promptHeadle = $"{chatDto.msg}\n\n图片链接：{Context.GetHttpContext().Request.Scheme}://{Context.GetHttpContext().Request.Host}{chatDto.image_path.Replace("wwwroot", "")}";
+                        promptHeadle = $"{chatDto.msg}\n\n图片链接：{Context.GetHttpContext().Request.Scheme}://{Context.GetHttpContext().Request.Host}{chatDto.image_path.Replace("wwwroot", "")}".Replace("\\", "/");
                     }
                     else
                     {
-                        visionImg.url = $"{Context.GetHttpContext().Request.Scheme}://{Context.GetHttpContext().Request.Host}{chatDto.image_path.Replace("wwwroot", "")}";
+                        visionImg.url = $"{Context.GetHttpContext().Request.Scheme}://{Context.GetHttpContext().Request.Host}{chatDto.image_path.Replace("wwwroot", "")}".Replace("\\", "/");
                     }
                 }
                 if (string.IsNullOrEmpty(chatDto.image_path) && chatDto.aiModel == "gemini-pro-vision")
@@ -169,9 +204,11 @@ namespace aibotPro.Service
                         chatDto.system_prompt += "\n 请根据上述文件回答";
                     }
                     else
-                        chatDto.system_prompt = fileContent;
-                    input += fileContent;
+                    {
+                        promptHeadle = $"文件内容：{fileContent}\n\n{promptHeadle}";
+                    }
                 }
+                input += promptHeadle;
                 visionBody.model = chatDto.aiModel;
                 aiChat.Model = chatDto.aiModel;
                 List<VisionChatMesssage> tmpmsg_v = new List<VisionChatMesssage>();
@@ -189,6 +226,7 @@ namespace aibotPro.Service
                             message.Role = "system";
                             message.Content = chatDto.system_prompt;
                             messages.Add(message);
+                            input += chatDto.system_prompt;
                         }
                         message = new Message();
                         message.Role = "user";
@@ -211,6 +249,7 @@ namespace aibotPro.Service
                             promptvisionContent.text = chatDto.system_prompt;
                             promptcontent.Add(promptvisionContent);
                             tmpmsg_v.Add(promptvisionChatMesssage);
+                            input += chatDto.system_prompt;
                         }
                         if (!string.IsNullOrEmpty(chatDto.image_path))
                         {
@@ -245,6 +284,7 @@ namespace aibotPro.Service
                                 message.Role = "system";
                                 message.Content = chatDto.system_prompt;
                                 messages.Add(message);
+                                input += chatDto.system_prompt;
                             }
                             message = new Message();
                             message.Role = item.Role;
@@ -265,6 +305,7 @@ namespace aibotPro.Service
                                 hisvisionContent.text = chatDto.system_prompt;
                                 hiscontent.Add(hisvisionContent);
                                 tmpmsg_v.Add(hisvisionChatMesssage);
+                                input += chatDto.system_prompt;
                             }
                             hisvisionChatMesssage = new VisionChatMesssage();
                             if (item.Chat.Contains("aee887ee6d5a79fdcmay451ai8042botf1443c04"))
@@ -339,7 +380,7 @@ namespace aibotPro.Service
                     {
                         sysmsg += responseContent.Choices[0].Delta.Content;
                         chatRes.message = responseContent.Choices[0].Delta.Content;
-                        await Clients.Group(chatId).SendAsync("ReceiveMessage", chatRes);
+                        await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                         //Thread.Sleep(50);
                     }
                     else
@@ -357,8 +398,8 @@ namespace aibotPro.Service
                 TikToken tikToken = TikToken.GetEncoding("cl100k_base");
                 await _aiServer.SaveChatHistory(Account, chatId, chatDto.msg, chatDto.msgid_u, chatDto.chatgroupid, "user", chatDto.aiModel);
                 await _aiServer.SaveChatHistory(Account, chatId, sysmsg, chatDto.msgid_g, chatDto.chatgroupid, "assistant", chatDto.aiModel);
-                if (!useMyKey && !string.IsNullOrEmpty(sysmsg))
-                    await _financeService.CreateUseLogAndUpadteMoney(Account, chatDto.aiModel, tikToken.Encode(input + promptHeadle).Count, tikToken.Encode(output).Count);
+                if (!string.IsNullOrEmpty(output))
+                    await _financeService.CreateUseLogAndUpadteMoney(Account, chatDto.aiModel, tikToken.Encode(input).Count, tikToken.Encode(output).Count);
                 if (chatDto.chatid.Contains("gridview"))
                 {
                     sysmsg = sysmsg.ToLower();
@@ -376,23 +417,23 @@ namespace aibotPro.Service
                                             vegaEmbed('.vis', spec)
                                                 .then(result => console.log(result))
                                                 .catch(error => console.error(error))";
-                        //await Clients.Group(chatId).SendAsync("ReceiveMessage", JsonConvert.SerializeObject(hubRes));
+                        //await Clients.Group(chatId).SendAsync(senMethod, JsonConvert.SerializeObject(hubRes));
                         chatRes.jscode = chatRes.message;//newFileName;
-                        await Clients.Group(chatId).SendAsync("ReceiveMessage", chatRes);
+                        await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                     }
                 }
                 chatRes.message = "";
                 chatRes.isfinish = true;
-                await Clients.Group(chatId).SendAsync("ReceiveMessage", chatRes);
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
             }
             catch (Exception e)
             {
                 await _redis.DeleteAsync($"{chatId}_process");
                 chatRes.message = $"糟糕！出错了！错误原因：【{e.Message}】,刷新页面或重试一次吧😢";
-                await Clients.Group(chatId).SendAsync("ReceiveMessage", chatRes);
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                 chatRes.message = "";
                 chatRes.isfinish = true;
-                await Clients.Group(chatId).SendAsync("ReceiveMessage", chatRes);
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                 return;
             }
         }
@@ -410,7 +451,11 @@ namespace aibotPro.Service
                 return;
             }
             //从token中获取账号信息
-            string Account = _jwtTokenManager.ValidateToken(token).Identity.Name;
+            string Account = string.Empty;
+            if (!chatDto.isbot)
+                Account = _jwtTokenManager.ValidateToken(token).Identity.Name;
+            else
+                Account = "robot_AIBOT";
             var user = _usersService.GetUserData(Account);
             string chatId = string.Empty;
             bool newChat = false;
@@ -425,10 +470,15 @@ namespace aibotPro.Service
             await Groups.AddToGroupAsync(Context.ConnectionId, chatId);
             ChatRes chatRes = new ChatRes();
             chatRes.chatid = chatId;
+            string senMethod = "ReceiveWorkShopMessage";
+            if (chatDto.isbot)
+                senMethod = "ReceiveWorkShopMessage_bot";
             //回应客户端就绪状态
-            await Clients.Group(chatId).SendAsync("ReceiveWorkShopMessage", chatRes);
+            await Clients.Group(chatId).SendAsync(senMethod, chatRes);
             string imgTxt = string.Empty;
             string imgRes = string.Empty;
+            string input = string.Empty;
+            string output = string.Empty;
             string promptHeadle = chatDto.msg;
             //检查该模型是否需要收费
             var modelPrice = await _financeService.ModelPrice(chatDto.aiModel);
@@ -436,14 +486,35 @@ namespace aibotPro.Service
             bool shouldCharge = !isVip && modelPrice != null &&
                                 (modelPrice.VipModelPriceInput > 0 || modelPrice.ModelPriceOutput > 0);
 
+            //不是会员且余额为0时不提供服务
+            if (!isVip && user.Mcoin <= 0)
+            {
+                chatRes.message = "本站已停止向【非会员且余额为0】的用户提供服务，您可以<a href='/Pay/Balance'>点击这里</a>前往充值1元及以上，长期使用本站的免费服务";
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                chatRes.message = "";
+                chatRes.isfinish = true;
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                return;
+            }
+
             // 检查用户余额是否不足，只有在需要收费时检查
             if (shouldCharge && user.Mcoin <= 0)
             {
                 chatRes.message = "余额不足，请充值后再使用，您可以<a href='/Pay/Balance'>点击这里</a>前往充值";
-                await Clients.Group(chatId).SendAsync("ReceiveMessage", chatRes);
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                 chatRes.message = "";
                 chatRes.isfinish = true;
-                await Clients.Group(chatId).SendAsync("ReceiveMessage", chatRes);
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                return;
+            }
+            if (chatDto.isbot && !chatDto.aiModel.Contains("gpt-3.5"))
+            {
+                chatRes.message = "您正在使用非正当手段修改我的基底模型，我们允许且欢迎您寻找本站的BUG，但很明显，这个漏洞已经被开发团队修复，请您不要再继续尝试，本站不会记录任何用户的正常行为，但是对于异常行为有着详细的日志信息和风控手段，感谢您的合作与支持，如果您还有其他问题，请询问我。";
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                chatRes.message = "";
+                chatRes.isfinish = true;
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                await _systemService.WriteLog("异常行为：用户尝试修改Robot的基底模型", Dtos.LogLevel.Fatal, Account);
                 return;
             }
             //如果有图片
@@ -455,6 +526,7 @@ namespace aibotPro.Service
                 promptHeadle = $"请你充当图片内容分析师，图像中的文字识别结果为：{imgTxt},图像中物体和场景识别结果为：{imgRes},请根据识别结果进行专业的分析回答:{promptHeadle}";
 
             }
+            input += promptHeadle;
             try
             {
                 //获取对话设置
@@ -471,9 +543,91 @@ namespace aibotPro.Service
                 openAiOptions.BaseDomain = aImodels.Where(x => x.ModelName == chatDto.aiModel).FirstOrDefault().BaseUrl;
                 openAiOptions.ApiKey = aImodels.Where(x => x.ModelName == chatDto.aiModel).FirstOrDefault().ApiKey;
                 var openAiService = new OpenAIService(openAiOptions);
+                var fnDall = new FunctionDefinitionBuilder("use_dalle3_withpr", "结合上下文生成DALL-E3提示词并绘制")
+                            .AddParameter("drawprompt", PropertyDefinition.DefineString("根据绘画要求，结合上下文优化后的DALL-E3绘画提示词"))
+                            .AddParameter("drawsize", PropertyDefinition.DefineEnum(new List<string> { "1024x1024", "1792x1024", "1024x1792" }, "需要绘制的图片尺寸,默认1024x1024"))
+                            .AddParameter("quality", PropertyDefinition.DefineEnum(new List<string> { "standard", "hd" }, "绘制图片的质量，默认standard标准质量，当许要更高清晰度和更多细节时，使用hd质量"))
+                            .Validate()
+                            .Build();
+                var fnGoogleSearch = new FunctionDefinitionBuilder("search_google_when_gpt_cannot_answer", "当 gpt 遇到无法回答的或者需要搜索引擎协助回答时从 google 搜索")
+                            .AddParameter("message", PropertyDefinition.DefineString("搜索句，支持中文或者英文"))
+                            .Validate()
+                            .Build();
+                var sysKnowledgeSearch = new FunctionDefinitionBuilder("search_knowledge_base", "从知识库中查询或搜索GPT无法得知的内容")
+                                    .AddParameter("message", PropertyDefinition.DefineString("搜索用的关键词，支持中文或者英文"))
+                                    .Validate()
+                                    .Build();
+                var mytools = new List<ToolDefinition>();
+                if (onknowledge)//知识库检索状态
+                {
+                    mytools.Add(ToolDefinition.DefineFunction(sysKnowledgeSearch));
+                    //mytools.Add(ToolDefinition.DefineFunction(fnGoogleSearch));
+                    chatDto.system_prompt = "你是知识库阅览专家，任何问题你先查询知识库，如知识库中无记录再自行结合上下文回答，请记住，先查询知识库";
+                }
+                else
+                {
+                    if (!chatDto.isbot)
+                    {
+                        mytools.Add(ToolDefinition.DefineFunction(fnDall));
+                    }
+                    mytools.Add(ToolDefinition.DefineFunction(fnGoogleSearch));
+                    //获取用户插件列表
+                    var myplugins = _workShop.GetPluginInstall(Account);
+                    if (myplugins != null && myplugins.Count > 0)
+                    {
+                        foreach (var pluginitem in myplugins)
+                        {
+                            FunctionDefinition functionDefinition = new FunctionDefinition();
+                            var myfn = new FunctionDefinitionBuilder(pluginitem.Pfunctionname, pluginitem.Pfunctioninfo);
+                            //如果是工作流
+                            if (pluginitem.Pcodemodel == "plugin-workflow")
+                            {
+                                //获取工作流节点数据
+                                var nodeData = _context.WorkFlows.Where(x => x.Pcode == pluginitem.Pcode)
+                                    .FirstOrDefault().FlowJson;
+                                //nodeData为空则跳过
+                                if (string.IsNullOrEmpty(nodeData))
+                                    continue;
+                                WorkFlowNodeData workFlowNodeData = JsonConvert.DeserializeObject<WorkFlowNodeData>(nodeData);
+                                //找到start节点
+                                var homeData = workFlowNodeData.Drawflow.Home.Data;
+                                NodeData startData = homeData.Values.FirstOrDefault(x => x.Name == "start");
+                                //寻找参数
+                                if (startData.Data is StartData startDataSpecific)
+                                {
+                                    // 现在startDataSpecific.Output指向StartOutput对象
+                                    var startOutput = startDataSpecific.Output;
+
+                                    if (startOutput != null)
+                                    {
+                                        // 遍历PrItems
+                                        foreach (var prItem in startOutput.PrItems)
+                                        {
+                                            myfn.AddParameter(prItem.PrName, PropertyDefinition.DefineString(prItem.PrInfo));
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                var myparams = _workShop.GetPluginParams(pluginitem.Id);
+                                if (myparams != null && myparams.Count > 0)
+                                {
+                                    foreach (var paramitem in myparams)
+                                    {
+                                        myfn.AddParameter(paramitem.ParamName, PropertyDefinition.DefineString(paramitem.ParamInfo));
+                                    }
+                                }
+                            }
+                            functionDefinition = myfn.Validate().Build();
+                            mytools.Add(ToolDefinition.DefineFunction(functionDefinition));
+                        }
+                    }
+                    if (!chatDto.isbot)
+                        chatDto.system_prompt = "对于要插入函数的值，不要做任何假设。如果用户的请求不清晰，可以要求澄清。";
+                }
                 List<ChatMessage> chatMessages = new List<ChatMessage>();
-                string input = string.Empty;
-                string output = string.Empty;
+                chatMessages.Add(ChatMessage.FromSystem(chatDto.system_prompt));
                 if (newChat)
                 {
                     chatMessages.Add(ChatMessage.FromUser(promptHeadle));
@@ -498,54 +652,15 @@ namespace aibotPro.Service
                 }
                 ChatCompletionCreateRequest chatCompletionCreate = new ChatCompletionCreateRequest();
                 chatCompletionCreate.Messages = chatMessages;
-                var fnDall = new FunctionDefinitionBuilder("use_dalle3_withpr", "结合上下文生成DALL-E3提示词并绘制")
-                            .AddParameter("drawprompt", PropertyDefinition.DefineString("根据绘画要求，结合上下文优化后的DALL-E3绘画提示词"))
-                            .AddParameter("drawsize", PropertyDefinition.DefineEnum(new List<string> { "1024x1024", "1792x1024", "1024x1792" }, "需要绘制的图片尺寸,默认1024x1024"))
-                            .AddParameter("quality", PropertyDefinition.DefineEnum(new List<string> { "standard", "hd" }, "绘制图片的质量，默认standard标准质量，当许要更高清晰度和更多细节时，使用hd质量"))
-                            .Validate()
-                            .Build();
-                var fnGoogleSearch = new FunctionDefinitionBuilder("search_google_when_gpt_cannot_answer", "当 gpt 遇到无法回答的或者需要搜索引擎协助回答时从 google 搜索")
-                            .AddParameter("message", PropertyDefinition.DefineString("搜索句，支持中文或者英文"))
-                            .Validate()
-                            .Build();
-                var sysKnowledgeSearch = new FunctionDefinitionBuilder("search_knowledge_base", "从知识库中查询或搜索GPT无法得知的内容")
-                                    .AddParameter("message", PropertyDefinition.DefineString("搜索用的关键词，支持中文或者英文"))
-                                    .Validate()
-                                    .Build();
-                var mytools = new List<ToolDefinition>();
-                if (onknowledge)//知识库检索状态
-                {
-                    mytools.Add(ToolDefinition.DefineFunction(sysKnowledgeSearch));
-                    //mytools.Add(ToolDefinition.DefineFunction(fnGoogleSearch));
-                    chatDto.system_prompt = "你是知识库阅览专家，任何问题你先查询知识库，如知识库中无记录再自行结合上下文回答，请记住，先查询知识库";
-                }
-                else
-                {
-                    mytools.Add(ToolDefinition.DefineFunction(fnDall));
-                    mytools.Add(ToolDefinition.DefineFunction(fnGoogleSearch));
-                    //获取用户插件列表
-                    var myplugins = _workShop.GetPluginInstall(Account);
-                    if (myplugins != null && myplugins.Count > 0)
-                    {
-                        foreach (var pluginitem in myplugins)
-                        {
-                            FunctionDefinition functionDefinition = new FunctionDefinition();
-                            var myfn = new FunctionDefinitionBuilder(pluginitem.Pfunctionname, pluginitem.Pfunctioninfo);
-                            var myparams = _workShop.GetPluginParams(pluginitem.Id);
-                            if (myparams != null && myparams.Count > 0)
-                            {
-                                foreach (var paramitem in myparams)
-                                {
-                                    myfn.AddParameter(paramitem.ParamName, PropertyDefinition.DefineString(paramitem.ParamInfo));
-                                }
-                            }
-                            functionDefinition = myfn.Validate().Build();
-                            mytools.Add(ToolDefinition.DefineFunction(functionDefinition));
-                        }
-                    }
-                    chatDto.system_prompt = "对于要插入函数的值，不要做任何假设。如果用户的请求不清晰，可以要求澄清。";
-                }
                 chatCompletionCreate.Tools = mytools;
+                //if (onknowledge)
+                //    chatCompletionCreate.ToolChoice = new ToolChoice() {
+                //        Type="function",
+                //        Function = new ToolChoice.FunctionTool()
+                //        {
+                //            Name = "search_knowledge_base",
+                //        }
+                //    };
                 chatCompletionCreate.Stream = true;
                 chatCompletionCreate.Model = chatDto.aiModel;
                 var completionResult = openAiService.ChatCompletion.CreateCompletionAsStream(chatCompletionCreate);
@@ -569,7 +684,7 @@ namespace aibotPro.Service
                                 sysmsg += choice.Message.Content;
                                 output += choice.Message.Content;
                                 chatRes.message = choice.Message.Content;
-                                await Clients.Group(chatId).SendAsync("ReceiveWorkShopMessage", chatRes);
+                                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                             }
                             var tools = choice.Message.ToolCalls;
                             if (tools != null)
@@ -596,10 +711,11 @@ namespace aibotPro.Service
                                         bool dalleloadding = true;
                                         bool websearchloadding = true;
                                         bool knowledgeloadding = true;
+                                        bool workflowloadding = true;
                                         if (fn.Name == "use_dalle3_withpr")
                                         {
                                             chatRes.message = "使用【DALL·E3】组件执行绘制,这需要大约1-2分钟";
-                                            await Clients.Group(chatId).SendAsync("ReceiveWorkShopMessage", chatRes);
+                                            await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                                             var emojiList = new List<string> { "🖌", "🎨", "🔧", "🖊", "🖍", "🖼", "🤯" };
                                             var random = new Random();
                                             // 线程开始
@@ -609,40 +725,59 @@ namespace aibotPro.Service
                                                 {
                                                     var randomEmoji = emojiList[random.Next(emojiList.Count)]; //从列表中随机选择一个
                                                     chatRes.message = $"{randomEmoji}";
-                                                    await Clients.Group(chatId).SendAsync("ReceiveWorkShopMessage", chatRes);
+                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                                                     await Task.Delay(1000);
                                                 }
                                             });
                                         }
-                                        if (fn.Name == "search_google_when_gpt_cannot_answer")
+                                        else if (fn.Name == "search_google_when_gpt_cannot_answer")
                                         {
                                             chatRes.message = "请稍候，让我Google一下";
-                                            await Clients.Group(chatId).SendAsync("ReceiveWorkShopMessage", chatRes);
+                                            await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                                             // 线程开始
                                             var websearchTask = Task.Run(async () =>
                                             {
                                                 while (websearchloadding)
                                                 {
                                                     chatRes.message = $"🌐";
-                                                    await Clients.Group(chatId).SendAsync("ReceiveWorkShopMessage", chatRes);
+                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                                                     await Task.Delay(1000);
                                                 }
                                             });
                                         }
-                                        if (fn.Name == "search_knowledge_base")
+                                        else if (fn.Name == "search_knowledge_base")
                                         {
                                             chatRes.message = "请稍候，让我尝试检索知识库";
-                                            await Clients.Group(chatId).SendAsync("ReceiveWorkShopMessage", chatRes);
+                                            await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                                             // 线程开始
                                             var websearchTask = Task.Run(async () =>
                                             {
                                                 while (knowledgeloadding)
                                                 {
                                                     chatRes.message = $"🔎📄";
-                                                    await Clients.Group(chatId).SendAsync("ReceiveWorkShopMessage", chatRes);
+                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                                                     await Task.Delay(1000);
                                                 }
                                             });
+                                        }
+                                        else
+                                        {
+                                            var pcodeModel = _context.Plugins.AsNoTracking().Where(x => x.Pfunctionname == fn.Name).FirstOrDefault().Pcodemodel;
+                                            if(pcodeModel== "plugin-workflow")
+                                            {
+                                                chatRes.message = "请稍候，正在执行工作流";
+                                                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                                                // 线程开始
+                                                var workflowTask = Task.Run(async () =>
+                                                {
+                                                    while (workflowloadding)
+                                                    {
+                                                        chatRes.message = $"⏩";
+                                                        await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                                                        await Task.Delay(1000);
+                                                    }
+                                                });
+                                            }
                                         }
                                         pluginResDto = await _workShop.RunPlugin(Account, fn);
                                         if (!pluginResDto.doubletreating)
@@ -659,36 +794,38 @@ namespace aibotPro.Service
                                                     }
                                                     string res1 = "<p>已为您绘制完成</p>";
                                                     chatRes.message = res1;
-                                                    await Clients.Group(chatId).SendAsync("ReceiveWorkShopMessage", chatRes);
+                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                                                     Thread.Sleep(200);
                                                     string res2 = "<p>绘制结果如下,请您查阅：</p><br />";
                                                     chatRes.message = res2;
-                                                    await Clients.Group(chatId).SendAsync("ReceiveWorkShopMessage", chatRes);
+                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                                                     Thread.Sleep(200);
                                                     string res3 = $"<img src='{pluginResDto.result}' style='width:300px;'/>";
                                                     chatRes.message = res3;
-                                                    await Clients.Group(chatId).SendAsync("ReceiveWorkShopMessage", chatRes);
+                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                                                     Thread.Sleep(200);
                                                     string res4 = @$"<br><b>如有需要，请及时下载您的图片，图片缓存我们将定时删除</b><a href=""{pluginResDto.result}"" target=""_blank"">【点击这里下载图片】</a>";
                                                     chatRes.message = res4;
-                                                    await Clients.Group(chatId).SendAsync("ReceiveWorkShopMessage", chatRes);
+                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                                                     res = res1 + res2 + res3 + res4;
                                                     break;
                                                 case "html":
+                                                    workflowloadding = false;
                                                     res = pluginResDto.result;
                                                     chatRes.message = res;
-                                                    await Clients.Group(chatId).SendAsync("ReceiveWorkShopMessage", chatRes);
+                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                                                     break;
                                                 case "js":
+                                                    workflowloadding = false;
                                                     chatRes.message = "";
                                                     chatRes.jscode = pluginResDto.result;
-                                                    await Clients.Group(chatId).SendAsync("ReceiveWorkShopMessage", chatRes);
+                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                                                     chatRes.jscode = "";
                                                     break;
                                                 default:
                                                     res = pluginResDto.result;
                                                     chatRes.message = res;
-                                                    await Clients.Group(chatId).SendAsync("ReceiveWorkShopMessage", chatRes);
+                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                                                     break;
                                             }
                                             sysmsg = res;
@@ -698,6 +835,7 @@ namespace aibotPro.Service
                                         {
                                             websearchloadding = false;
                                             knowledgeloadding = false;
+                                            workflowloadding = false;
                                             //生成对话参数
                                             input += pluginResDto.result;
                                             chatMessages.Add(ChatMessage.FromUser(pluginResDto.result));
@@ -721,7 +859,7 @@ namespace aibotPro.Service
                                                             sysmsg += choice_sec.Message.Content;
                                                             output += choice_sec.Message.Content;
                                                             chatRes.message = choice_sec.Message.Content;
-                                                            await Clients.Group(chatId).SendAsync("ReceiveWorkShopMessage", chatRes);
+                                                            await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                                                         }
                                                     }
                                                     else
@@ -752,22 +890,274 @@ namespace aibotPro.Service
                 await _aiServer.SaveChatHistory(Account, chatId, chatDto.msg, chatDto.msgid_u, chatDto.chatgroupid, "user", chatDto.aiModel);
                 await _aiServer.SaveChatHistory(Account, chatId, sysmsg, chatDto.msgid_g, chatDto.chatgroupid, "assistant", chatDto.aiModel);
                 if (!string.IsNullOrEmpty(sysmsg))
-                    await _financeService.CreateUseLogAndUpadteMoney(Account, chatDto.aiModel, tikToken.Encode(input + promptHeadle).Count, tikToken.Encode(output).Count);
+                    await _financeService.CreateUseLogAndUpadteMoney(Account, chatDto.aiModel, tikToken.Encode(input).Count, tikToken.Encode(output).Count);
                 chatRes.message = "";
                 chatRes.isfinish = true;
-                await Clients.Group(chatId).SendAsync("ReceiveWorkShopMessage", chatRes);
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
             }
             catch (Exception e)
             {
                 await _redis.DeleteAsync($"{chatId}_process");
                 chatRes.message = $"糟糕！出错了！错误原因：【{e.Message}】,刷新页面或重试一次吧😢";
-                await Clients.Group(chatId).SendAsync("ReceiveWorkShopMessage", chatRes);
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                 chatRes.message = "";
                 chatRes.isfinish = true;
-                await Clients.Group(chatId).SendAsync("ReceiveWorkShopMessage", chatRes);
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                 return;
             }
         }
+
+        //助理GPT交互
+        public async Task SendAssistantMessage(ChatDto chatDto)
+        {
+            var httpContext = Context.GetHttpContext();
+            string? token = string.Empty;
+            token = httpContext?.Request.Query["access_token"];
+            if (string.IsNullOrEmpty(token) || !_jwtTokenManager.isTokenValid(token) || string.IsNullOrEmpty(chatDto.ip))
+            {
+                // 如果没有令牌或者令牌无效或者ip为空，则断开连接
+                Context.Abort();
+                return;
+            }
+            //从token中获取账号信息
+            string Account = string.Empty;
+            if (!chatDto.isbot)
+                Account = _jwtTokenManager.ValidateToken(token).Identity.Name;
+            else
+                Account = "robot_AIBOT";
+            var user = _usersService.GetUserData(Account);
+            string chatId = string.Empty;
+            string threadId = chatDto.threadid;
+            bool newChat = false;
+            if (string.IsNullOrEmpty(chatDto.chatid))
+            {
+                chatId = Guid.NewGuid().ToString().Replace("-", "");//创建chatid头部
+                chatId = $"{chatId}U{Account}IP{chatDto.ip}";
+                newChat = true;
+            }
+            else
+                chatId = chatDto.chatid;
+            await Groups.AddToGroupAsync(Context.ConnectionId, chatId);
+            ChatRes chatRes = new ChatRes();
+            chatRes.chatid = chatId;
+            string senMethod = "ReceiveAssistantMessage";
+            if (chatDto.isbot)
+                senMethod = "ReceiveAssistantMessage_bot";
+            //回应客户端就绪状态
+            await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+            string promptHeadle = chatDto.msg;
+            // 检查用户余额是否不足，只有在需要收费时检查
+            if (user.Mcoin <= 0)
+            {
+                chatRes.message = "余额不足，请充值后再使用，您可以<a href='/Pay/Balance'>点击这里</a>前往充值";
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                chatRes.message = "";
+                chatRes.isfinish = true;
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                return;
+            }
+            //根据账号查询Assistans
+            var assistant = _assistantService.GetAssistantGPTs(Account);
+            if (assistant.Count == 0)
+            {
+                chatRes.message = "您似乎还没有创建助理，您可以<a href='/AssistantGPT/AssistantSetting'>点击这里</a>前往创建";
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                chatRes.message = "";
+                chatRes.isfinish = true;
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                return;
+            }
+            string assisId = assistant.First().AssisId;
+            try
+            {
+                if (string.IsNullOrEmpty(threadId))//新对话
+                {
+                    //创建线程
+                    threadId = await _assistantService.CreateThread();
+                    chatRes.threadid = threadId;
+                    //chatRes.message = $"线程已创建【{threadId}】，程序继续运行";
+                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                }
+                chatRes.threadid = string.Empty;
+                //向线程添加消息
+                string msgId = await _assistantService.AddMessage(threadId, promptHeadle);
+                string sysmsg = string.Empty;
+                List<string> fileids = new List<string>();
+                await foreach (var responseContent in _assistantService.RunThread(threadId, assisId, Account))
+                {
+                    sysmsg += responseContent;
+                    chatRes.message = responseContent.message;
+                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                    if (responseContent.file_ids != null && responseContent.file_ids.Count > 0)
+                    {
+                        for (int i = 0; i < responseContent.file_ids.Count; i++)
+                        {
+                            if (!fileids.Contains(responseContent.file_ids[i]))
+                                fileids.Add(responseContent.file_ids[i]);
+                        }
+                    }
+                    //Thread.Sleep(50);
+                }
+                foreach (var item in fileids)
+                {
+                    chatRes.file_id = item;
+                    chatRes.message = "";
+                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                }
+                TikToken tikToken = TikToken.GetEncoding("cl100k_base");
+                chatRes.message = "";
+                chatRes.isfinish = true;
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+            }
+            catch (Exception e)
+            {
+                await _redis.DeleteAsync($"{chatId}_process");
+                chatRes.message = $"糟糕！出错了！错误原因：【{e.Message}】,刷新页面或重试一次吧😢";
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                chatRes.message = "";
+                chatRes.isfinish = true;
+                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                return;
+            }
+
+            //try
+            //{
+            //    //获取对话设置
+            //    var chatSetting = _usersService.GetChatSetting(Account);
+            //    //如果不使用历史记录
+            //    if (chatSetting.SystemSetting.UseHistory == 0)
+            //        newChat = true;
+            //    //生成设置参数
+            //    APISetting apiSetting = new APISetting();
+            //    List<AImodel> aImodels = new List<AImodel>();
+            //    if (chatSetting != null && chatSetting.MyChatModel != null && chatSetting.MyChatModel.Count > 0)
+            //    {
+            //        foreach (var item in chatSetting.MyChatModel)
+            //        {
+            //            AImodel aiModel = new AImodel();
+            //            aiModel.ModelNick = item.ChatNickName;
+            //            aiModel.ModelName = item.ChatModel;
+            //            aiModel.BaseUrl = item.ChatBaseURL;
+            //            aiModel.ApiKey = item.ChatApiKey;
+            //            aImodels.Add(aiModel);
+            //        }
+            //        apiSetting.BaseUrl = aImodels.Where(x => x.ModelName == chatDto.aiModel).FirstOrDefault().BaseUrl;
+            //        apiSetting.ApiKey = aImodels.Where(x => x.ModelName == chatDto.aiModel).FirstOrDefault().ApiKey;
+            //        useMyKey = true;
+            //    }
+            //    else
+            //    {
+            //        //获取模型设置
+            //        aImodels = _systemService.GetAImodel();
+            //        apiSetting.BaseUrl = aImodels.Where(x => x.ModelName == chatDto.aiModel).FirstOrDefault().BaseUrl;
+            //        apiSetting.ApiKey = aImodels.Where(x => x.ModelName == chatDto.aiModel).FirstOrDefault().ApiKey;
+            //    }
+            //    //生成AI请求参数
+            //    string input = string.Empty;
+            //    string output = string.Empty;
+            //    AiChat aiChat = new AiChat();
+            //    VisionBody visionBody = new VisionBody();
+            //    aiChat.Stream = true;
+            //    VisionImg visionImg = new VisionImg();
+            //    input += promptHeadle;
+            //    visionBody.model = chatDto.aiModel;
+            //    aiChat.Model = chatDto.aiModel;
+            //    List<VisionChatMesssage> tmpmsg_v = new List<VisionChatMesssage>();
+            //    List<Message> messages = new List<Message>();
+            //    if (chatDto.chatid.Contains("gridview"))
+            //        newChat = true;
+            //    if (newChat)
+            //    {
+            //        //如果是新对话直接填充用户输入
+            //        Message message = new Message();
+            //        if (!string.IsNullOrEmpty(chatDto.system_prompt))
+            //        {
+            //            message.Role = "system";
+            //            message.Content = chatDto.system_prompt;
+            //            messages.Add(message);
+            //        }
+            //        message = new Message();
+            //        message.Role = "user";
+            //        message.Content = promptHeadle;
+            //        messages.Add(message);
+            //    }
+            //    else
+            //    {
+            //        //否则查询历史记录
+            //        int historyCount = 5;//默认5
+            //        if (chatSetting.SystemSetting.HistoryCount != 5)
+            //            historyCount = chatSetting.SystemSetting.HistoryCount;
+            //        List<ChatHistory> chatHistories = _aiServer.GetChatHistories(Account, chatId, historyCount);
+            //        //遍历填充历史记录
+            //        foreach (var item in chatHistories)
+            //        {
+            //            input += item.Chat;
+            //            Message message = new Message();
+            //            if (!string.IsNullOrEmpty(chatDto.system_prompt))
+            //            {
+            //                message.Role = "system";
+            //                message.Content = chatDto.system_prompt;
+            //                messages.Add(message);
+            //            }
+            //            message = new Message();
+            //            message.Role = item.Role;
+            //            message.Content = item.Chat;
+            //            messages.Add(message);
+
+
+            //        }
+            //        //填充用户输入
+            //        Message message1 = new Message();
+            //        message1.Role = "user";
+            //        message1.Content = promptHeadle;
+            //        messages.Add(message1);
+
+
+            //    }
+            //    aiChat.Messages = messages;
+            //    visionBody.messages = tmpmsg_v.ToArray();
+            //    //准备调用AI接口，缓存存入工作中状态
+            //    string sysmsg = string.Empty;
+            //    await foreach (var responseContent in _aiServer.CallingAI(aiChat, apiSetting, visionBody))
+            //    {
+            //        string thisTask = await _redis.GetAsync($"{chatId}_process");
+            //        if (string.IsNullOrEmpty(thisTask))
+            //            break;
+            //        if (bool.Parse(thisTask))
+            //        {
+            //            sysmsg += responseContent.Choices[0].Delta.Content;
+            //            chatRes.message = responseContent.Choices[0].Delta.Content;
+            //            await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+            //            //Thread.Sleep(50);
+            //        }
+            //        else
+            //        {
+            //            break;
+            //        }
+            //    }
+            //    //保存对话记录
+            //    output = sysmsg;
+            //    TikToken tikToken = TikToken.GetEncoding("cl100k_base");
+            //    await _aiServer.SaveChatHistory(Account, chatId, chatDto.msg, chatDto.msgid_u, chatDto.chatgroupid, "user", chatDto.aiModel);
+            //    await _aiServer.SaveChatHistory(Account, chatId, sysmsg, chatDto.msgid_g, chatDto.chatgroupid, "assistant", chatDto.aiModel);
+            //    await _financeService.CreateUseLogAndUpadteMoney(Account, chatDto.aiModel, tikToken.Encode(input).Count, tikToken.Encode(output).Count);
+            //    chatRes.message = "";
+            //    chatRes.isfinish = true;
+            //    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+            //}
+            //catch (Exception e)
+            //{
+            //    await _redis.DeleteAsync($"{chatId}_process");
+            //    chatRes.message = $"糟糕！出错了！错误原因：【{e.Message}】,刷新页面或重试一次吧😢";
+            //    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+            //    chatRes.message = "";
+            //    chatRes.isfinish = true;
+            //    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+            //    return;
+            //}
+        }
+
+
         // 重写OnConnectedAsync方法
         public override async Task OnConnectedAsync()
         {

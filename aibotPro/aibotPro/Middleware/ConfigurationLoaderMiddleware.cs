@@ -31,9 +31,12 @@ public class ConfigurationLoaderMiddleware
             var systemConfigStr = await scopedRedis.GetAsync("SystemConfig");//用于手动重载系统配置
             if (!IsInitialized || string.IsNullOrEmpty(systemConfigStr))//如果没有初始化
             {
-                // 从数据库加载系统配置信息
-                var systemConfig = scopedContext.SystemCfgs.ToList();
-                await scopedRedis.SetAsync("SystemConfig", JsonConvert.SerializeObject(systemConfig));
+                if (System.IO.File.Exists("aibotinstall.lock"))//非安装状态
+                {
+                    // 从数据库加载系统配置信息
+                    var systemConfig = scopedContext.SystemCfgs.ToList();
+                    await scopedRedis.SetAsync("SystemConfig", JsonConvert.SerializeObject(systemConfig));
+                }
                 // 从数据库加载AI模型信息
                 //var aiModel = scopedContext.AImodels.ToList();
                 // 将配置信息存入Redis以便后续使用

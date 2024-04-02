@@ -1,5 +1,5 @@
 ﻿let page = 1;
-let pageSize = 10;
+let pageSize = 12;
 let isLoading = false;
 
 $(function () {
@@ -50,7 +50,7 @@ let noMoreData = false;
 function getAIdrawResList(type) {
     if (type == 'init') {
         page = 1;
-        pageSize = 10;
+        pageSize = 12;
     }
     if (type == 'loadmore' && noMoreData) { // 加载更多但标志已表示没有更多数据
         balert('没有更多了', "info", false, 1500, "center");
@@ -83,7 +83,7 @@ function getAIdrawResList(type) {
                                         <p class="card-text" style="max-height: 100px; overflow: auto;">${item.prompt}</p>
                                         <div class="d-flex justify-content-center">
                                             <a href="${item.imgSavePath}" class="btn btn-primary" style="margin-right:10px;" download>下载</a>
-                                            <a href="#" class="btn btn-secondary" onclick="deleteImg(${item.id})">删除</a>
+                                            <button class="btn btn-secondary" onclick="deleteImg(${item.id})">删除</button>
                                         </div>
                                     </div>
                                 </div>
@@ -94,8 +94,12 @@ function getAIdrawResList(type) {
                     if (res.data.length < pageSize) {
                         noMoreData = true;
                     }
-                } else
+                } else {
+                    if (res.data.length < pageSize) {
+                        noMoreData = true;
+                    }
                     $grid.html(html);
+                }
                 $('.image-popup').magnificPopup({
                     type: 'image'
                 });

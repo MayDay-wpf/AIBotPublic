@@ -71,12 +71,14 @@ function balert(message, type, dismissible, autoCloseTime, position, callback) {
     }
 
     // Append alert to container
-    $("#alertContainer").prepend($alert);
+    $("#alertContainer").prepend($alert); 
 
     // If autoCloseTime is set, then set a timeout to close the alert
     if (typeof autoCloseTime === 'number' && autoCloseTime > 0) {
         setTimeout(function () {
-            $alert.alert('close');
+            $alert.fadeOut(function () {
+                $(this).alert('close'); // 关闭提醒框
+            });
         }, autoCloseTime);
     }
     else if (autoCloseTime == 0) {
@@ -84,7 +86,9 @@ function balert(message, type, dismissible, autoCloseTime, position, callback) {
     }
     else {
         setTimeout(function () {
-            $alert.alert('close');
+            $alert.fadeOut(function () {
+                $(this).alert('close'); // 关闭提醒框
+            });
         }, 2000);
     }
 
@@ -96,7 +100,9 @@ function balert(message, type, dismissible, autoCloseTime, position, callback) {
 
     // Function to manually destroy the alert
     function destroyAlert() {
-        $alert.alert('close');
+        $alert.fadeOut(function () {
+            $(this).alert('close'); // 关闭提醒框
+        });
     }
 
     // Return the function to allow manual closure of the alert

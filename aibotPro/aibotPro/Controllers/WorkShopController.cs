@@ -14,13 +14,15 @@ namespace aibotPro.Controllers
         private readonly JwtTokenManager _jwtTokenManager;
         private readonly IWorkShop _workShop;
         private readonly IUsersService _usersService;
-        public WorkShopController(AIBotProContext context, ISystemService systemService, JwtTokenManager jwtTokenManager, IWorkShop workShop, IUsersService usersService)
+        private readonly IRedisService _redisService;
+        public WorkShopController(AIBotProContext context, ISystemService systemService, JwtTokenManager jwtTokenManager, IWorkShop workShop, IUsersService usersService, IRedisService redisService)
         {
             _context = context;
             _systemService = systemService;
             _jwtTokenManager = jwtTokenManager;
             _workShop = workShop;
             _usersService = usersService;
+            _redisService = redisService;
         }
 
         public IActionResult WorkShopChat()
@@ -36,6 +38,14 @@ namespace aibotPro.Controllers
             return View();
         }
         public IActionResult MyPlugins()
+        {
+            return View();
+        }
+        public IActionResult OpenAPI()
+        {
+            return View();
+        }
+        public IActionResult WorkFlow()
         {
             return View();
         }
@@ -101,6 +111,12 @@ namespace aibotPro.Controllers
                 if (oldPcookies != null)
                 {
                     _context.PluginsCookies.RemoveRange(oldPcookies);
+                }
+                //删除原有workFlow
+                var oldWorkFlow = _context.WorkFlows.Where(x => x.Pcode == oldPlugin.Pcode).FirstOrDefault();
+                if (oldWorkFlow != null)
+                {
+                    _context.WorkFlows.Remove(oldWorkFlow);
                 }
                 _context.SaveChanges();
             }
@@ -190,6 +206,37 @@ namespace aibotPro.Controllers
                         };
                         _context.PluginsCookies.Add(pluginsCookie);
                     }
+                }
+                //写入JsonPr表
+                if (!string.IsNullOrEmpty(plugin.JsonPr) && plugin.Pmethod != "get")
+                {
+                    PluginsJsonPr jsonPr = new PluginsJsonPr
+                    {
+                        PrCode = plugin.Pcode,
+                        JsonContent = plugin.JsonPr
+                    };
+                    _context.PluginsJsonPrs.Add(jsonPr);
+                }
+                //如果是工作流插件则写入工作流表   
+                if (!string.IsNullOrEmpty(plugin.WorkFlowCode))
+                {
+                    //从缓存中获取工作流数据
+                    var nodeData = _redisService.GetAsync(plugin.WorkFlowCode).Result;
+                    //如果缓存中没有，则抛出异常
+                    if (string.IsNullOrEmpty(nodeData))
+                    {
+                        return Json(new { success = false, msg = "工作流数据未保存" });
+                    }
+
+                    WorkFlow workFlow = new WorkFlow
+                    {
+                        Account = username,
+                        FlowCode = plugin.WorkFlowCode,
+                        Pcode = plugin.Pcode,
+                        FlowJson = nodeData,
+                        CreateTime = DateTime.Now
+                    };
+                    _context.WorkFlows.Add(workFlow);
                 }
                 _context.SaveChanges();
                 if (plugin.IsPublic == "yes")
@@ -415,6 +462,55 @@ namespace aibotPro.Controllers
             {
                 success = true,
                 data = aiModel_lst
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> SaveNodeDataToCache(string workflowcode, string nodeData)
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+
+            var workflowAccount = _context.WorkFlows.Where(x => x.FlowCode == workflowcode).Select(x => x.Account).FirstOrDefault();
+            if (!string.IsNullOrEmpty(workflowAccount))
+            {
+                if (username == workflowAccount)
+                    await _redisService.SetAsync(workflowcode, nodeData, TimeSpan.FromHours(2));
+                else
+                    return Json(new { success = false, msg = "非工作流作者无法保存" });
+            }
+            else
+                await _redisService.SetAsync(workflowcode, nodeData, TimeSpan.FromHours(2));
+            return Json(new
+            {
+                success = true
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> NodeIsMine(string workflowcode)
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+
+            var workflowAccount = _context.WorkFlows.Where(x => x.FlowCode == workflowcode).Select(x => x.Account).FirstOrDefault();
+            if (!string.IsNullOrEmpty(workflowAccount))
+            {
+                if (username == workflowAccount)
+                    return Json(new { success = true });
+                else
+                    return Json(new { success = false });
+            }
+            else
+                return Json(new { success = true });
+        }
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> GetWorkFlowNodeData(string workflowcode)
+        {
+            var result = await _workShop.GetWorkFlowNodeData(workflowcode);
+            return Json(new
+            {
+                success = true,
+                data = result
             });
         }
 

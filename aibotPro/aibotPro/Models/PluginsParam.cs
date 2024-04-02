@@ -16,6 +16,8 @@ namespace aibotPro.Models
         public string PrCode { get; set; }
         [StringLength(200)]
         public string PrName { get; set; }
+        [StringLength(50)]
+        public string PrType { get; set; }
         [StringLength(1000)]
         public string PrInfo { get; set; }
         [StringLength(500)]

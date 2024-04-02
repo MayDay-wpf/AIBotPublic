@@ -1,5 +1,5 @@
 let page = 1;
-let pageSize = 10;
+let pageSize = 12;
 let isLoading = false;
 $(function () {
     $('.nav-sub-link').removeClass('active');
@@ -55,12 +55,14 @@ $(document).keypress(function (e) {
 });
 let noMoreData = false;
 function getWorkShopPlugins(type) {
+    loadingOverlay.show();
     var name = $('#searchKey').val();
     if (type == 'init') {
         page = 1;
-        pageSize = 10;
+        pageSize = 12;
     }
     if (type == 'loadmore' && noMoreData) { // 加载更多但标志已表示没有更多数据
+        loadingOverlay.hide();
         balert('没有更多了', "info", false, 1500, "center");
         return; // 直接返回，不再进行请求
     }
@@ -77,6 +79,7 @@ function getWorkShopPlugins(type) {
         url: '/WorkShop/GetWorkShopPlugins',
         data: data,
         success: function (res) {
+            loadingOverlay.hide();
             if (res.success) {
                 var html = '';
                 for (var i = 0; i < res.data.length; i++) {
@@ -89,8 +92,8 @@ function getWorkShopPlugins(type) {
                     html += '<p class="card-text" style="max-height: 100px; overflow: auto;">' + item.pfunctioninfo + '</p>';
                     html += '<p class="card-text"><span>价格：</span><span style="color:#f2c044" class="plugin_price">' + item.pluginprice + '</span></p>';
                     html += '<div class="d-flex justify-content-center">';
-                    html += `<a href="#" class="btn btn-primary" style="margin-right:10px;" onclick="insertPlugin(` + item.id + `,'` + item.pluginprice + `')">安装</a>`;
-                    html += '<a href="#" class="btn btn-secondary" onclick="seePlugin(' + item.id + ')">查看</a>';
+                    html += `<button class="btn btn-primary" style="margin-right:10px;" onclick="insertPlugin(` + item.id + `,'` + item.pluginprice + `')">安装</button>`;
+                    html += '<button class="btn btn-secondary" onclick="seePlugin(' + item.id + ')">查看</button>';
                     html += '</div>';
                     html += '</div>';
                     html += '</div>';
@@ -101,9 +104,16 @@ function getWorkShopPlugins(type) {
                     if (res.data.length < pageSize) {
                         noMoreData = true;
                     }
-                } else
+                } else {
                     $('#masonry-layout').html(html);
+                    if (res.data.length < pageSize) {
+                        noMoreData = true;
+                    }
+                }
             }
+        },
+        error: function (res) {
+            loadingOverlay.hide();
         }
     });
 }

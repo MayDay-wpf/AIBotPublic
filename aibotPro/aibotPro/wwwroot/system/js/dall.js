@@ -29,7 +29,7 @@ $(document).ready(function () {
             //发起请求
             $("#resview").show();
             $('html, body').animate({ scrollTop: $('.content-body').height() }, 1000);
-            balert('任务创建成功', 'success', false, 1000, "center");
+            balert('发送任务创建请求成功', 'success', false, 1000, "center");
             $("#nt").text('绘图中，请勿刷新页面...');
             $.ajax({
                 type: "POST",
@@ -59,7 +59,7 @@ $(document).ready(function () {
                         //恢复按钮
                         $("#createTaskBtn").prop('disabled', false).addClass('btn-success').removeClass('btn-secondary');
                         $("#resview").hide();
-                        balert('任务创建失败', 'danger', false, 1000, "center");
+                        balert(data.msg, 'danger', false, 1000, "center");
                     }
                 },
                 error: function (xhr, status, error) {

@@ -78,6 +78,15 @@ namespace aibotPro.Service
             //保存到数据库
             return _context.SaveChanges() > 0;
         }
+        public async Task<bool> SaveAssistantSetting(List<AssistantModelPrice> assistantModelPrice)
+        {
+            //删除所有AI聊天设置
+            _context.AssistantModelPrices.RemoveRange(_context.AssistantModelPrices);
+            //保存AI聊天设置
+            _context.AssistantModelPrices.AddRange(assistantModelPrice);
+            //保存到数据库
+            return _context.SaveChanges() > 0;
+        }
         public async Task<bool> SaveModelPrice(List<ModelPrice> modelPrice)
         {
             //删除所有模型价格
@@ -129,6 +138,7 @@ namespace aibotPro.Service
             }
             _context.Users.Add(new User
             {
+                UserCode = Guid.NewGuid().ToString("N"),
                 Account = account,
                 Password = _systemService.ConvertToMD5(password),
                 Nick = account,
@@ -164,6 +174,11 @@ namespace aibotPro.Service
                 });
             }
             return _context.SaveChanges() > 0;
+        }
+        public bool ApiKeyCheck(string key)
+        {
+            var result = _context.APIKEYs.Where(x => x.ApiKey1 == key).FirstOrDefault();
+            return result != null;
         }
     }
 }

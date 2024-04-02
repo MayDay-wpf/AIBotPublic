@@ -12,8 +12,8 @@
             <i data-feather="arrow-left">
             </i>
         </a>
-        <button type="button" class="btn btn-primary" onclick="saveAssistantSetting()">
-            <i data-feather="save"></i>保存助理设置
+        <button type="button" class="btn btn-primary save" onclick="saveAssistant()">
+            <i data-feather="save"></i>保存助理配置
         </button>
     </div>
 </div>
@@ -28,7 +28,7 @@
             <span>OpenAI官方出品的助理GPT🤖</span>
         </div>
     </div>
-    <div class="card">
+    <div class="card" id="assistantsetting">
         <div class="card-header">
             <h5>配置列表</h5>
         </div>
@@ -43,22 +43,30 @@
             </div>
             <div class="form-group">
                 <label for="mj-baseurl">助理系统提示词：<span class="tx-danger">*</span></label>
-                <textarea class="form-control" maxlength="500" id="assisName" placeholder="请输入助理系统提示词"></textarea>
+                <textarea class="form-control" maxlength="500" style="height:200px;" id="assisSystemPrompt" placeholder="请输入助理系统提示词"></textarea>
             </div>
             <div class="form-group">
                 <label for="mj-baseurl">选择助理模型：<span class="tx-danger">*</span></label>
                 <select class="form-control select" id="assisModel">
-                    <option value="gpt-3.5-turbo">GPT-3.5</option>
-                    <option value="gpt-4-turbo-preview">GPT-4.0</option>
                 </select>
             </div>
-            <div class="form-group">
-                <input type="checkbox" id="codeinterpreter" checked autocomplete="off" /> 代码解释器(Code interpreter)
-                <br />
-                <br />
-                <input type="checkbox" id="retrieval" checked autocomplete="off" /> 文件检索器((Retrieval))
+            <div class="form-group mg-b-30">
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="codeinterpreter">
+                    <label class="custom-control-label tx-sm" for="codeinterpreter">
+                        代码解释器(Code interpreter)
+                    </label>
+                </div>
             </div>
-            <div class="form-group" id="filegroup-assis">
+            <div class="form-group mg-b-30">
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="retrieval">
+                    <label class="custom-control-label tx-sm" for="retrieval">
+                        文件检索器((Retrieval))
+                    </label>
+                </div>
+            </div>
+            <div class="form-group" id="filegroup-assis" style="display:none">
                 <label class="btn btn-info" for="fileInput" style="cursor:pointer;">选择文件</label>
                 <input type="file" id="fileInput" class="form-control" multiple style="display: none;">
             </div>

@@ -12,6 +12,7 @@ using OfficeOpenXml;
 using Spire.Presentation;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Drawing;
 using System.Net;
 using System.Net.Mail;
 using System.Security.Cryptography;
@@ -19,6 +20,7 @@ using System.Security.Principal;
 using System.Text;
 using System.Web;
 using TiktokenSharp;
+using static OpenAI.ObjectModels.SharedModels.IOpenAiModels;
 
 namespace aibotPro.Service
 {
@@ -51,7 +53,7 @@ namespace aibotPro.Service
             }
             else
             {
-                WriteLog("系统配置表为空", Dtos.LogLevel.Error, "system");
+                WriteLogUnAsync("系统配置表为空", Dtos.LogLevel.Error, "system");
                 return false;
             }
             client.Credentials = new NetworkCredential(fromEmail, mailPwd);
@@ -67,7 +69,7 @@ namespace aibotPro.Service
             }
             catch (Exception ex)
             {
-                WriteLog(ex.Message, Dtos.LogLevel.Error, "system");
+                WriteLogUnAsync(ex.Message, Dtos.LogLevel.Error, "system");
                 return false;
             }
         }
@@ -163,6 +165,26 @@ namespace aibotPro.Service
             }
             return aiModel_lst;
         }
+        public List<AImodelsUserSeq> GetAImodelSeq(string account)
+        {
+            //尝试从Redis中获取AI模型序列
+            var aiModelSeq = _redis.GetAsync(account + "_modelSeq").Result;
+            List<AImodelsUserSeq> aiModelSeq_lst = new List<AImodelsUserSeq>();
+            //如果Redis中没有AI模型序列信息，则从数据库加载AI模型序列信息
+            if (string.IsNullOrEmpty(aiModelSeq))
+            {
+                // 从数据库加载AI模型序列信息
+                aiModelSeq_lst = _context.AImodelsUserSeqs.Where(x => x.Account == account).ToList();
+                // 将配置信息存入Redis以便后续使用
+                _redis.SetAsync(account + "_modelSeq", JsonConvert.SerializeObject(aiModelSeq_lst));
+            }
+            else
+            {
+                // 将配置信息从Redis中取出并反序列化
+                aiModelSeq_lst = JsonConvert.DeserializeObject<List<AImodelsUserSeq>>(aiModelSeq);
+            }
+            return aiModelSeq_lst;
+        }
         public List<WorkShopAIModel> GetWorkShopAImodel()
         {
             var aiModel = _redis.GetAsync("WorkShopAImodel").Result;
@@ -210,7 +232,7 @@ namespace aibotPro.Service
                 file.CopyTo(stream);
             }
             //写入日志
-            WriteLog($"文件{file.FileName}上传成功", Dtos.LogLevel.Info, Account);
+            WriteLogUnAsync($"文件{file.FileName}上传成功", Dtos.LogLevel.Info, Account);
             //返回文件相对路径
             return savePath;
         }
@@ -451,6 +473,238 @@ namespace aibotPro.Service
         public string UrlDecode(string encodedText)
         {
             return HttpUtility.UrlDecode(encodedText);
+        }
+        public bool CheckDataBaseServer()
+        {
+            try
+            {
+                _context.Database.CanConnect();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                WriteLogUnAsync(ex.Message, Dtos.LogLevel.Error, "system");
+                return false;
+            }
+        }
+        public bool CheckRedis()
+        {
+            //检查Redis是否连接
+            return _redis.CheckRedis();
+        }
+        public bool CreateAdmin(string account, string password)
+        {
+            try
+            {
+                //先创建用户
+                User user = new User()
+                {
+                    Account = account,
+                    Password = ConvertToMD5(password),
+                    CreateTime = DateTime.Now,
+                    Nick = "admin",
+                    HeadImg = "/system/images/defaultHeadImg.png",
+                    Sex = "unknow",
+                    UserCode = GenerateCode(6),
+                    IsBan = 0,
+                    Mcoin = 999
+                };
+                _context.Users.Add(user);
+                //设置用户默认设置
+                UserSetting userSetting = new UserSetting();
+                userSetting.Account = account;
+                userSetting.UseHistory = 1;
+                userSetting.GoodHistory = 1;
+                userSetting.HistoryCount = 5;
+                userSetting.Scrolling = 1;
+                _context.UserSettings.Add(userSetting);
+                //添加管理员
+                Admin admin = new Admin()
+                {
+                    Account = account,
+                };
+                _context.Admins.Add(admin);
+                return _context.SaveChanges() > 0;
+            }
+            catch (Exception)
+            {
+                WriteLogUnAsync("创建管理员失败", Dtos.LogLevel.Error, "system");
+                return false;
+            }
+        }
+        public bool CreateSystemCfg()
+        {
+            SystemCfg Mail = new SystemCfg()
+            {
+                CfgKey = "Mail",
+                CfgCode = "Mail",
+                CfgValue = "After"
+            };
+            SystemCfg MailPwd = new SystemCfg()
+            {
+                CfgKey = "MailPwd",
+                CfgCode = "MailPwd",
+                CfgValue = "After"
+            };
+            SystemCfg RegiestMcoin = new SystemCfg()
+            {
+                CfgKey = "RegiestMcoin",
+                CfgCode = "RegiestMcoin",
+                CfgValue = "3"
+            };
+            SystemCfg Baidu_TXT_AK = new SystemCfg()
+            {
+                CfgKey = "Baidu_TXT_AK",
+                CfgCode = "Baidu_TXT_AK",
+                CfgValue = "After"
+            };
+            SystemCfg Baidu_TXT_SK = new SystemCfg()
+            {
+                CfgKey = "Baidu_TXT_SK",
+                CfgCode = "Baidu_TXT_SK",
+                CfgValue = "After"
+            };
+            SystemCfg GoogleSearchApiKey = new SystemCfg()
+            {
+                CfgKey = "GoogleSearchApiKey",
+                CfgCode = "GoogleSearchApiKey",
+                CfgValue = "After"
+            };
+            SystemCfg GoogleSearchEngineId = new SystemCfg()
+            {
+                CfgKey = "GoogleSearchEngineId",
+                CfgCode = "GoogleSearchEngineId",
+                CfgValue = "After"
+            };
+            SystemCfg Alibaba_Captcha_AK = new SystemCfg()
+            {
+                CfgKey = "Alibaba_Captcha_AK",
+                CfgCode = "Alibaba_Captcha_AK",
+                CfgValue = "After"
+            };
+            SystemCfg Alibaba_Captcha_SK = new SystemCfg()
+            {
+                CfgKey = "Alibaba_Captcha_SK",
+                CfgCode = "Alibaba_Captcha_SK",
+                CfgValue = "After"
+            };
+            SystemCfg Alibaba_Captcha_Endpoint = new SystemCfg()
+            {
+                CfgKey = "Alibaba_Captcha_Endpoint",
+                CfgCode = "Alibaba_Captcha_Endpoint",
+                CfgValue = "After"
+            };
+            SystemCfg Domain = new SystemCfg()
+            {
+                CfgKey = "Domain",
+                CfgCode = "Domain",
+                CfgValue = "After"
+            };
+            SystemCfg Alibaba_DashVectorApiKey = new SystemCfg()
+            {
+                CfgKey = "Alibaba_DashVectorApiKey",
+                CfgCode = "Alibaba_DashVectorApiKey",
+                CfgValue = "After"
+            };
+            SystemCfg Alibaba_DashVectorEndpoint = new SystemCfg()
+            {
+                CfgKey = "Alibaba_DashVectorEndpoint",
+                CfgCode = "Alibaba_DashVectorEndpoint",
+                CfgValue = "After"
+            };
+            SystemCfg Alibaba_DashVectorCollectionName = new SystemCfg()
+            {
+                CfgKey = "Alibaba_DashVectorCollectionName",
+                CfgCode = "Alibaba_DashVectorCollectionName",
+                CfgValue = "After"
+            };
+            SystemCfg EmbeddingsUrl = new SystemCfg()
+            {
+                CfgKey = "EmbeddingsUrl",
+                CfgCode = "EmbeddingsUrl",
+                CfgValue = "After"
+            };
+            SystemCfg EmbeddingsApiKey = new SystemCfg()
+            {
+                CfgKey = "EmbeddingsApiKey",
+                CfgCode = "EmbeddingsApiKey",
+                CfgValue = "After"
+            };
+            SystemCfg QAurl = new SystemCfg()
+            {
+                CfgKey = "QAurl",
+                CfgCode = "QAurl",
+                CfgValue = "After"
+            };
+            SystemCfg ShareMcoin = new SystemCfg()
+            {
+                CfgKey = "ShareMcoin",
+                CfgCode = "ShareMcoin",
+                CfgValue = "3"
+            };
+            SystemCfg Baidu_OBJ_AK = new SystemCfg()
+            {
+                CfgKey = "Baidu_OBJ_AK",
+                CfgCode = "Baidu_OBJ_AK",
+                CfgValue = "After"
+            };
+            SystemCfg Baidu_OBJ_SK = new SystemCfg()
+            {
+                CfgKey = "Baidu_OBJ_SK",
+                CfgCode = "Baidu_OBJ_SK",
+                CfgValue = "After"
+            };
+            _context.SystemCfgs.Add(Mail);
+            _context.SystemCfgs.Add(MailPwd);
+            _context.SystemCfgs.Add(RegiestMcoin);
+            _context.SystemCfgs.Add(Baidu_TXT_AK);
+            _context.SystemCfgs.Add(Baidu_TXT_SK);
+            _context.SystemCfgs.Add(GoogleSearchApiKey);
+            _context.SystemCfgs.Add(GoogleSearchEngineId);
+            _context.SystemCfgs.Add(Alibaba_Captcha_AK);
+            _context.SystemCfgs.Add(Alibaba_Captcha_SK);
+            _context.SystemCfgs.Add(Alibaba_Captcha_Endpoint);
+            _context.SystemCfgs.Add(Domain);
+            _context.SystemCfgs.Add(Alibaba_DashVectorApiKey);
+            _context.SystemCfgs.Add(Alibaba_DashVectorEndpoint);
+            _context.SystemCfgs.Add(Alibaba_DashVectorCollectionName);
+            _context.SystemCfgs.Add(EmbeddingsUrl);
+            _context.SystemCfgs.Add(EmbeddingsApiKey);
+            _context.SystemCfgs.Add(QAurl);
+            _context.SystemCfgs.Add(ShareMcoin);
+            _context.SystemCfgs.Add(Baidu_OBJ_AK);
+            _context.SystemCfgs.Add(Baidu_OBJ_SK);
+
+            if (_context.SaveChanges() > 0)
+            {
+                //在系统根目录生成aibotinstall.lock 文件
+                string lockFilePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "aibotinstall.lock");
+                try
+                {
+                    if (!File.Exists(lockFilePath))
+                    {
+                        using (FileStream lockFile = File.Create(lockFilePath))
+                        {
+                            // 写入一些内容到锁文件，可以是空内容或者一些标识信息
+                            byte[] content = Encoding.UTF8.GetBytes("Lock file created by the application.");
+                            lockFile.Write(content, 0, content.Length);
+                            return true;
+                        }
+                    }
+                    else
+                        return false;
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    return false;
+                }
+                catch (IOException)
+                {
+                    return false;
+                }
+            }
+            else
+                return false;
         }
     }
 }

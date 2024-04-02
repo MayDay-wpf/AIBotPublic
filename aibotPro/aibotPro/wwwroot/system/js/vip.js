@@ -8,6 +8,10 @@
 });
 
 function Pay(payMoney, type, param) {
+    //showConfirmationModal("已停止", `非常抱歉，会员服务已停止，您可以前往余额充值`, function () {
+    //    window.location.href = "/Pay/Balance";
+    //});
+    //return;
     showConfirmationModal("确认订单", `确认支付【${payMoney}】元吗？`, function () {
         if (payMoney != 15 && payMoney != 90) {
             balert("非法金额", "danger", false, 2000, "center");

@@ -182,6 +182,15 @@ namespace aibotPro.Controllers
             }
             return View();
         }
+        public IActionResult AssistantSetting()
+        {
+            var username = GetUserFromToken();
+            if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
+            {
+                return RedirectToAction("Users", "Login");
+            }
+            return View();
+        }
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult GetVisitorView()
@@ -348,6 +357,7 @@ namespace aibotPro.Controllers
                     vip.CreateTime = DateTime.Now;
                     _context.VIPs.Add(vip);
                 }
+                _context.SaveChanges();
                 await _systemService.WriteLog("管理员充值VIP|15", Dtos.LogLevel.Info, account);
             }
             else if (viptype == "VIP|90")
@@ -377,6 +387,8 @@ namespace aibotPro.Controllers
                 }
                 user.Mcoin = user.Mcoin + 100;
                 _context.Users.Update(user);
+                _context.SaveChanges();
+                await _systemService.WriteLog("管理员充值VIP|90", Dtos.LogLevel.Info, account);
             }
             else
             {
@@ -505,6 +517,7 @@ namespace aibotPro.Controllers
         public IActionResult GetChatSetting()
         {
             var chatSetting = _context.AImodels.AsNoTracking().ToList();
+            chatSetting.Sort((x, y) => x.Seq.GetValueOrDefault().CompareTo(y.Seq));
             return Json(new
             {
                 success = true,
@@ -568,6 +581,40 @@ namespace aibotPro.Controllers
         public async Task<IActionResult> SaveWorkShopSetting([FromForm] List<WorkShopAIModel> workShopAIModel)
         {
             bool result = await _adminsService.SaveWorkShopAiChatSetting(workShopAIModel);
+            if (result)
+            {
+                return Json(new
+                {
+                    success = true,
+                    msg = "保存成功"
+                });
+            }
+            else
+            {
+                return Json(new
+                {
+                    success = false,
+                    msg = "保存失败"
+                });
+            }
+        }
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public IActionResult GetAssistantSetting()
+        {
+            var workShopSetting = _context.AssistantModelPrices.AsNoTracking().ToList();
+            return Json(new
+            {
+                success = true,
+                msg = "获取成功",
+                data = workShopSetting
+            });
+        }
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public async Task<IActionResult> SaveAssistantSetting([FromForm] List<AssistantModelPrice> assistantModelPrices)
+        {
+            bool result = await _adminsService.SaveAssistantSetting(assistantModelPrices);
             if (result)
             {
                 return Json(new

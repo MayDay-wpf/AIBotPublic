@@ -18,7 +18,6 @@ namespace aibotPro.Models
         public string AImodel { get; set; }
         [StringLength(100)]
         public string ImgSavePath { get; set; }
-        [StringLength(1000)]
         public string Prompt { get; set; }
         [StringLength(500)]
         public string ReferenceImgPath { get; set; }

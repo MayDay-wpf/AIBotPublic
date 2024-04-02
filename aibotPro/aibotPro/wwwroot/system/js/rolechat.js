@@ -21,6 +21,7 @@
         runMarketRole(type);
     }
 });
+let roleAvatar = 'A';
 var max_textarea = false;
 var textarea = document.getElementById("Q");
 var $Q = $("#Q");
@@ -37,21 +38,49 @@ let pageSize = 20;
 var systemPrompt = "";
 var roleName = "";
 
-//websocket连接
+// websocket连接设置
 var connection = new signalR.HubConnectionBuilder()
     .withUrl('/chatHub', {
         accessTokenFactory: () => localStorage.getItem('aibotpro_userToken')
     })
     .withAutomaticReconnect()
     .build();
+
+// 启动连接
 connection.start()
     .then(function () {
-        console.log('与服务器握手成功 :-)');
+        console.log('与服务器握手成功 :-)'); // 与服务器握手成功
     })
     .catch(function (error) {
-        console.log('与服务器握手失败 :-( 原因: ' + error);
+        console.log('与服务器握手失败 :-( 原因: ' + error); // 与服务器握手失败
         sendExceptionMsg('与服务器握手失败 :-( 原因: ' + error);
+        // 检查令牌是否过期，如果是，则跳转到登录页面
+        if (isTokenExpiredError(error)) {
+            window.location.href = "/Users/Login";
+        }
     });
+
+// 检查错误是否表示令牌过期的函数
+// 注意：您需要根据实际的错误响应格式来调整此函数
+function isTokenExpiredError(error) {
+    // 这里的判断逻辑依赖于服务器返回的错误格式
+    // 例如，如果服务器在令牌过期时返回特定的状态码或错误信息，您可以在这里检查
+    var expiredTokenStatus = 401; // 假设401表示令牌过期
+    return error.statusCode === expiredTokenStatus || error.message.includes("令牌过期");
+}
+
+// You can also handle the reconnection events if needed:
+connection.onreconnecting((error) => {
+    console.assert(connection.state === signalR.HubConnectionState.Reconnecting);
+    console.log(`由于错误"${error}"失去连接。正在尝试重新连接。`);
+    // Here you might want to inform the user that the connection is being reattempted.
+});
+
+connection.onreconnected((connectionId) => {
+    console.assert(connection.state === signalR.HubConnectionState.Connected);
+    console.log(`连接已重新建立。已连接到connectionId为"${connectionId}"。`);
+    // Here you might want to inform the user that the connection has been successfully reestablished.
+});
 //监听键盘事件
 $(document).keypress(function (e) {
     if ($("#Q").is(":focus")) {
@@ -196,9 +225,8 @@ function getAIModelList() {
         },
         error: function (err) {
             //window.location.href = "/Users/Login";
-            balert("正在准备登录...", "info", false, 2000, "center", function () {
-                window.location.href = "/Users/Login";
-            });
+            balert("系统未配置AI模型", "info", false, 2000, "center");
+
         }
     });
 }
@@ -348,7 +376,7 @@ function sendMsg() {
     $("#Q").val("");
     $("#Q").focus();
     var html = `<div class="chat-message" data-group="` + chatgroupid + `">
-                    <div class="avatar">U</div>
+                    <div class="avatar"><img src='${HeadImgPath}'/></div>
                      <div class="chat-message-box">
                        <pre id="`+ msgid_u + `"></pre>
                      </div>
@@ -363,12 +391,13 @@ function sendMsg() {
         $("#" + msgid_u).append(`<br /><img src="` + image_path.replace("wwwroot", "") + `" style="max-width:50%" />`);
     }
     var gpthtml = `<div class="chat-message" data-group="` + chatgroupid + `">
-                    <div class="avatar gpt-avatar">A</div>
+                    <div class="avatar gpt-avatar">${roleAvatar}</div>
                     <div class="chat-message-box">
                         <div id="`+ msgid_g + `"></div><svg width="30" height="30" class="LDI"><circle cx="15" cy="15" r="7.5" fill="black" class="blinking-dot" /></svg>
                     </div>
                     <div>
                         <i data-feather="copy" class="chatbtns" onclick="copyAll('`+ msgid_g + `')"></i>
+                        <i data-feather="anchor" class="chatbtns" onclick="quote('`+ msgid_g + `')"></i>
                         <i data-feather="trash-2" class="chatbtns" onclick="deleteChatGroup('`+ chatgroupid + `')"></i>
                     </div>
                 </div>`;
@@ -381,7 +410,9 @@ function sendMsg() {
         .catch(function (err) {
             processOver = true;
             sendExceptionMsg(err.toString());
-            return console.error("发送消息时出现了一些未经处理的异常 :-( 原因：", err.toString());
+            //balert("您的登录令牌似乎已失效，我们将启动账号保护，请稍候，正在前往重新登录...", "danger", false, 3000, "center", function () {
+            //    window.location.href = "/Users/Login";
+            //});
         });
 }
 
@@ -408,10 +439,13 @@ function getHistoryList(pageIndex, pageSize, reload, loading, searchKey) {
         success: function (res) {
             //console.log(res);
             $(".divider-text").remove();
-            if (res.data.length < pageSize && pageIndex > 1 && !reload) {
+            if (res.data.length <= 0 && pageIndex > 1 && !reload) {
                 $(".chat-list").append(`<li class="divider-text" style="text-align:center;">没有更多数据了~</li>`);
                 //禁用loadMoreBtn
                 $("#loadMoreBtn").prop('disabled', true).addClass('btn-secondary').removeClass('btn-primary')
+                $(".chat-sidebar-body").animate({
+                    scrollTop: $(".chat-sidebar-body")[0].scrollHeight
+                }, 500)
             }
             var html = "";
             for (var i = 0; i < res.data.length; i++) {
@@ -444,8 +478,12 @@ function getHistoryList(pageIndex, pageSize, reload, loading, searchKey) {
             }
             if (reload)
                 $(".chat-list").html(html);
-            else
+            else {
                 $(".chat-list").append(html);
+                $(".chat-sidebar-body").animate({
+                    scrollTop: $(".chat-sidebar-body")[0].scrollHeight
+                }, 500);
+            }
             feather.replace();
         },
         error: function (err) {
@@ -572,7 +610,7 @@ function showHistoryDetail(id) {
                     if (content.indexOf('aee887ee6d5a79fdcmay451ai8042botf1443c04') == -1) {
                         content = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                         html += `<div class="chat-message" data-group="` + res.data[i].chatGroupId + `">
-                                    <div class="avatar">U</div>
+                                    <div class="avatar"><img src='${HeadImgPath}'/></div>
                                      <div class="chat-message-box">
                                        <pre id="`+ res.data[i].chatCode + `">` + content + `</pre>
                                      </div>
@@ -584,7 +622,7 @@ function showHistoryDetail(id) {
                     } else {
                         var contentarr = content.split("aee887ee6d5a79fdcmay451ai8042botf1443c04");
                         html += `<div class="chat-message" data-group="` + res.data[i].chatGroupId + `">
-                                <div class="avatar">U</div>
+                                <div class="avatar"><img src='${HeadImgPath}'/></div>
                                  <div class="chat-message-box">
                                    <pre id="`+ res.data[i].chatCode + `">` + contentarr[0].replace(/</g, "&lt;").replace(/>/g, "&gt;") + contentarr[1] + `</pre>
                                  </div>
@@ -600,12 +638,13 @@ function showHistoryDetail(id) {
                     var markedcontent = marked(content);//md.render(content)//marked.parse(content);
                     var encoder = new TextEncoder();
                     html += `<div class="chat-message" data-group="` + res.data[i].chatGroupId + `">
-                                <div class="avatar gpt-avatar">A</div>
+                                <div class="avatar gpt-avatar">${roleAvatar}</div>
                                 <div class="chat-message-box">
                                     <div id="`+ res.data[i].chatCode + `">` + markedcontent + `</div>
                                 </div>
                                 <div>
                                   <i data-feather="copy" class="chatbtns" onclick="copyAll('`+ res.data[i].chatCode + `')"></i>
+                                  <i data-feather="anchor" class="chatbtns" onclick="quote('`+ res.data[i].chatCode + `')"></i>
                                   <i data-feather="trash-2" class="chatbtns" onclick="deleteChatGroup('`+ res.data[i].chatGroupId + `')"></i>
                                 </div>
                             </div>`;
@@ -763,8 +802,11 @@ function addCopyBtn() {
         var copyBtn = $('<span>').addClass('copy-btn').attr('title', 'Copy to clipboard');
         copyBtn.html(feather.icons.clipboard.toSvg());
 
-        // 把按钮添加到按钮容器中
-        copyContainer.append(copyBtn);
+        if ($(this).parent().find('.copy-btn').length === 0) {
+            copyContainer.append(copyBtn);
+            // 把按钮容器添加到 code 标签的外层容器中（假设是 pre 标签）
+            codeBlock.parent().append(copyContainer);
+        }
 
         // 把按钮容器添加到 code 标签的外层容器中（假设是 pre 标签）
         codeBlock.parent().append(copyContainer);
@@ -845,7 +887,6 @@ function runTestRole() {
         }
     });
 }
-
 function runMarketRole(type) {
     //发起请求
     loadingOverlay.show();
@@ -859,6 +900,7 @@ function runMarketRole(type) {
             if (res.success) {
                 systemPrompt = res.data.roleSystemPrompt;
                 roleName = res.data.roleName;
+                roleAvatar = `<img src="${res.data.roleAvatar}" />`;
                 //截取roleName前5个字符
                 $("#roleName").html(roleName.substring(0, 5) + '...');
                 if (res.data.roleChat != null)
@@ -905,7 +947,24 @@ function writeChats(roleChats) {
         }
     });
 }
-
+function quote(id) {
+    var $elem = $("#" + id);
+    // 检查是否存在<img>标签
+    if ($elem.find("img").length > 0) {
+        // 如果存在，遍历所有找到的<img>标签
+        $elem.find("img").each(function () {
+            // 为每个<img>标签提取src属性
+            var imgSrc = $(this).attr("src");
+            image_path = "wwwroot" + imgSrc;
+            $("#openCamera").css("color", "red");
+            $Q.val("回复：" + $elem.text());
+        });
+    } else {
+        $Q.val("回复： " + $elem.text() + "\n\n");
+    }
+    $Q.focus();
+    adjustTextareaHeight();
+}
 //----------------------通用函数----------------------
 function adjustTextareaHeight() {
     if (max_textarea)

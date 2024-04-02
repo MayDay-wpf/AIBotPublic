@@ -24,5 +24,7 @@ namespace aibotPro.Interface
         Share GetShareInfo(string account);//获取分享信息
         List<Share> GetMyShare(string account, int page, int size, out int total);
         List<ShareLog> GetShareLog(string account, int page, int size, out int total);
+
+        bool SaveModelSeq(string account, List<ChatModelSeq> chatModelSeq, out string errormsg);
     }
 }

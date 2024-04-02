@@ -1,4 +1,5 @@
-﻿using aibotPro.Dtos;
+﻿using aibotPro.AppCode;
+using aibotPro.Dtos;
 using aibotPro.Interface;
 using aibotPro.Models;
 using aibotPro.Service;
@@ -99,6 +100,16 @@ namespace aibotPro.Controllers
         public IActionResult SendRegiestEmail([FromBody] JsonElement requestBody)
         {
             string captchaVerifyParam = requestBody.GetProperty("captchaVerifyParam").GetString();
+            bool result = _systemService.AlibabaCaptchaAsync(captchaVerifyParam).Result;
+            if (!result)
+            {
+                return Json(new
+                {
+                    success = false,
+                    msg = "验证码错误",
+                    captchaVerifyResult = false
+                });
+            }
             string toemail = requestBody.GetProperty("toemail").GetString();
             string title = "【注册验证】";
             string content = @"
@@ -149,14 +160,14 @@ namespace aibotPro.Controllers
                     msg = "参数不能为空",
                 });
             }
-            bool result = _systemService.AlibabaCaptchaAsync(captchaVerifyParam).Result;
-            if (!result)
+            var tomail = toemail.ToLower();
+            if (!toemail.Contains("qq.com") && !toemail.Contains("gmail.com") && !toemail.Contains("163.com") && !toemail.Contains("126.com"))
             {
                 return Json(new
                 {
                     success = false,
-                    msg = "验证码错误",
-                    captchaVerifyResult = false
+                    msg = "只允许使用qq,gmail,163,126邮箱",
+                    captchaVerifyResult = result
                 });
             }
             if (_usersService.SendRegiestEmail(toemail, title, content))
@@ -216,6 +227,16 @@ namespace aibotPro.Controllers
         public IActionResult SendFindPasswordEmail([FromBody] JsonElement requestBody)
         {
             string captchaVerifyParam = requestBody.GetProperty("captchaVerifyParam").GetString();
+            bool result = _systemService.AlibabaCaptchaAsync(captchaVerifyParam).Result;
+            if (!result)
+            {
+                return Json(new
+                {
+                    success = false,
+                    msg = "验证码错误",
+                    captchaVerifyResult = false
+                });
+            }
             string toemail = requestBody.GetProperty("toemail").GetString();
             //判断用户是否存在
             var user = _context.Users.AsNoTracking().Where(x => x.Account == toemail).FirstOrDefault();
@@ -224,7 +245,8 @@ namespace aibotPro.Controllers
                 return Json(new
                 {
                     success = false,
-                    msg = "用户不存在"
+                    msg = "用户不存在",
+                    captchaVerifyResult = result
                 });
             }
             string title = "【找回密码】";
@@ -276,14 +298,14 @@ namespace aibotPro.Controllers
                     msg = "参数不能为空",
                 });
             }
-            bool result = _systemService.AlibabaCaptchaAsync(captchaVerifyParam).Result;
-            if (!result)
+            var tomail = toemail.ToLower();
+            if (!toemail.Contains("qq.com") && !toemail.Contains("gmail.com") && !toemail.Contains("163.com") && !toemail.Contains("126.com"))
             {
                 return Json(new
                 {
                     success = false,
-                    msg = "验证码错误",
-                    captchaVerifyResult = false
+                    msg = "只允许使用qq,gmail,163,126邮箱",
+                    captchaVerifyResult = result
                 });
             }
             if (_usersService.SendFindEmail(toemail, title, content))
@@ -292,7 +314,7 @@ namespace aibotPro.Controllers
                 {
                     success = true,
                     msg = "发送成功",
-                    captchaVerifyResult = true
+                    captchaVerifyResult = result
                 });
             }
             else
@@ -955,7 +977,7 @@ namespace aibotPro.Controllers
                 return Json(new
                 {
                     success = false,
-                    msg = "没有提现换余额"
+                    msg = "没有可提现余额"
                 });
             }
         }

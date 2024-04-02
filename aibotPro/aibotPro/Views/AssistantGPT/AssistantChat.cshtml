@@ -1,8 +1,77 @@
-﻿
-@{
-    ViewData["Title"] = "AssistantChat";
+﻿@{
+    ViewData["Title"] = "助理配置 (Setting)";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-
-<h1>AssistantChat</h1>
-
+<script>
+    MathJax = {
+        tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }
+    };
+</script>
+<link href="~/system/css/chat.css?v1" rel="stylesheet" />
+<script src="~/system/js/markdown-it.min.js"></script>
+<script src="~/system/js/tex-chtml.js"></script>
+<div class="header header-chat">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        <a>助理GPT :-)</a>
+        &nbsp;&nbsp;
+        <button class="btn btn-info btn-info-sm" onclick="price()">计费说明</button>
+        &nbsp;&nbsp;
+        <a>模型名-Assistant</a>
+    </div>
+</div>
+<div class="content-body content-body-chat">
+    <div class="chat-panel">
+        <div class="chat-body" style="width:100%;margin-left:0;">
+            <div class="chat-body-header">
+                <button class="btn btn-primary" onclick="newChat()">
+                    <i data-feather="plus">
+                    </i>新建会话
+                </button>
+                &nbsp;&nbsp;<span class="text-danger">此服务非常贵，请谨慎使用</span>
+            </div>
+            <div class="chat-body-content">
+                @* <div class="chat-message">
+                <div class="avatar">U</div>
+                <div style="width:100%">
+                <pre style="display:inline">Hello!Hello!Hello!Hello!Hello!Hello!Hello!</pre>
+                </div>
+                </div>
+                <div class="chat-message">
+                <div class="avatar gpt-avatar">A</div>
+                <div style="width:100%">
+                <pre style="display:inline">Hello, how can I help you?</pre>
+                <svg width="30" height="30" style="display:inline">
+                <circle cx="15" cy="15" r="7.5" fill="black" class="blinking-dot" />
+                </svg>
+                </div>
+                </div> *@
+            </div>
+            @*<div style="position:absolute;bottom:10%;margin-left:10px;">
+            <input type="text" class="form-control" value="Amsterdam,Washington,Sydney,Beijing,Cairo" data-role="tagsinput">
+            </div>*@
+            <div class="chat-body-footer">
+                <div class="form-group">
+                    <i data-feather="maximize-2" class="maximize-2" style="width:15px;float:right;cursor:pointer" onclick="max_textarea_Q()"></i>
+                    <textarea type="text" class="form-control" placeholder="输入问题，Enter发送，Ctrl+Enter或Shift+Enter换行" id="Q" style="max-height:200px;"></textarea>
+                </div>
+                <button class="btn btn-icon" data-toggle="tooltip" title="发送" id="sendBtn">
+                    <i data-feather="send"></i>
+                </button>
+            </div>
+            @* <button type="button" class="btn btn-danger" style="width:120px" id="stopBtn" onclick="stopGenerate()"><i data-feather="stop-circle"></i> 停止生成</button> *@
+        </div>
+    </div>
+</div>
+<script src="~/system/js/signalr.min.js"></script>
+<script src="~/system/js/assistantchat.js"></script>
+<script src="~/system/js/marked.min.js"></script>
+<link href="~/system/css/atom-one-dark.min.css" rel="stylesheet" />
+<script src="~/system/js/highlight.min.js"></script>

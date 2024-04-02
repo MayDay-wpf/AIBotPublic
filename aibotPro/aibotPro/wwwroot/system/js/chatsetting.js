@@ -66,6 +66,8 @@ function saveChatSetting() {
     //是否滚动
     var scrolling = $("#scrolling").prop("checked") ? 1 : 0;
     formData.append("SystemSetting.Scrolling", scrolling);
+    var userobot = $("#userobot").prop("checked") ? 1 : 0;
+    formData.append("SystemSetting.GoodHistory", userobot);
     rows.each(function (index, row) {
         // 非空校验
         var nickname = $(row).find("input").eq(0).val();
@@ -94,6 +96,10 @@ function saveChatSetting() {
             success: function (res) {
                 if (res.success) {
                     balert(res.msg, 'success', false, 1500, 'top');
+                    if (userobot == 1)
+                        $(".robot-container").show();
+                    else
+                        $(".robot-container").hide();
                 } else {
                     balert(res.msg, 'danger', false, 1500, 'top');
                 }
@@ -159,12 +165,86 @@ function getChatSetting() {
                         $("#scrolling").prop("checked", true);
                     else
                         $("#scrolling").prop("checked", false);
+                    if (data.systemSetting.goodHistory == '1')
+                        $("#userobot").prop("checked", true);
+                    else
+                        $("#userobot").prop("checked", false);
+                }
+                getAiModelSetting();
+            } else {
+                balert(res.msg, "danger", false, 1500, 'top');
+            }
+        }
+    });
+}
+
+//获取AI模型设置
+function getAiModelSetting() {
+    //发起请求
+    $.ajax({
+        type: 'Post',
+        url: '/Home/GetAImodel',
+        success: function (res) {
+            if (res.success) {
+                var data = res.data;
+                if (data == null)
+                    return;
+                for (var i = 0; i < data.length; i++) {
+                    var str = `<tr>
+                                <td><input type="text" class="form-control" maxlength="50" placeholder="模型昵称" value="${data[i].modelNick}" readonly="readonly" /></td>
+                                <td style="display:none"><input type="text" class="form-control" maxlength="50" placeholder="模型名称(实际请求时使用)" value="${data[i].modelName}" /></td>
+                                <td><input type="number" class="form-control" maxlength="500" placeholder="排序" value="${data[i].seq}" /></td></tr>`
+                    $("#AddSt2").append(str);
+
                 }
             } else {
                 balert(res.msg, "danger", false, 1500, 'top');
             }
         }
     });
+}
+//保存AI模型排序设置
+function saveModelSeq() {
+    var rows = $("#AddSt2").find("tr");
+    var issave = true;
+    var formData = new FormData();
+    rows.each(function (index, row) {
+        // 非空校验
+        var nickname = $(row).find("input").eq(0).val();
+        var name = $(row).find("input").eq(1).val();
+        var seq = $(row).find("input").eq(2).val();
+        if (!removeSpaces(nickname) || !removeSpaces(name) || !removeSpaces(seq)) {
+            balert('请将空的输入行删除，或填写完整，检查排序是否为纯数字', 'danger', false, 2500, 'top');
+            issave = false;
+            return;
+        } else {
+            formData.append(`ChatModelSeq[${index}].ModelNick`, nickname);
+            formData.append(`ChatModelSeq[${index}].ModelName`, name);
+            formData.append(`ChatModelSeq[${index}].Seq`, seq);
+        }
+    });
+    if (issave) {
+        loadingBtn('.saveSeq');
+        $.ajax({
+            type: 'POST',
+            url: '/Home/SaveModelSeq',
+            processData: false,  // 告诉jQuery不要处理发送的数据
+            contentType: false,  // 告诉jQuery不要设置contentType
+            data: formData,
+            success: function (res) {
+                unloadingBtn('.saveSeq');
+                if (res.success) {
+                    balert(res.msg, 'success', false, 1500, 'top');
+                } else {
+                    balert(res.msg, 'danger', false, 1500, 'top');
+                }
+            },
+            error: function (error) {
+                unloadingBtn('.saveSeq');
+                sendExceptionMsg("保存排序异常");
+            }
+        });
+    }
 }
 $(document).ready(function () {
     $('#historyCount').on('input', function () {

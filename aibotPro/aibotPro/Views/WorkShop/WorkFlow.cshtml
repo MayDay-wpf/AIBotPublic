@@ -1,0 +1,88 @@
+﻿@{
+    ViewData["Title"] = "工作流（WorkFlow）";
+}
+<title>工作流（WorkFlow）</title>
+<link href="~/system/js/workflow/drawflow.min.css" rel="stylesheet" />
+<link href="~/system/js/workflow/beautiful.css" rel="stylesheet" />
+<link href="~/system/js/workflow/all.min.css" rel="stylesheet" />
+<link href="~/system/js/workflow/worknode.css" rel="stylesheet" />
+<link href="~/system/css/codemirror.min.css" rel="stylesheet">
+<link href="~/system/css/3024-night.min.css" rel="stylesheet">
+<script src="~/system/js/codemirror.min.js"></script>
+<script src="~/system/js/javascript.min.js"></script>
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/system/js/workflow/drawflow.min.js"></script>
+<script src="~/system/js/workflow/all.min.js"></script>
+<script src="~/system/js/workflow/micromodal.min.js"></script>
+<script src="~/static/js/js.cookie.js"></script>
+<script src="~/system/js/system.js"></script>
+<script src="~/system/js/workflow/layer.js"></script>
+<div class="content-body">
+    <div class="side-panel-container">
+        <div id="sidePanel" class="side-panel">
+            <!-- 关闭按钮 -->
+            <a href="javascript:void(0)" class="close-btn" id="closePanelBtn">&times;</a>
+            <!-- 内容 -->
+            <h2 style="color:black">
+                <i id="togglePanelIcon" style="cursor:pointer" class="fas fa-chevron-left" onclick="optionMax()"></i>
+                <span class="panel-title">属性面板</span>
+            </h2>
+            <div class="configure"></div>
+            <br />
+            <button class="btn btn-info" onclick="saveNodeData()">保存</button>
+        </div>
+    </div>
+    <div class="wrapper">
+        <div class="col">
+            <div class="tools-title">
+                🛠️拖拽控件到右侧工作台👉
+            </div>
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="start">
+                <i class="far fa-play-circle"></i><span> 开始（start）</span>
+            </div>
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="javascript">
+                <i class="fab fa-js"></i><span> 脚本（javascript{{Id}}）</span>
+            </div>
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="http">
+                <i class="fas fa-paper-plane"></i><span> Http请求（http）</span>
+            </div>
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="LLM">
+                <i class="fas fa-robot"></i><span> LLM（LLM）</span>
+            </div>
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="DALL">
+                <i class="fas fa-paint-brush"></i><span> DALL·E3（DALL）</span>
+            </div>
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="web">
+                <i class="fas fa-globe"></i><span> 联网搜索（web）</span>
+            </div>
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="end">
+                <i class="fas fa-stop-circle"></i><span> 结束（end）</span>
+            </div>
+        </div>
+        <div class="col-right">
+            <div class="menu">
+                <ul>
+                    <li onclick="editor.changeModule('Home'); changeModule(event);" class="selected"></li>
+                    @* <li onclick="editor.changeModule('Other'); changeModule(event);">Other Module</li> *@
+                    <li><i class="fas fa-bars" onclick="hideTools()" style="font-size:20px;"></i></li>
+                    <li><button class="btn btn-danger" onclick="editor.clearModuleSelected()">清空</button></li>
+                    <li><button class="btn btn-info" onclick="exportDrawFlow()">预览Json</button></li>
+                    <li><button class="btn btn-info" onclick="saveNodeDataToCache()">保存</button></li>
+                </ul>
+            </div>
+            <div id="drawflow" ondrop="drop(event)" ondragover="allowDrop(event)">
+                @* <div class="btn-lock">
+                <i id="lock" class="fas fa-lock" onclick="editor.editor_mode='edit'; changeMode('lock');"></i>
+                <i id="unlock" class="fas fa-lock-open" onclick="editor.editor_mode='fixed'; changeMode('unlock');" style="display:none;"></i>
+                </div> *@
+                <div class="bar-zoom">
+                    <i class="fas fa-search-minus" onclick="editor.zoom_out()"></i>
+                    <i class="fas fa-search" onclick="editor.zoom_reset()"></i>
+                    <i class="fas fa-search-plus" onclick="editor.zoom_in()"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/system/js/workflow/workflow.js"></script>
+<script src="~/system/js/workflow/workflowaction.js"></script>

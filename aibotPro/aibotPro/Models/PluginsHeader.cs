@@ -16,7 +16,6 @@ namespace aibotPro.Models
         public string HdCode { get; set; }
         [StringLength(500)]
         public string HdName { get; set; }
-        [StringLength(500)]
         public string HdValue { get; set; }
     }
 }

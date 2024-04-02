@@ -12,6 +12,9 @@ using JavaScriptEngineSwitcher.ChakraCore;
 using Microsoft.CodeAnalysis.Scripting;
 using Newtonsoft.Json.Linq;
 using System.Security.Principal;
+using System.Text.RegularExpressions;
+using Newtonsoft.Json;
+using System.Text;
 
 namespace aibotPro.Service
 {
@@ -169,7 +172,8 @@ namespace aibotPro.Service
                 return false;
             }
             //删除用户该插件安装记录
-            _context.PluginsInstalls.Remove(pluginsInstall);
+            _context.Plugins.Remove(plugin);
+            _context.SaveChanges();
             return true;
         }
 
@@ -231,7 +235,9 @@ namespace aibotPro.Service
                     PcookiesCode = x.CkCode,
                     PcookiesName = x.CkName,
                     PcookiesValue = x.CkValue
-                }).ToList()
+                }).ToList(),
+                JsonPr = _context.PluginsJsonPrs.Where(x => x.PrCode == plugin.Pcode).Select(x => x.JsonContent).FirstOrDefault(),
+                WorkFlowCode = _context.WorkFlows.Where(x => x.Pcode == plugin.Pcode).Select(x => x.FlowCode).FirstOrDefault()
             };
             return workShopPlugin;
         }
@@ -267,6 +273,17 @@ namespace aibotPro.Service
                 ParamConst = x.PrConst
             }).ToList();
             return pluginParams;
+        }
+        public PluginsJsonPr GetPluginsJsonPr(int pluginId)
+        {
+            //获取插件参数
+            var plugin = _context.Plugins.Where(x => x.Id == pluginId).FirstOrDefault();
+            if (plugin == null)
+            {
+                return null;
+            }
+            var pluginsJsonPr = _context.PluginsJsonPrs.Where(x => x.PrCode == plugin.Pcode).FirstOrDefault();
+            return pluginsJsonPr;
         }
         public List<PluginHeaderDto> GetPluginHeaders(int pluginId)
         {
@@ -312,12 +329,14 @@ namespace aibotPro.Service
                 pluginResDto.doubletype = "dalle3";
                 string baseUrl = string.Empty;
                 string apiKey = string.Empty;
+                bool shouldPay = true;
                 //获取对话设置
                 var chatSetting = _usersService.GetChatSetting(account);
                 if (chatSetting != null && chatSetting.MyDall != null && chatSetting.MyDall.ApiKey != null && chatSetting.MyDall.BaseURL != null)
                 {
                     baseUrl = chatSetting.MyDall.BaseURL;
                     apiKey = chatSetting.MyDall.ApiKey;
+                    shouldPay = false;
                 }
                 else
                 {
@@ -344,19 +363,22 @@ namespace aibotPro.Service
                     quality = entry.Value.ToString();
                 }
                 pluginResDto.result = await _aiServer.CreateDALLdraw(prompt, drawsize, quality, baseUrl, apiKey);
+                //扣费
+                if (shouldPay)
+                    await _financeService.CreateUseLogAndUpadteMoney(account, "DALLE3", 0, 0, true);
                 // 在后台启动一个任务下载图片
                 Task.Run(async () =>
                 {
                     using (var scope = _serviceProvider.CreateScope()) // _serviceProvider 是 IServiceProvider 的一个实例。
                     {
-                        string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "") + ".jpg";
+                        string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "");
                         string savePath = Path.Combine("wwwroot", "files/dallres", account);
                         await _aiServer.DownloadImageAsync(pluginResDto.result, savePath, newFileName);
-                        string imgResPath = Path.Combine("/files/dallres", account, newFileName);
+                        string imgResPath = Path.Combine("/files/dallres", account, newFileName + ".png");
 
                         // 这里做一些后续处理，比如更新数据库记录等
                         var aiSaveService = scope.ServiceProvider.GetRequiredService<IAiServer>(); // 假设保存记录方法在IAiSaveService中。
-                        aiSaveService.SaveAiDrawResult(account, "DALLE3", imgResPath, prompt, prompt);
+                        await aiSaveService.SaveAiDrawResult(account, "DALLE3", imgResPath, prompt, prompt);
                     }
                 });
 
@@ -379,7 +401,7 @@ namespace aibotPro.Service
                 {
                     searchResult += $"# {i + 1}:标题：{googleSearch[i].Title}\n # 链接地址：{googleSearch[i].Link}\n # 摘要：{googleSearch[i].Snippet}；\n\n";
                 }
-                pluginResDto.result = searchResult;
+                pluginResDto.result = $"I will give you a question or an instruction. Your objective is to answer my question or fulfill my instruction.\n\nMy question or instruction is: {query}\n\nFor your reference, today's date is {DateTime.Now.ToString()} in Beijing.\n\nIt's possible that the question or instruction, or just a portion of it, requires relevant information from the internet to give a satisfactory answer or complete the task. Therefore, provided below is the necessary information obtained from the internet, which sets the context for addressing the question or fulfilling the instruction. You will write a comprehensive reply to the given question or instruction. Do not include urls and sources in the summary text. If the provided information from the internet results refers to multiple subjects with the same name, write separate answers for each subject:\n\"\"\"\n{searchResult}\n\"\"\"\n Reply in 中文";
             }
             else if (fnName == "search_knowledge_base")
             {
@@ -413,10 +435,15 @@ namespace aibotPro.Service
                         Output output = searchVectorResult.output[i];
                         knowledge += $"{i + 1}：{output.fields.knowledge} \n";
                     }
-                    pluginResDto.result = $"知识库查询结果如下：\n {knowledge}";
+                    pluginResDto.result = $@"知识库查询结果如下：
+                                           {knowledge}
+                                           - 保持回答尽可能参考知识库的内容。 
+                                           - 使用 Markdown 语法优化回答格式。
+                                           - 以知识库中的理念和说话风格来解答用户的问题。 
+                                           - 使用与问题相同的语言回答。";
                 }
                 else
-                    pluginResDto.result = "知识库中没有查到关于这个问题的内容";
+                    pluginResDto.result = "知识库中没有查到关于这个问题的内容,请自行回答";
             }
             else
             {
@@ -442,6 +469,7 @@ namespace aibotPro.Service
                     var plugin_pr = GetPluginParams(plugin.Id);
                     var plugin_hd = GetPluginHeaders(plugin.Id);
                     var plugin_ck = GetPluginCookies(plugin.Id);
+                    var plugin_jsonpr = GetPluginsJsonPr(plugin.Id);
                     if (plugin_hd != null)
                     {
                         foreach (var item_hd in plugin_hd)
@@ -471,13 +499,24 @@ namespace aibotPro.Service
                             }
                         }
                     }
+                    string jsonBody = string.Empty;
+                    if (plugin_jsonpr != null)
+                    {
+                        jsonBody = plugin_jsonpr.JsonContent;
+                        //替换参数parameters
+                        foreach (var item in parameters)
+                        {
+                            jsonBody = Regex.Replace(jsonBody, @"\{\{" + item.Key + @"\}\}", item.Value);
+                        }
+
+                    }
                     if (plugin.Pmethod == "get")
                     {
                         pluginResDto.result = _aiServer.AiGet(url, parameters, headers, cookies);
                     }
                     else
                     {
-                        pluginResDto.result = _aiServer.AiPost(url, parameters, headers, cookies);
+                        pluginResDto.result = _aiServer.AiPost(url, parameters, headers, cookies, jsonBody);
                     }
                     if (useHtml == "true")
                     {
@@ -567,6 +606,7 @@ namespace aibotPro.Service
                     var plugin_pr = GetPluginParams(plugin.Id);
                     var plugin_hd = GetPluginHeaders(plugin.Id);
                     var plugin_ck = GetPluginCookies(plugin.Id);
+                    var plugin_jsonpr = GetPluginsJsonPr(plugin.Id);
                     if (plugin_hd != null)
                     {
                         foreach (var item_hd in plugin_hd)
@@ -596,13 +636,24 @@ namespace aibotPro.Service
                             }
                         }
                     }
+                    string jsonBody = string.Empty;
+                    if (plugin_jsonpr != null)
+                    {
+                        jsonBody = plugin_jsonpr.JsonContent;
+                        //替换参数parameters
+                        foreach (var item in parameters)
+                        {
+                            jsonBody = Regex.Replace(jsonBody, @"\{\{" + item.Key + @"\}\}", item.Value);
+                        }
+
+                    }
                     if (plugin.Pmethod == "get")
                     {
                         request_res = _aiServer.AiGet(url, parameters, headers, cookies);
                     }
                     else
                     {
-                        request_res = _aiServer.AiPost(url, parameters, headers, cookies);
+                        request_res = _aiServer.AiPost(url, parameters, headers, cookies, jsonBody);
                     }
                     //脚本回调
                     string jsCode = plugin.Pjscode;
@@ -616,7 +667,7 @@ namespace aibotPro.Service
 
                     IJsEngine jsEngine = jsEngineSwitcher.CreateDefaultEngine();
 
-                    //string script_pr = $"var res='{request_res}';";
+                    string script_pr = $"var res='{request_res}';";
                     string runScript = jsCode;
                     List<object> arguments = new List<object>();
                     arguments.Add(request_res);
@@ -638,12 +689,85 @@ namespace aibotPro.Service
                     //前端运行脚本
                     else if (runLocation == "fore-end2")
                     {
-                        pluginResDto.result = $"{runScript}";
+                        pluginResDto.result = $"{script_pr} {runScript} {plugin.Pfunctionname}(res)";
                         pluginResDto.doubletreating = false;
                         pluginResDto.doubletype = "js";
 
                     }
 
+                }
+                else if (pModel == "plugin-workflow")
+                {
+                    //从数据库获取工作流
+                    var workFlowData = _context.WorkFlows.Where(x => x.Pcode == plugin.Pcode).FirstOrDefault();
+                    if (workFlowData != null)
+                    {
+                        string workFlowCode = workFlowData.FlowCode;
+                        string workFlowJson = workFlowData.FlowJson;
+                        //获取工作流节点数据
+                        string nodeData = await GetWorkFlowNodeData(workFlowCode);
+                        if (string.IsNullOrEmpty(nodeData))
+                        {
+                            pluginResDto.result = string.Empty;
+                            pluginResDto.errormsg = "工作流不存在";
+                            pluginResDto.doubletreating = false;
+                            return pluginResDto;
+                        }
+                        //找到start节点
+                        WorkFlowNodeData workFlowNodeData = JsonConvert.DeserializeObject<WorkFlowNodeData>(nodeData);
+                        //找到start节点
+                        var homeData = workFlowNodeData.Drawflow.Home.Data;
+                        NodeData startData = homeData.Values.FirstOrDefault(x => x.Name == "start");
+                        //查询start节点的参数是否有json模板
+                        //寻找参数
+                        string startOutputJson = string.Empty;
+                        if (startData.Data is StartData startDataSpecific)
+                        {
+                            // 现在startDataSpecific.Output指向StartOutput对象
+                            var startOutput = startDataSpecific.Output;
+
+                            if (startOutput != null)
+                            {
+                                Dictionary<string, string> parameters = new Dictionary<string, string>();
+                                if (startOutput.PrItems.Count > 0)//判断开始节点是否有参数
+                                {
+                                    foreach (var entry in fn.ParseArguments())
+                                    {
+                                        string pr_val = entry.Value.ToString();
+                                        var pr = startOutput.PrItems.Where(x => x.PrName == entry.Key).FirstOrDefault();
+                                        if (pr != null)
+                                        {
+                                            if (!string.IsNullOrEmpty(pr.PrConst))//如果是常量
+                                                parameters.Add(pr.PrName, pr.PrConst);
+                                            else
+                                                parameters.Add(pr.PrName, pr_val);
+                                        }
+                                    }
+                                }
+                                if (parameters.Count > 0)
+                                {
+                                    startOutputJson = GenerateJson("start", parameters);
+                                }
+                                else
+                                {
+                                    startOutputJson = "{}";
+                                }
+                                WorkflowEngine workflowEngine = new WorkflowEngine(workFlowNodeData, _aiServer, _systemService, _financeService, _context, account, _serviceProvider);
+                                List<NodeOutput> workflowResult = await workflowEngine.Execute(startOutputJson);
+                                //查询工作流结束模式
+                                var endNodeData = (EndData)workFlowNodeData.Drawflow.Home.Data.Values.FirstOrDefault(x => x.Name == "end").Data;
+                                pluginResDto.result = string.Empty;
+                                string endAction = endNodeData.Output.EndAction;
+                                if (endAction != "ai")
+                                    pluginResDto.doubletreating = false;
+                                pluginResDto.doubletype = endAction;
+                                string jscode = workflowResult.Where(w => w.NodeName == "end").FirstOrDefault().OutputData;
+                                if (endAction == "js")
+                                    jscode = jscode + " end();";
+                                pluginResDto.result = jscode;
+                            }
+                        }
+                    }
                 }
                 else
                 {
@@ -655,5 +779,73 @@ namespace aibotPro.Service
             }
             return pluginResDto;
         }
+
+        public async Task<string> GetWorkFlowNodeData(string workflowcode)
+        {
+            //尝试读取缓存
+            var nodedata = string.Empty;
+            nodedata = _redisService.GetAsync(workflowcode).Result;
+            if (string.IsNullOrEmpty(nodedata))
+            {
+                //从数据库读取
+                nodedata = _context.WorkFlows.Where(x => x.FlowCode == workflowcode).Select(x => x.FlowJson).FirstOrDefault();
+            }
+            return nodedata;
+        }
+
+        #region workflow通用函数
+        private static string FillJsonTemplate(string jsonTemplate, Dictionary<string, string> parameters)
+        {
+            string pattern = @"{{(\w+)}}";
+
+            string filledJson = Regex.Replace(jsonTemplate, pattern, match =>
+            {
+                string key = match.Groups[1].Value;
+                if (parameters.TryGetValue(key, out string value))
+                {
+                    return value;
+                }
+                else
+                {
+                    return match.Value; // 如果字典中没有对应的值,保留原样
+                }
+            });
+
+            return filledJson;
+        }
+        private static string GenerateJson(string objectName, Dictionary<string, string> data)
+        {
+            var jsonBuilder = new StringBuilder();
+            jsonBuilder.Append("{");
+            jsonBuilder.Append($"\"{objectName}\":");
+            jsonBuilder.Append("{");
+
+            int count = 0;
+            foreach (var pair in data)
+            {
+                jsonBuilder.Append($"\"{pair.Key}\":");
+
+                if (int.TryParse(pair.Value, out int intValue))
+                {
+                    jsonBuilder.Append(intValue);
+                }
+                else
+                {
+                    jsonBuilder.Append($"\"{pair.Value}\"");
+                }
+
+                count++;
+                if (count < data.Count)
+                {
+                    jsonBuilder.Append(",");
+                }
+            }
+
+            jsonBuilder.Append("}");
+            jsonBuilder.Append("}");
+
+            return jsonBuilder.ToString();
+        }
+        #endregion
     }
 }

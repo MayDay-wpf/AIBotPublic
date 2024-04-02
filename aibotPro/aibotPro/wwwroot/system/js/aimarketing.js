@@ -225,53 +225,61 @@ function lensWork() {
         $(target).remove(); // 移除目标卡片
     });
 }
-
+let drawControl = true;
 function drawAction(id) {
     var prompt = $("#" + id).val();
     var quality = 'standard';
-    loadingBtn('.' + id);
-    $.ajax({
-        type: "POST",
-        url: "/AIdraw/CreateDALLTask",
-        data: {
-            prompt: prompt,
-            imgSize: d3imgsize,
-            quality: quality
-        },
-        success: function (data) {
-            unloadingBtn('.' + id);
-            if (data.success) {
-                //显示图片
-                $("#img-" + id).attr("src", data.imgurl);
-                $("#a-" + id).attr("href", data.imgurl);
-                var drawimgres = {
-                    id: id,
-                    path: data.localhosturl
-                };
-                // 查找数组中是否存在具有相同id的对象
-                var existingIndex = imglist.findIndex(item => item.id === id);
+    if (drawControl) {
+        drawControl = false;
+        loadingBtn('.' + id);
+        $.ajax({
+            type: "POST",
+            url: "/AIdraw/CreateDALLTask",
+            data: {
+                prompt: prompt,
+                imgSize: d3imgsize,
+                quality: quality
+            },
+            success: function (data) {
+                drawControl = true;
+                unloadingBtn('.' + id);
+                if (data.success) {
+                    //显示图片
+                    $("#img-" + id).attr("src", data.imgurl);
+                    $("#a-" + id).attr("href", data.imgurl);
+                    var drawimgres = {
+                        id: id,
+                        path: data.localhosturl
+                    };
+                    // 查找数组中是否存在具有相同id的对象
+                    var existingIndex = imglist.findIndex(item => item.id === id);
 
-                if (existingIndex !== -1) {
-                    // 如果找到，替换该对象
-                    imglist[existingIndex] = drawimgres;
+                    if (existingIndex !== -1) {
+                        // 如果找到，替换该对象
+                        imglist[existingIndex] = drawimgres;
+                    } else {
+                        // 如果未找到，将新对象push到数组中
+                        imglist.push(drawimgres);
+                    }
+                    $('.image-popup').magnificPopup({
+                        type: 'image'
+                    });
                 } else {
-                    // 如果未找到，将新对象push到数组中
-                    imglist.push(drawimgres);
+                    drawControl = true;
+                    //恢复按钮
+                    balert(data.msg, 'danger', false, 1000, "center");
                 }
-                $('.image-popup').magnificPopup({
-                    type: 'image'
-                });
-            } else {
+            },
+            error: function (xhr, status, error) {
+                drawControl = true;
                 //恢复按钮
+                unloadingBtn('.' + id);
                 balert('任务创建失败', 'danger', false, 1000, "center");
             }
-        },
-        error: function (xhr, status, error) {
-            //恢复按钮
-            unloadingBtn('.' + id);
-            balert('任务创建失败', 'danger', false, 1000, "center");
-        }
-    });
+        });
+    } else {
+        balert('为保证视频生成的稳定性，请等待上一个任务完成', 'warning', false, 2000, "center");
+    }
 }
 function createVideo() {
     //if (combinedMp3 == "") {

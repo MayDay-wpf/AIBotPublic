@@ -71,7 +71,7 @@ namespace aibotPro.Service
             }
             else
             {
-                _systemService.WriteLog("系统配置表为空", Dtos.LogLevel.Error, "system");
+                _systemService.WriteLogUnAsync("系统配置表为空", Dtos.LogLevel.Error, "system");
                 return false;
             }
             //添加用户
@@ -195,6 +195,7 @@ namespace aibotPro.Service
             userSetting.UseHistory = chatSettingDto.SystemSetting.UseHistory;
             userSetting.HistoryCount = chatSettingDto.SystemSetting.HistoryCount;
             userSetting.Scrolling = chatSettingDto.SystemSetting.Scrolling;
+            userSetting.GoodHistory = chatSettingDto.SystemSetting.GoodHistory;
             _context.Entry(userSetting).State = EntityState.Modified;
             //更新缓存
             _redis.SetAsync(account + "_usersetting", JsonConvert.SerializeObject(userSetting));
@@ -226,7 +227,8 @@ namespace aibotPro.Service
             {
                 UseHistory = userSetting.UseHistory.Value,
                 HistoryCount = userSetting.HistoryCount.Value,
-                Scrolling = userSetting.Scrolling.Value
+                Scrolling = userSetting.Scrolling.Value,
+                GoodHistory = userSetting.GoodHistory.Value
             };
             //写入缓存
             _redis.SetAsync(account + "_chatsetting", JsonConvert.SerializeObject(chatSettingDto));
@@ -312,7 +314,9 @@ namespace aibotPro.Service
         public bool UpdateShareMcoinAndWriteLog(string shareCode, decimal Mcoin)
         {
             if (!ShareCodeIsTrue(shareCode, out string errormsg))
-                return false;
+            {
+                return _context.SaveChanges() > 0;
+            }
             var share = _context.Shares.FirstOrDefault(x => x.ShareCode == shareCode);
             share.Mcoin += Mcoin;
             _context.Entry(share).State = EntityState.Modified;
@@ -367,6 +371,52 @@ namespace aibotPro.Service
             } while (_context.Shares.AsNoTracking().Any(x => x.ShareCode == code));
 
             return code;
+        }
+        public bool SaveModelSeq(string account, List<ChatModelSeq> chatModelSeq, out string errormsg)
+        {
+            errormsg = "保存成功";
+            var user = _context.Users.AsNoTracking().Where(x => x.Account == account).FirstOrDefault();
+            if (user == null)
+            {
+                errormsg = "用户不存在";
+                return false;
+            }
+            var modelSeq = _context.AImodelsUserSeqs.Where(x => x.Account == account).FirstOrDefault();
+            //有则更新,没有则创建
+            if (modelSeq == null)
+            {
+                foreach (var item in chatModelSeq)
+                {
+                    var aiModelSeq = new AImodelsUserSeq()
+                    {
+                        Account = account,
+                        ModelNick = item.ModelNick,
+                        ModelName = item.ModelName,
+                        Seq = item.Seq
+                    };
+                    _context.AImodelsUserSeqs.Add(aiModelSeq);
+                }
+            }
+            else
+            {
+                //删除原有的
+                _context.AImodelsUserSeqs.RemoveRange(_context.AImodelsUserSeqs.Where(x => x.Account == account));
+                //添加新的
+                foreach (var item in chatModelSeq)
+                {
+                    var aiModelSeq = new AImodelsUserSeq()
+                    {
+                        Account = account,
+                        ModelNick = item.ModelNick,
+                        ModelName = item.ModelName,
+                        Seq = item.Seq
+                    };
+                    _context.AImodelsUserSeqs.Add(aiModelSeq);
+                }
+            }
+            //刷新缓存
+            _redis.SetAsync(account + "_modelSeq", JsonConvert.SerializeObject(chatModelSeq));
+            return _context.SaveChanges() > 0;
         }
     }
 }

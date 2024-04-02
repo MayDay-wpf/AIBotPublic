@@ -1,5 +1,7 @@
 ﻿var plugincode = '';
 var ispublic = 'yes';
+var workflowcode = '';
+var pagetype = '';
 $(function () {
     $('.nav-sub-link').removeClass('active');
     $('.nav-link').removeClass('active');
@@ -20,6 +22,7 @@ $(function () {
     plugincode = getUrlParam('plugincode');
     id = getUrlParam('id');
     type = getUrlParam('type');
+    pagetype = getUrlParam('type');
     if (plugincode && id && type) {
         getPluginInfo(plugincode, id, type);
     }
@@ -63,6 +66,26 @@ $(document).ready(function () {
         // 如果输入框为空，则恢复默认值'0.00'
         if (this.value === '') {
             this.value = '0.00';
+        }
+    });
+    $("input[name='method']").change(function () {
+        // 检查选中的单选框的值
+        if ($(this).val() === 'post') {
+            // 如果值为'post'，显示Id为JsonPrGroup的DOM
+            $("#JsonPrGroup").show();
+        } else if ($(this).val() === 'get') {
+            // 如果值为'get'，隐藏Id为JsonPrGroup的DOM
+            $("#JsonPrGroup").hide();
+        }
+    });
+    $("input[name='method2']").change(function () {
+        // 检查选中的单选框的值
+        if ($(this).val() === 'post') {
+            // 如果值为'post'，显示Id为JsonPrGroup2的DOM
+            $("#JsonPrGroup2").show();
+        } else if ($(this).val() === 'get') {
+            // 如果值为'get'，隐藏Id为JsonPrGroup2的DOM
+            $("#JsonPrGroup2").hide();
         }
     });
 });
@@ -169,6 +192,7 @@ function selectMode(model) {
             $('#plugin-online').show();
             $('#plugin-offline').hide();
             $('#plugin-mixed').hide();
+            $('#plugin-workflow').hide();
             codemodel = 'plugin-online';
             $('html, body').animate({ scrollTop: $('.content-body').height() }, 1000);
             break;
@@ -176,6 +200,7 @@ function selectMode(model) {
             $('#plugin-online').hide();
             $('#plugin-offline').show();
             $('#plugin-mixed').hide();
+            $('#plugin-workflow').hide();
             initEditor(1, `//演示脚本（请删除）插件脚本请不要写注释
 function get_weather_forecast() {
   return 'Hello, world!';
@@ -189,6 +214,7 @@ function get_weather_forecast() {
         case 'plugin-mixed':
             $('#plugin-online').hide();
             $('#plugin-offline').hide();
+            $('#plugin-workflow').hide();
             $('#plugin-mixed').show();
             initEditor(2, `//演示脚本（请删除）插件脚本请不要写注释
 function get_weather_forecast(res) {
@@ -199,6 +225,17 @@ function get_weather_forecast(res) {
                 element.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
             codemodel = 'plugin-mixed';
+            break;
+        case 'plugin-workflow':
+            codemodel = 'plugin-workflow';
+            $('#plugin-online').hide();
+            $('#plugin-offline').hide();
+            $('#plugin-mixed').hide();
+            $('#plugin-workflow').show();
+            var element = document.getElementById("plugin-workflow");
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
             break;
         default:
             break;
@@ -262,6 +299,7 @@ var jscode = '';
 var runLocation = '';
 var usehtml = '';
 var regex = /'/;
+var jsonPr = '';
 
 function PostPlugin(type) {
     nickname = $('#nickname').val();
@@ -288,6 +326,7 @@ function PostPlugin(type) {
         rowsHd = $('#AddHd tr');
         rowsCk = $('#AddCk tr');
         usehtml = $("#usehtml1").prop("checked");
+        jsonPr = $("#JsonPr").val();
     }
     else if (codemodel == 'plugin-offline') {
         rows = $('#AddPr1 tr');
@@ -308,26 +347,35 @@ function PostPlugin(type) {
         jscode = editor2.getValue();
         runLocation = $("input[name='runLocation2']:checked").val();
         usehtml = $("#usehtml3").prop("checked");
+        jsonPr = $("#JsonPr2").val();
     }
-    rows.each(function () {
-        var columns = $(this).find('td');
-
-        var PRname = columns.eq(0).find('input').val();
-        var PRvalue = columns.eq(1).find('input').val();
-        var PRconstant = columns.eq(2).find('input').val();
-        if (PRname.trim() === '' || PRvalue.trim() === '' || regex.test(PRname) || regex.test(PRvalue)) {
-            isEmpty = true;
-            return false; // Exit the loop if any textbox is empty
+    else if (codemodel == 'plugin-workflow') {
+        if (workflowcode == '') {
+            balert('请创建工作流', 'warning', false, 1500, 'center');
+            return;
         }
+    }
+    if (codemodel != 'plugin-workflow') {
+        rows.each(function () {
+            var columns = $(this).find('td');
 
-        var item = {
-            "ParamName": PRname,
-            "ParamInfo": PRvalue,
-            "ParamConst": PRconstant
-        };
-        conversation.push(item);
-    });
-    if (codemodel != 'plugin-offline') {
+            var PRname = columns.eq(0).find('input').val();
+            var PRvalue = columns.eq(1).find('input').val();
+            var PRconstant = columns.eq(2).find('input').val();
+            if (PRname.trim() === '' || PRvalue.trim() === '' || regex.test(PRname) || regex.test(PRvalue)) {
+                isEmpty = true;
+                return false; // Exit the loop if any textbox is empty
+            }
+
+            var item = {
+                "ParamName": PRname,
+                "ParamInfo": PRvalue,
+                "ParamConst": PRconstant
+            };
+            conversation.push(item);
+        });
+    }
+    if (codemodel != 'plugin-offline' && codemodel != 'plugin-workflow') {
         rowsHd.each(function () {
             var columns = $(this).find('td');
 
@@ -393,6 +441,8 @@ function PostPlugin(type) {
     formData.append('plugin.Pcodemodel', codemodel);
     formData.append('plugin.Papiurl', apiurl);
     formData.append('plugin.Pmethod', method);
+    formData.append('plugin.JsonPr', jsonPr);
+    formData.append('plugin.WorkFlowCode', workflowcode);
     //formData.append('plugin.Param', conversation);
     //formData.append('plugin.Pheaders', conversationHd);
     //formData.append('plugin.Pcookies', conversationCk);
@@ -466,9 +516,11 @@ function getPluginInfo(plugincode, id, type) {
                 if (type == 'see') {
                     $('#STEP').find(':not([disabled="true"])').prop('disabled', true);
                     $(".uploadPluginBtn").prop('disabled', true).addClass('btn-secondary').removeClass('btn-primary');
+                    $('#plugin-2').hide();
                 }
                 if (type == 'edit') {
                     $(".uploadPluginBtn").prop('disabled', false).addClass('btn-primary').removeClass('btn-secondary');
+                    $('#plugin-2').show();
                 }
                 var plugin = res.data;
                 $('#avatar-image').attr('src', plugin.pavatar);
@@ -484,6 +536,7 @@ function getPluginInfo(plugincode, id, type) {
                     $('#plugin-online').show();
                     $('#plugin-offline').hide();
                     $('#plugin-mixed').hide();
+                    $('#plugin-workflow').hide();
                     $("#usehtml1").prop("checked", plugin.pusehtml);
                     $('#apiurl').val(plugin.papiurl);
                     $("input[name='method'][value='" + plugin.pmethod + "']").prop("checked", true);
@@ -495,7 +548,7 @@ function getPluginInfo(plugincode, id, type) {
                     }
                     for (var i = 0; i < plugin.pheaders.length; i++) {
                         addHdLine(0);
-                        $('#AddHd tr').eq(i).find('td').eq(0).find('input').val(plugin.pheaders[i].pheaders);
+                        $('#AddHd tr').eq(i).find('td').eq(0).find('input').val(plugin.pheaders[i].pheadersName);
                         $('#AddHd tr').eq(i).find('td').eq(1).find('input').val(plugin.pheaders[i].pheadersValue);
                     }
                     for (var i = 0; i < plugin.pcookies.length; i++) {
@@ -503,18 +556,23 @@ function getPluginInfo(plugincode, id, type) {
                         $('#AddCk tr').eq(i).find('td').eq(0).find('input').val(plugin.pcookies[i].pcookiesName);
                         $('#AddCk tr').eq(i).find('td').eq(1).find('input').val(plugin.pcookies[i].pcookiesValue);
                     }
+                    if (plugin.pmethod != 'get') {
+                        $('#JsonPr').val(plugin.jsonPr);
+                        $('#JsonPrGroup').show();
+                    }
+                    else
+                        $('#JsonPrGroup').hide();
                     $('#pluginprice').val(plugin.pluginprice);
                     $('#plugin-1').show();
-                    $('#plugin-2').hide();
                     $('#usehtml1').prop('checked', plugin.pusehtml === "true");
                 }
                 else if (plugin.pcodemodel == 'plugin-offline') {
                     $('#plugin-online').hide();
                     $('#plugin-offline').show();
                     $('#plugin-mixed').hide();
+                    $('#plugin-workflow').hide();
                     $('#pluginprice').val(plugin.pluginprice);
                     $('#plugin-1').show();
-                    $('#plugin-2').hide();
                     $('#usehtml2').prop('checked', plugin.pusehtml === "true");
                     $("input[name='runLocation'][value='" + plugin.prunLocation + "']").prop('checked', true);
                     for (var i = 0; i < plugin.param.length; i++) {
@@ -528,8 +586,10 @@ function getPluginInfo(plugincode, id, type) {
                 else if (plugin.pcodemodel == 'plugin-mixed') {
                     $('#plugin-online').hide();
                     $('#plugin-offline').hide();
+                    $('#plugin-workflow').hide();
                     $('#plugin-mixed').show();
                     $('#apiurl2').val(plugin.papiurl);
+                    $("input[name='method2'][value='" + plugin.pmethod + "']").prop("checked", true);
                     for (var i = 0; i < plugin.param.length; i++) {
                         addPrLine(2);
                         $('#AddPr2 tr').eq(i).find('td').eq(0).find('input').val(plugin.param[i].paramName);
@@ -538,7 +598,7 @@ function getPluginInfo(plugincode, id, type) {
                     }
                     for (var i = 0; i < plugin.pheaders.length; i++) {
                         addHdLine(2);
-                        $('#AddHd2 tr').eq(i).find('td').eq(0).find('input').val(plugin.pheaders[i].pheaders);
+                        $('#AddHd2 tr').eq(i).find('td').eq(0).find('input').val(plugin.pheaders[i].pheadersName);
                         $('#AddHd2 tr').eq(i).find('td').eq(1).find('input').val(plugin.pheaders[i].pheadersValue);
                     }
                     for (var i = 0; i < plugin.pcookies.length; i++) {
@@ -546,14 +606,47 @@ function getPluginInfo(plugincode, id, type) {
                         $('#AddCk2 tr').eq(i).find('td').eq(0).find('input').val(plugin.pcookies[i].pcookiesName);
                         $('#AddCk2 tr').eq(i).find('td').eq(1).find('input').val(plugin.pcookies[i].pcookiesValue);
                     }
+                    if (plugin.pmethod != 'get') {
+                        $('#JsonPr2').val(plugin.jsonPr);
+                        $('#JsonPrGroup2').show();
+                    }
+                    else
+                        $('#JsonPrGroup2').hide();
                     $('#pluginprice').val(plugin.pluginprice);
                     $('#plugin-1').show();
-                    $('#plugin-2').hide();
                     $('#usehtml3').prop('checked', plugin.pusehtml === "true");
-                    $("input[name='runLocation'][value='" + plugin.prunLocation + "']").prop('checked', true);
+                    $("input[name='runLocation2'][value='" + plugin.prunLocation + "']").prop('checked', true);
                     initEditor(2, plugin.pjscode);
+                }
+                else if (plugin.pcodemodel == 'plugin-workflow') {
+                    $('#plugin-online').hide();
+                    $('#plugin-offline').hide();
+                    $('#plugin-mixed').hide();
+                    $('#plugin-workflow').show();
+                    $('#workflowBox').html(`<img src="/system/images/workflow.png"/>
+                                           <p>${plugin.workFlowCode}</p>`);
+                    workflowcode = plugin.workFlowCode;
+                    $('#pluginprice').val(plugin.pluginprice);
+                    $('#plugin-1').show();
                 }
             }
         }
     });
+}
+
+function workflowDrive() {
+    if (workflowcode != '') {
+        //edit
+        window.open('/WorkShop/WorkFlow?workflowcode=' + workflowcode);
+    }
+    else {
+        //new
+        loadingOverlay.show();
+        workflowcode = generateGUID();
+        var html = `<img src="/system/images/workflow.png"/>
+                    <p>${workflowcode}</p>`;
+        $('#workflowBox').html(html);
+        loadingOverlay.hide();
+        window.open('/WorkShop/WorkFlow?workflowcode=' + workflowcode);
+    }
 }

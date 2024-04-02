@@ -9,11 +9,8 @@
 });
 function addStLine() {
     var str = `<tr>
-                 <td><input type="text" class="form-control" maxlength="50" placeholder="模型昵称" /></td>
-                 <td><input type="text" class="form-control" maxlength="50" placeholder="模型名称(实际请求时使用)" /></td>
-                 <td><input type="text" class="form-control" maxlength="500" placeholder="Base URL"  /></td>
-                 <td><input type="text" class="form-control" maxlength="500" placeholder="API KEY"  /></td>
-                 <td><input type="number" class="form-control" maxlength="500" placeholder="排序"  /></td>
+                 <td><input type="text" class="form-control" maxlength="50" placeholder="键" /></td>
+                 <td><input type="text" class="form-control" maxlength="50" placeholder="值" /></td>
                  <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`
     $("#AddSt").append(str);
     feather.replace();
@@ -27,7 +24,7 @@ function saveSystemConfig() {
     var issave = true;
     rows.each(function (index, row) {
         // 非空校验
-        var cfgcode = generateGUID();
+        var cfgcode = $(row).find("input").eq(0).val();
         var cfgkey = $(row).find("input").eq(0).val();
         var cfgvalue = $(row).find("input").eq(1).val();
 
