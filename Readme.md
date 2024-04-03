@@ -7,7 +7,7 @@
 * 数据库：SqlServer 2012及以上
 * 缓存：Redis
 ## Windows部署文档：[Deploy.pdf](https://github.com/MayDay-wpf/AIBotPublic/blob/main/Deploy.pdf)
-## 宝塔面板部署文档：[BT](https://55555.wiki/doc/4/)
+## 宝塔面板部署文档：[https://55555.wiki/doc/4/](https://55555.wiki/doc/4/)
 
 ## 第三方依赖：
 * 百度AI OCR
