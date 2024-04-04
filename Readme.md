@@ -38,6 +38,9 @@
 ## 完全自由的 API 托管，兼容 one-api 等
 ![7](https://i.mij.rip/2024/02/27/cc8b844bdd329ddd301c169f312d5594.png)
 
+## OpenAPI 支持外部调用AIBotPro的插件（联网、知识库、绘画、workflow等），实现AI特色功能输出，完全遵循OpenAI调用规则，免去复杂的function call传参
+![a8ffbb11bcd5406fb58c8f0ab87dfb6b.png](https://ice.frostsky.com/2024/04/05/a8ffbb11bcd5406fb58c8f0ab87dfb6b.png)
+
 ## WorkFlow（AI流程引擎）
 ![115695455a122e9cfa15aee4f32ae3a2.png](https://ice.frostsky.com/2024/04/05/115695455a122e9cfa15aee4f32ae3a2.png)
 
