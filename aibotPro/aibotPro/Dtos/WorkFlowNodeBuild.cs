@@ -13,4 +13,12 @@ namespace aibotPro.Dtos
         public string NodeName { get; set; }
         public string OutputData { get; set; }
     }
+    public class WorkFlowCharging
+    {
+        public string Account { get; set; }
+        public string ModelName { get; set; }
+        public int InputCount { get; set; }
+        public int OutputCount { get; set; }
+        public bool IsDraw { get; set; } = false;
+    }
 }

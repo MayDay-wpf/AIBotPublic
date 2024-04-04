@@ -15,6 +15,7 @@ using System.Security.Principal;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using System.Text;
+using Microsoft.AspNetCore.SignalR;
 
 namespace aibotPro.Service
 {
@@ -27,7 +28,8 @@ namespace aibotPro.Service
         private readonly IRedisService _redisService;
         private readonly IFinanceService _financeService;
         private readonly IServiceProvider _serviceProvider;
-        public WorkShopService(AIBotProContext context, ISystemService systemService, IAiServer aiServer, IUsersService usersService, IRedisService redisService, IFinanceService financeService, IServiceProvider serviceProvider)
+        private readonly IHubContext<ChatHub> _hubContext;
+        public WorkShopService(AIBotProContext context, ISystemService systemService, IAiServer aiServer, IUsersService usersService, IRedisService redisService, IFinanceService financeService, IServiceProvider serviceProvider, IHubContext<ChatHub> hubContext)
         {
             _context = context;
             _systemService = systemService;
@@ -36,6 +38,7 @@ namespace aibotPro.Service
             _redisService = redisService;
             _financeService = financeService;
             _serviceProvider = serviceProvider;
+            _hubContext = hubContext;
         }
         public bool InstallPlugin(string account, int pluginId, out string errormsg)
         {
@@ -317,7 +320,7 @@ namespace aibotPro.Service
             }).ToList();
             return pluginCookies;
         }
-        public async Task<PluginResDto> RunPlugin(string account, FunctionCall fn)
+        public async Task<PluginResDto> RunPlugin(string account, FunctionCall fn, string chatId = "", string senMethod = "")
         {
             PluginResDto pluginResDto = new PluginResDto();
             //获取插件信息
@@ -752,7 +755,7 @@ namespace aibotPro.Service
                                 {
                                     startOutputJson = "{}";
                                 }
-                                WorkflowEngine workflowEngine = new WorkflowEngine(workFlowNodeData, _aiServer, _systemService, _financeService, _context, account, _serviceProvider);
+                                WorkflowEngine workflowEngine = new WorkflowEngine(workFlowNodeData, _aiServer, _systemService, _financeService, _context, account, _serviceProvider, _hubContext, chatId, senMethod);
                                 List<NodeOutput> workflowResult = await workflowEngine.Execute(startOutputJson);
                                 //查询工作流结束模式
                                 var endNodeData = (EndData)workFlowNodeData.Drawflow.Home.Data.Values.FirstOrDefault(x => x.Name == "end").Data;

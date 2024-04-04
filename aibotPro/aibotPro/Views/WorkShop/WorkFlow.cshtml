@@ -41,7 +41,7 @@
                 <i class="far fa-play-circle"></i><span> 开始（start）</span>
             </div>
             <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="javascript">
-                <i class="fab fa-js"></i><span> 脚本（javascript{{Id}}）</span>
+                <i class="fab fa-js"></i><span> 脚本（javascript）</span>
             </div>
             <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="http">
                 <i class="fas fa-paper-plane"></i><span> Http请求（http）</span>
@@ -51,6 +51,9 @@
             </div>
             <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="DALL">
                 <i class="fas fa-paint-brush"></i><span> DALL·E3（DALL）</span>
+            </div>
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="DALLsm">
+                <i class="fas fa-pen"></i><span> DALL·E2（DALLsm）</span>
             </div>
             <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="web">
                 <i class="fas fa-globe"></i><span> 联网搜索（web）</span>
@@ -64,7 +67,7 @@
                 <ul>
                     <li onclick="editor.changeModule('Home'); changeModule(event);" class="selected"></li>
                     @* <li onclick="editor.changeModule('Other'); changeModule(event);">Other Module</li> *@
-                    <li><i class="fas fa-bars" onclick="hideTools()" style="font-size:20px;"></i></li>
+                    <li onclick="hideTools()"><i class="fas fa-bars" style="font-size:20px;"></i></li>
                     <li><button class="btn btn-danger" onclick="editor.clearModuleSelected()">清空</button></li>
                     <li><button class="btn btn-info" onclick="exportDrawFlow()">预览Json</button></li>
                     <li><button class="btn btn-info" onclick="saveNodeDataToCache()">保存</button></li>

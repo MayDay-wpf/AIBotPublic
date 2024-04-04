@@ -17,6 +17,7 @@ namespace aibotPro.Interface
         Task<string> CreateMJdraw(string prompt, string botType, string[] referenceImgPath, string baseUrl, string apiKey);//创建Midjourney画图任务
         Task<string> CreateMJchange(string changeType, int changeIndex, string taskId, string baseUrl, string apiKey);//创建Midjourney动作任务
         Task<string> CreateDALLdraw(string prompt, string imgSize, string quality, string baseUrl, string apiKey);//创建DALL-E画图任务
+        Task<string> CreateDALLE2draw(string prompt, string imgSize, string baseUrl, string apiKey, int n = 1);//创建DALL-E画图任务
         Task<TaskResponse> GetMJTaskResponse(string taskId, string baseUrl, string apiKey);//获取任务状态
 
         Task DownloadImageAsync(string imageUrl, string savePath, string fileNameWithoutExtension);//下载图片

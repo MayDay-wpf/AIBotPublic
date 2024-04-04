@@ -31,6 +31,10 @@
                 <option value="money" selected>金额消耗统计</option>
                 <option value="tokens">Token消耗统计</option>
             </select>
+            <div class="form-group">
+                <label>合计（<span id="unit">￥</span>）：</label>
+                <input type="text" class="form-control" id="totalUse" readonly style="width:200px;background-color:ghostwhite" />
+            </div>
             <div id="pieChart" style="width: 100%; height: 400px;"></div>
         </div>
     </div>

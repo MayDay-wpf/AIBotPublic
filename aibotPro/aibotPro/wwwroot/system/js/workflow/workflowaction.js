@@ -21,12 +21,22 @@ var httpdata = {
 var LLMdata = {
     output: {
         aimodel: "",
-        prompt: ""
+        prompt: "",
+        retry: 0
     }
 }
 var DALLdata = {
     output: {
-        prompt: ""
+        prompt: "",
+        size: "",
+        quality: "",
+        retry: 0
+    }
+}
+var DALLsmdata = {
+    output: {
+        prompt: "",
+        retry: 0
     }
 }
 var webdata = {
@@ -166,17 +176,24 @@ function saveNodeData() {
             LLMdata = {
                 output: {
                     aimodel: "",
-                    prompt: ""
+                    prompt: "",
+                    retry: 0
                 }
             }
             var AImodel = $('.aimodel').val();
             var Prompt = $('.prompt').val();
+            var Retry = $('.retry').val();
             LLMdata.output.aimodel = AImodel;
             if (Prompt == "") {
                 layer.msg('请填写提示词', { icon: 2, time: 2500 });
                 return false;
             }
+            if (Retry == "") {
+                layer.msg('重试次数填写错误', { icon: 2, time: 2500 });
+                return false;
+            }
             LLMdata.output.prompt = Prompt;
+            LLMdata.output.retry = Retry;
             editor.updateNodeDataFromId(thisNodeId, LLMdata);
             saveNodeDataToCache();
             return true;
@@ -184,16 +201,54 @@ function saveNodeData() {
         case 'DALL':
             DALLdata = {
                 output: {
-                    prompt: ""
+                    prompt: "",
+                    retry: 0
                 }
             }
             var Prompt = $('.prompt').val();
+            var Retry = $('.retry').val();
             if (Prompt == "") {
                 layer.msg('请填写提示词', { icon: 2, time: 2500 });
                 return false;
             }
+            if (Retry == "") {
+                layer.msg('重试次数填写错误', { icon: 2, time: 2500 });
+                return false;
+            }
+            var Size = $(".dallsize").val();
+            if (Size == null) {
+                layer.msg('请选择绘制尺寸', { icon: 2, time: 2500 });
+                return false;
+            }
+            var Quality = $(".dallquality").val();
+            if (Quality == "") {
+                layer.msg('请选择绘制质量', { icon: 2, time: 2500 });
+                return false;
+            }
             DALLdata.output.prompt = Prompt;
+            DALLdata.output.size = Size;
+            DALLdata.output.quality = Quality;
+            DALLdata.output.retry = Retry;
             editor.updateNodeDataFromId(thisNodeId, DALLdata);
+            saveNodeDataToCache();
+            return true;
+            break;
+        case 'DALLsm':
+            DALLsmdata = {
+                output: {
+                    prompt: "",
+                    retry: 0
+                }
+            }
+            var Prompt = $('.prompt').val();
+            var Retry = $('.retry').val();
+            if (Prompt == "") {
+                layer.msg('请填写提示词', { icon: 2, time: 2500 });
+                return false;
+            }
+            DALLsmdata.output.prompt = Prompt;
+            DALLsmdata.output.retry = Retry;
+            editor.updateNodeDataFromId(thisNodeId, DALLsmdata);
             saveNodeDataToCache();
             return true;
             break;
@@ -206,6 +261,10 @@ function saveNodeData() {
             var Prompt = $('.prompt').val();
             if (Prompt == "") {
                 layer.msg('请填写搜索关键词', { icon: 2, time: 2500 });
+                return false;
+            }
+            if (Retry == "") {
+                layer.msg('重试次数填写错误', { icon: 2, time: 2500 });
                 return false;
             }
             DALLdata.output.prompt = Prompt;

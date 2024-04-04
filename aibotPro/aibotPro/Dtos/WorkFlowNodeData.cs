@@ -51,6 +51,9 @@ namespace aibotPro.Dtos
                 case "DALL":
                     Data = RawData.ToObject<DALLData>();
                     break;
+                case "DALLsm":
+                    Data = RawData.ToObject<DALLsmData>();
+                    break;
                 case "web":
                     Data = RawData.ToObject<WebData>();
                     break;
@@ -164,7 +167,13 @@ namespace aibotPro.Dtos
         public new DALLOutput Output { get; set; }
         public override object GetOutput() => Output;
     }
-
+    // DALL-E2派生类
+    public class DALLsmData : NodeSpecificData
+    {
+        [JsonProperty("output")]
+        public new DALLsmOutput Output { get; set; }
+        public override object GetOutput() => Output;
+    }
     // Web派生类
     public class WebData : NodeSpecificData
     {
@@ -218,11 +227,26 @@ namespace aibotPro.Dtos
 
         [JsonProperty("prompt")]
         public string Prompt { get; set; }
+        [JsonProperty("retry")]
+        public int Retry { get; set; }
     }
     public class DALLOutput
     {
         [JsonProperty("prompt")]
         public string Prompt { get; set; }
+        [JsonProperty("size")]
+        public string Size { get; set; }
+        [JsonProperty("quality")]
+        public string Quality { get; set; }
+        [JsonProperty("retry")]
+        public int Retry { get; set; }
+    }
+    public class DALLsmOutput
+    {
+        [JsonProperty("prompt")]
+        public string Prompt { get; set; }
+        [JsonProperty("retry")]
+        public int Retry { get; set; }
     }
     public class WebOutput
     {

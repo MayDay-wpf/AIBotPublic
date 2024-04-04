@@ -97,20 +97,21 @@ namespace aibotPro.Controllers
         /// <param name="toemail">注册邮箱</param>
         /// <returns></returns>
         [HttpPost]
-        public IActionResult SendRegiestEmail([FromBody] JsonElement requestBody)
+        //public IActionResult SendRegiestEmail([FromBody] JsonElement requestBody)
+        public IActionResult SendRegiestEmail(string toemail)
         {
-            string captchaVerifyParam = requestBody.GetProperty("captchaVerifyParam").GetString();
-            bool result = _systemService.AlibabaCaptchaAsync(captchaVerifyParam).Result;
-            if (!result)
-            {
-                return Json(new
-                {
-                    success = false,
-                    msg = "验证码错误",
-                    captchaVerifyResult = false
-                });
-            }
-            string toemail = requestBody.GetProperty("toemail").GetString();
+            //string captchaVerifyParam = requestBody.GetProperty("captchaVerifyParam").GetString();
+            //bool result = _systemService.AlibabaCaptchaAsync(captchaVerifyParam).Result;
+            //if (!result)
+            //{
+            //    return Json(new
+            //    {
+            //        success = false,
+            //        msg = "验证码错误",
+            //        captchaVerifyResult = false
+            //    });
+            //}
+            //string toemail = requestBody.GetProperty("toemail").GetString();
             string title = "【注册验证】";
             string content = @"
                                 <!DOCTYPE html>
@@ -152,14 +153,14 @@ namespace aibotPro.Controllers
                                 </html>
                             ";
             //非空判断
-            if (string.IsNullOrEmpty(captchaVerifyParam))
-            {
-                return Json(new
-                {
-                    success = false,
-                    msg = "参数不能为空",
-                });
-            }
+            //if (string.IsNullOrEmpty(captchaVerifyParam))
+            //{
+            //    return Json(new
+            //    {
+            //        success = false,
+            //        msg = "参数不能为空",
+            //    });
+            //}
             var tomail = toemail.ToLower();
             if (!toemail.Contains("qq.com") && !toemail.Contains("gmail.com") && !toemail.Contains("163.com") && !toemail.Contains("126.com"))
             {
@@ -167,7 +168,7 @@ namespace aibotPro.Controllers
                 {
                     success = false,
                     msg = "只允许使用qq,gmail,163,126邮箱",
-                    captchaVerifyResult = result
+                    //captchaVerifyResult = result
                 });
             }
             if (_usersService.SendRegiestEmail(toemail, title, content))
@@ -176,7 +177,7 @@ namespace aibotPro.Controllers
                 {
                     success = true,
                     msg = "发送成功",
-                    captchaVerifyResult = result
+                    //captchaVerifyResult = result
                 });
             }
             else
@@ -185,7 +186,7 @@ namespace aibotPro.Controllers
                 {
                     success = false,
                     msg = "发送失败",
-                    captchaVerifyResult = false
+                    //captchaVerifyResult = false
                 });
             }
         }
@@ -224,20 +225,21 @@ namespace aibotPro.Controllers
             }
         }
         [HttpPost]
-        public IActionResult SendFindPasswordEmail([FromBody] JsonElement requestBody)
+        //public IActionResult SendFindPasswordEmail([FromBody] JsonElement requestBody)
+        public IActionResult SendFindPasswordEmail(string toemail)
         {
-            string captchaVerifyParam = requestBody.GetProperty("captchaVerifyParam").GetString();
-            bool result = _systemService.AlibabaCaptchaAsync(captchaVerifyParam).Result;
-            if (!result)
-            {
-                return Json(new
-                {
-                    success = false,
-                    msg = "验证码错误",
-                    captchaVerifyResult = false
-                });
-            }
-            string toemail = requestBody.GetProperty("toemail").GetString();
+            //string captchaVerifyParam = requestBody.GetProperty("captchaVerifyParam").GetString();
+            //bool result = _systemService.AlibabaCaptchaAsync(captchaVerifyParam).Result;
+            //if (!result)
+            //{
+            //    return Json(new
+            //    {
+            //        success = false,
+            //        msg = "验证码错误",
+            //        captchaVerifyResult = false
+            //    });
+            //}
+            //string toemail = requestBody.GetProperty("toemail").GetString();
             //判断用户是否存在
             var user = _context.Users.AsNoTracking().Where(x => x.Account == toemail).FirstOrDefault();
             if (user == null)
@@ -246,7 +248,7 @@ namespace aibotPro.Controllers
                 {
                     success = false,
                     msg = "用户不存在",
-                    captchaVerifyResult = result
+                    //captchaVerifyResult = result
                 });
             }
             string title = "【找回密码】";
@@ -284,20 +286,20 @@ namespace aibotPro.Controllers
                                     <div class='container'>
                                         <h1>账号找回验证码</h1>
                                         <p>您的账号找回验证码是：<strong>{{checkCode}}</strong>，有效期10分钟。</p>
-                                        <p>过期后需重新获取，请您尽快完成注册 <i>:-)</i></p>
+                                        <p>过期后需重新获取，请您尽快完成找回验证 <i>:-)</i></p>
                                     </div>
                                 </body>
                                 </html>
                             ";
             //非空判断
-            if (string.IsNullOrEmpty(captchaVerifyParam))
-            {
-                return Json(new
-                {
-                    success = false,
-                    msg = "参数不能为空",
-                });
-            }
+            //if (string.IsNullOrEmpty(captchaVerifyParam))
+            //{
+            //    return Json(new
+            //    {
+            //        success = false,
+            //        msg = "参数不能为空",
+            //    });
+            //}
             var tomail = toemail.ToLower();
             if (!toemail.Contains("qq.com") && !toemail.Contains("gmail.com") && !toemail.Contains("163.com") && !toemail.Contains("126.com"))
             {
@@ -305,7 +307,7 @@ namespace aibotPro.Controllers
                 {
                     success = false,
                     msg = "只允许使用qq,gmail,163,126邮箱",
-                    captchaVerifyResult = result
+                    //captchaVerifyResult = result
                 });
             }
             if (_usersService.SendFindEmail(toemail, title, content))
@@ -314,7 +316,7 @@ namespace aibotPro.Controllers
                 {
                     success = true,
                     msg = "发送成功",
-                    captchaVerifyResult = result
+                    //captchaVerifyResult = result
                 });
             }
             else

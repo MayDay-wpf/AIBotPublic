@@ -1,9 +1,11 @@
 ﻿using aibotPro.Dtos;
 using aibotPro.Interface;
 using aibotPro.Models;
+using aibotPro.Service;
 using JavaScriptEngineSwitcher.ChakraCore;
 using JavaScriptEngineSwitcher.Core;
 using JavaScriptEngineSwitcher.Extensions.MsDependencyInjection;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -11,6 +13,7 @@ using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
 using TiktokenSharp;
+using static iTextSharp.text.pdf.AcroFields;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace aibotPro.AppCode
@@ -23,8 +26,12 @@ namespace aibotPro.AppCode
         private readonly IFinanceService _financeService;
         private readonly AIBotProContext _context;
         private readonly string _account;
+        private readonly string _chatId;
+        private readonly string _senMethod;
+        private readonly List<WorkFlowCharging> _workFlowChargings = new List<WorkFlowCharging>();
         private readonly IServiceProvider _serviceProvider;
-        public WorkflowEngine(WorkFlowNodeData workflowData, IAiServer aiServer, ISystemService systemService, IFinanceService financeService, AIBotProContext context, string account, IServiceProvider serviceProvider)
+        private readonly IHubContext<ChatHub> _hubContext;
+        public WorkflowEngine(WorkFlowNodeData workflowData, IAiServer aiServer, ISystemService systemService, IFinanceService financeService, AIBotProContext context, string account, IServiceProvider serviceProvider, IHubContext<ChatHub> hubContext, string chatId, string senMethod)
         {
             _workflowData = workflowData;
             _aiServer = aiServer;
@@ -33,6 +40,9 @@ namespace aibotPro.AppCode
             _context = context;
             _account = account;
             _serviceProvider = serviceProvider;
+            _hubContext = hubContext;
+            _chatId = chatId;
+            _senMethod = senMethod;
         }
         public async Task<List<NodeOutput>> Execute(string startNodeOutput)
         {
@@ -116,26 +126,6 @@ namespace aibotPro.AppCode
 
             return result;
         }
-
-        //private async Task<List<NodeOutput>> ExecuteFlow(List<WorkFlowNodeBuild> builds, string startNodeOutput)
-        //{
-        //    List<NodeOutput> result = new List<NodeOutput>();
-        //    //把builds按照seq排序
-        //    builds = builds.OrderBy(x => x.Seq).ToList();
-        //    //把startNodeOutput添加到result
-        //    result.Add(new NodeOutput { NodeName = "start", OutputData = startNodeOutput });
-        //    //移除builds中的start元素
-        //    builds.RemoveAt(0);
-        //    //遍历builds
-        //    foreach (var build in builds)
-        //    {
-        //        foreach (var node in build.Nodes)
-        //        {
-        //            result.Add(await ExecuteNode(node, result));
-        //        }
-        //    }
-        //    return result;
-        //}
         private async Task<List<NodeOutput>> ExecuteFlow(List<WorkFlowNodeBuild> builds, string startNodeOutput)
         {
             List<NodeOutput> result = new List<NodeOutput>();
@@ -143,7 +133,6 @@ namespace aibotPro.AppCode
             builds = builds.OrderBy(x => x.Seq).ToList();
             result.Add(new NodeOutput { NodeName = "start", OutputData = startNodeOutput });
             builds.RemoveAt(0); // 第一个build是"start"，且已处理
-
             // 按照顺序处理每一个build，但build内部的Nodes可以并行执行
             foreach (var build in builds)
             {
@@ -153,7 +142,10 @@ namespace aibotPro.AppCode
                 // 添加到总结果中
                 result.AddRange(nodeOutputs);
             }
-
+            foreach (var item in _workFlowChargings)
+            {
+                await _financeService.CreateUseLogAndUpadteMoney(item.Account, item.ModelName, item.InputCount, item.OutputCount, item.IsDraw);
+            }
             return result;
         }
         private async Task<NodeOutput> ExecuteNode(NodeData node, List<NodeOutput> result)
@@ -168,16 +160,19 @@ namespace aibotPro.AppCode
             switch (nodeName)
             {
                 case "javascript":
-                    nodeOutput.OutputData = ProcessJavaScriptNode(node, result);
+                    nodeOutput.OutputData = await ProcessJavaScriptNode(node, result);
                     break;
                 case "http":
-                    nodeOutput.OutputData = ProcessHttpNode(node, result);
+                    nodeOutput.OutputData = await ProcessHttpNode(node, result);
                     break;
                 case "LLM":
                     nodeOutput.OutputData = await ProcessLLMNode(node, result);
                     break;
                 case "DALL":
                     nodeOutput.OutputData = await ProcessDALLNode(node, result);
+                    break;
+                case "DALLsm":
+                    nodeOutput.OutputData = await ProcessDALLsmNode(node, result);
                     break;
                 case "web":
                     nodeOutput.OutputData = await ProcessWebNode(node, result);
@@ -199,7 +194,7 @@ namespace aibotPro.AppCode
             return "";
         }
 
-        private string ProcessJavaScriptNode(NodeData node, List<NodeOutput> result)
+        private async Task<string> ProcessJavaScriptNode(NodeData node, List<NodeOutput> result)
         {
             //获取javascript节点的脚本内容
             var jsData = (JavaScriptData)node.Data;
@@ -207,6 +202,12 @@ namespace aibotPro.AppCode
             jsData.Output.JavaScript = FillScriptWithValues(jsData.Output.JavaScript, result);
             var nodeName = node.Name;
             var nodeId = node.Id;
+            if (!string.IsNullOrEmpty(_chatId))
+            {
+                ChatRes chatRes = new ChatRes();
+                chatRes.message = $"👨‍💻";
+                await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
+            }
             //初始化JavaScript引擎
             IServiceCollection services = new ServiceCollection();
             services.AddJsEngineSwitcher(options => options.DefaultEngineName = ChakraCoreJsEngine.EngineName)
@@ -222,15 +223,21 @@ namespace aibotPro.AppCode
             return BuilderJson(nodeName + nodeId, ExecuteResult);
         }
 
-        private string ProcessHttpNode(NodeData node, List<NodeOutput> result)
+        private async Task<string> ProcessHttpNode(NodeData node, List<NodeOutput> result)
         {
             // 处理 "http" 节点,执行 HTTP 请求,返回 JSON 字符串
             HttpData httpData = (HttpData)node.Data;
             string type = httpData.Output.Type;
-            string url = httpData.Output.RequestUrl;
+            string url = FillScriptWithValues(httpData.Output.RequestUrl, result);
             string body = string.Empty;
             var nodeName = node.Name;
             var nodeId = node.Id;
+            if (!string.IsNullOrEmpty(_chatId))
+            {
+                ChatRes chatRes = new ChatRes();
+                chatRes.message = $"📎";
+                await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
+            }
             Dictionary<string, string> parameters = new Dictionary<string, string>();
             Dictionary<string, string> headers = new Dictionary<string, string>();
             Dictionary<string, string> cookies = new Dictionary<string, string>();
@@ -276,11 +283,44 @@ namespace aibotPro.AppCode
         {
             // 处理 "LLM" 节点,执行 LLM 代码,返回 JSON 字符串
             LLMData llmData = (LLMData)node.Data;
+            var nodeName = node.Name;
+            var nodeId = node.Id;
+            if (!string.IsNullOrEmpty(_chatId))
+            {
+                ChatRes chatRes = new ChatRes();
+                chatRes.message = $"🤖";
+                await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
+            }
             string aimodel = llmData.Output.AiModel;
             string prompt = FillScriptWithValues(llmData.Output.Prompt, result);
-            string airesult = await _aiServer.CallingAINotStream(prompt, aimodel);
+            string airesult = string.Empty; // 初始化为空
+            int retryCount = llmData.Output.Retry; // 重试次数
+            int initialRetryCount = retryCount;
+            do
+            {
+                airesult = await _aiServer.CallingAINotStream(prompt, aimodel);
+                if (!string.IsNullOrEmpty(airesult)) break; // 如果结果非空，退出循环
+                if (!string.IsNullOrEmpty(_chatId) && retryCount > 0)
+                {
+                    // 计算剩余重试次数
+                    int remainingRetries = retryCount - 1;
+                    string retryMessage = $"🔄 LLM重试 {initialRetryCount - remainingRetries}/{initialRetryCount}...";
+
+                    await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, new ChatRes { message = retryMessage });
+                }
+                await Task.Delay(500);
+            } while (--retryCount >= 0);
+
+            // 如果在重试结束后结果仍为空，则抛出异常
             if (string.IsNullOrEmpty(airesult))
-                throw new Exception("LLM处理数据时回复为空，工作流中断，请重试");
+            {
+                string failMessage = "❌ 重试失败。LLM处理数据时回复为空，工作流中断，请重试";
+                if (!string.IsNullOrEmpty(_chatId))
+                {
+                    await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, new ChatRes { message = failMessage });
+                }
+                throw new Exception(failMessage);
+            }
             var jsonBuilder = new StringBuilder();
             jsonBuilder.Append("{");
             jsonBuilder.Append($"\"{node.Name + node.Id}\":");
@@ -292,7 +332,7 @@ namespace aibotPro.AppCode
             TikToken tikToken = TikToken.GetEncoding("cl100k_base");
             int inputCount = tikToken.Encode(prompt).Count;
             int outputCount = tikToken.Encode(airesult).Count;
-            await _financeService.CreateUseLogAndUpadteMoney(_account, aimodel, inputCount, outputCount);
+            _workFlowChargings.Add(new WorkFlowCharging { Account = _account, ModelName = aimodel, InputCount = inputCount, OutputCount = outputCount });
             return jsonBuilder.ToString();
         }
 
@@ -300,14 +340,47 @@ namespace aibotPro.AppCode
         {
             // 处理 "DALL" 节点,执行 DALL 代码,返回 JSON 字符串
             DALLData dallData = (DALLData)node.Data;
+            var nodeName = node.Name;
+            var nodeId = node.Id;
+            if (!string.IsNullOrEmpty(_chatId))
+            {
+                ChatRes chatRes = new ChatRes();
+                chatRes.message = $"✍";
+                await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
+            }
             string prompt = FillScriptWithValues(dallData.Output.Prompt, result);
             //获取DALLE3的apikey和baseurl
             var aiModel = _context.AIdraws.AsNoTracking().Where(x => x.ModelName == "DALLE3").FirstOrDefault();
             if (aiModel == null)
                 throw new Exception("系统未配置DALLE3模型");
-            string airesult = await _aiServer.CreateDALLdraw(prompt, "1024x1024", "standard", aiModel.BaseUrl, aiModel.ApiKey);
+            string airesult = string.Empty;
+            int retryCount = dallData.Output.Retry; // 重试次数
+            int initialRetryCount = retryCount;
+            do
+            {
+                airesult = await _aiServer.CreateDALLdraw(prompt, dallData.Output.Size, dallData.Output.Quality, aiModel.BaseUrl, aiModel.ApiKey);
+                if (!string.IsNullOrEmpty(airesult)) break; // 如果结果非空，退出循环
+                if (!string.IsNullOrEmpty(_chatId) && retryCount > 0)
+                {
+                    // 计算剩余重试次数
+                    int remainingRetries = retryCount - 1;
+                    string retryMessage = $"🔄 DALLE3重试 {initialRetryCount - remainingRetries}/{initialRetryCount}...";
+
+                    await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, new ChatRes { message = retryMessage });
+                }
+                await Task.Delay(500);
+            } while (--retryCount >= 0);
+
+            // 如果在重试结束后结果仍为空，则抛出异常
             if (string.IsNullOrEmpty(airesult))
-                throw new Exception("DALLE3绘图失败");
+            {
+                string failMessage = "❌ 重试失败。DALLE3绘图失败，工作流中断，请重试";
+                if (!string.IsNullOrEmpty(_chatId))
+                {
+                    await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, new ChatRes { message = failMessage });
+                }
+                throw new Exception(failMessage);
+            }
             var jsonBuilder = new StringBuilder();
             jsonBuilder.Append("{");
             jsonBuilder.Append($"\"{node.Name + node.Id}\":");
@@ -316,7 +389,8 @@ namespace aibotPro.AppCode
             jsonBuilder.Append($"\"{airesult}\"");
             jsonBuilder.Append("}");
             jsonBuilder.Append("}");
-            await _financeService.CreateUseLogAndUpadteMoney(_account, "DALLE3", 0, 0, true);
+            _workFlowChargings.Add(new WorkFlowCharging { Account = _account, ModelName = "DALLE3", InputCount = 0, OutputCount = 0, IsDraw = true });
+
             // 在后台启动一个任务下载图片
             string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "");
             string imgResPath = Path.Combine("/files/dallres", _account, newFileName + ".png");
@@ -334,11 +408,90 @@ namespace aibotPro.AppCode
             return jsonBuilder.ToString();
         }
 
+        private async Task<string> ProcessDALLsmNode(NodeData node, List<NodeOutput> result)
+        {
+            // 处理 "DALL" 节点,执行 DALL 代码,返回 JSON 字符串
+            DALLsmData dallsmData = (DALLsmData)node.Data;
+            var nodeName = node.Name;
+            var nodeId = node.Id;
+            if (!string.IsNullOrEmpty(_chatId))
+            {
+                ChatRes chatRes = new ChatRes();
+                chatRes.message = $"✍";
+                await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
+            }
+            string prompt = FillScriptWithValues(dallsmData.Output.Prompt, result);
+            //获取DALLE3的apikey和baseurl
+            var aiModel = _context.AIdraws.AsNoTracking().Where(x => x.ModelName == "DALLE2").FirstOrDefault();
+            if (aiModel == null)
+                throw new Exception("系统未配置DALLE2模型");
+            string airesult = string.Empty;
+            int retryCount = dallsmData.Output.Retry; // 重试次数
+            int initialRetryCount = retryCount;
+            do
+            {
+                airesult = await _aiServer.CreateDALLE2draw(prompt, "1024x1024", aiModel.BaseUrl, aiModel.ApiKey, 1);
+                if (!string.IsNullOrEmpty(airesult)) break; // 如果结果非空，退出循环
+                if (!string.IsNullOrEmpty(_chatId) && retryCount > 0)
+                {
+                    // 计算剩余重试次数
+                    int remainingRetries = retryCount - 1;
+                    string retryMessage = $"🔄 DALLE2重试 {initialRetryCount - remainingRetries}/{initialRetryCount}...";
+
+                    await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, new ChatRes { message = retryMessage });
+                }
+                await Task.Delay(500);
+            } while (--retryCount >= 0);
+
+            // 如果在重试结束后结果仍为空，则抛出异常
+            if (string.IsNullOrEmpty(airesult))
+            {
+                string failMessage = "❌ 重试失败。DALLE2绘图失败，工作流中断，请重试";
+                if (!string.IsNullOrEmpty(_chatId))
+                {
+                    await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, new ChatRes { message = failMessage });
+                }
+                throw new Exception(failMessage);
+            }
+            var jsonBuilder = new StringBuilder();
+            jsonBuilder.Append("{");
+            jsonBuilder.Append($"\"{node.Name + node.Id}\":");
+            jsonBuilder.Append("{");
+            jsonBuilder.Append($"\"data\":");
+            jsonBuilder.Append($"\"{airesult}\"");
+            jsonBuilder.Append("}");
+            jsonBuilder.Append("}");
+            _workFlowChargings.Add(new WorkFlowCharging { Account = _account, ModelName = "DALLE2", InputCount = 0, OutputCount = 0, IsDraw = true });
+            // 在后台启动一个任务下载图片
+            string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "");
+            string imgResPath = Path.Combine("/files/dallres", _account, newFileName + ".png");
+            Task.Run(async () =>
+            {
+                using (var scope = _serviceProvider.CreateScope()) // _serviceProvider 是 IServiceProvider 的一个实例。
+                {
+                    // 这里做一些后续处理，比如更新数据库记录等
+                    string savePath = Path.Combine("wwwroot", "files/dallres", _account);
+                    await _aiServer.DownloadImageAsync(airesult, savePath, newFileName);
+                    var aiSaveService = scope.ServiceProvider.GetRequiredService<IAiServer>(); // 假设保存记录方法在IAiSaveService中。
+                    await aiSaveService.SaveAiDrawResult(_account, "DALLE2", imgResPath, "workflow_Engine", "workflow_Engine");
+                }
+            });
+            return jsonBuilder.ToString();
+        }
+
         private async Task<string> ProcessWebNode(NodeData node, List<NodeOutput> result)
         {
             // 处理 "web" 节点,执行 web 代码,返回 JSON 字符串
             WebData webData = (WebData)node.Data;
             string prompt = FillScriptWithValues(webData.Output.Prompt, result);
+            var nodeName = node.Name;
+            var nodeId = node.Id;
+            if (!string.IsNullOrEmpty(_chatId))
+            {
+                ChatRes chatRes = new ChatRes();
+                chatRes.message = $"🌐";
+                await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
+            }
             List<SystemCfg> systemConfig = _systemService.GetSystemCfgs();
             string googleSearchApiKey = systemConfig.Find(x => x.CfgKey == "GoogleSearchApiKey").CfgValue;
             string googleSearchEngineId = systemConfig.Find(x => x.CfgKey == "GoogleSearchEngineId").CfgValue;

@@ -279,7 +279,7 @@ header {
 
 .bar-zoom {
     float: right;
-    position: absolute;
+    position: fixed;
     bottom: 10px;
     right: 10px;
     display: flex;
@@ -309,6 +309,7 @@ header {
     background: var(--background-color);
     background-size: 25px 25px;
     background-image: linear-gradient(to right, #f1f1f1 1px, transparent 1px), linear-gradient(to bottom, #f1f1f1 1px, transparent 1px);
+    overflow: auto;
 }
 
 @media only screen and (max-width: 768px) {
@@ -508,7 +509,7 @@ header {
 .tools-title {
     text-align: center;
     height: 50px;
-    background: #4ea9ff;
+    background: rgb(46,46,46);
     line-height: 50px;
     color: white;
 }
@@ -565,9 +566,8 @@ table {
     color: black;
     display: none;
     width: 400px;
-    border-left: 1px solid lightgray;
     transition: width 0.5s ease-in-out;
-    border-left: 3px solid rgb(23,162,184);
+    border-left: 3px solid rgb(46,46,46);
 }
 
     .side-panel a.close-btn {
@@ -584,6 +584,42 @@ table {
         margin-top: 0;
         color: #f1f1f1;
     }
+
+    .side-panel input {
+        padding: 10px;
+        border-radius: 5px; /* 圆角 */
+        box-sizing: border-box; /* 使宽度包含内边距和边框 */
+        transition: border-color 0.3s, box-shadow 0.3s; /* 平滑过渡效果 */
+        outline: none;
+    }
+
+        .side-panel input:focus {
+            box-shadow: 0 0 8px 0 rgba(0,123,255,0.5); /* 聚焦时的阴影效果 */
+        }
+
+    .side-panel .retry {
+        padding: 10px;
+        border-radius: 5px; /* 圆角 */
+        box-sizing: border-box; /* 使宽度包含内边距和边框 */
+        transition: border-color 0.3s, box-shadow 0.3s; /* 平滑过渡效果 */
+    }
+
+        .side-panel .retry:focus {
+            box-shadow: 0 0 8px 0 rgba(0,123,255,0.5); /* 聚焦时的阴影效果 */
+        }
+
+    .side-panel textarea {
+        padding: 10px;
+        border-radius: 5px; /* 圆角 */
+        box-sizing: border-box; /* 使宽度包含内边距和边框 */
+        transition: border-color 0.3s, box-shadow 0.3s; /* 平滑过渡效果 */
+        outline: none;
+    }
+
+        .side-panel textarea:focus {
+            box-shadow: 0 0 8px 0 rgba(0,123,255,0.5); /* 聚焦时的阴影效果 */
+        }
+
 
 .side-panel-container {
     position: relative;

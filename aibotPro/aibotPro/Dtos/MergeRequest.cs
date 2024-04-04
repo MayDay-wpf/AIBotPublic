@@ -21,12 +21,27 @@
         public string quality { get; set; }
         public int n { get; set; }
     }
+    public class DALLE2drawBody
+    {
+        public string model { get; set; }
+        public string prompt { get; set; }
+        public string size { get; set; }
+        public int n { get; set; }
+    }
     public class IMGResponseData
     {
         public long created { get; set; }
         public List<IMGDataItem> data { get; set; }
     }
-
+    public class IMGResponseDataE2
+    {
+        public long created { get; set; }
+        public List<IMGDataItemE2> data { get; set; }
+    }
+    public class IMGDataItemE2
+    {
+        public string url { get; set; }
+    }
     public class IMGDataItem
     {
         public string revised_prompt { get; set; }

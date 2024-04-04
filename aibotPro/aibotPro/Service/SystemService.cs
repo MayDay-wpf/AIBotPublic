@@ -6,13 +6,15 @@ using AlibabaCloud.SDK.Captcha20230305.Models;
 using iTextSharp.text;
 using iTextSharp.text.pdf;
 using iTextSharp.text.pdf.parser;
+using iTextSharp.text.pdf.security;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using OfficeOpenXml;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp;
 using Spire.Presentation;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
 using System.Net;
 using System.Net.Mail;
 using System.Security.Cryptography;
@@ -21,7 +23,7 @@ using System.Text;
 using System.Web;
 using TiktokenSharp;
 using static OpenAI.ObjectModels.SharedModels.IOpenAiModels;
-
+using System.Numerics;
 namespace aibotPro.Service
 {
     public class SystemService : ISystemService
@@ -325,6 +327,13 @@ namespace aibotPro.Service
             else
                 return false;
         }
+        //public async Task<string> CreateGraphicVerificationCode()
+        //{
+        //    var code = _securityCode.GetRandomEnDigitalText(4);
+        //    var imgbyte = _securityCode.GetEnDigitalCodeByte(code);
+
+        //}
+
         public bool DeleteFile(string filePath)
         {
             if (File.Exists(filePath))

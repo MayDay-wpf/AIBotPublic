@@ -228,10 +228,10 @@ namespace aibotPro.Controllers
         }
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
-        public async Task<IActionResult> GetLogs(int page, int page_size)
+        public async Task<IActionResult> GetLogs(int page, int page_size, string account)
         {
             int total = 0;
-            var logs = _financeService.GetLogs("", page, page_size, out total);
+            var logs = _financeService.GetLogs(account, page, page_size, out total);
             return Json(new
             {
                 success = true,
@@ -429,10 +429,10 @@ namespace aibotPro.Controllers
 
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
-        public async Task<IActionResult> GetOrderList(int page, int page_size)
+        public async Task<IActionResult> GetOrderList(int page, int page_size, string account)
         {
             int total = 0;
-            var orders = _financeService.GetOrders("", page, page_size, out total);
+            var orders = _financeService.GetOrders(account, page, page_size, out total);
             return Json(new
             {
                 success = true,

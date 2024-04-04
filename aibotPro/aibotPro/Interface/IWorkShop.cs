@@ -41,7 +41,7 @@ namespace aibotPro.Interface
         List<PluginCookieDto> GetPluginCookies(int pluginId);
 
         //运行插件
-        Task<PluginResDto> RunPlugin(string account, FunctionCall fn);
+        Task<PluginResDto> RunPlugin(string account, FunctionCall fn, string chatId = "", string senMethod = "");
 
         //获取工作流节点数据
         Task<string> GetWorkFlowNodeData(string workflowcode);

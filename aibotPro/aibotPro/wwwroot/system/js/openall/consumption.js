@@ -9,6 +9,16 @@
 let page = 1;
 let page_size = 15;
 let total = 0;
+$(document).keypress(function (e) {
+    if ($("#account").is(":focus")) {
+        if (e.which == 13) {
+            // 避免回车键换行
+            e.preventDefault();
+            var account = $("#account").val();
+            loadLogs(page, page_size, account)
+        }
+    }
+});
 $(document).ready(function () {
     loadLogs(page, page_size);
     var start = moment().subtract(6, 'days').startOf('day'); // 设置开始日期为6天前
@@ -135,14 +145,15 @@ function processData(data, key) {
     return Object.entries(modelData).map(([name, value]) => ({ name, value }));
 }
 
-function loadLogs(page, page_size) {
+function loadLogs(page, page_size, account = '') {
     loadingOverlay.show();
     $.ajax({
         url: '/OpenAll/GetLogs',
         type: 'Post',
         data: {
             page: page,
-            page_size: page_size
+            page_size: page_size,
+            account: account
         },
         dataType: 'json',
         success: function (response) {

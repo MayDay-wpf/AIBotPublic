@@ -10,8 +10,18 @@
 let page = 1;
 let page_size = 15;
 let total = 0;
+$(document).keypress(function (e) {
+    if ($("#account").is(":focus")) {
+        if (e.which == 13) {
+            // 避免回车键换行
+            e.preventDefault();
+            var account = $("#account").val();
+            loadOrders(page, page_size, account)
+        }
+    }
+});
 // 加载订单数据的函数
-function loadOrders(page, page_size) {
+function loadOrders(page, page_size, account = '') {
     // 示例中没有详细的后端接口URL，所以这里假设为'/api/getOrders'
     // 实际开发中需要替换为正确的URL
     $.ajax({
@@ -19,7 +29,8 @@ function loadOrders(page, page_size) {
         type: 'Post',
         data: {
             page: page,
-            page_size: page_size
+            page_size: page_size,
+            account: account
         },
         dataType: 'json',
         success: function (response) {
@@ -29,12 +40,12 @@ function loadOrders(page, page_size) {
                 updateOrderList(orders);
                 updatePagination(page, Math.ceil(total / page_size));
             } else {
-                alert(response.msg);
+                balert(response.msg, 'danger', false, 1500, 'center');
             }
         },
         error: function (error) {
             console.log(error);
-            alert('加载失败，请稍后再试');
+            balert('加载失败，请稍后再试', 'danger', false, 1500, 'center');
         }
     });
 }

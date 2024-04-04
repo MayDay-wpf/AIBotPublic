@@ -113,32 +113,57 @@ namespace aibotPro.Service
 
         public async Task<string> CallingAINotStream(string prompt, string model)
         {
-            var aImodels = _systemService.GetWorkShopAImodel();
-            OpenAiOptions openAiOptions = new OpenAiOptions();
-            openAiOptions.BaseDomain = aImodels.Where(x => x.ModelName == model).FirstOrDefault().BaseUrl;
-            openAiOptions.ApiKey = aImodels.Where(x => x.ModelName == model).FirstOrDefault().ApiKey;
-            OpenAIService openAIService = new OpenAIService(openAiOptions);
-            var completionResult = await openAIService.ChatCompletion.CreateCompletion(new ChatCompletionCreateRequest
+            var aImodels = _systemService.GetAImodel();
+            string apiKey = aImodels.Where(x => x.ModelName == model).FirstOrDefault().ApiKey;
+            //标准化baseurl
+            string baseUrl = aImodels.Where(x => x.ModelName == model).FirstOrDefault().BaseUrl;
+            try
             {
-                Messages = new List<ChatMessage>
-                    {
-                        ChatMessage.FromUser(prompt)
-                    },
-                Model = model
-            });
-            if (completionResult.Successful)
+                if (baseUrl.EndsWith("/"))
+                {
+                    baseUrl = baseUrl.TrimEnd('/');
+                }
+            }
+            catch (Exception e)
             {
-                return completionResult.Choices.First().Message.Content;
+                throw e;
+            }
+            var client = new RestClient($"{baseUrl}/v1/chat/completions");
+            var request = new RestRequest("", Method.Post);
+            request.AddHeader("Accept", "application/json");
+            request.AddHeader("Authorization", $"Bearer {apiKey}");
+            request.AddHeader("Content-Type", "application/json");
+            request.AddHeader("Connection", "keep-alive");
+
+            var requestBody = new
+            {
+                model = model,
+                messages = new[]
+                {
+                    new { role = "user", content = prompt }
+                },
+                stream = false
+            };
+
+            var body = JsonConvert.SerializeObject(requestBody, Formatting.Indented);
+            request.AddParameter("application/json", body, ParameterType.RequestBody);
+            RestResponse response = client.Execute(request);
+            if (response.IsSuccessful)
+            {
+                JObject jsonResponse = JObject.Parse(response.Content);
+                JToken messageContent = jsonResponse["choices"]?[0]?["message"]?["content"];
+
+                if (messageContent != null)
+                {
+                    return messageContent.ToString();
+                }
+                else
+                {
+                    return "";
+                }
             }
             else
-            {
-                if (completionResult.Error == null)
-                {
-                    throw new Exception("Unknown Error");
-                }
-
-                throw new Exception($"{completionResult.Error.Code}: {completionResult.Error.Message}");
-            }
+                return "";
         }
         public async Task<bool> SaveChatHistory(string account, string chatId, string content, string chatCode, string chatGroupId, string role, string model)
         {
@@ -325,6 +350,47 @@ namespace aibotPro.Service
             if (response.IsSuccessful)
             {
                 IMGResponseData imgdata = JsonConvert.DeserializeObject<IMGResponseData>(response.Content);
+                if (imgdata.data.Count > 0)
+                {
+                    return imgdata.data[0].url.ToString();
+                }
+                else
+                    return "";
+            }
+            else
+                return "";
+
+        }
+
+        public async Task<string> CreateDALLE2draw(string prompt, string imgSize, string baseUrl, string apiKey, int n = 1)
+        {
+            try
+            {
+                if (baseUrl.EndsWith("/"))
+                {
+                    baseUrl = baseUrl.TrimEnd('/');
+                }
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+            var client = new RestClient(baseUrl + "/v1/images/generations");
+            var request = new RestRequest("", Method.Post);
+            request.AddHeader("Content-Type", "application/json");
+            request.AddHeader("Authorization", $"Bearer {apiKey}");
+            prompt = prompt.Replace("\r", "\\n").Replace("\n", "\\n");
+            DALLE2drawBody dALLe2drawBody = new DALLE2drawBody();
+            dALLe2drawBody.model = "dall-e-2";
+            dALLe2drawBody.prompt = prompt;
+            dALLe2drawBody.size = imgSize;
+            dALLe2drawBody.n = n;
+            var body = JsonConvert.SerializeObject(dALLe2drawBody);
+            request.AddParameter("application/json", body, ParameterType.RequestBody);
+            var response = await client.ExecuteAsync(request);
+            if (response.IsSuccessful)
+            {
+                IMGResponseDataE2 imgdata = JsonConvert.DeserializeObject<IMGResponseDataE2>(response.Content);
                 if (imgdata.data.Count > 0)
                 {
                     return imgdata.data[0].url.ToString();

@@ -283,6 +283,69 @@ async function checkCaptcha(url, params) {
 
     return response.json(); // 解析返回的 JSON，这也返回一个 Promise
 }
+
+
+function oldFindPasswordEmail() {
+    var toemail = $("#email").val();
+    if (toemail != "") {
+        disableButtonAndStartCountdown();
+        $.ajax({
+            url: "/Users/SendFindPasswordEmail",
+            type: "post",
+            dataType: "json",//返回对象
+            data: {
+                toemail: toemail
+            },
+            success: function (res) {
+                if (res.success) {
+                    // 立即禁用按钮，并开始倒计时
+                    balert('邮件已发送', 'info', true, 2000, "top");
+                }
+                else {
+                    balert('邮件发送失败', 'danger', true, 2000, "top");
+                    resumeCountdown();
+                }
+            },
+            error: function (e) {
+                console.log("失败" + e);
+                resumeCountdown();
+            }
+        });
+    } else {
+        balert('请输入邮箱地址', 'danger', true, 2000, "top");
+    }
+}
+
+function oldsendCheckCode() {
+    var toemail = $("#email").val();
+    if (toemail != "") {
+        disableButtonAndStartCountdown();
+        $.ajax({
+            url: "/Users/SendRegiestEmail",
+            type: "post",
+            dataType: "json",//返回对象
+            data: {
+                toemail: toemail
+            },
+            success: function (res) {
+                if (res.success) {
+                    // 立即禁用按钮，并开始倒计时
+                    balert('邮件已发送', 'info', true, 2000, "top");
+                }
+                else {
+                    balert('邮件发送失败', 'danger', true, 2000, "top");
+                    resumeCountdown();
+                }
+            },
+            error: function (e) {
+                console.log("失败" + e);
+                resumeCountdown();
+            }
+        });
+    } else {
+        balert('请输入邮箱地址', 'danger', true, 2000, "top");
+    }
+}
 function disableBtn(success) {
     if (success) {
         // 立即禁用按钮，并开始倒计时
@@ -320,4 +383,9 @@ function disableButtonAndStartCountdown(isResuming = false) {
             localStorage.removeItem("countdownEnd"); // 清理localStorage
         }
     }, 1000);
+}
+function resumeCountdown() {
+    if (localStorage.getItem("countdownEnd")) {
+        disableButtonAndStartCountdown(true);
+    }
 }

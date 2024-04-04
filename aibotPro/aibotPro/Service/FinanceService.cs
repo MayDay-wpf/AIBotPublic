@@ -64,62 +64,75 @@ namespace aibotPro.Service
         }
         public async Task<bool> CreateUseLogAndUpadteMoney(string account, string modelName, int inputCount, int outputCount, bool isdraw = false)
         {
-            var user = _context.Users.Where(x => x.Account == account).FirstOrDefault();
-            if (user == null)
+            using (var transaction = _context.Database.BeginTransaction())
             {
-                return false;
+                try
+                {
+                    var user = _context.Users.Where(x => x.Account == account).FirstOrDefault();
+                    if (user == null)
+                    {
+                        return false;
+                    }
+                    decimal? realOutputMoney = 0m;
+                    //尝试从缓存中获取模型定价列表
+                    List<ModelPrice> modelPriceList = await GetModelPriceList();
+                    //根据模型名称获取模型定价
+                    var modelPrice = modelPriceList.Where(x => x.ModelName == modelName).FirstOrDefault();
+                    if (modelPrice != null)//如果不存在就是不扣费
+                    {
+                        //查询用户是否是VIP
+                        bool vip = await IsVip(account);
+                        if (vip)
+                        {
+                            //如果是VIP，使用VIP价格
+                            modelPrice.ModelPriceInput = modelPrice.VipModelPriceInput;
+                            modelPrice.ModelPriceOutput = modelPrice.VipModelPriceOutput;
+                            modelPrice.Rebate = modelPrice.VipRebate;
+                        }
+                        //如果是绘画
+                        if (isdraw)
+                        {
+                            realOutputMoney = modelPrice.ModelPriceOutput * modelPrice.Rebate;
+                        }
+                        else
+                        {
+                            //更新用户余额,字数要除以1000
+                            var inputMoney = modelPrice.ModelPriceInput * inputCount / 1000;
+                            var outputMoney = modelPrice.ModelPriceOutput * outputCount / 1000;
+                            //根据折扣计算实际扣费
+                            var rebate = modelPrice.Rebate;
+                            realOutputMoney = (inputMoney + outputMoney) * rebate;
+                        }
+                        //扣除用户余额
+                        user.Mcoin -= realOutputMoney;
+                        if (user.Mcoin < 0)
+                        {
+                            user.Mcoin = 0;
+                        }
+                        //标记实体状态为已修改
+                        _context.Entry(user).State = EntityState.Modified;
+                    }
+                    var log = new UseUpLog
+                    {
+                        Account = account,
+                        InputCount = inputCount,
+                        OutputCount = outputCount,
+                        UseMoney = realOutputMoney,
+                        CreateTime = DateTime.Now,
+                        ModelName = modelName
+                    };
+                    _context.UseUpLogs.Add(log);
+                    //保存变更到数据库
+                    await _context.SaveChangesAsync();
+                    transaction.Commit();
+                    return true;
+                }
+                catch (Exception)
+                {
+                    transaction.Rollback();
+                    return false;
+                }
             }
-            decimal? realOutputMoney = 0m;
-            //尝试从缓存中获取模型定价列表
-            List<ModelPrice> modelPriceList = await GetModelPriceList();
-            //根据模型名称获取模型定价
-            var modelPrice = modelPriceList.Where(x => x.ModelName == modelName).FirstOrDefault();
-            if (modelPrice != null)//如果不存在就是不扣费
-            {
-                //查询用户是否是VIP
-                bool vip = await IsVip(account);
-                if (vip)
-                {
-                    //如果是VIP，使用VIP价格
-                    modelPrice.ModelPriceInput = modelPrice.VipModelPriceInput;
-                    modelPrice.ModelPriceOutput = modelPrice.VipModelPriceOutput;
-                    modelPrice.Rebate = modelPrice.VipRebate;
-                }
-                //如果是绘画
-                if (isdraw)
-                {
-                    realOutputMoney = modelPrice.ModelPriceOutput * modelPrice.Rebate;
-                }
-                else
-                {
-                    //更新用户余额,字数要除以1000
-                    var inputMoney = modelPrice.ModelPriceInput * inputCount / 1000;
-                    var outputMoney = modelPrice.ModelPriceOutput * outputCount / 1000;
-                    //根据折扣计算实际扣费
-                    var rebate = modelPrice.Rebate;
-                    realOutputMoney = (inputMoney + outputMoney) * rebate;
-                }
-                //扣除用户余额
-                user.Mcoin -= realOutputMoney;
-                if (user.Mcoin < 0)
-                {
-                    user.Mcoin = 0;
-                }
-                //标记实体状态为已修改
-                _context.Entry(user).State = EntityState.Modified;
-            }
-            var log = new UseUpLog
-            {
-                Account = account,
-                InputCount = inputCount,
-                OutputCount = outputCount,
-                UseMoney = realOutputMoney,
-                CreateTime = DateTime.Now,
-                ModelName = modelName
-            };
-            _context.UseUpLogs.Add(log);
-            //保存变更到数据库
-            return await _context.SaveChangesAsync() > 0;
         }
         public async Task<bool> IsVip(string account)
         {
@@ -296,7 +309,7 @@ namespace aibotPro.Service
             }
             else
             {
-                query = _context.Orders.Where(p => p.Account == account);
+                query = _context.Orders.Where(p => p.Account.Contains(account));
             }
             // 首先计算总数，此时还未真正运行SQL查询
             total = query.Count();
@@ -320,7 +333,7 @@ namespace aibotPro.Service
             else
             {
                 // 利用IQueryable延迟执行，直到真正需要数据的时候才去数据库查询
-                query = _context.UseUpLogs.Where(p => p.Account == account);
+                query = _context.UseUpLogs.Where(p => p.Account.Contains(account));
             }
             // 首先计算总数，此时还未真正运行SQL查询
             total = query.Count();

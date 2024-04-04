@@ -711,7 +711,6 @@ namespace aibotPro.Service
                                         bool dalleloadding = true;
                                         bool websearchloadding = true;
                                         bool knowledgeloadding = true;
-                                        bool workflowloadding = true;
                                         if (fn.Name == "use_dalle3_withpr")
                                         {
                                             chatRes.message = "使用【DALL·E3】组件执行绘制,这需要大约1-2分钟";
@@ -760,26 +759,7 @@ namespace aibotPro.Service
                                                 }
                                             });
                                         }
-                                        else
-                                        {
-                                            var pcodeModel = _context.Plugins.AsNoTracking().Where(x => x.Pfunctionname == fn.Name).FirstOrDefault().Pcodemodel;
-                                            if(pcodeModel== "plugin-workflow")
-                                            {
-                                                chatRes.message = "请稍候，正在执行工作流";
-                                                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                                                // 线程开始
-                                                var workflowTask = Task.Run(async () =>
-                                                {
-                                                    while (workflowloadding)
-                                                    {
-                                                        chatRes.message = $"⏩";
-                                                        await Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                                                        await Task.Delay(1000);
-                                                    }
-                                                });
-                                            }
-                                        }
-                                        pluginResDto = await _workShop.RunPlugin(Account, fn);
+                                        pluginResDto = await _workShop.RunPlugin(Account, fn, chatId, senMethod);
                                         if (!pluginResDto.doubletreating)
                                         {
                                             string res = string.Empty;
@@ -810,13 +790,11 @@ namespace aibotPro.Service
                                                     res = res1 + res2 + res3 + res4;
                                                     break;
                                                 case "html":
-                                                    workflowloadding = false;
                                                     res = pluginResDto.result;
                                                     chatRes.message = res;
                                                     await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                                                     break;
                                                 case "js":
-                                                    workflowloadding = false;
                                                     chatRes.message = "";
                                                     chatRes.jscode = pluginResDto.result;
                                                     await Clients.Group(chatId).SendAsync(senMethod, chatRes);
@@ -835,7 +813,6 @@ namespace aibotPro.Service
                                         {
                                             websearchloadding = false;
                                             knowledgeloadding = false;
-                                            workflowloadding = false;
                                             //生成对话参数
                                             input += pluginResDto.result;
                                             chatMessages.Add(ChatMessage.FromUser(pluginResDto.result));

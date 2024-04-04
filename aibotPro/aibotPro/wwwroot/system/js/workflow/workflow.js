@@ -24,6 +24,12 @@ $(document).ready(function () {
             $('.params-box').hide();
         }
     });
+    $('.configure').on('input', '.retry', function () {
+        var value = $(this).val();
+        if (value > 5) {
+            $(this).val(5);
+        }
+    });
 });
 var myTextarea;
 var codeeditor;
@@ -89,186 +95,7 @@ var thisNodeName = '';
 let id = document.getElementById("drawflow");
 const editor = new Drawflow(id);
 editor.reroute = true;
-const dataToImport = {
-    "drawflow": {
-        "Home": {
-            "data": {
-                "1": {
-                    "id": 1,
-                    "name": "welcome",
-                    "data": {},
-                    "class": "welcome",
-                    "html": "\n    <div>\n      <div class=\"title-box\">👏 Welcome!!</div>\n      <div class=\"box\">\n        <p>Simple flow library <b>demo</b>\n        <a href=\"https://github.com/jerosoler/Drawflow\" target=\"_blank\">Drawflow</a> by <b>Jero Soler</b></p><br>\n\n        <p>Multiple input / outputs<br>\n           Data sync nodes<br>\n           Import / export<br>\n           Modules support<br>\n           Simple use<br>\n           Type: Fixed or Edit<br>\n           Events: view console<br>\n           Pure Javascript<br>\n        </p>\n        <br>\n        <p><b><u>Shortkeys:</u></b></p>\n        <p>🎹 <b>Delete</b> for remove selected<br>\n        💠 Mouse Left Click == Move<br>\n        ❌ Mouse Right == Delete Option<br>\n        🔍 Ctrl + Wheel == Zoom<br>\n        📱 Mobile support<br>\n        ...</p>\n      </div>\n    </div>\n    ",
-                    "typenode": false,
-                    "inputs": {},
-                    "outputs": {},
-                    "pos_x": 50,
-                    "pos_y": 50
-                },
-                "2": {
-                    "id": 2,
-                    "name": "slack",
-                    "data": {},
-                    "class": "slack",
-                    "html": "\n          <div>\n            <div class=\"title-box\"><i class=\"fab fa-slack\"></i> Slack chat message</div>\n          </div>\n          ",
-                    "typenode": false,
-                    "inputs": {
-                        "input_1": {
-                            "connections": [{
-                                "node": "7",
-                                "input": "output_1"
-                            }]
-                        }
-                    },
-                    "outputs": {},
-                    "pos_x": 1028,
-                    "pos_y": 87
-                },
-                "3": {
-                    "id": 3,
-                    "name": "telegram",
-                    "data": {
-                        "channel": "channel_2"
-                    },
-                    "class": "telegram",
-                    "html": "\n          <div>\n            <div class=\"title-box\"><i class=\"fab fa-telegram-plane\"></i> Telegram bot</div>\n            <div class=\"box\">\n              <p>Send to telegram</p>\n              <p>select channel</p>\n              <select df-channel>\n                <option value=\"channel_1\">Channel 1</option>\n                <option value=\"channel_2\">Channel 2</option>\n                <option value=\"channel_3\">Channel 3</option>\n                <option value=\"channel_4\">Channel 4</option>\n              </select>\n            </div>\n          </div>\n          ",
-                    "typenode": false,
-                    "inputs": {
-                        "input_1": {
-                            "connections": [{
-                                "node": "7",
-                                "input": "output_1"
-                            }]
-                        }
-                    },
-                    "outputs": {},
-                    "pos_x": 1032,
-                    "pos_y": 184
-                },
-                "4": {
-                    "id": 4,
-                    "name": "email",
-                    "data": {},
-                    "class": "email",
-                    "html": "\n            <div>\n              <div class=\"title-box\"><i class=\"fas fa-at\"></i> Send Email </div>\n            </div>\n            ",
-                    "typenode": false,
-                    "inputs": {
-                        "input_1": {
-                            "connections": [{
-                                "node": "5",
-                                "input": "output_1"
-                            }]
-                        }
-                    },
-                    "outputs": {},
-                    "pos_x": 1033,
-                    "pos_y": 439
-                },
-                "5": {
-                    "id": 5,
-                    "name": "template",
-                    "data": {
-                        "template": "Write your template"
-                    },
-                    "class": "template",
-                    "html": "\n            <div>\n              <div class=\"title-box\"><i class=\"fas fa-code\"></i> Template</div>\n              <div class=\"box\">\n                Ger Vars\n                <textarea df-template></textarea>\n                Output template with vars\n              </div>\n            </div>\n            ",
-                    "typenode": false,
-                    "inputs": {
-                        "input_1": {
-                            "connections": [{
-                                "node": "6",
-                                "input": "output_1"
-                            }]
-                        }
-                    },
-                    "outputs": {
-                        "output_1": {
-                            "connections": [{
-                                "node": "4",
-                                "output": "input_1"
-                            }, {
-                                "node": "11",
-                                "output": "input_1"
-                            }]
-                        }
-                    },
-                    "pos_x": 607,
-                    "pos_y": 304
-                },
-                "6": {
-                    "id": 6,
-                    "name": "github",
-                    "data": {
-                        "name": "https://github.com/jerosoler/Drawflow"
-                    },
-                    "class": "github",
-                    "html": "\n          <div>\n            <div class=\"title-box\"><i class=\"fab fa-github \"></i> Github Stars</div>\n            <div class=\"box\">\n              <p>Enter repository url</p>\n            <input type=\"text\" df-name>\n            </div>\n          </div>\n          ",
-                    "typenode": false,
-                    "inputs": {},
-                    "outputs": {
-                        "output_1": {
-                            "connections": [{
-                                "node": "5",
-                                "output": "input_1"
-                            }]
-                        }
-                    },
-                    "pos_x": 341,
-                    "pos_y": 191
-                },
-                "7": {
-                    "id": 7,
-                    "name": "facebook",
-                    "data": {},
-                    "class": "facebook",
-                    "html": "\n        <div>\n          <div class=\"title-box\"><i class=\"fab fa-facebook\"></i> Facebook Message</div>\n        </div>\n        ",
-                    "typenode": false,
-                    "inputs": {},
-                    "outputs": {
-                        "output_1": {
-                            "connections": [{
-                                "node": "2",
-                                "output": "input_1"
-                            }, {
-                                "node": "3",
-                                "output": "input_1"
-                            }, {
-                                "node": "11",
-                                "output": "input_1"
-                            }]
-                        }
-                    },
-                    "pos_x": 347,
-                    "pos_y": 87
-                },
-                "11": {
-                    "id": 11,
-                    "name": "log",
-                    "data": {},
-                    "class": "log",
-                    "html": "\n            <div>\n              <div class=\"title-box\"><i class=\"fas fa-file-signature\"></i> Save log file </div>\n            </div>\n            ",
-                    "typenode": false,
-                    "inputs": {
-                        "input_1": {
-                            "connections": [{
-                                "node": "5",
-                                "input": "output_1"
-                            }, {
-                                "node": "7",
-                                "input": "output_1"
-                            }]
-                        }
-                    },
-                    "outputs": {},
-                    "pos_x": 1031,
-                    "pos_y": 363
-                }
-            }
-        }
-    }
-}
 editor.start();
-//editor.import(dataToImport);
 
 editor.on('nodeCreated', function (id) {
     console.log("Node created " + id);
@@ -299,6 +126,25 @@ editor.on('nodeCreated', function (id) {
             return;
         }
     }
+    if (currentNodeName != "start" && currentNodeName != "end") {
+        // 获取当前包含class="title-box"的DOM结构
+        var titleBoxHtml = $("#node-" + id + " .title-box").prop('outerHTML');
+
+        // 将动态内容加入，并在外面包裹一个新的<div>
+        var newNodeHtml = `<div>${titleBoxHtml}</div>`;
+
+        // 使用jQuery来创建HTML元素
+        var $newNodeHtml = $(newNodeHtml);
+
+        // 找到新构造的HTML中的节点文本位置，并添加id
+        $newNodeHtml.find(".nodeText").append(`<b class="nodeTextId">${id}</b>`);
+
+        // 更新Drawflow数据结构中的节点HTML内容
+        editor.drawflow.drawflow.Home.data[id].html = $newNodeHtml.prop('outerHTML');
+
+        // 更新节点的HTML内容
+        $("#node-" + id + " .title-box .nodeText").append(`<b class="nodeTextId">${id}</b>`);
+    }
 });
 
 editor.on('nodeRemoved', function (id) {
@@ -311,6 +157,9 @@ editor.on('nodeSelected', function (id) {
     console.log("Node selected " + id);
     isNodeBeingDeleted = false;
     $("#sidePanel").show();
+    $(".side-panel").css("width", "400px");
+    $("#togglePanelIcon").toggleClass("fas fa-chevron-left");
+    optionMax_b = false;
     var node = editor.getNodeFromId(id);
     console.log(node);
     var name = node.name;
@@ -360,7 +209,7 @@ editor.on('nodeSelected', function (id) {
                             function javascript2(){<br>
                                 return '{ "data": {"code":200,"status":true}}'<br>
                             }<br>
-                         当下级节点需要获取json中的数据时使用{{javascript+节点Id.data}}获取，例如获取上文中code，{{javascript.data.code}} 可获取到值：200
+                         当下级节点需要获取json中的数据时使用{{javascript+节点Id.data}}获取，例如获取上文中code，{{javascript2.data.code}} 可获取到值：200
                       </p>`;
             $('.configure').html(html);
             var code = `function javascript${id}(){
@@ -380,7 +229,7 @@ editor.on('nodeSelected', function (id) {
                        <div class="custom-select">
                            <p>选择请求方式：</p>
                            <select class="http-type">
-                              <option value="post">Post</option>
+                              <option value="post" selected>Post</option>
                               <option value="get">Get</option>
                            </select>
                        </div>
@@ -485,6 +334,8 @@ editor.on('nodeSelected', function (id) {
                     <div>
                     <p>Prompt（模板示例{{参数}}，必填）：</p>
                     <textarea class="prompt" style="width:100%;height:150px;"></textarea>
+                    <p>失败重试次数（≤5）：</p>
+                    <input type="number" class="retry" value="0" max="5" min="0" />
                     <p class="nodeinfo">
                     当下级节点需要获取AI处理的返回数据时，使用{{LLM+节点Id.data}}获取，例如{{LLM1.data}}
                     </p>`
@@ -498,12 +349,32 @@ editor.on('nodeSelected', function (id) {
                     if (data.output.prompt) {
                         $(".prompt").val(data.output.prompt);
                     }
+                    if (data.output.retry) {
+                        $(".retry").val(data.output.retry);
+                    }
                 }
             });
             break;
         case 'DALL':
-            html = `<p>Prompt（模板示例{{参数}}，必填）：</p>
+            html = `<div class="custom-select">
+                       <p>绘制尺寸：</p>
+                       <select class="dallsize">
+                         <option value="1024x1024" selected>1024x1024</option>
+                         <option value="1024x1792">1024x1792</option>
+                         <option value="1792x1024">1792x1024</option>
+                       </select>
+                    <div>
+                    <div class="custom-select">
+                       <p>绘图质量：</p>
+                       <select class="dallquality">
+                         <option value="standard" selected>standard</option>
+                         <option value="hd">hd</option>
+                       </select>
+                    <div>
+                    <p>Prompt（模板示例{{参数}}，必填）：</p>
                     <textarea class="prompt" style="width:100%;height:150px;"></textarea>
+                    <p>失败重试次数（≤5）：</p>
+                    <input type="number" class="retry" value="0" max="5" min="0" />
                     <p class="nodeinfo">
                     当下级节点需要获取绘画图片链接时，使用{{DALL+节点Id.data}}获取，例如{{DALL1.data}}
                     </p>`
@@ -512,6 +383,36 @@ editor.on('nodeSelected', function (id) {
                 var data = node.data;
                 if (data.output.prompt) {
                     $(".prompt").val(data.output.prompt);
+                }
+                if (data.output.size)
+                    $(".dallsize").val(data.output.size);
+                else
+                    $(".dallsize").val("1024x1024");
+                if (data.output.quality)
+                    $(".dallquality").val(data.output.quality);
+                else
+                    $(".dallquality").val("standard");
+                if (data.output.retry) {
+                    $(".retry").val(data.output.retry);
+                }
+            }
+            break;
+        case 'DALLsm':
+            html = `<p>Prompt（模板示例{{参数}}，必填）：</p>
+                    <textarea class="prompt" style="width:100%;height:150px;"></textarea>
+                    <p>失败重试次数（≤5）：</p>
+                    <input type="number" class="retry" value="0" max="5" min="0" />
+                    <p class="nodeinfo">
+                    当下级节点需要获取绘画图片链接时，使用{{DALLsm+节点Id.data}}获取，例如{{DALLsm1.data}}
+                    </p>`
+            $('.configure').html(html);
+            if (node && node.data && Object.entries(node.data).length > 0) {
+                var data = node.data;
+                if (data.output.prompt) {
+                    $(".prompt").val(data.output.prompt);
+                }
+                if (data.output.retry) {
+                    $(".retry").val(data.output.retry);
                 }
             }
             break;
@@ -535,7 +436,7 @@ editor.on('nodeSelected', function (id) {
                          <div class="custom-select">
                            <p>结束动作：</p>
                            <select class="endAction">
-                              <option value="ai">AI再次处理</option>
+                              <option value="ai" selected>AI再次处理</option>
                               <option value="html">直接渲染Html</option>
                               <option value="js">执行前端任意脚本</option>
                            </select>
@@ -600,7 +501,7 @@ editor.on('zoom', function (zoom) {
 
 editor.on('translate', function (position) {
     console.log('Translate x:' + position.x + ' y:' + position.y);
-})
+});
 
 editor.on('addReroute', function (id) {
     console.log("Reroute added " + id);
@@ -742,7 +643,7 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
         case 'start':
             var start = `
             <div>
-              <div class="title-box"><i class="far fa-play-circle"></i> 开始(start)</div>
+              <div class="title-box"><i class="far fa-play-circle"></i> <span class="nodeText">开始(start)<span></div>
             </div>
             `;
             editor.addNode('start', 0, 1, pos_x, pos_y, 'start', {
@@ -754,7 +655,7 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
         case 'javascript':
             var javascript = `
             <div>
-              <div class="title-box"> <i class="fab fa-js"></i> 脚本(javascript+Id)</div>
+              <div class="title-box"> <i class="fab fa-js"></i> <span class="nodeText">脚本(javascript)<span></div>
             </div>
             `;
             editor.addNode('javascript', 1, 1, pos_x, pos_y, 'javascript', {
@@ -766,7 +667,7 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
         case 'http':
             var http = `
             <div>
-              <div class="title-box"><i class="fas fa-paper-plane"></i> Http请求(http)</div>
+              <div class="title-box"><i class="fas fa-paper-plane"></i> <span class="nodeText">Http请求(http)</span></div>
             </div>
             `;
             editor.addNode('http', 1, 1, pos_x, pos_y, 'http', {
@@ -783,31 +684,47 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
         case 'LLM':
             var LLM = `
             <div>
-              <div class="title-box"><i class="fas fa-robot"></i> LLM(LLM)</div>
+              <div class="title-box"><i class="fas fa-robot"></i> <span class="nodeText">LLM(LLM)</span></div>
             </div>
             `;
             editor.addNode('LLM', 1, 1, pos_x, pos_y, 'LLM', {
                 output: {
                     aimodel: "",
-                    prompt: ""
+                    prompt: "",
+                    retry: 0
                 }
             }, LLM);
             break;
         case 'DALL':
             var DALL = `
             <div>
-              <div class="title-box"><i class="fas fa-paint-brush"></i> DALL·E3(DALL)</div>
+              <div class="title-box"><i class="fas fa-paint-brush"></i> <span class="nodeText">DALL·E3(DALL)</span></div>
             </div>`;
             editor.addNode('DALL', 1, 1, pos_x, pos_y, 'DALL', {
                 output: {
-                    prompt: ""
+                    prompt: "",
+                    size: "",
+                    quality: "",
+                    retry: 0
                 }
             }, DALL);
+            break;
+        case 'DALLsm':
+            var DALLsm = `
+            <div>
+              <div class="title-box"><i class="fas fa-paint-brush"></i> <span class="nodeText">DALL·E2(DALLsm)</span></div>
+            </div>`;
+            editor.addNode('DALLsm', 1, 1, pos_x, pos_y, 'DALLsm', {
+                output: {
+                    prompt: "",
+                    retry: 0
+                }
+            }, DALLsm);
             break;
         case 'web':
             var web = `
             <div>
-              <div class="title-box"><i class="fas fa-globe"></i> 联网搜索(web)</div>
+              <div class="title-box"><i class="fas fa-globe"></i> <span class="nodeText">联网搜索(web)</span></div>
             </div>`;
             editor.addNode('web', 1, 1, pos_x, pos_y, 'web', {
                 output: {
@@ -818,7 +735,7 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
         case 'end':
             var end = `
             <div>
-              <div class="title-box"><i class="fas fa-stop-circle"></i> 结束(end)</div>
+              <div class="title-box"><i class="fas fa-stop-circle"></i> <span class="nodeText">结束(end)</span></div>
             </div>
             `;
             editor.addNode('end', 1, 0, pos_x, pos_y, 'end', {
