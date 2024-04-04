@@ -36,3 +36,7 @@
 
 ## 完全自由的 API 托管，兼容 one-api 等
 ![7](https://i.mij.rip/2024/02/27/cc8b844bdd329ddd301c169f312d5594.png)
+
+## WorkFlow（AI流程引擎）
+![115695455a122e9cfa15aee4f32ae3a2.png](https://ice.frostsky.com/2024/04/05/115695455a122e9cfa15aee4f32ae3a2.png)
+
