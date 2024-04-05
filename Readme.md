@@ -17,6 +17,7 @@
 * Google Search
 * QQ邮箱服务
 * Drawflow.js [https://github.com/jerosoler/Drawflow](https://github.com/jerosoler/Drawflow)
+*  [one-api](https://github.com/songquanpeng/one-api) or [new-api](https://github.com/Calcium-Ion/new-api) 
 ## 相关截图
 ![1](https://i.mij.rip/2024/02/27/b47660352729d9028be6f7edd0bd2c51.png)
 
