@@ -1,5 +1,6 @@
 # AIBotPro 开源版
-## 作者运营地址：https://aibotpro.cn
+## 作者运营地址：[https://aibotpro.cn](https://aibotpro.cn)
+## 作者转发API运营地址：[https://api55555.cool](https://api55555.cool)
 ## QQ交流群：833716234（群内免费提供技术支持，任何问题都会得到解答）
 ## 开源版与闭源版差异：开源版本移除了对用户历史记录、用户资料等敏感信息的特殊加密算法，改用简易的base64编码存储，其他与闭源完全一致
 ## 技术栈
@@ -9,6 +10,7 @@
 * 缓存：Redis
 ## Windows部署文档：[Deploy.pdf](https://github.com/MayDay-wpf/AIBotPublic/blob/main/Deploy.pdf)
 ## Linux CentOS7宝塔面板部署文档：[https://55555.wiki/doc/4/](https://55555.wiki/doc/4/)
+
 
 ## 第三方依赖：
 * 百度AI OCR
