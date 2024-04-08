@@ -7,6 +7,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
+using System.Net;
 using System.Threading.Tasks;
 
 public class ConfigurationLoaderMiddleware
@@ -44,22 +45,22 @@ public class ConfigurationLoaderMiddleware
                 IsInitialized = true;
             }
             //获取客户端IP并查询详情
-            var ip = context.Connection.RemoteIpAddress?.ToString();
+            var ip = context.Items["RemoteIpAddress"] as IPAddress;
             var settings = new ChunZhenSetting();
             settings.DatPath = Path.Combine(env.WebRootPath, "system", "doc", "qqwry.dat");
             var ipSearch = new IPSearchHelper(settings);
             IPSearchHelper.IPLocation iPLocation = new IPSearchHelper.IPLocation();
-            if (!string.IsNullOrEmpty(ip))
-                iPLocation = ipSearch.GetIPLocation(ip);
+            if (!string.IsNullOrEmpty(ip.ToString()))
+                iPLocation = ipSearch.GetIPLocation(ip.ToString());
             else
                 iPLocation = ipSearch.GetIPLocation("127.0.0.1");
             context.Items["IP"] = iPLocation.ip;
             context.Items["IPAddress"] = (iPLocation.country + iPLocation.area).Replace("CZ88.NET", "");
-            var ipinfo = scopedContext.IPlooks.Where(x => x.IPv4 == ip && (x.LookTime == null || x.LookTime.Value.Date == DateTime.Now.Date)).FirstOrDefault();
+            var ipinfo = scopedContext.IPlooks.Where(x => x.IPv4 == ip.ToString() && (x.LookTime == null || x.LookTime.Value.Date == DateTime.Now.Date)).FirstOrDefault();
             if (ipinfo == null)
             {
                 //SaveIP
-                await scopedContext.AddAsync(new IPlook() { IPv4 = ip, Address = (iPLocation.country + iPLocation.area).Replace("CZ88.NET", ""), LookTime = DateTime.Now });
+                await scopedContext.AddAsync(new IPlook() { IPv4 = ip.ToString(), Address = (iPLocation.country + iPLocation.area).Replace("CZ88.NET", ""), LookTime = DateTime.Now });
                 await scopedContext.SaveChangesAsync();
             }
         }

@@ -131,6 +131,7 @@ namespace aibotPro.Service
             }
             try
             {
+                var systemCfg = _systemService.GetSystemCfgs();
                 //获取对话设置
                 var chatSetting = _usersService.GetChatSetting(Account);
                 //如果不使用历史记录
@@ -183,11 +184,11 @@ namespace aibotPro.Service
                     }
                     if (chatDto.aiModel == "gpt-4-all")
                     {
-                        promptHeadle = $"{chatDto.msg}\n\n图片链接：{Context.GetHttpContext().Request.Scheme}://{Context.GetHttpContext().Request.Host}{chatDto.image_path.Replace("wwwroot", "")}".Replace("\\", "/");
+                        promptHeadle = $"{chatDto.msg}\n\n图片链接：{Context.GetHttpContext().Request.Scheme}://{systemCfg.Where(x => x.CfgCode == "Domain").FirstOrDefault().CfgValue}{chatDto.image_path.Replace("wwwroot", "")}".Replace("\\", "/");
                     }
                     else
                     {
-                        visionImg.url = $"{Context.GetHttpContext().Request.Scheme}://{Context.GetHttpContext().Request.Host}{chatDto.image_path.Replace("wwwroot", "")}".Replace("\\", "/");
+                        visionImg.url = $"{Context.GetHttpContext().Request.Scheme}://{systemCfg.Where(x => x.CfgCode == "Domain").FirstOrDefault().CfgValue}{chatDto.image_path.Replace("wwwroot", "")}".Replace("\\", "/");
                     }
                 }
                 if (string.IsNullOrEmpty(chatDto.image_path) && chatDto.aiModel == "gemini-pro-vision")
@@ -199,7 +200,7 @@ namespace aibotPro.Service
                     {
                         for (int i = 0; i < chatDto.file_list.Count; i++)
                         {
-                            chatDto.system_prompt += $"# 文件地址{i + 1}：{Context.GetHttpContext().Request.Scheme}://{Context.GetHttpContext().Request.Host}{chatDto.file_list[i].Replace("wwwroot", "")} \n";
+                            chatDto.system_prompt += $"# 文件地址{i + 1}：{Context.GetHttpContext().Request.Scheme}://{systemCfg.Where(x => x.CfgCode == "Domain").FirstOrDefault().CfgValue}{chatDto.file_list[i].Replace("wwwroot", "")} \n";
                         }
                         chatDto.system_prompt += "\n 请根据上述文件回答";
                     }

@@ -27,5 +27,7 @@ namespace aibotPro.Models
         public decimal? Rebate { get; set; }
         [Column(TypeName = "decimal(18, 2)")]
         public decimal? VipRebate { get; set; }
+        [Column(TypeName = "money")]
+        public decimal? Maximum { get; set; }
     }
 }

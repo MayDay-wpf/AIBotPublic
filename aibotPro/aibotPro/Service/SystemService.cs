@@ -24,6 +24,7 @@ using System.Web;
 using TiktokenSharp;
 using static OpenAI.ObjectModels.SharedModels.IOpenAiModels;
 using System.Numerics;
+using aibotPro.Dtos;
 namespace aibotPro.Service
 {
     public class SystemService : ISystemService
@@ -235,6 +236,8 @@ namespace aibotPro.Service
             }
             //写入日志
             WriteLogUnAsync($"文件{file.FileName}上传成功", Dtos.LogLevel.Info, Account);
+            //处理路径的反斜杠
+            savePath = savePath.Replace("\\", "/");
             //返回文件相对路径
             return savePath;
         }
@@ -714,6 +717,76 @@ namespace aibotPro.Service
             }
             else
                 return false;
+        }
+
+        public bool SaveSystemUI(UISettingDto uISettingDto, string account)
+        {
+            //删除用户原有配置
+            _context.UISettings.RemoveRange(_context.UISettings.Where(x => x.Account == account));
+            //保存用户新配置
+            UISetting uISetting = new UISetting();
+            uISetting.Account = account;
+            uISetting.SettingKey = "SystemName";
+            uISetting.SettingValue = uISettingDto.SystemName;
+            _context.UISettings.Add(uISetting);
+            uISetting.SettingKey = "BackgroundImg";
+            uISetting.SettingValue = uISettingDto.BackgroundImg;
+            _context.UISettings.Add(uISetting);
+            uISetting.SettingKey = "MenuTransparency";
+            uISetting.SettingValue = uISettingDto.MenuTransparency;
+            _context.UISettings.Add(uISetting);
+            uISetting.SettingKey = "ContentTransparency";
+            uISetting.SettingValue = uISettingDto.ContentTransparency;
+            _context.UISettings.Add(uISetting);
+            uISetting.SettingKey = "ColorPicker";
+            uISetting.SettingValue = uISettingDto.ColorPicker;
+            _context.UISettings.Add(uISetting);
+            uISetting.SettingKey = "ShadowSize";
+            uISetting.SettingValue = uISettingDto.ShadowSize;
+            _context.UISettings.Add(uISetting);
+            //写入缓存
+            _redis.SetAsync(account + "_UISetting", JsonConvert.SerializeObject(uISettingDto));
+            _context.SaveChanges();
+            return true;
+        }
+        public UISettingDto GetSystemUI(string account)
+        {
+            var uISetting = _redis.GetAsync(account + "_UISetting").Result;
+            if (string.IsNullOrEmpty(uISetting))
+            {
+                var uISettingList = _context.UISettings.Where(x => x.Account == account).ToList();
+                UISettingDto uISettingDto = new UISettingDto();
+                foreach (var item in uISettingList)
+                {
+                    switch (item.SettingKey)
+                    {
+                        case "SystemName":
+                            uISettingDto.SystemName = item.SettingValue;
+                            break;
+                        case "BackgroundImg":
+                            uISettingDto.BackgroundImg = item.SettingValue;
+                            break;
+                        case "MenuTransparency":
+                            uISettingDto.MenuTransparency = item.SettingValue;
+                            break;
+                        case "ContentTransparency":
+                            uISettingDto.ContentTransparency = item.SettingValue;
+                            break;
+                        case "ColorPicker":
+                            uISettingDto.ColorPicker = item.SettingValue;
+                            break;
+                        case "ShadowSize":
+                            uISettingDto.ShadowSize = item.SettingValue;
+                            break;
+                    }
+                }
+                _redis.SetAsync(account + "_UISetting", JsonConvert.SerializeObject(uISettingDto));
+                return uISettingDto;
+            }
+            else
+            {
+                return JsonConvert.DeserializeObject<UISettingDto>(uISetting);
+            }
         }
     }
 }

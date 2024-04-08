@@ -76,6 +76,10 @@ body {
     color: #373857;
     text-align: left;
     background-color: #fff;
+    background-position: center center; /* 确保背景图片居中 */
+    background-repeat: no-repeat; /* 防止背景图片重复 */
+    background-attachment: fixed; /* 背景图片固定，不随页面滚动 */
+    background-size: cover; /* 背景图片铺满整个容器，不变形 */
 }
 
 [tabindex="-1"]:focus {
@@ -6174,7 +6178,7 @@ a.close.disabled {
     position: fixed;
     top: 0;
     left: 0;
-    z-index: 1040;
+    z-index: 998;
     width: 100vw;
     height: 100vh;
     background-color: #000

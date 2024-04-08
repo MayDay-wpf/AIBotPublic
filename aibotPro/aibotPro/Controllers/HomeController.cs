@@ -61,6 +61,10 @@ namespace aibotPro.Controllers
         {
             return View();
         }
+        public IActionResult UISetting()
+        {
+            return View();
+        }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
@@ -367,6 +371,50 @@ namespace aibotPro.Controllers
             {
                 success = result,
                 msg = result ? $"创建系统配置成功" : "创建系统配置失败"
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public IActionResult UploadBackground([FromForm] IFormFile file)
+        {
+            //保存图片
+            string path = Path.Combine("wwwroot/files/usersbackgroundimg", $"{DateTime.Now.ToString("yyyyMMdd")}");   //$"wwwroot\\files\\pluginavatar\\{DateTime.Now.ToString("yyyyMMdd")}";
+            string username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+            {
+                return Json(new
+                {
+                    success = false,
+                    msg = "账号异常"
+                });
+            }
+            string fileName = _systemService.SaveFiles(path, file, username);
+            //返回文件名
+            return Json(new
+            {
+                success = true,
+                filePath = fileName
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public IActionResult SaveUISetting(UISettingDto uISetting)
+        {
+            string username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            return Json(new
+            {
+                success = _systemService.SaveSystemUI(uISetting, username)
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public IActionResult GetUISetting()
+        {
+            string username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            return Json(new
+            {
+                success = true,
+                data = _systemService.GetSystemUI(username)
             });
         }
     }

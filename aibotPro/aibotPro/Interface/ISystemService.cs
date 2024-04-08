@@ -1,4 +1,5 @@
-﻿using aibotPro.Models;
+﻿using aibotPro.Dtos;
+using aibotPro.Models;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -32,5 +33,7 @@ namespace aibotPro.Interface
         bool CheckRedis();//检查Redis连接
         bool CreateAdmin(string account, string password);//创建管理员
         bool CreateSystemCfg();//创建系统配置
+        bool SaveSystemUI(UISettingDto uISettingDto, string account);//保存系统UI配置
+        UISettingDto GetSystemUI(string account);//获取系统UI配置
     }
 }

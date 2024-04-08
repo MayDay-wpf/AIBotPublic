@@ -8,6 +8,7 @@ using StackExchange.Redis;
 using System.Configuration;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -71,6 +72,19 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddAuthorization();
 builder.Services.AddSingleton<JwtTokenManager>();
 var app = builder.Build();
+app.Use((context, next) =>
+{
+    var remoteIpAddress = context.Connection.RemoteIpAddress;
+
+    if (context.Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
+    {
+        remoteIpAddress = IPAddress.Parse(forwardedFor.First());
+    }
+
+    context.Items["RemoteIpAddress"] = remoteIpAddress;
+
+    return next();
+});
 // 配置请求管道的中间件
 if (app.Environment.IsDevelopment())
 {

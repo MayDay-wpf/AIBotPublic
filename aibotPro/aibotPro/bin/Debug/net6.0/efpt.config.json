@@ -156,6 +156,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[UISetting]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[Users]",
          "ObjectType": 0
       },

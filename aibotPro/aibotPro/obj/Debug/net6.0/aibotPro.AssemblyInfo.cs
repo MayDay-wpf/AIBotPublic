@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("aibotPro")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5a77cdd6b3d683afe230eba411853b1664c3495e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e901445574fef9b86c9a2da8a7614e9fc4afeddf")]
 [assembly: System.Reflection.AssemblyProductAttribute("aibotPro")]
 [assembly: System.Reflection.AssemblyTitleAttribute("aibotPro")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

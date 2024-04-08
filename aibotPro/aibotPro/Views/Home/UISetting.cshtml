@@ -1,0 +1,84 @@
+﻿@{
+    ViewData["Title"] = "UI 设置";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    .backgroundImg {
+        max-width: 150px;
+        cursor: pointer;
+    }
+
+        .backgroundImg img {
+            width: 100%;
+        }
+</style>
+<script src="~/system/js/uisetting.js"></script>
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        <button type="button" class="btn btn-primary savesetting" onclick="saveUISetting()">
+            <i data-feather="save"></i> 保存设置
+        </button>
+        <button type="button" class="btn btn-success defaultsetting" onclick="defaultUISetting()">
+            <i data-feather="refresh-cw"></i> 恢复默认
+        </button>
+    </div>
+</div>
+<div class="card-body" style="margin-top:10px;">
+    <div class="card">
+        <div class="card-header">
+            <h6>
+                自定义UI
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label>系统名称：</label>
+                <input type="text" class="form-control" maxlength="50" id="systemName" value="Mufasa" placeholder="系统名称">
+            </div>
+            <div class="form-group">
+                <label>系统背景图上传（点击更换）：</label>
+                <div class="backgroundImg" onclick="document.getElementById('backgroundImg').click()">
+                    <img src="~/system/images/addflow.png" id="backImg" />
+                    <input type="file" id="backgroundImg" style="display: none;" accept="image/*" onchange="loadImage(event)">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>菜单透明度设置：</label>
+                <div>
+                    <input type="range" class="custom-range" id="menuTransparency" min="0.1" max="1" step="0.1" style="width:200px;" value="1">
+                    <p>值：<span id="menuTransparencyValue">1</span></p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>主体透明度设置：</label>
+                <div>
+                    <input type="range" class="custom-range" id="contentTransparency" min="0.1" max="1" step="0.1" style="width:200px;" value="1">
+                    <p>值：<span id="contentTransparencyValue">1</span></p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="colorPicker">文字光晕颜色：</label>
+                <div>
+                    <p></p>
+                    <input type="color" class="form-control" id="colorPicker" name="color" value="#ff0000" style="width:50px;">
+                    <p>选中颜色：<span id="selectedColor">#ff0000</span></p>
+                </div>
+                <label>光晕尺寸：</label>
+                <div>
+                    <p></p>
+                    <input type="range" class="custom-range" id="shadowSize" min="0" max="10" step="1" style="width:200px;" value="0">
+                    <p>值：<span id="shadowValue">0</span>px</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

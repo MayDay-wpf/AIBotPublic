@@ -15,3 +15,15 @@
 #Q {
     resize: none;
 }
+
+.apply-btn {
+    display: none; /* 初始时按钮不显示 */
+    position: fixed; /* 固定位置按钮 */
+    z-index: 1000; /* 确保按钮显示在其他内容上方 */
+}
+
+.copy-btn-select {
+    display: none; /* 初始时按钮不显示 */
+    position: fixed; /* 固定位置按钮 */
+    z-index: 1000; /* 确保按钮显示在其他内容上方 */
+}

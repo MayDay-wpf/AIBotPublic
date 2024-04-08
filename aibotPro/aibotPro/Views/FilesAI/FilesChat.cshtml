@@ -10,36 +10,6 @@
 <link href="~/system/css/chat.css?v1" rel="stylesheet" />
 <script src="~/system/js/markdown-it.min.js"></script>
 <script src="~/system/js/tex-chtml.js"></script>
-<!-- 相机按钮点击弹窗 -->
-<div class="modal fade" id="uploadFileModel" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content">
-            <!-- 弹窗头部 -->
-            <div class="modal-header">
-                <p class="modal-title" id="modalLabel">上传&素材选取</p>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <!-- 弹窗主体内容 -->
-            <div class="modal-body" style="display: flex; justify-content: center; align-items: center;">
-                <div style="text-align:center;" class="popup-item" data-type="upload">
-                    <i data-feather="upload" style="width:100%;height:60px;cursor:pointer;"></i>
-                    <p>上传</p>
-                </div>
-            </div>
-            <div id="filelibs" style="text-align:center;">
-                <b style="color:deepskyblue">可以勾选下方素材库文件,自动生效</b>
-                <ul class="list-group" id="fileslibsitem" style="max-height:500px;overflow-y:scroll;text-align:center;">
-                    <li>
-                        加载中...
-                    </li>
-                    <!-- 可添加更多列表项 -->
-                </ul>
-            </div>
-        </div>
-    </div>
-</div>
 
 <div class="header header-chat">
     <div class="header-left">

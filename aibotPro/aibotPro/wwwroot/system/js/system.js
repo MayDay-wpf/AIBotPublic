@@ -3,6 +3,8 @@ var IP;
 var Address;
 var Scrolling;
 var HeadImgPath;
+let backgroundImg = '';
+let fontColor = '#000000';
 $(document).ready(function () {
     let savedScrollPosition = localStorage.getItem('sidebarScrollPosition');
     if (savedScrollPosition) {
@@ -44,6 +46,90 @@ $(document).ready(function () {
             'padding': 0
         });
     }
+    getUISetting();
+    $(document).ready(function () {
+        // 创建应用按钮
+        var applyBtn = $('<button/>', {
+            class: 'btn btn-primary apply-btn',
+            html: feather.icons['check-circle'].toSvg() + ' 引用',
+            css: {
+                'display': 'none'
+            },
+            click: function () {
+                $(this).hide();
+                copyBtn.hide();
+                window.getSelection().removeAllRanges();
+                $Q.val("# 引用对话片段： " + selectedText + "\n\n");
+                adjustTextareaHeight();
+                //$Q获得焦点
+                $Q.focus();
+            }
+        }).appendTo('body'); // 直接添加到 body
+
+        // 创建复制按钮
+        var copyBtn = $('<button/>', {
+            class: 'btn btn-success copy-btn-select',
+            html: feather.icons['copy'].toSvg() + ' 复制',
+            css: {
+                'display': 'none'
+            },
+            click: function () {
+                copyText(selectedText);
+                $(this).hide();
+                applyBtn.hide();
+            }
+        }).appendTo('body');
+
+        var selectedText = '';
+        // 监听文本选取事件
+        $(document).on('mouseup', function (e) {
+            var selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                var container = selection.getRangeAt(0).commonAncestorContainer;
+                container = container.nodeType === 3 ? container.parentNode : container;
+
+                // 检查选中的文本是否来源于 .chat-message-box 或其子元素
+                if ($(container).closest('.chat-message-box').length > 0) {
+                    selectedText = selection.toString();
+                    if (selectedText) {
+                        // 显示按钮并调整位置
+                        applyBtn.css({
+                            'left': e.pageX,
+                            'top': e.pageY + 10 // 根据需要调整偏移量
+                        }).fadeIn();
+
+                        copyBtn.css({
+                            'left': e.pageX + applyBtn.outerWidth() + 10, // 根据引用按钮的宽度调整偏移量
+                            'top': e.pageY + 10
+                        }).fadeIn();
+                    } else {
+                        applyBtn.hide();
+                        copyBtn.hide();
+                    }
+                }
+            } else {
+                applyBtn.hide();
+                copyBtn.hide();
+            }
+        });
+
+        // 点击页面其他位置隐藏按钮
+        $(document).on('click', function (e) {
+            var target = $(e.target);
+
+            // 如果目标元素是按钮或按钮的子元素，不执行任何操作
+            if (target.is('.apply-btn, .copy-btn-select') || target.closest('.apply-btn, .copy-btn-select').length > 0) {
+                return;
+            }
+
+            // 如果点击的不是.chat-message-box，也隐藏按钮
+            if (!target.closest('.chat-message-box').length) {
+                applyBtn.hide();
+                copyBtn.hide();
+                selectedText = '';
+            }
+        });
+    });
 });
 
 //判断是否为移动端
@@ -490,20 +576,12 @@ function price() {
         }
     });
 }
+
 function copyText(txt) {
-    //复制到剪贴板
-    var input = document.createElement('input');
-    input.setAttribute('readonly', 'readonly');
-    input.setAttribute('value', txt);
-    document.body.appendChild(input);
-    input.select();
-    if (document.execCommand('copy')) {
-        document.execCommand('copy');
-        balert('复制成功', 'success', false, 1500, 'center');
-    } else {
-        balert('复制失败', 'danger', false, 1500, 'center');
-    }
-    document.body.removeChild(input);
+    var tempTextArea = $('<textarea>').appendTo('body').val(txt).select(); // 创建临时的 textarea 并选中文本
+    document.execCommand('copy'); // 执行复制操作
+    tempTextArea.remove(); // 移除临时创建的 textarea
+    balert('复制成功', 'success', false, 1500, 'center');
 }
 
 function getUserInfo() {
@@ -545,4 +623,56 @@ function decodeBase64(encodedStr) {
     return decodeURIComponent(Array.from(atob(encodedStr)).map(c =>
         '%' + c.charCodeAt(0).toString(16).padStart(2, '0')
     ).join(''));
+}
+function getUISetting() {
+    //loadingOverlay.show();
+    $.ajax({
+        url: '/Home/GetUISetting',
+        type: 'Post',
+        success: function (res) {
+            //loadingOverlay.hide();
+            if (res.success) {
+                if (res.data.systemName != null) {
+                    $('.sidebar-logo span').text(res.data.systemName);
+                } else {
+                    $('.sidebar-logo span').text('Mufasa');
+                }
+                if (res.data.menuTransparency != null) {
+                    $('.sidebar').css('opacity', res.data.menuTransparency);
+                } else {
+                    $('.sidebar').css('opacity', '1');
+                }
+                if (res.data.contentTransparency != null) {
+                    $('.content').css('opacity', res.data.contentTransparency);
+                } else {
+                    $('.content').css('opacity', '1');
+                }
+                if (res.data.colorPicker != null) {
+                    fontColor = res.data.colorPicker;
+                } else {
+                    fontColor = '#000000';
+                }
+                if (res.data.shadowSize != null) {
+                    if (res.data.shadowSize > 0)
+                        $('body').css('text-shadow', `0 0 ${res.data.shadowSize}px ${fontColor}`);
+                    else
+                        $('body').css('text-shadow', 'none');
+                } else {
+                    $('body').css('text-shadow', 'none');
+                }
+                if (res.data.backgroundImg != null) {
+                    $('body').css('background-image', `url('${res.data.backgroundImg}')`);
+                    backgroundImg = res.data.backgroundImg;
+                } else {
+                    $('body').css('background', `none`);
+                    backgroundImg = '';
+                }
+            }
+            else {
+                //balert(res.msg, 'danger', false, 1500, 'center');
+            }
+        }, errr: function () {
+            //loadingOverlay.hide();
+        }
+    });
 }

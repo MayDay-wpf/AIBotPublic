@@ -102,6 +102,8 @@ namespace aibotPro.Service
                             //根据折扣计算实际扣费
                             var rebate = modelPrice.Rebate;
                             realOutputMoney = (inputMoney + outputMoney) * rebate;
+                            if (realOutputMoney > modelPrice.Maximum)
+                                realOutputMoney = modelPrice.Maximum;
                         }
                         //扣除用户余额
                         user.Mcoin -= realOutputMoney;

@@ -54,6 +54,7 @@ namespace aibotPro.Models
         public virtual DbSet<SystemLog> SystemLogs { get; set; }
         public virtual DbSet<SystemPlugin> SystemPlugins { get; set; }
         public virtual DbSet<TxOrder> TxOrders { get; set; }
+        public virtual DbSet<UISetting> UISettings { get; set; }
         public virtual DbSet<UseUpLog> UseUpLogs { get; set; }
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<UserSetting> UserSettings { get; set; }
@@ -75,6 +76,11 @@ namespace aibotPro.Models
             modelBuilder.Entity<IPlook_Stats_View>(entity =>
             {
                 entity.ToView("IPlook_Stats_View");
+            });
+
+            modelBuilder.Entity<UISetting>(entity =>
+            {
+                entity.Property(e => e.Id).ValueGeneratedNever();
             });
 
             OnModelCreatingPartial(modelBuilder);
