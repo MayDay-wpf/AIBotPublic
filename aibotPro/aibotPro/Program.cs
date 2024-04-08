@@ -11,14 +11,44 @@ using Microsoft.AspNetCore.Authorization;
 using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
+// 读取 appsettings.json 配置
+IConfiguration configuration = builder.Configuration;
 
+// 获取 Redis 配置节点
+IConfigurationSection redisSection = configuration.GetSection("Redis");
+
+// 创建 ConfigurationOptions 对象
+ConfigurationOptions configOptions = new ConfigurationOptions
+{
+    ConnectTimeout = redisSection.GetValue<int>("ConnectTimeout"),
+    SyncTimeout = redisSection.GetValue<int>("SyncTimeout"),
+    AbortOnConnectFail = redisSection.GetValue<bool>("AbortOnConnectFail")
+};
+// 获取密码
+string password = redisSection.GetValue<string>("Password");
+
+// 如果密码不为空,则设置密码
+if (!string.IsNullOrEmpty(password))
+{
+    configOptions.Password = password;
+}
+
+// 添加 Redis 服务器节点
+foreach (var endpoint in redisSection.GetSection("EndPoints").GetChildren())
+{
+    string host = endpoint["Host"];
+    int port = endpoint.GetValue<int>("Port");
+    configOptions.EndPoints.Add(host, port);
+}
+
+// 注册 Redis 连接为单例服务
+builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(configOptions));
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddHttpContextAccessor();
 //注册服务
 builder.Services.AddDbContext<AIBotProContext>(options => { options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")); });
-builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect("localhost"));
 builder.Services.AddScoped<IRedisService, RedisService>();
 builder.Services.AddScoped<ISystemService, SystemService>();
 builder.Services.AddScoped<IUsersService, UsersService>();

@@ -16,19 +16,7 @@ namespace aibotPro.Service
         {
             try
             {
-                // 创建 Redis 连接配置
-                ConfigurationOptions configOptions = new ConfigurationOptions
-                {
-                    EndPoints = { "localhost" }, // Redis 服务器地址,可以是 IP 或域名
-                    ConnectTimeout = 5000, // 连接超时时间（毫秒）
-                    SyncTimeout = 5000 // 同步操作超时时间（毫秒）
-                };
-
-                // 创建 Redis 连接
-                ConnectionMultiplexer redis = ConnectionMultiplexer.Connect(configOptions);
-
-                // 获取 Redis 数据库
-                IDatabase db = redis.GetDatabase();
+                IDatabase db = _redis.GetDatabase();
 
                 // 执行一个简单的 Redis 命令,如 PING
                 TimeSpan pingTime = db.Ping();
