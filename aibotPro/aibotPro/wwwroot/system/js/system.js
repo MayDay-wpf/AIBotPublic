@@ -28,26 +28,10 @@ $(document).ready(function () {
     getUserSetting();
     var pathname = window.location.pathname;
     pathname = pathname.toLowerCase();
-    if (pathname != "/workshop/workflow")
+    if (pathname != "/workshop/workflow") {
         isAdmin();
-    IsBlackUser();
-    getUserInfo();
-    if (isMobile()) {
-        $('.chat-body-footer').css({
-            'position': 'fixed',
-            'bottom': '0',
-            'left': '0',
-            'right': '0'
-        });
-        $('.content-body-chat').css({
-            'padding': 0
-        });
-        $('.content-body').css({
-            'padding': 0
-        });
-    }
-    getUISetting();
-    $(document).ready(function () {
+        getUISetting();
+        customMenu();
         // 创建应用按钮
         var applyBtn = $('<button/>', {
             class: 'btn btn-primary apply-btn',
@@ -122,14 +106,38 @@ $(document).ready(function () {
                 return;
             }
 
-            // 如果点击的不是.chat-message-box，也隐藏按钮
-            if (!target.closest('.chat-message-box').length) {
+            // 如果点击的是.chat-message-box，但不是文本选取，隐藏按钮
+            if (target.closest('.chat-message-box').length > 0) {
+                var selection = window.getSelection();
+                // 如果当前没有文本被选取或选取的文本为空，则隐藏按钮
+                if (!selection.toString()) {
+                    applyBtn.hide();
+                    copyBtn.hide();
+                }
+            } else {
+                // 如果点击的不是.chat-message-box，隐藏按钮
                 applyBtn.hide();
                 copyBtn.hide();
                 selectedText = '';
             }
         });
-    });
+    }
+    IsBlackUser();
+    getUserInfo();
+    if (isMobile()) {
+        $('.chat-body-footer').css({
+            'position': 'fixed',
+            'bottom': '0',
+            'left': '0',
+            'right': '0'
+        });
+        $('.content-body-chat').css({
+            'padding': 0
+        });
+        $('.content-body').css({
+            'padding': 0
+        });
+    }
 });
 
 //判断是否为移动端
@@ -675,4 +683,36 @@ function getUISetting() {
             //loadingOverlay.hide();
         }
     });
+}
+function aboutus() {
+    showConfirmationModal('AIBot Pro System', 'AIBot Pro System 是一款基于OpenAI的对话系统<br>支持多种功能，包括创意工坊、角色扮演、文件助手、知识库、产品中心、充值中心、个人中心等<br>AIBot Pro由 MayMay团队开发运营，如果觉得我们做到还不错<br><b style="color:red">【请收购我们】</b>');
+}
+function customMenu() {
+    //检查#custommenu 下是否存在#QQ #ABOUTUS #GITHUB
+    if ($("#custommenu #QQ").length > 0 || $("#custommenu #ABOUTUS").length > 0 || $("#custommenu #GITHUB").length > 0) {
+        return;
+    }
+    var html = `<li class="nav-item" id="QQ">
+                    <a href="https://qm.qq.com/q/gNwQHVDhkc" style="color:rgb(23,223,135)" class="nav-link" target="_blank">
+                        <i data-feather="message-circle">
+                        </i>
+                        QQ群：833716234
+                    </a>
+                </li>
+                <li class="nav-item" id="ABOUTUS">
+                    <a href="#" onclick="aboutus()" class="nav-link">
+                        <i data-feather="aperture">
+                        </i>
+                        关于我们 (About Us)
+                    </a>
+                </li>
+                <li class="nav-item" id="GITHUB">
+                    <a href="https://github.com/MayDay-wpf/AIBotPublic" class="nav-link" target="_blank">
+                        <i data-feather="github">
+                        </i>
+                        GitHub
+                    </a>
+                </li>`;
+    $("#custommenu").append(html);
+    feather.replace();
 }
