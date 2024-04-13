@@ -8,7 +8,8 @@
 * 后端：.Net6.0
 * 数据库：SqlServer 2012及以上
 * 缓存：Redis
-## Windows部署文档：[Deploy.pdf](https://github.com/MayDay-wpf/AIBotPublic/blob/main/Deploy.pdf)
+## Windows部署文档PDF：[Deploy.pdf](https://github.com/MayDay-wpf/AIBotPublic/blob/main/Deploy.pdf)
+## Windows部署文档Markdown：[https://55555.wiki/doc/7/](https://55555.wiki/doc/7/)
 ## Linux CentOS7宝塔面板部署文档：[https://55555.wiki/doc/4/](https://55555.wiki/doc/4/)
 
 
