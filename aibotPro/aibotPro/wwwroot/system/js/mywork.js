@@ -244,6 +244,7 @@ function get_weather_forecast(res) {
 function addPrLine(index) {
     var str = `<tr>
                  <td><input type="text" class="form-control" maxlength="50" placeholder="参数名(只允许字母、字符)，例：number" /></td>
+                 <td><select class="form-control"><option checked="checked">String</option><option>Integer</option><option>Boolean</option><option>Number</option></select></td>
                  <td><input type="text" class="form-control" maxlength="200" placeholder="参数描述，重要！例：手机号码" /></td>
                  <td><input type="text" class="form-control" maxlength="50" placeholder="常量,可输入固定值,不用AI填写参数"  /></td>
                  <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`;
@@ -360,8 +361,9 @@ function PostPlugin(type) {
             var columns = $(this).find('td');
 
             var PRname = columns.eq(0).find('input').val();
-            var PRvalue = columns.eq(1).find('input').val();
-            var PRconstant = columns.eq(2).find('input').val();
+            var PRtype = columns.eq(1).find('select').val();
+            var PRvalue = columns.eq(2).find('input').val();
+            var PRconstant = columns.eq(3).find('input').val();
             if (PRname.trim() === '' || PRvalue.trim() === '' || regex.test(PRname) || regex.test(PRvalue)) {
                 isEmpty = true;
                 return false; // Exit the loop if any textbox is empty
@@ -369,6 +371,7 @@ function PostPlugin(type) {
 
             var item = {
                 "ParamName": PRname,
+                "ParamType": PRtype,
                 "ParamInfo": PRvalue,
                 "ParamConst": PRconstant
             };
@@ -450,6 +453,7 @@ function PostPlugin(type) {
     // 对Param进行序列化
     conversation.forEach((param, index) => {
         formData.append(`plugin.Param[${index}].ParamName`, param.ParamName);
+        formData.append(`plugin.Param[${index}].ParamType`, param.ParamType);
         formData.append(`plugin.Param[${index}].ParamInfo`, param.ParamInfo);
         formData.append(`plugin.Param[${index}].ParamCode`, param.ParamCode);
         formData.append(`plugin.Param[${index}].ParamConst`, param.ParamConst);
@@ -543,8 +547,9 @@ function getPluginInfo(plugincode, id, type) {
                     for (var i = 0; i < plugin.param.length; i++) {
                         addPrLine(0);
                         $('#AddPr tr').eq(i).find('td').eq(0).find('input').val(plugin.param[i].paramName);
-                        $('#AddPr tr').eq(i).find('td').eq(1).find('input').val(plugin.param[i].paramInfo);
-                        $('#AddPr tr').eq(i).find('td').eq(2).find('input').val(plugin.param[i].paramConst);
+                        $('#AddPr tr').eq(i).find('td').eq(1).find('select').val(plugin.param[i].paramType);
+                        $('#AddPr tr').eq(i).find('td').eq(2).find('input').val(plugin.param[i].paramInfo);
+                        $('#AddPr tr').eq(i).find('td').eq(3).find('input').val(plugin.param[i].paramConst);
                     }
                     for (var i = 0; i < plugin.pheaders.length; i++) {
                         addHdLine(0);
@@ -578,8 +583,9 @@ function getPluginInfo(plugincode, id, type) {
                     for (var i = 0; i < plugin.param.length; i++) {
                         addPrLine(1);
                         $('#AddPr1 tr').eq(i).find('td').eq(0).find('input').val(plugin.param[i].paramName);
-                        $('#AddPr1 tr').eq(i).find('td').eq(1).find('input').val(plugin.param[i].paramInfo);
-                        $('#AddPr1 tr').eq(i).find('td').eq(2).find('input').val(plugin.param[i].paramConst);
+                        $('#AddPr1 tr').eq(i).find('td').eq(1).find('select').val(plugin.param[i].paramType);
+                        $('#AddPr1 tr').eq(i).find('td').eq(2).find('input').val(plugin.param[i].paramInfo);
+                        $('#AddPr1 tr').eq(i).find('td').eq(3).find('input').val(plugin.param[i].paramConst);
                     }
                     initEditor(1, plugin.pjscode);
                 }
@@ -593,8 +599,9 @@ function getPluginInfo(plugincode, id, type) {
                     for (var i = 0; i < plugin.param.length; i++) {
                         addPrLine(2);
                         $('#AddPr2 tr').eq(i).find('td').eq(0).find('input').val(plugin.param[i].paramName);
-                        $('#AddPr2 tr').eq(i).find('td').eq(1).find('input').val(plugin.param[i].paramInfo);
-                        $('#AddPr2 tr').eq(i).find('td').eq(2).find('input').val(plugin.param[i].paramConst);
+                        $('#AddPr2 tr').eq(i).find('td').eq(1).find('select').val(plugin.param[i].paramType);
+                        $('#AddPr2 tr').eq(i).find('td').eq(2).find('input').val(plugin.param[i].paramInfo);
+                        $('#AddPr2 tr').eq(i).find('td').eq(3).find('input').val(plugin.param[i].paramConst);
                     }
                     for (var i = 0; i < plugin.pheaders.length; i++) {
                         addHdLine(2);

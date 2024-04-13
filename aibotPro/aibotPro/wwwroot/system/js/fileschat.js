@@ -763,8 +763,8 @@ function getFiles(type) {
                     var isChecked = onfilearr.findIndex(onitem => onitem.path === item.filePath) !== -1 ? 'checked' : '';
                     html += `<li class="list-group-item d-flex justify-content-between align-items-center">
                                 <div>
-                                    <input type="checkbox" value='${item.filePath}' data-filename='${item.fileName}' ${isChecked}>
-                                    ${item.fileName}
+                                    <input type="checkbox" value='${item.filePath}' data-filename='${item.fileName.length > 20 ? item.fileName.substring(0, 15) + '...' : item.fileName}' ${isChecked}>
+                                    ${item.fileName.length > 20 ? item.fileName.substring(0, 15) + '...' : item.fileName}
                                 </div>
                             </li>`;
                 }

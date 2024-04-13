@@ -9,9 +9,12 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Spire.Presentation.Charts;
+using StackExchange.Redis;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
+using System.Xml.Linq;
 using TiktokenSharp;
 using static iTextSharp.text.pdf.AcroFields;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
@@ -58,8 +61,14 @@ namespace aibotPro.AppCode
             var levelNodes = new Dictionary<int, List<NodeData>>();
             var nodeMaxLevel = new Dictionary<int, int>();
 
-            void UpdateNodeLevel(NodeData currentNode, int currentLevel)
+            void UpdateNodeLevel(NodeData currentNode, int currentLevel, HashSet<NodeData> visitedNodes)
             {
+                if (visitedNodes.Contains(currentNode))
+                {
+                    throw new Exception("Detected a circular dependency in the workflow.");
+                }
+                visitedNodes.Add(currentNode);
+
                 // 更新当前节点的层级
                 if (!nodeMaxLevel.ContainsKey(currentNode.Id) || nodeMaxLevel[currentNode.Id] < currentLevel)
                 {
@@ -75,18 +84,24 @@ namespace aibotPro.AppCode
                         var nextNode = _workflowData.Drawflow.Home.Data.Values.FirstOrDefault(x => x.Id.ToString() == nextNodeId);
                         if (nextNode != null)
                         {
-                            UpdateNodeLevel(nextNode, currentLevel + 1);
+                            UpdateNodeLevel(nextNode, currentLevel + 1, new HashSet<NodeData>(visitedNodes));
                         }
                     }
                 }
             }
 
             // 首先确定所有节点的最大层级
-            UpdateNodeLevel(node, seq);
+            UpdateNodeLevel(node, seq, new HashSet<NodeData>());
 
             // 根据节点最大层级构建层级结构
-            void RecursiveBuild(NodeData currentNode, int currentSeq)
+            void RecursiveBuild(NodeData currentNode, int currentSeq, HashSet<NodeData> visitedNodes)
             {
+                if (visitedNodes.Contains(currentNode))
+                {
+                    throw new Exception("Detected a circular dependency in the workflow.");
+                }
+                visitedNodes.Add(currentNode);
+
                 int nodeLevel = nodeMaxLevel[currentNode.Id];
                 if (!levelNodes.ContainsKey(nodeLevel))
                 {
@@ -105,14 +120,14 @@ namespace aibotPro.AppCode
                         var nextNode = _workflowData.Drawflow.Home.Data.Values.FirstOrDefault(x => x.Id.ToString() == nextNodeId);
                         if (nextNode != null)
                         {
-                            RecursiveBuild(nextNode, nodeLevel + 1); // 递归构建时考虑正确的层级
+                            RecursiveBuild(nextNode, nodeLevel + 1, new HashSet<NodeData>(visitedNodes));
                         }
                     }
                 }
             }
 
             // 构建层级结构
-            RecursiveBuild(node, 0);
+            RecursiveBuild(node, 0, new HashSet<NodeData>());
 
             // 构建结果
             foreach (var kv in levelNodes.OrderBy(kv => kv.Key))
@@ -238,7 +253,7 @@ namespace aibotPro.AppCode
                 chatRes.message = $"📎";
                 await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
             }
-            Dictionary<string, string> parameters = new Dictionary<string, string>();
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
             Dictionary<string, string> headers = new Dictionary<string, string>();
             Dictionary<string, string> cookies = new Dictionary<string, string>();
             if (httpData.Output.ParamsItems.Count > 0 && type == "get")
@@ -283,8 +298,11 @@ namespace aibotPro.AppCode
         {
             // 处理 "LLM" 节点,执行 LLM 代码,返回 JSON 字符串
             LLMData llmData = (LLMData)node.Data;
+            TikToken tikToken = TikToken.GetEncoding("cl100k_base");
             var nodeName = node.Name;
             var nodeId = node.Id;
+            string inputtokens = "";
+            string outputtokens = "";
             if (!string.IsNullOrEmpty(_chatId))
             {
                 ChatRes chatRes = new ChatRes();
@@ -295,46 +313,164 @@ namespace aibotPro.AppCode
             string prompt = FillScriptWithValues(llmData.Output.Prompt, result);
             string airesult = string.Empty; // 初始化为空
             int retryCount = llmData.Output.Retry; // 重试次数
+            bool stream = llmData.Output.Stream;
             int initialRetryCount = retryCount;
-            do
-            {
-                airesult = await _aiServer.CallingAINotStream(prompt, aimodel);
-                if (!string.IsNullOrEmpty(airesult)) break; // 如果结果非空，退出循环
-                if (!string.IsNullOrEmpty(_chatId) && retryCount > 0)
-                {
-                    // 计算剩余重试次数
-                    int remainingRetries = retryCount - 1;
-                    string retryMessage = $"🔄 LLM重试 {initialRetryCount - remainingRetries}/{initialRetryCount}...";
 
-                    await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, new ChatRes { message = retryMessage });
-                }
-                await Task.Delay(500);
-            } while (--retryCount >= 0);
-
-            // 如果在重试结束后结果仍为空，则抛出异常
-            if (string.IsNullOrEmpty(airesult))
+            while (true)
             {
-                string failMessage = "❌ 重试失败。LLM处理数据时回复为空，工作流中断，请重试";
-                if (!string.IsNullOrEmpty(_chatId))
+                airesult += await Task.Run(async () =>
                 {
-                    await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, new ChatRes { message = failMessage });
+                    string result = string.Empty;
+                    int currentRetryCount = retryCount;
+
+                    do
+                    {
+                        result = string.Empty;
+                        if (!stream || string.IsNullOrEmpty(_chatId))
+                        {
+                            result = await _aiServer.CallingAINotStream(prompt, aimodel);
+                            result = result.Replace("\"", "");
+                            if (!string.IsNullOrEmpty(result))
+                            {
+                                outputtokens = result;
+                                break; // 如果结果非空,退出循环
+                            }
+
+
+                            // 如果在重试结束后结果仍为空,则抛出异常
+                            if (string.IsNullOrEmpty(result))
+                            {
+                                string failMessage = "❌ 重试失败。LLM处理数据时回复为空,工作流中断,请重试";
+                                if (!string.IsNullOrEmpty(_chatId))
+                                {
+                                    await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, new ChatRes { message = failMessage });
+                                }
+                                throw new Exception(failMessage);
+                            }
+                            if (!string.IsNullOrEmpty(_chatId) && currentRetryCount > 0)
+                            {
+                                // 计算剩余重试次数
+                                int remainingRetries = currentRetryCount - 1;
+                                string retryMessage = $"🔄 LLM重试 {initialRetryCount - remainingRetries}/{initialRetryCount}...";
+
+                                await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, new ChatRes { message = retryMessage });
+                            }
+                        }
+                        else
+                        {
+                            AiChat aiChat = new AiChat();
+                            APISetting apiSetting = new APISetting();
+                            var aImodels = _systemService.GetAImodel();
+                            string apiKey = aImodels.Where(x => x.ModelName == aimodel).FirstOrDefault().ApiKey;
+                            //标准化baseurl
+                            string baseUrl = aImodels.Where(x => x.ModelName == aimodel).FirstOrDefault().BaseUrl;
+                            try
+                            {
+                                if (baseUrl.EndsWith("/"))
+                                {
+                                    baseUrl = baseUrl.TrimEnd('/');
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                throw e;
+                            }
+                            apiSetting.ApiKey = apiKey;
+                            apiSetting.BaseUrl = baseUrl;
+                            aiChat.Model = aimodel;
+                            aiChat.Stream = true;
+                            List<Message> messages = new List<Message>();
+                            Message message = new Message
+                            {
+                                Role = "user",
+                                Content = prompt
+                            };
+                            messages.Add(message);
+                            aiChat.Messages = messages;
+                            try
+                            {
+                                await foreach (var responseContent in _aiServer.CallingAI(aiChat, apiSetting))
+                                {
+                                    result += responseContent.Choices[0].Delta.Content;
+                                    await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, new ChatRes { message = responseContent.Choices[0].Delta.Content });
+                                    outputtokens += responseContent.Choices[0].Delta.Content;
+                                }
+                                break;
+                            }
+                            catch (Exception ex)
+                            {
+                                if (!string.IsNullOrEmpty(_chatId) && currentRetryCount > 0)
+                                {
+                                    // 计算剩余重试次数
+                                    int remainingRetries = currentRetryCount - 1;
+                                    string retryMessage = $"🔄 LLM请求出错,重试 {initialRetryCount - remainingRetries}/{initialRetryCount}...";
+
+                                    await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, new ChatRes { message = retryMessage });
+                                }
+
+                                await Task.Delay(500); // 延迟一段时间再重试
+                                continue; // 继续下一次重试
+                            }
+                        }
+                        await Task.Delay(500);
+                    } while (--currentRetryCount >= 0);
+
+                    return result;
+                });
+                airesult = airesult.Replace("\"", "");
+                var jsonBuilder = new StringBuilder();
+                jsonBuilder.Append("{");
+                jsonBuilder.Append($"\"{node.Name + node.Id}\":");
+                jsonBuilder.Append("{");
+                jsonBuilder.Append($"\"data\":");
+                jsonBuilder.Append($"\"{airesult}\"");
+                jsonBuilder.Append("}");
+                jsonBuilder.Append("}");
+                string jsonStr = jsonBuilder.ToString();
+                string llmScript = llmData.Output.JudgeScript;
+                llmScript = FillScriptWithValues(llmScript, result, jsonStr);
+                //初始化JavaScript引擎
+                IServiceCollection services = new ServiceCollection();
+                services.AddJsEngineSwitcher(options => options.DefaultEngineName = ChakraCoreJsEngine.EngineName)
+                        .AddChakraCore();
+
+                IServiceProvider serviceProvider = services.BuildServiceProvider();
+                IJsEngineSwitcher jsEngineSwitcher = serviceProvider.GetRequiredService<IJsEngineSwitcher>();
+
+                IJsEngine jsEngine = jsEngineSwitcher.CreateDefaultEngine();
+                //执行JavaScript代码
+                jsEngine.Execute(llmScript);
+                string ExecuteResult = jsEngine.CallFunction<string>(nodeName + nodeId);
+                if (ExecuteResult == "True")
+                {
+                    inputtokens = prompt;
+                    int inputCount = tikToken.Encode(inputtokens).Count;
+                    int outputCount = tikToken.Encode(outputtokens).Count;
+                    await _financeService.CreateUseLogAndUpadteMoney(_account, aimodel, inputCount, outputCount);
+                    break; // 如果返回值为"true",结束循环
                 }
-                throw new Exception(failMessage);
+                else
+                {
+                    prompt = ExecuteResult; // 否则将返回值作为新的Prompt继续执行
+                    inputtokens = prompt;
+                    int inputCount = tikToken.Encode(inputtokens).Count;
+                    int outputCount = tikToken.Encode(outputtokens).Count;
+                    await _financeService.CreateUseLogAndUpadteMoney(_account, aimodel, inputCount, outputCount);
+                }
+
             }
-            var jsonBuilder = new StringBuilder();
-            jsonBuilder.Append("{");
-            jsonBuilder.Append($"\"{node.Name + node.Id}\":");
-            jsonBuilder.Append("{");
-            jsonBuilder.Append($"\"data\":");
-            jsonBuilder.Append($"\"{airesult}\"");
-            jsonBuilder.Append("}");
-            jsonBuilder.Append("}");
-            TikToken tikToken = TikToken.GetEncoding("cl100k_base");
-            int inputCount = tikToken.Encode(prompt).Count;
-            int outputCount = tikToken.Encode(airesult).Count;
-            _workFlowChargings.Add(new WorkFlowCharging { Account = _account, ModelName = aimodel, InputCount = inputCount, OutputCount = outputCount });
-            return jsonBuilder.ToString();
+
+            var jsonRes = new StringBuilder();
+            jsonRes.Append("{");
+            jsonRes.Append($"\"{node.Name + node.Id}\":");
+            jsonRes.Append("{");
+            jsonRes.Append($"\"data\":");
+            jsonRes.Append($"\"{airesult}\"");
+            jsonRes.Append("}");
+            jsonRes.Append("}");
+            return jsonRes.ToString();
         }
+
 
         private async Task<string> ProcessDALLNode(NodeData node, List<NodeOutput> result)
         {
@@ -551,6 +687,43 @@ namespace aibotPro.AppCode
         }
 
 
+        public static string ExtractValueFromPath(string path, string thisJson)
+        {
+            if (!string.IsNullOrEmpty(thisJson))
+            {
+                try
+                {
+                    var json = JObject.Parse(thisJson);
+                    var segments = path.Replace("this.", "").Split('.');
+
+                    JToken currentToken = json;
+                    foreach (var segment in segments)
+                    {
+                        currentToken = currentToken[segment];
+                        if (currentToken == null)
+                        {
+                            break;
+                        }
+                    }
+
+                    // 如果找到了对应的值,返回它
+                    if (currentToken != null)
+                    {
+                        return currentToken.ToString();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // 如果在处理JSON时发生错误,可能是JSON格式不正确
+                    // 这里可根据需要记录或处理异常
+                    Console.WriteLine($"Error processing JSON for thisJson. Error: {ex.Message}");
+                }
+            }
+
+            // 如果没有找到任何匹配的路径,则抛出异常
+            throw new Exception($"Value for path '{path}' not found in thisJson.");
+        }
+
         public static string ExtractValueFromPath(string path, List<NodeOutput> results)
         {
             foreach (var result in results)
@@ -560,7 +733,7 @@ namespace aibotPro.AppCode
                     var json = JObject.Parse(result.OutputData);
                     var token = json.SelectToken(path);  // 使用SelectToken提取路径对应的值
 
-                    // 如果找到了对应的值，返回它
+                    // 如果找到了对应的值,返回它
                     if (token != null)
                     {
                         return token.ToString();
@@ -568,29 +741,38 @@ namespace aibotPro.AppCode
                 }
                 catch (Exception ex)
                 {
-                    // 如果在处理JSON时发生错误，可能是JSON格式不正确
+                    // 如果在处理JSON时发生错误,可能是JSON格式不正确
                     // 这里可根据需要记录或处理异常
                     Console.WriteLine($"Error processing JSON for NodeName: {result.NodeName}. Error: {ex.Message}");
                 }
             }
 
-            // 如果没有找到任何匹配的路径，则抛出异常
+            // 如果没有找到任何匹配的路径,则抛出异常
             throw new Exception($"Value for path '{path}' not found in any NodeOutput.");
         }
-        private static string FillScriptWithValues(string script, List<NodeOutput> results)
+
+        private static string FillScriptWithValues(string script, List<NodeOutput> results, string thisJson = null)
         {
             // 查找脚本中所有的占位符
             var placeholders = System.Text.RegularExpressions.Regex.Matches(script, @"\{\{([^}]+)\}\}");
 
-            // 对于每个占位符，从NodeOutput中提取相应的值并替换
+            // 对于每个占位符,根据不同情况从thisJson或NodeOutput中提取相应的值并替换
             foreach (System.Text.RegularExpressions.Match match in placeholders)
             {
                 // 获取占位符中的路径
                 string path = match.Groups[1].Value;
-                // 调用通用函数获取路径对应的值
+                // 调用不同的函数获取路径对应的值
                 try
                 {
-                    string value = ExtractValueFromPath(path, results);
+                    string value;
+                    if (path.StartsWith("this."))
+                    {
+                        value = ExtractValueFromPath(path, thisJson);
+                    }
+                    else
+                    {
+                        value = ExtractValueFromPath(path, results);
+                    }
                     // 替换脚本中的占位符为实际值
                     script = script.Replace(match.Value, value);
                 }

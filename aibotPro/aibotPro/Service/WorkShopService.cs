@@ -223,6 +223,7 @@ namespace aibotPro.Service
                 Param = _context.PluginsParams.Where(x => x.PrCode == plugin.ParamCode).Select(x => new PluginParamDto
                 {
                     ParamCode = x.PrCode,
+                    ParamType = x.PrType,
                     ParamInfo = x.PrInfo,
                     ParamName = x.PrName,
                     ParamConst = x.PrConst
@@ -271,6 +272,7 @@ namespace aibotPro.Service
             var pluginParams = _context.PluginsParams.Where(x => x.PrCode == plugin.ParamCode).Select(x => new PluginParamDto
             {
                 ParamCode = x.PrCode,
+                ParamType = x.PrType,
                 ParamInfo = x.PrInfo,
                 ParamName = x.PrName,
                 ParamConst = x.PrConst
@@ -466,7 +468,7 @@ namespace aibotPro.Service
                 {
                     string url = plugin.Papiurl;
                     string method = plugin.Pmethod;
-                    Dictionary<string, string> parameters = new Dictionary<string, string>();
+                    Dictionary<string, object> parameters = new Dictionary<string, object>();
                     Dictionary<string, string> headers = new Dictionary<string, string>();
                     Dictionary<string, string> cookies = new Dictionary<string, string>();
                     var plugin_pr = GetPluginParams(plugin.Id);
@@ -489,7 +491,7 @@ namespace aibotPro.Service
                     }
                     foreach (var entry in fn.ParseArguments())
                     {
-                        string pr_val = entry.Value.ToString();
+                        var pr_val = entry.Value;
                         if (plugin_pr != null)
                         {
                             var pr = plugin_pr.Where(x => x.ParamName == entry.Key).FirstOrDefault();
@@ -509,7 +511,7 @@ namespace aibotPro.Service
                         //替换参数parameters
                         foreach (var item in parameters)
                         {
-                            jsonBody = Regex.Replace(jsonBody, @"\{\{" + item.Key + @"\}\}", item.Value);
+                            jsonBody = Regex.Replace(jsonBody, @"\{\{" + item.Key + @"\}\}", item.Value.ToString());
                         }
 
                     }
@@ -551,7 +553,7 @@ namespace aibotPro.Service
                     string qdScriptpr = string.Empty;
                     foreach (var entry in fn.ParseArguments())
                     {
-                        string pr_val = entry.Value.ToString();
+                        var pr_val = entry.Value;
                         if (plugin_pr != null)
                         {
                             var pr = plugin_pr.Where(x => x.ParamName == entry.Key).FirstOrDefault();
@@ -565,7 +567,10 @@ namespace aibotPro.Service
                                 else
                                 {
                                     arguments.Add(pr_val);
-                                    runScript += $@"var {entry.Key}=`{pr_val}`;  ";
+                                    if (pr.ParamType == "String")
+                                        runScript += $@"var {entry.Key}=`{Convert.ToString(pr_val)}`;  ";
+                                    else
+                                        runScript += $@"var {entry.Key}={Convert.ToString(pr_val)};  ";
                                 }
                                 qdScriptpr += entry.Key + ",";
                             }
@@ -603,7 +608,7 @@ namespace aibotPro.Service
                     string url = plugin.Papiurl;
                     string method = plugin.Pmethod;
                     string request_res = string.Empty;
-                    Dictionary<string, string> parameters = new Dictionary<string, string>();
+                    Dictionary<string, object> parameters = new Dictionary<string, object>();
                     Dictionary<string, string> headers = new Dictionary<string, string>();
                     Dictionary<string, string> cookies = new Dictionary<string, string>();
                     var plugin_pr = GetPluginParams(plugin.Id);
@@ -626,7 +631,7 @@ namespace aibotPro.Service
                     }
                     foreach (var entry in fn.ParseArguments())
                     {
-                        string pr_val = entry.Value.ToString();
+                        var pr_val = entry.Value;
                         if (plugin_pr != null)
                         {
                             var pr = plugin_pr.Where(x => x.ParamName == entry.Key).FirstOrDefault();
@@ -646,7 +651,7 @@ namespace aibotPro.Service
                         //替换参数parameters
                         foreach (var item in parameters)
                         {
-                            jsonBody = Regex.Replace(jsonBody, @"\{\{" + item.Key + @"\}\}", item.Value);
+                            jsonBody = Regex.Replace(jsonBody, @"\{\{" + item.Key + @"\}\}", item.Value.ToString());
                         }
 
                     }
@@ -737,7 +742,8 @@ namespace aibotPro.Service
                                     foreach (var entry in fn.ParseArguments())
                                     {
                                         string pr_val = entry.Value.ToString();
-                                        var pr = startOutput.PrItems.Where(x => x.PrName == entry.Key).FirstOrDefault();
+                                        string key = entry.Key;
+                                        var pr = startOutput.PrItems.Where(x => x.PrName.Replace(" ", "") == key).FirstOrDefault();
                                         if (pr != null)
                                         {
                                             if (!string.IsNullOrEmpty(pr.PrConst))//如果是常量

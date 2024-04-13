@@ -688,6 +688,7 @@ function aboutus() {
     showConfirmationModal('AIBot Pro System', 'AIBot Pro System 是一款基于OpenAI的对话系统<br>支持多种功能，包括创意工坊、角色扮演、文件助手、知识库、产品中心、充值中心、个人中心等<br>AIBot Pro由 MayMay团队开发运营，如果觉得我们做到还不错<br><b style="color:red">【请收购我们】</b>');
 }
 function customMenu() {
+    $("#systemNAME").html('Mufasa');
     //检查#custommenu 下是否存在#QQ #ABOUTUS #GITHUB
     if ($("#custommenu #QQ").length > 0 || $("#custommenu #ABOUTUS").length > 0 || $("#custommenu #GITHUB").length > 0) {
         return;

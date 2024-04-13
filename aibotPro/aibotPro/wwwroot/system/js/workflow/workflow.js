@@ -67,6 +67,21 @@ function initEndCodeEditor(code) {
     endCodeeditor.setValue(code);
     endCodeeditor.setSize('auto', '500px');
 }
+var llmTextarea;
+var llmCodeeditor;
+function initLLMCodeEditor(code) {
+    llmTextarea = document.getElementById("llmTextarea");
+    llmCodeeditor = CodeMirror.fromTextArea(llmTextarea, {
+        lineNumbers: true,
+        mode: "javascript",
+        theme: "3024-night"
+    });
+
+    llmCodeeditor.setOption("mode", "javascript");
+    llmCodeeditor.setOption("theme", "3024-night");
+    llmCodeeditor.setValue(code);
+    llmCodeeditor.setSize('auto', '500px');
+}
 function getAIModelList(callback) {
     $.ajax({
         type: "Post",
@@ -189,13 +204,18 @@ editor.on('nodeSelected', function (id) {
                 var data = node.data;
                 if (data.output.prItems && data.output.prItems.length > 0) {
                     var rows = '';
+                    const options = ['String', 'Integer', 'Boolean', 'Number'];
                     data.output.prItems.forEach(item => {
+                        const selectOptions = options.map(option =>
+                            `<option ${item.prType === option ? 'selected' : ''}>${option}</option>`
+                        ).join('');
                         rows += `<tr>
-                            <td><input value="${item.prName}" placeholder="参数名"  /></td>
-                            <td><input value="${item.prInfo}" placeholder="参数描述"  /></td>
-                            <td><input value="${item.prConst}" placeholder="常量"  /></td>
-                            <td><button class="delete-btn" onclick="deleteRow(this)">删除</button></td>
-                        </tr>`;
+                                    <td><input value="${item.prName}" placeholder="参数名"  /></td>
+                                    <td><select>${selectOptions}</select></td>
+                                    <td><input value="${item.prInfo}" placeholder="参数描述"  /></td>
+                                    <td><input value="${item.prConst}" placeholder="常量"  /></td>
+                                    <td><button class="delete-btn" onclick="deleteRow(this)">删除</button></td>
+                                </tr>`;
                     });
                     $(".parameters-table").html(rows);
                 }
@@ -336,11 +356,21 @@ editor.on('nodeSelected', function (id) {
                     <textarea class="prompt" style="width:100%;height:150px;"></textarea>
                     <p>失败重试次数（≤5）：</p>
                     <input type="number" class="retry" value="0" max="5" min="0" />
+                    <p>Stream：</p>
+                    <select class="stream"><option checked="checked">false</option><option>true</option></select>
+                    <p>循环条件脚本：</p>
+                    <textarea id="llmTextarea"></textarea>
                     <p class="nodeinfo">
-                    当下级节点需要获取AI处理的返回数据时，使用{{LLM+节点Id.data}}获取，例如{{LLM1.data}}
+                    * 当下级节点需要获取AI处理的返回数据时，使用{{LLM+节点Id.data}}获取，例如{{LLM1.data}}<br>
+                    * 当Stream选择true时 API会中途返回LLM响应至客户端<br>
+                    * 当需要循环执行时，return true;代表结束循环，return 其他时，会以返回值作为prompt继续提交给LLM<br>
+                    * 当需要获取当前节点的数据作为参数时可以使用 {{this.LLM+节点Id.data}}获取
                     </p>`
             $('.configure').html(html);
             getAIModelList(function () {
+                var code = `function LLM${id}(){
+    return true;
+}`;
                 if (node && node.data && Object.entries(node.data).length > 0) {
                     var data = node.data;
                     if (data.output.aimodel) {
@@ -352,7 +382,14 @@ editor.on('nodeSelected', function (id) {
                     if (data.output.retry) {
                         $(".retry").val(data.output.retry);
                     }
+                    if (data.output.stream) {
+                        $(".stream").val(data.output.stream);
+                    }
+                    if (data.output.judgescript) {
+                        code = data.output.judgescript;
+                    }
                 }
+                initLLMCodeEditor(code);
             });
             break;
         case 'DALL':
@@ -561,17 +598,19 @@ function addRow(element) {
     var cell2 = newRow.insertCell(1);
     var cell3 = newRow.insertCell(2);
     var cell4 = newRow.insertCell(3);
+    var cell5 = newRow.insertCell(4);
 
     cell1.innerHTML = '<input placeholder="参数名" />';
-    cell2.innerHTML = '<input placeholder="参数描述" />';
-    cell3.innerHTML = '<input placeholder="常量" />';
+    cell2.innerHTML = '<select><option checked="checked">String</option><option>Integer</option><option>Boolean</option><option>Number</option></select>';
+    cell3.innerHTML = '<input placeholder="参数描述" />';
+    cell4.innerHTML = '<input placeholder="常量" />';
 
     var deleteBtn = document.createElement("button");
     deleteBtn.textContent = "删除";
     deleteBtn.classList.add("delete-btn");
     deleteBtn.onclick = function () { deleteRow(this); };
 
-    cell4.appendChild(deleteBtn);
+    cell5.appendChild(deleteBtn);
 }
 
 function addPrRow(element) {
@@ -691,7 +730,9 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
                 output: {
                     aimodel: "",
                     prompt: "",
-                    retry: 0
+                    retry: 0,
+                    stream: false,
+                    judgescript: ""
                 }
             }, LLM);
             break;
@@ -744,6 +785,7 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
                     endscript: ""
                 }
             }, end);
+            break;
     }
 
     //switch (name) {

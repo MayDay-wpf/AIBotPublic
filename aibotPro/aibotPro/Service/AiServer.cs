@@ -546,7 +546,7 @@ namespace aibotPro.Service
                 return null;
             }
         }
-        public string AiGet(string url, Dictionary<string, string> dic, Dictionary<string, string> headers = null, Dictionary<string, string> cookies = null)
+        public string AiGet(string url, Dictionary<string, object> dic, Dictionary<string, string> headers = null, Dictionary<string, string> cookies = null)
         {
             string result = "";
             StringBuilder builder = new StringBuilder();
@@ -600,7 +600,7 @@ namespace aibotPro.Service
             }
             return result;
         }
-        public string AiPost(string url, Dictionary<string, string> parameters, Dictionary<string, string> headers = null, Dictionary<string, string> cookies = null, string jsonBody = "")
+        public string AiPost(string url, Dictionary<string, object> parameters, Dictionary<string, string> headers = null, Dictionary<string, string> cookies = null, string jsonBody = "")
         {
             var client = new RestClient(url);
             var request = new RestRequest("", Method.Post);

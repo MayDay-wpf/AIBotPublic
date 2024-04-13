@@ -100,6 +100,12 @@ namespace aibotPro.Controllers
                 {
                     _context.PluginsParams.RemoveRange(oldParam);
                 }
+                //删除原有的Json模板
+                var oldPrJson=_context.PluginsJsonPrs.Where(x => x.PrCode == oldPlugin.Pcode);
+                if (oldPrJson != null)
+                {
+                    _context.PluginsJsonPrs.RemoveRange(oldPrJson);
+                }
                 //删除原有请求头
                 var oldPheaders = _context.PluginsHeaders.Where(x => x.HdCode == oldPlugin.PheadersCode);
                 if (oldPheaders != null)
@@ -173,6 +179,7 @@ namespace aibotPro.Controllers
                         {
                             PrCode = paramCode,
                             PrName = item.ParamName,
+                            PrType = item.ParamType,
                             PrInfo = item.ParamInfo,
                             PrConst = item.ParamConst
                         };

@@ -604,7 +604,21 @@ namespace aibotPro.Service
                                         // 遍历PrItems
                                         foreach (var prItem in startOutput.PrItems)
                                         {
-                                            myfn.AddParameter(prItem.PrName, PropertyDefinition.DefineString(prItem.PrInfo));
+                                            switch (prItem.PrType)
+                                            {
+                                                case "String":
+                                                    myfn.AddParameter(prItem.PrName, PropertyDefinition.DefineString(prItem.PrInfo));
+                                                    break;
+                                                case "Integer":
+                                                    myfn.AddParameter(prItem.PrName, PropertyDefinition.DefineInteger(prItem.PrInfo));
+                                                    break;
+                                                case "Boolean":
+                                                    myfn.AddParameter(prItem.PrName, PropertyDefinition.DefineBoolean(prItem.PrInfo));
+                                                    break;
+                                                case "Number":
+                                                    myfn.AddParameter(prItem.PrName, PropertyDefinition.DefineNumber(prItem.PrInfo));
+                                                    break;
+                                            }
                                         }
                                     }
                                 }
@@ -616,7 +630,21 @@ namespace aibotPro.Service
                                 {
                                     foreach (var paramitem in myparams)
                                     {
-                                        myfn.AddParameter(paramitem.ParamName, PropertyDefinition.DefineString(paramitem.ParamInfo));
+                                        switch (paramitem.ParamType)
+                                        {
+                                            case "String":
+                                                myfn.AddParameter(paramitem.ParamName, PropertyDefinition.DefineString(paramitem.ParamInfo));
+                                                break;
+                                            case "Integer":
+                                                myfn.AddParameter(paramitem.ParamName, PropertyDefinition.DefineInteger(paramitem.ParamInfo));
+                                                break;
+                                            case "Boolean":
+                                                myfn.AddParameter(paramitem.ParamName, PropertyDefinition.DefineBoolean(paramitem.ParamInfo));
+                                                break;
+                                            case "Number":
+                                                myfn.AddParameter(paramitem.ParamName, PropertyDefinition.DefineNumber(paramitem.ParamInfo));
+                                                break;
+                                        }
                                     }
                                 }
                             }

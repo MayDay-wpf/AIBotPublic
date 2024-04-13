@@ -22,7 +22,8 @@ var LLMdata = {
     output: {
         aimodel: "",
         prompt: "",
-        retry: 0
+        retry: 0,
+        stream: false
     }
 }
 var DALLdata = {
@@ -30,7 +31,8 @@ var DALLdata = {
         prompt: "",
         size: "",
         quality: "",
-        retry: 0
+        retry: 0,
+        judgescript: ""
     }
 }
 var DALLsmdata = {
@@ -65,8 +67,9 @@ function saveNodeData() {
                 var columns = $(this).find('td');
 
                 var PRname = columns.eq(0).find('input').val();
-                var PRvalue = columns.eq(1).find('input').val();
-                var PRconstant = columns.eq(2).find('input').val();
+                var PRtype = columns.eq(1).find('select').val();
+                var PRvalue = columns.eq(2).find('input').val();
+                var PRconstant = columns.eq(3).find('input').val();
                 if (PRname.trim() === '' || PRvalue.trim() === '' || regex.test(PRname) || regex.test(PRvalue)) {
                     isEmpty = true;
                     layer.msg('存在空的参数值，请填写完整！', { icon: 2, time: 2500 });
@@ -74,6 +77,7 @@ function saveNodeData() {
                 }
                 var item = {
                     "prName": PRname,
+                    "prType": PRtype,
                     "prInfo": PRvalue,
                     "prConst": PRconstant
                 };
@@ -177,12 +181,14 @@ function saveNodeData() {
                 output: {
                     aimodel: "",
                     prompt: "",
-                    retry: 0
+                    retry: 0,
+                    judgescript: ""
                 }
             }
             var AImodel = $('.aimodel').val();
             var Prompt = $('.prompt').val();
             var Retry = $('.retry').val();
+            var Stream = $('.stream').val();
             LLMdata.output.aimodel = AImodel;
             if (Prompt == "") {
                 layer.msg('请填写提示词', { icon: 2, time: 2500 });
@@ -192,8 +198,11 @@ function saveNodeData() {
                 layer.msg('重试次数填写错误', { icon: 2, time: 2500 });
                 return false;
             }
+            var js = llmCodeeditor.getValue();
             LLMdata.output.prompt = Prompt;
             LLMdata.output.retry = Retry;
+            LLMdata.output.stream = Stream;
+            LLMdata.output.judgescript = js;
             editor.updateNodeDataFromId(thisNodeId, LLMdata);
             saveNodeDataToCache();
             return true;

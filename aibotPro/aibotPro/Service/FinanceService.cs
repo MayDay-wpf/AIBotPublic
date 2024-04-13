@@ -293,7 +293,7 @@ namespace aibotPro.Service
         public PayResultDto PayResult(string out_trade_no)
         {
             EasyPaySetting easyPaySetting = GetEasyPaySetting();
-            Dictionary<string, string> pr = new Dictionary<string, string>();
+            Dictionary<string, object> pr = new Dictionary<string, object>();
             pr.Add("act", "order");
             pr.Add("pid", easyPaySetting.ShopId.ToString());
             pr.Add("key", easyPaySetting.ApiKey.ToString());

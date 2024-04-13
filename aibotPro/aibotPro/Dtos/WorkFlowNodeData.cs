@@ -116,6 +116,8 @@ namespace aibotPro.Dtos
     {
         [JsonProperty("prName")]
         public string PrName { get; set; }
+        [JsonProperty("prType")]
+        public string PrType { get; set; }
 
         [JsonProperty("prInfo")]
         public string PrInfo { get; set; }
@@ -229,6 +231,10 @@ namespace aibotPro.Dtos
         public string Prompt { get; set; }
         [JsonProperty("retry")]
         public int Retry { get; set; }
+        [JsonProperty("stream")]
+        public bool Stream { get; set; }
+        [JsonProperty("judgescript")]
+        public string JudgeScript { get; set; }
     }
     public class DALLOutput
     {

@@ -339,18 +339,30 @@ header {
     width: 200px;
 }
 
-    .drawflow .drawflow-node.selected {
-        background: white;
-        border: 1px solid rgb(85, 94, 79);
-        -webkit-box-shadow: 0 2px 10px 2px rgb(135, 145, 128);
-        box-shadow: 0 2px 10px 2px rgb(135, 145, 128);
+@keyframes slide {
+    0% {
+        background-position: 0% 50%;
     }
 
-        .drawflow .drawflow-node.selected .title-box {
-            color: #22598c;
-            /*border-bottom: 1px solid #4ea9ff;*/
-        }
+    100% {
+        background-position: 100% 50%;
+    }
+}
 
+.drawflow .drawflow-node.selected {
+    background: white;
+    border: 2px solid transparent;
+    background-image: linear-gradient(white, white), linear-gradient(to right, rgb(46,247,226), rgb(255,255,255), rgb(46,247,226));
+    background-origin: border-box;
+    background-clip: content-box, border-box;
+    -webkit-box-shadow: 0 2px 10px 2px rgb(135, 145, 128);
+    box-shadow: 0 2px 10px 2px rgb(135, 145, 128);
+    animation: slide 2s linear infinite;
+}
+
+    .drawflow .drawflow-node.selected .title-box {
+        color: #22598c;
+    }
 .drawflow .connection .main-path {
     stroke: #4ea9ff;
     stroke-width: 3px;
@@ -514,34 +526,55 @@ header {
     color: white;
 }
 
-
 table {
     width: 100%;
-    border-collapse: collapse; /* 合并表格边框 */
+    border-collapse: collapse;
 }
 
-    table th,
-    table td {
-        border: 1px solid #ddd; /* 单元格边框 */
-        text-align: left; /* 文字左对齐 */
-        padding: 3px; /* 单元格内边距 */
+    table th {
+        text-align: left;
+        padding: 3px;
+        background-color: #4CAF50;
+        color: white;
     }
 
-        table td input {
-            width: 100%;
-            border: none;
-            height: 30px;
-        }
+    table td input {
+        width: 100%;
+        border: none;
+        height: 30px;
+    }
 
     table tr:nth-child(even) {
-        background-color: #f2f2f2; /* 为偶数行添加背景色 */
+        background-color: #f2f2f2;
     }
 
-    table th {
-        background-color: #4CAF50; /* 表头背景色 */
-        color: white; /* 表头文字颜色 */
+    /* 修改样式 */
+    table tr {
+        display: block;
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+        padding: 10px;
+        box-sizing: border-box;
+        border-radius:10px;
     }
 
+    table td {
+        display: block;
+        width: 100%;
+        border: none;
+        padding: 5px 0;
+    }
+
+        table td:before {
+            content: attr(data-label);
+            float: left;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        table td:last-child {
+            border-bottom: 0;
+        }
 .delete-btn {
     color: white; /* 删除按钮颜色 */
     cursor: pointer; /* 鼠标悬停时变为手形 */
