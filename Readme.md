@@ -48,3 +48,13 @@
 ## WorkFlow（AI流程引擎）
 ![115695455a122e9cfa15aee4f32ae3a2.png](https://ice.frostsky.com/2024/04/05/115695455a122e9cfa15aee4f32ae3a2.png)
 
+## 商品管理，可自行配置支付和库存以及商品内容
+![image](https://github.com/MayDay-wpf/AIBotPublic/assets/58774414/d27420c9-6ec4-4a23-996b-d183af4a823d)
+
+![image](https://github.com/MayDay-wpf/AIBotPublic/assets/58774414/3dddc8d2-5edc-40df-b4fe-f4a28f7ec557)
+
+![image](https://github.com/MayDay-wpf/AIBotPublic/assets/58774414/e8d12ff7-a300-4bab-bfca-56fd0d502e2f)
+
+
+
+
