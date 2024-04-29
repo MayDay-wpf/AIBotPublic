@@ -109,7 +109,8 @@ function updatePagination(currentPage, totalPages) {
         $pageItem.insertBefore('#next-page').click(function (e) {
             e.preventDefault(); // 阻止默认事件
             var page = parseInt($(this).text());
-            loadOrders(page, page_size);
+            var account = $("#account").val();
+            loadOrders(page, page_size, account);
         });
     }
 
@@ -127,7 +128,8 @@ function updatePagination(currentPage, totalPages) {
     if (currentPage > 1) {
         $('#previous-page').click(function (e) {
             e.preventDefault();
-            loadOrders(currentPage - 1, page_size);
+            var account = $("#account").val();
+            loadOrders(currentPage - 1, page_size, account);
         });
     }
 
@@ -136,7 +138,8 @@ function updatePagination(currentPage, totalPages) {
     if (currentPage < totalPages) {
         $('#next-page').click(function (e) {
             e.preventDefault();
-            loadOrders(currentPage + 1, page_size);
+            var account = $("#account").val();
+            loadOrders(currentPage + 1, page_size, account);
         });
     }
     // 更新首页和尾页的状态
@@ -144,7 +147,8 @@ function updatePagination(currentPage, totalPages) {
     if (currentPage > 1) {
         $('#first-page').click(function (e) {
             e.preventDefault();
-            loadOrders(1, page_size);  // 跳转到首页
+            var account = $("#account").val();
+            loadOrders(1, page_size, account);  // 跳转到首页
         });
     }
 
@@ -152,7 +156,8 @@ function updatePagination(currentPage, totalPages) {
     if (currentPage < totalPages) {
         $('#last-page').click(function (e) {
             e.preventDefault();
-            loadOrders(totalPages, page_size);  // 跳转到尾页
+            var account = $("#account").val();
+            loadOrders(totalPages, page_size, account);  // 跳转到尾页
         });
     }
 }

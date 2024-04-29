@@ -7,7 +7,7 @@ namespace aibotPro.Interface
     public interface IAiServer
     {
         IAsyncEnumerable<AiRes> CallingAI(AiChat aiChat, APISetting apiSetting, VisionBody visionBody = null);//调用AI接口（流式）
-        Task<string> CallingAINotStream(string prompt, string model);//调用AI接口（非流式）
+        Task<string> CallingAINotStream(string prompt, string model, bool jsonModel = false);//调用AI接口（非流式）
         Task<bool> SaveChatHistory(string account, string chatId, string content, string chatCode, string chatGroupId, string role, string model);//AI对话记录入库
         List<ChatHistory> GetChatHistories(string account, string chatId, int historyCount);//获取ai聊天记录
         Task<List<ChatHistory>> GetChatHistoriesList(string account, int pageIndex, int pageSize, string searchKey);//获取历史记录列表

@@ -511,7 +511,7 @@ namespace aibotPro.Controllers
             {
                 var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
                 var user = _context.Users.FirstOrDefault(x => x.Account == username);
-                int intomoney = Convert.ToInt32(thisorder.OrderMoney);
+                decimal intomoney = Convert.ToDecimal(thisorder.OrderMoney);
                 if (thisorder.OrderType.Contains("VIP|15") && intomoney == 15)
                 {
                     var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == username && x.VipType == "VIP|15");
@@ -579,6 +579,86 @@ namespace aibotPro.Controllers
                     }
                     user.Mcoin = user.Mcoin + intomoney + 10;
                     _context.Users.Update(user);
+                }
+                else if (thisorder.OrderType.Contains("MALL"))
+                {
+                    string goodCode = thisorder.OrderType.Split('|')[0];
+                    var good = _context.Goods.AsNoTracking().FirstOrDefault(x => x.GoodCode == goodCode);
+                    if (good != null)
+                    {
+                        //检查金额是否正确
+                        if (good.GoodPrice != intomoney)
+                        {
+                            return Ok("fail");
+                        }
+
+                        //查询是否有上级
+                        var shareinfo = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == username);
+                        if (shareinfo != null && shareinfo.ParentAccount != "admin")
+                        {
+                            var parentShareCode = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == shareinfo.ParentAccount);
+                            _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, intomoney * 0.15m);
+                        }
+                        if (good.Balance > 0)
+                        {
+                            //更新用户余额
+                            user.Mcoin = user.Mcoin + good.Balance;
+                        }
+                        if (good.VIPType == "VIP|15")
+                        {
+                            var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == username && x.VipType == "VIP|15");
+                            if (vipinfo != null && vipinfo.VipType == "VIP|15")
+                            {
+                                if (vipinfo.EndTime > DateTime.Now)
+                                {
+                                    vipinfo.EndTime = vipinfo.EndTime.Value.AddDays((double)good.VIPDays);
+                                }
+                                else
+                                {
+                                    vipinfo.EndTime = DateTime.Now.AddDays((double)good.VIPDays);
+                                }
+                                _context.VIPs.Update(vipinfo);
+                            }
+                            else
+                            {
+                                VIP vip = new VIP();
+                                vip.VipType = "VIP|15";
+                                vip.Account = username;
+                                vip.StartTime = DateTime.Now;
+                                vip.EndTime = DateTime.Now.AddDays((double)good.VIPDays);
+                                vip.CreateTime = DateTime.Now;
+                                _context.VIPs.Add(vip);
+                            }
+                        }
+                        if (good.VIPType == "VIP|90")
+                        {
+                            var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == username && x.VipType == "VIP|90");
+                            if (vipinfo != null && vipinfo.VipType == "VIP|90")
+                            {
+                                if (vipinfo.EndTime > DateTime.Now)
+                                {
+                                    vipinfo.EndTime = vipinfo.EndTime.Value.AddDays((double)good.VIPDays);
+                                }
+                                else
+                                {
+                                    vipinfo.EndTime = DateTime.Now.AddDays((double)good.VIPDays);
+                                }
+                                _context.VIPs.Update(vipinfo);
+                            }
+                            else
+                            {
+                                VIP vip = new VIP();
+                                vip.VipType = "VIP|90";
+                                vip.Account = username;
+                                vip.StartTime = DateTime.Now;
+                                vip.EndTime = DateTime.Now.AddDays((double)good.VIPDays);
+                                vip.CreateTime = DateTime.Now;
+                                _context.VIPs.Add(vip);
+                            }
+                        }
+                        _context.Users.Update(user);
+                        await _financeService.UpdateGoodsStock(goodCode, 1);
+                    }
                 }
                 else
                 {
@@ -771,7 +851,7 @@ namespace aibotPro.Controllers
             }
             if (card.VipType == "VIP|15")
             {
-                var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == username);
+                var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == username && x.VipType == "VIP|15");
                 if (vipinfo != null && vipinfo.VipType == "VIP|15")
                 {
                     if (vipinfo.EndTime > DateTime.Now)
@@ -783,16 +863,6 @@ namespace aibotPro.Controllers
                         vipinfo.EndTime = DateTime.Now.AddDays((double)card.VipDay);
                     }
                     _context.VIPs.Update(vipinfo);
-                }
-                else if (vipinfo != null && vipinfo.VipType == "VIP|90")
-                {
-                    VIP vip = new VIP();
-                    vip.VipType = "VIP|15";
-                    vip.Account = username;
-                    vip.StartTime = vipinfo.EndTime;
-                    vip.EndTime = vipinfo.EndTime.Value.AddDays((double)card.VipDay);
-                    vip.CreateTime = DateTime.Now;
-                    _context.VIPs.Add(vip);
                 }
                 else
                 {

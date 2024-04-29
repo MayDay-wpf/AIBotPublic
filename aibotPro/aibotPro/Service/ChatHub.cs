@@ -149,6 +149,7 @@ namespace aibotPro.Service
                         aiModel.ModelName = item.ChatModel;
                         aiModel.BaseUrl = item.ChatBaseURL;
                         aiModel.ApiKey = item.ChatApiKey;
+                        aiModel.VisionModel = item.VisionModel;
                         aImodels.Add(aiModel);
                     }
                     apiSetting.BaseUrl = aImodels.Where(x => x.ModelName == chatDto.aiModel).FirstOrDefault().BaseUrl;
@@ -163,14 +164,34 @@ namespace aibotPro.Service
                     apiSetting.ApiKey = aImodels.Where(x => x.ModelName == chatDto.aiModel).FirstOrDefault().ApiKey;
                 }
 
-                if (chatDto.aiModel == "gpt-4-vision-preview" || chatDto.aiModel == "gemini-pro-vision")
-                    isVisionModel = true;
+                //if (chatDto.aiModel == "gpt-4-vision-preview" || chatDto.aiModel == "gpt-4-turbo" || chatDto.aiModel == "gpt-4-turbo-2024-04-09" || chatDto.aiModel == "gemini-pro-vision")
+                if (aImodels.Where(x => x.ModelName == chatDto.aiModel).FirstOrDefault().VisionModel.HasValue)
+                    isVisionModel = aImodels.Where(x => x.ModelName == chatDto.aiModel).FirstOrDefault().VisionModel.Value;
                 //生成AI请求参数
                 string input = string.Empty;
                 string output = string.Empty;
                 AiChat aiChat = new AiChat();
                 VisionBody visionBody = new VisionBody();
                 aiChat.Stream = true;
+                if (chatDto.temperature != null)
+                {
+                    aiChat.Temperature = chatDto.temperature;
+                }
+
+                if (chatDto.top_p != null)
+                {
+                    aiChat.TopP = chatDto.top_p;
+                }
+
+                if (chatDto.frequency_penalty != null)
+                {
+                    aiChat.FrequencyPenalty = chatDto.frequency_penalty;
+                }
+
+                if (chatDto.presence_penalty != null)
+                {
+                    aiChat.PresencePenalty = chatDto.presence_penalty;
+                }
                 VisionImg visionImg = new VisionImg();
                 //如果有图片
                 if (!string.IsNullOrEmpty(chatDto.image_path))
@@ -188,7 +209,9 @@ namespace aibotPro.Service
                     }
                     else
                     {
-                        visionImg.url = $"{Context.GetHttpContext().Request.Scheme}://{systemCfg.Where(x => x.CfgCode == "Domain").FirstOrDefault().CfgValue}{chatDto.image_path.Replace("wwwroot", "")}".Replace("\\", "/");
+                        string imgBase64 = _systemService.ImgConvertToBase64(chatDto.image_path);
+                        string dataHeader = "data:image/jpeg;base64,";
+                        visionImg.url = dataHeader + imgBase64;//$"{Context.GetHttpContext().Request.Scheme}://{systemCfg.Where(x => x.CfgCode == "Domain").FirstOrDefault().CfgValue}{chatDto.image_path.Replace("wwwroot", "")}".Replace("\\", "/");
                     }
                 }
                 if (string.IsNullOrEmpty(chatDto.image_path) && chatDto.aiModel == "gemini-pro-vision")
@@ -203,6 +226,7 @@ namespace aibotPro.Service
                             chatDto.system_prompt += $"# 文件地址{i + 1}：{Context.GetHttpContext().Request.Scheme}://{systemCfg.Where(x => x.CfgCode == "Domain").FirstOrDefault().CfgValue}{chatDto.file_list[i].Replace("wwwroot", "")} \n";
                         }
                         chatDto.system_prompt += "\n 请根据上述文件回答";
+                        input += fileContent;
                     }
                     else
                     {
@@ -241,17 +265,29 @@ namespace aibotPro.Service
                         VisionChatMesssage promptvisionChatMesssage = new VisionChatMesssage();
                         List<VisionContent> promptcontent = new List<VisionContent>();
                         VisionContent promptvisionContent = new VisionContent();
-                        promptvisionContent.text = promptHeadle;
-                        promptcontent.Add(promptvisionContent);
-                        if (!string.IsNullOrEmpty(chatDto.system_prompt))
+
+                        // 系统提示部分
+                        if (!string.IsNullOrEmpty(chatDto.system_prompt) && chatDto.aiModel != "gemini-pro-vision")
                         {
                             promptvisionChatMesssage.role = "system";
-                            promptvisionContent = new VisionContent();
                             promptvisionContent.text = chatDto.system_prompt;
                             promptcontent.Add(promptvisionContent);
+                            promptvisionChatMesssage.content = promptcontent;
                             tmpmsg_v.Add(promptvisionChatMesssage);
                             input += chatDto.system_prompt;
+
+                            // 重置为用户消息
+                            promptvisionChatMesssage = new VisionChatMesssage();
+                            promptcontent = new List<VisionContent>();
+                            promptvisionContent = new VisionContent();
                         }
+
+                        // 用户消息部分
+                        promptvisionChatMesssage.role = "user";
+                        promptvisionContent.text = promptHeadle;
+                        promptcontent.Add(promptvisionContent);
+
+                        // 添加图片，如果存在
                         if (!string.IsNullOrEmpty(chatDto.image_path))
                         {
                             promptvisionContent = new VisionContent();
@@ -259,8 +295,7 @@ namespace aibotPro.Service
                             promptvisionContent.image_url = visionImg;
                             promptcontent.Add(promptvisionContent);
                         }
-                        promptvisionChatMesssage = new VisionChatMesssage();
-                        promptvisionChatMesssage.role = "user";
+
                         promptvisionChatMesssage.content = promptcontent;
                         tmpmsg_v.Add(promptvisionChatMesssage);
                     }
@@ -299,12 +334,12 @@ namespace aibotPro.Service
                             VisionChatMesssage hisvisionChatMesssage = new VisionChatMesssage();
                             List<VisionContent> hiscontent = new List<VisionContent>();
                             VisionContent hisvisionContent = new VisionContent();
-                            if (!string.IsNullOrEmpty(chatDto.system_prompt))
+                            if (!string.IsNullOrEmpty(chatDto.system_prompt) && chatDto.aiModel != "gemini-pro-vision")
                             {
                                 hisvisionChatMesssage.role = "system";
-                                hisvisionContent = new VisionContent();
                                 hisvisionContent.text = chatDto.system_prompt;
                                 hiscontent.Add(hisvisionContent);
+                                hisvisionChatMesssage.content = hiscontent;
                                 tmpmsg_v.Add(hisvisionChatMesssage);
                                 input += chatDto.system_prompt;
                             }
@@ -618,6 +653,9 @@ namespace aibotPro.Service
                                                 case "Number":
                                                     myfn.AddParameter(prItem.PrName, PropertyDefinition.DefineNumber(prItem.PrInfo));
                                                     break;
+                                                default:
+                                                    myfn.AddParameter(prItem.PrName, PropertyDefinition.DefineString(prItem.PrInfo));
+                                                    break;
                                             }
                                         }
                                     }
@@ -643,6 +681,9 @@ namespace aibotPro.Service
                                                 break;
                                             case "Number":
                                                 myfn.AddParameter(paramitem.ParamName, PropertyDefinition.DefineNumber(paramitem.ParamInfo));
+                                                break;
+                                            default:
+                                                myfn.AddParameter(paramitem.ParamName, PropertyDefinition.DefineString(paramitem.ParamInfo));
                                                 break;
                                         }
                                     }
@@ -692,6 +733,25 @@ namespace aibotPro.Service
                 //    };
                 chatCompletionCreate.Stream = true;
                 chatCompletionCreate.Model = chatDto.aiModel;
+                if (chatDto.temperature != null)
+                {
+                    chatCompletionCreate.Temperature = chatDto.temperature;
+                }
+
+                if (chatDto.top_p != null)
+                {
+                    chatCompletionCreate.TopP = chatDto.top_p;
+                }
+
+                if (chatDto.frequency_penalty != null)
+                {
+                    chatCompletionCreate.FrequencyPenalty = chatDto.frequency_penalty;
+                }
+
+                if (chatDto.presence_penalty != null)
+                {
+                    chatCompletionCreate.PresencePenalty = chatDto.presence_penalty;
+                }
                 var completionResult = openAiService.ChatCompletion.CreateCompletionAsStream(chatCompletionCreate);
                 await _redis.SetAsync($"{chatId}_process", "true", TimeSpan.FromHours(1));
                 string sysmsg = string.Empty;
@@ -849,6 +909,25 @@ namespace aibotPro.Service
                                             chatCompletionCreate.Tools = null;
                                             chatCompletionCreate.Stream = true;
                                             chatCompletionCreate.Model = chatDto.aiModel;
+                                            if (chatDto.temperature != null)
+                                            {
+                                                chatCompletionCreate.Temperature = chatDto.temperature;
+                                            }
+
+                                            if (chatDto.top_p != null)
+                                            {
+                                                chatCompletionCreate.TopP = chatDto.top_p;
+                                            }
+
+                                            if (chatDto.frequency_penalty != null)
+                                            {
+                                                chatCompletionCreate.FrequencyPenalty = chatDto.frequency_penalty;
+                                            }
+
+                                            if (chatDto.presence_penalty != null)
+                                            {
+                                                chatCompletionCreate.PresencePenalty = chatDto.presence_penalty;
+                                            }
                                             completionResult = openAiService.ChatCompletion.CreateCompletionAsStream(chatCompletionCreate);
                                             await foreach (var responseContent_sec in completionResult)
                                             {

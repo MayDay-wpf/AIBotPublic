@@ -1,4 +1,5 @@
 ﻿var workflowcode = '';
+var jsonmodelAI = ['gpt-3.5-turbo-0125', 'gpt-3.5-turbo-0125-openai', 'gpt-4-0125-preview', 'gpt-4-0125-preview-openai'];
 $(function () {
     //changeMode('lock');
     workflowcode = getUrlParam('workflowcode');
@@ -24,10 +25,46 @@ $(document).ready(function () {
             $('.params-box').hide();
         }
     });
+    $('.configure').on('change', '.stream', function () {
+        // 检查选中的选项值
+        if ($(this).val() == 'true') {
+            $('.jsonmodel').val('false');
+        }
+    });
+    $('.configure').on('change', '.jsonmodel', function () {
+        // 检查选中的选项值
+        if ($(this).val() == 'true') {
+            var thisAIModel = $('.aimodel').val();
+            if (jsonmodelAI.indexOf(thisAIModel) == -1) {
+                $(this).val('false');
+                layer.msg('当前模型不支持JsonModel', { icon: 2, time: 2500 });
+                return;
+            }
+            $('.stream').val('false');
+        }
+    });
     $('.configure').on('input', '.retry', function () {
         var value = $(this).val();
         if (value > 5) {
             $(this).val(5);
+        }
+    });
+    $('.configure').on('input', '.httpmaxcount', function () {
+        var value = $(this).val();
+        if (value > 20) {
+            $(this).val(20);
+        }
+    });
+    $('.configure').on('input', '.llmmaxcount', function () {
+        var value = $(this).val();
+        if (value > 20) {
+            $(this).val(20);
+        }
+    });
+    $('.configure').on('input', '.httpdelayed', function () {
+        var value = $(this).val();
+        if (value > 10000) {
+            $(this).val(10000);
         }
     });
 });
@@ -81,6 +118,36 @@ function initLLMCodeEditor(code) {
     llmCodeeditor.setOption("theme", "3024-night");
     llmCodeeditor.setValue(code);
     llmCodeeditor.setSize('auto', '500px');
+}
+var httpTextarea;
+var httpCodeeditor;
+function initHttpCodeEditor(code) {
+    httpTextarea = document.getElementById("httpTextarea");
+    httpCodeeditor = CodeMirror.fromTextArea(httpTextarea, {
+        lineNumbers: true,
+        mode: "javascript",
+        theme: "3024-night"
+    });
+
+    httpCodeeditor.setOption("mode", "javascript");
+    httpCodeeditor.setOption("theme", "3024-night");
+    httpCodeeditor.setValue(code);
+    httpCodeeditor.setSize('auto', '500px');
+}
+var ifelseTextarea;
+var ifelseCodeeditor;
+function initIfElseCodeEditor(code) {
+    ifelseTextarea = document.getElementById("ifelseTextarea");
+    ifelseCodeeditor = CodeMirror.fromTextArea(ifelseTextarea, {
+        lineNumbers: true,
+        mode: "javascript",
+        theme: "3024-night"
+    });
+
+    ifelseCodeeditor.setOption("mode", "javascript");
+    ifelseCodeeditor.setOption("theme", "3024-night");
+    ifelseCodeeditor.setValue(code);
+    ifelseCodeeditor.setSize('auto', '500px');
 }
 function getAIModelList(callback) {
     $.ajax({
@@ -286,8 +353,18 @@ editor.on('nodeSelected', function (id) {
                              </button>
                        </div>
                     </div>
+                    <p>循环极限次数（≤20）：</p>
+                    <input type="number" class="httpmaxcount" value="10" max="20" min="0" />
+                    <p>循环调用延时（≤10000ms）：</p>
+                    <input type="number" class="httpdelayed" value="0" max="10000" min="0" />ms
+                    <p>循环条件脚本：</p>
+                    <textarea id="httpTextarea"></textarea>
                     <p class="nodeinfo">
-                      当Http请求节点有返回值时，必须是一个Json对象，例如请求返回值为{"data":{"code":200,"status":true}}，使用{{http+节点Id.json结构值}}获取，例如{{http1.data.status}} 可获取到值：true
+                      * 当Http请求节点有返回值时，必须是一个Json对象，例如请求返回值为{"data":{"code":200,"status":true}}，使用{{http+节点Id.json结构值}}获取，例如{{http1.data.status}} 可获取到值：true<br><br>
+                      * 当需要循环执行时，return true;代表结束循环<br><br>
+                      * return false;将持续循环<br><br>
+                      * retuen 其他时将调用即时通讯将原文响应客户端<br><br>
+                      * 当需要获取当前节点的数据作为参数时可以使用 {{this.http+节点Id.返回值json结构}}获取<br><br>
                     </p>`;
             $('.configure').html(html);
             //查询这个节点是否有data
@@ -343,10 +420,27 @@ editor.on('nodeSelected', function (id) {
                     });
                     $(".cookies-table").html(rows_ck);
                 }
+                var code = `function http${id}(){
+    return true;
+}`;
+                if (data.output.judgescript) {
+                    code = data.output.judgescript;
+                }
+                if (data.output.httpmaxcount) {
+                    $('.httpmaxcount').val(data.output.httpmaxcount);
+                }
+                else
+                    $('.httpmaxcount').val(10);
+                if (data.output.httpdelayed) {
+                    $('.httpdelayed').val(data.output.httpdelayed);
+                }
+                else
+                    $('.httpdelayed').val(10);
+                initHttpCodeEditor(code);
             }
             break;
         case 'LLM':
-            html = ` <div class="custom-select">
+            html = `<div class="custom-select">
                        <p>选择模型：</p>
                        <select class="aimodel">
                          <option value="--">--</option>
@@ -358,13 +452,17 @@ editor.on('nodeSelected', function (id) {
                     <input type="number" class="retry" value="0" max="5" min="0" />
                     <p>Stream：</p>
                     <select class="stream"><option checked="checked">false</option><option>true</option></select>
+                    <p>JsonModel：</p>
+                    <select class="jsonmodel"><option checked="checked">false</option><option>true</option></select>
+                    <p>循环极限次数（≤20）：</p>
+                    <input type="number" class="llmmaxcount" value="10" max="20" min="0" />
                     <p>循环条件脚本：</p>
                     <textarea id="llmTextarea"></textarea>
                     <p class="nodeinfo">
-                    * 当下级节点需要获取AI处理的返回数据时，使用{{LLM+节点Id.data}}获取，例如{{LLM1.data}}<br>
-                    * 当Stream选择true时 API会中途返回LLM响应至客户端<br>
-                    * 当需要循环执行时，return true;代表结束循环，return 其他时，会以返回值作为prompt继续提交给LLM<br>
-                    * 当需要获取当前节点的数据作为参数时可以使用 {{this.LLM+节点Id.data}}获取
+                    * 当下级节点需要获取AI处理的返回数据时，使用{{LLM+节点Id.data}}获取，例如{{LLM1.data}}<br><br>
+                    * 当Stream选择true时 API会中途返回LLM响应至客户端<br><br>
+                    * 当需要循环执行时，return true;代表结束循环，return 其他时，会以返回值作为prompt继续提交给LLM<br><br>
+                    * 当需要获取当前节点的数据作为参数时可以使用 {{this.LLM+节点Id.data}}获取<br><br>
                     </p>`
             $('.configure').html(html);
             getAIModelList(function () {
@@ -385,8 +483,16 @@ editor.on('nodeSelected', function (id) {
                     if (data.output.stream) {
                         $(".stream").val(data.output.stream);
                     }
+                    if (data.output.jsonmodel) {
+                        $(".jsonmodel").val(data.output.jsonmodel);
+                    }
                     if (data.output.judgescript) {
                         code = data.output.judgescript;
+                    }
+                    if (data.output.llmmaxcount) {
+                        $(".llmmaxcount").val(data.output.llmmaxcount);
+                    } else {
+                        $(".llmmaxcount").val(10);
                     }
                 }
                 initLLMCodeEditor(code);
@@ -467,6 +573,29 @@ editor.on('nodeSelected', function (id) {
                     $(".prompt").val(data.output.prompt);
                 }
             }
+            break;
+        case 'ifelse':
+            html = ` <label>编写脚本：</label>
+                         <textarea id="ifelseTextarea"></textarea>
+                     <p class="nodeinfo">
+                          ifelse节点必须return一个布尔值，流程会根据布尔值的结果决定走向<br>
+                            function ifelse2(){<br>
+                                return 1>2<br>
+                            }<br>
+                         当下级节点需要获取json中的数据时使用{{ifelse+节点Id.data}}获取
+                      </p>`;
+            $('.configure').html(html);
+            var code = `function ifelse${id}(){
+
+}`;
+            if (node && node.data && Object.entries(node.data).length > 0) {
+                //回写
+                var data = node.data;
+                if (data.output.judgresult) {
+                    code = data.output.judgresult;
+                }
+            }
+            initIfElseCodeEditor(code);
             break;
         case 'end':
             html = `<div class="box">
@@ -717,6 +846,9 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
                     paramsItems: [],
                     headersItems: [],
                     cookiesItems: [],
+                    judgescript: "",
+                    httpmaxcount: 10,
+                    httpdelayed: 0
                 }
             }, http);
             break;
@@ -732,7 +864,9 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
                     prompt: "",
                     retry: 0,
                     stream: false,
-                    judgescript: ""
+                    jsonmodel: false,
+                    judgescript: "",
+                    llmmaxcount: 10
                 }
             }, LLM);
             break;
@@ -772,6 +906,17 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
                     prompt: ""
                 }
             }, web);
+            break;
+        case 'ifelse':
+            var ifelse = `
+            <div>
+              <div class="title-box"><i class="fas fa-question-circle"></i> <span class="nodeText">if-else(ifelse)</span></div>
+            </div>`;
+            editor.addNode('ifelse', 1, 2, pos_x, pos_y, 'ifelse', {
+                output: {
+                    judgresult: ""
+                }
+            }, ifelse);
             break;
         case 'end':
             var end = `

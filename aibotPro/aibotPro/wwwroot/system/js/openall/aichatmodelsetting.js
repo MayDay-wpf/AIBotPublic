@@ -18,6 +18,7 @@ function addStLine() {
                  <td><input type="text" class="form-control" maxlength="50" placeholder="模型名称(实际请求时使用)" /></td>
                  <td><input type="text" class="form-control" maxlength="500" placeholder="Base URL"  /></td>
                  <td><input type="text" class="form-control" maxlength="500" placeholder="API KEY"  /></td>
+                 <td><input type="checkbox" class="form-control"></td>
                  <td><input type="number" class="form-control" maxlength="500" placeholder="排序"  /></td>
                  <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`
     $("#AddSt").append(str);
@@ -36,8 +37,8 @@ function saveChatSetting() {
         var name = $(row).find("input").eq(1).val();
         var baseUrl = $(row).find("input").eq(2).val();
         var apiKey = $(row).find("input").eq(3).val();
-        var seq = $(row).find("input").eq(4).val();
-
+        var visionModel = $(row).find("input").eq(4).prop('checked');
+        var seq = $(row).find("input").eq(5).val();
         if (!removeSpaces(nickname) || !removeSpaces(name) || !removeSpaces(baseUrl) || !removeSpaces(apiKey)) {
             balert('请将空的【自定义对话模型】输入行删除，或填写完整', 'danger', false, 1500, 'top');
             issave = false;
@@ -47,6 +48,7 @@ function saveChatSetting() {
             formData.append(`AImodel[${index}].ModelName`, name);
             formData.append(`AImodel[${index}].BaseURL`, baseUrl);
             formData.append(`AImodel[${index}].ApiKey`, apiKey);
+            formData.append(`AImodel[${index}].VisionModel`, visionModel);
             formData.append(`AImodel[${index}].Seq`, seq);
         }
     });
@@ -86,11 +88,13 @@ function getChatSetting() {
                 if (data == null)
                     return;
                 for (var i = 0; i < data.length; i++) {
+                    var checkedAttr = data[i].visionModel ? 'checked' : '';
                     var str = `<tr>
                                 <td><input type="text" class="form-control" maxlength="50" placeholder="模型昵称" value="${data[i].modelNick}" /></td>
                                 <td><input type="text" class="form-control" maxlength="50" placeholder="模型名称(实际请求时使用)" value="${data[i].modelName}" /></td>
                                 <td><input type="text" class="form-control" maxlength="500" placeholder="Base URL" value="${data[i].baseUrl}" /></td>
                                 <td><input type="text" class="form-control" maxlength="500" placeholder="API KEY" value="${data[i].apiKey}" /></td>
+                                <td><input type="checkbox" class="form-control" ${checkedAttr}></td>
                                 <td><input type="number" class="form-control" maxlength="500" placeholder="排序" value="${data[i].seq}" /></td>
                                 <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`
                     $("#AddSt").append(str);

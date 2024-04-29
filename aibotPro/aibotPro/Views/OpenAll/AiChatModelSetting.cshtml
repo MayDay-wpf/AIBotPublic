@@ -31,7 +31,20 @@
         </div>
         <div class="card-body">
             <div class="form-group">
-                <table id="AddSt" class="form-table">
+                <table class="form-table">
+                    <thead>
+                        <tr>
+                            <td>模型昵称</td>
+                            <td>模型名称</td>
+                            <td>BaseUrl</td>
+                            <td>ApiKey</td>
+                            <td>视觉模型</td>
+                            <td>排序</td>
+                            <td>删除</td>
+                        </tr>
+                    </thead>
+                    <tbody id="AddSt">
+                    </tbody>
                 </table>
                 <button type="button" class="btn btn-success" onclick="addStLine()">
                     <i data-feather="plus"></i>新增一行

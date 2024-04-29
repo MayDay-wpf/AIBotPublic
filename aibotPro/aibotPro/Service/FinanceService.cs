@@ -5,6 +5,7 @@ using aibotPro.Dtos;
 using aibotPro.Interface;
 using aibotPro.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Newtonsoft.Json;
@@ -290,6 +291,174 @@ namespace aibotPro.Service
             payInfoDto.sign_type = "MD5";
             return payInfoDto;
         }
+        public Task<PayInfoDto> PayTo(string account, string goodCode, string type)
+        {
+            //尝试从缓存中获取支付通道信息
+            EasyPaySetting easyPaySetting = GetEasyPaySetting();
+            string OrderCode = DateTime.Now.ToString("yyyyMMddHHmmss") + Guid.NewGuid().ToString().Replace("-", "");
+            int pid = easyPaySetting.ShopId.Value;
+            string out_trade_no = OrderCode;
+            string notify_url = easyPaySetting.NotifyUrl;
+            string return_url = easyPaySetting.ReturnUrl;
+            //根据商品编码查询商品信息
+            var good = _context.Goods.Where(x => x.GoodCode == goodCode).FirstOrDefault();
+            if (good == null)
+                throw new Exception("商品不存在");
+            if (good.GoodStock <= 0)
+                throw new Exception("商品库存不足");
+            string param = goodCode + $"|{_systemService.UrlEncode(account)}" + "|MALL";
+            string payurl = easyPaySetting.SubmitUrl;
+            var parameters = new Dictionary<string, string>
+                {
+                    { "pid",pid.ToString()},
+                    { "type", type },
+                    { "out_trade_no",OrderCode },
+                    { "notify_url", notify_url },
+                    { "return_url", return_url },
+                    { "name", good.GoodName },
+                    { "param", param},
+                    { "money", good.GoodPrice.ToString()}
+                };
+            string apikey = easyPaySetting.ApiKey;
+            string sign = GenerateSign(parameters, apikey);
+            Order order = new Order();
+            order.OrderMoney = good.GoodPrice;
+            order.OrderCode = OrderCode;
+            order.CreateTime = DateTime.Now;
+            order.OrderStatus = "NO";
+            order.OrderType = param;
+            order.Account = account;
+            _context.Orders.Add(order);
+            _context.SaveChanges();
+            PayInfoDto payInfoDto = new PayInfoDto();
+            payInfoDto.payurl = payurl;
+            payInfoDto.pid = pid.ToString();
+            payInfoDto.out_trade_no = out_trade_no;
+            payInfoDto.notify_url = notify_url;
+            payInfoDto.return_url = return_url;
+            payInfoDto.name = good.GoodName;
+            payInfoDto.param = param;
+            payInfoDto.money = good.GoodPrice.ToString();
+            payInfoDto.sign = sign;
+            payInfoDto.sign_type = "MD5";
+            return Task.FromResult(payInfoDto);
+        }
+
+        public Task<bool> BalancePayTo(string account, string goodCode, string type)
+        {
+            //查询商品信息
+            var good = _context.Goods.Where(x => x.GoodCode == goodCode).FirstOrDefault();
+            if (good == null)
+                return Task.FromResult(false);
+            if (good.GoodStock <= 0)
+                return Task.FromResult(false);
+            //检查商品是否允许余额支付
+            if (good.GoodPayType.Contains(type))
+            {
+                //检查用户余额是否足够
+                var user = _context.Users.Where(x => x.Account == account).FirstOrDefault();
+                if (user.Mcoin < good.GoodPrice)
+                {
+                    return Task.FromResult(false);
+                }
+                //扣除用户余额
+                user.Mcoin -= good.GoodPrice;
+                _context.Entry(user).State = EntityState.Modified;
+                //创建消耗记录
+                UseUpLog useUpLog = new UseUpLog();
+                useUpLog.Account = account;
+                useUpLog.InputCount = 0;
+                useUpLog.OutputCount = 0;
+                useUpLog.UseMoney = good.GoodPrice;
+                useUpLog.CreateTime = DateTime.Now;
+                useUpLog.ModelName = good.GoodName;
+                _context.UseUpLogs.Add(useUpLog);
+                if (good.Balance > 0)
+                {
+                    //更新用户余额
+                    user.Mcoin = user.Mcoin + good.Balance;
+                }
+                if (good.VIPType == "VIP|15")
+                {
+                    var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == account);
+                    if (vipinfo != null && vipinfo.VipType == "VIP|15")
+                    {
+                        if (vipinfo.EndTime > DateTime.Now)
+                        {
+                            vipinfo.EndTime = vipinfo.EndTime.Value.AddDays((double)good.VIPDays);
+                        }
+                        else
+                        {
+                            vipinfo.EndTime = DateTime.Now.AddDays((double)good.VIPDays);
+                        }
+                        _context.VIPs.Update(vipinfo);
+                    }
+                    else if (vipinfo != null && vipinfo.VipType == "VIP|90")
+                    {
+                        VIP vip = new VIP();
+                        vip.VipType = "VIP|15";
+                        vip.Account = account;
+                        vip.StartTime = vipinfo.EndTime;
+                        vip.EndTime = vipinfo.EndTime.Value.AddDays((double)good.VIPDays);
+                        vip.CreateTime = DateTime.Now;
+                        _context.VIPs.Add(vip);
+                    }
+                    else
+                    {
+                        VIP vip = new VIP();
+                        vip.VipType = "VIP|15";
+                        vip.Account = account;
+                        vip.StartTime = DateTime.Now;
+                        vip.EndTime = DateTime.Now.AddDays((double)good.VIPDays);
+                        vip.CreateTime = DateTime.Now;
+                        _context.VIPs.Add(vip);
+                    }
+                    _context.SaveChanges();
+                    UpdateGoodsStock(goodCode, 1);
+                    return Task.FromResult(true);
+                }
+                else if (good.VIPType == "VIP|90")
+                {
+                    var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == account);
+                    if (vipinfo != null && vipinfo.VipType == "VIP|90")
+                    {
+                        if (vipinfo.EndTime > DateTime.Now)
+                        {
+                            vipinfo.EndTime = vipinfo.EndTime.Value.AddDays((double)good.VIPDays);
+                        }
+                        else
+                        {
+                            vipinfo.EndTime = DateTime.Now.AddDays((double)good.VIPDays);
+                        }
+                        _context.VIPs.Update(vipinfo);
+                    }
+                    else if (vipinfo != null && vipinfo.VipType == "VIP|15")
+                    {
+                        VIP vip = new VIP();
+                        vip.VipType = "VIP|90";
+                        vip.Account = account;
+                        vip.StartTime = vipinfo.EndTime;
+                        vip.EndTime = vipinfo.EndTime.Value.AddDays((double)good.VIPDays);
+                        vip.CreateTime = DateTime.Now;
+                        _context.VIPs.Add(vip);
+                    }
+                    else
+                    {
+                        VIP vip = new VIP();
+                        vip.VipType = "VIP|90";
+                        vip.Account = account;
+                        vip.StartTime = DateTime.Now;
+                        vip.EndTime = DateTime.Now.AddDays((double)good.VIPDays);
+                        vip.CreateTime = DateTime.Now;
+                        _context.VIPs.Add(vip);
+                    }
+                }
+                _context.SaveChanges();
+                return Task.FromResult(true);
+            }
+            else
+                return Task.FromResult(false);
+        }
         public PayResultDto PayResult(string out_trade_no)
         {
             EasyPaySetting easyPaySetting = GetEasyPaySetting();
@@ -369,6 +538,91 @@ namespace aibotPro.Service
             txOrder.CreateTime = DateTime.Now;
             _context.TxOrders.Add(txOrder);
             return _context.SaveChanges() > 0;
+        }
+        public bool ReleaseGood(GoodReleaseDto goodReleaseDto)
+        {
+            bool result = false;
+            if (!goodReleaseDto.isUpdate)
+            {
+                Good good = new Good();
+                good.GoodCode = Guid.NewGuid().ToString();
+                good.GoodName = goodReleaseDto.Goodname;
+                good.GoodPrice = goodReleaseDto.Goodprice;
+                good.GoodImage = goodReleaseDto.Goodimage;
+                good.GoodInfo = goodReleaseDto.Goodinfo;
+                good.GoodStock = goodReleaseDto.Goodstock;
+                good.GoodPayType = string.Join(",", goodReleaseDto.Paytype);
+                good.OnShelves = true;
+                good.VIPType = goodReleaseDto.Viptype;
+                good.VIPDays = goodReleaseDto.Vipdays;
+                good.Balance = goodReleaseDto.Balance;
+                good.CreateTime = DateTime.Now;
+                _context.Goods.Add(good);
+                result = _context.SaveChanges() > 0;
+            }
+            else
+            {
+                Good goodToUpdate = _context.Goods.FirstOrDefault(g => g.GoodCode == goodReleaseDto.Goodcode);
+                if (goodToUpdate != null)
+                {
+                    goodToUpdate.GoodName = goodReleaseDto.Goodname;
+                    goodToUpdate.GoodPrice = goodReleaseDto.Goodprice;
+                    goodToUpdate.GoodImage = goodReleaseDto.Goodimage;
+                    goodToUpdate.GoodInfo = goodReleaseDto.Goodinfo;
+                    goodToUpdate.GoodStock = goodReleaseDto.Goodstock;
+                    goodToUpdate.GoodPayType = string.Join(",", goodReleaseDto.Paytype);
+                    goodToUpdate.VIPType = goodReleaseDto.Viptype;
+                    goodToUpdate.VIPDays = goodReleaseDto.Vipdays;
+                    goodToUpdate.Balance = goodReleaseDto.Balance;
+                    // 更新可能不需要修改创建时间和是否上架
+                    _context.SaveChanges();
+                    result = true;
+                }
+            }
+
+            return result;
+        }
+        public Good GetGood(string goodCode)
+        {
+            return _context.Goods.Where(x => x.GoodCode == goodCode).FirstOrDefault();
+        }
+        public List<Good> GetGoods(string gname, int pageIndex, int pageSize, bool? onShelves, out int total)
+        {
+            //分页获取插件
+            // 利用IQueryable延迟执行，直到真正需要数据的时候才去数据库查询
+            IQueryable<Good> query = _context.Goods;
+            if (onShelves != null)
+            {
+                query = _context.Goods.Where(g => g.OnShelves == onShelves);
+            }
+
+            // 如果name不为空，则加上name的过滤条件
+            if (!string.IsNullOrEmpty(gname))
+            {
+                query = query.Where(x => x.GoodName.Contains(gname));
+            }
+
+            // 首先计算总数，此时还未真正运行SQL查询
+            total = query.Count();
+
+            // 然后添加分页逻辑，此处同样是构建查询，没有执行
+            var goods = query.OrderBy(x => x.CreateTime) // 这里可以根据需要替换为合适的排序字段
+                                .Skip((pageIndex - 1) * pageSize)
+                                .Take(pageSize)
+                                .ToList(); // 直到调用ToList，查询才真正执行
+
+            return goods;
+        }
+        public Task<bool> UpdateGoodsStock(string goodCode, int stock)
+        {
+            var good = _context.Goods.Where(x => x.GoodCode == goodCode).FirstOrDefault();
+            if (good == null)
+            {
+                return Task.FromResult(false);
+            }
+            good.GoodStock -= stock;
+            _context.Entry(good).State = EntityState.Modified;
+            return Task.FromResult(_context.SaveChanges() > 0);
         }
 
         private static string GenerateSign(IDictionary<string, string> parameters, string key)

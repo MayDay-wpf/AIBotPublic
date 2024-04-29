@@ -9,6 +9,8 @@
 let page = 1;
 let page_size = 15;
 let total = 0;
+let totalUseMoney = 0;
+let totalUseCount = 0;
 $(document).keypress(function (e) {
     if ($("#account").is(":focus")) {
         if (e.which == 13) {
@@ -27,7 +29,8 @@ $(document).ready(function () {
         // 日期范围改变后的回调函数
         var startDate = start.format('YYYY-MM-DD HH:mm:ss');
         var endDate = end.format('YYYY-MM-DD HH:mm:ss');
-
+        totalUseMoney = 0;
+        totalUseCount = 0;
         // 使用 AJAX 调用后端方法
         $.ajax({
             url: '/OpenAll/GetUsedData', // 这里替换成你的 API 端点
@@ -46,6 +49,7 @@ $(document).ready(function () {
                 chartModeSelect.selectedIndex = label
                 var moneyData = processData(response.data, 'money');
                 var tokensData = processData(response.data, 'tokens');
+                updateTotalUse('money');
                 var option = {
                     tooltip: {
                         trigger: 'item',
@@ -86,8 +90,10 @@ $(document).ready(function () {
                 chartModeSelect.addEventListener('change', function () {
                     if (this.value === 'money') {
                         updateChartData(moneyData);
+                        updateTotalUse('money');
                     } else {
                         updateChartData(tokensData);
+                        updateTotalUse('tokens');
                     }
                 });
 
@@ -138,8 +144,10 @@ function processData(data, key) {
         }
         if (key === 'money') {
             modelData[d.modelName] += d.useMoney;
+            totalUseMoney += d.useMoney;
         } else {
             modelData[d.modelName] += d.inputCount + d.outputCount;
+            totalUseCount += d.inputCount + d.outputCount;
         }
     });
     return Object.entries(modelData).map(([name, value]) => ({ name, value }));
@@ -225,7 +233,8 @@ function updatePagination(currentPage, totalPages) {
         $pageItem.insertBefore('#next-page').click(function (e) {
             e.preventDefault(); // 阻止默认事件
             var page = parseInt($(this).text());
-            loadLogs(page, page_size);
+            var account = $("#account").val();
+            loadLogs(page, page_size, account);
         });
     }
 
@@ -243,7 +252,8 @@ function updatePagination(currentPage, totalPages) {
     if (currentPage > 1) {
         $('#previous-page').click(function (e) {
             e.preventDefault();
-            loadLogs(currentPage - 1, page_size);
+            var account = $("#account").val();
+            loadLogs(currentPage - 1, page_size, account);
         });
     }
 
@@ -252,7 +262,8 @@ function updatePagination(currentPage, totalPages) {
     if (currentPage < totalPages) {
         $('#next-page').click(function (e) {
             e.preventDefault();
-            loadLogs(currentPage + 1, page_size);
+            var account = $("#account").val();
+            loadLogs(currentPage + 1, page_size, account);
         });
     }
     // 更新首页和尾页的状态
@@ -260,7 +271,8 @@ function updatePagination(currentPage, totalPages) {
     if (currentPage > 1) {
         $('#first-page').click(function (e) {
             e.preventDefault();
-            loadLogs(1, page_size);  // 跳转到首页
+            var account = $("#account").val();
+            loadLogs(1, page_size, account);  // 跳转到首页
         });
     }
 
@@ -268,7 +280,17 @@ function updatePagination(currentPage, totalPages) {
     if (currentPage < totalPages) {
         $('#last-page').click(function (e) {
             e.preventDefault();
-            loadLogs(totalPages, page_size);  // 跳转到尾页
+            var account = $("#account").val();
+            loadLogs(totalPages, page_size, account);  // 跳转到尾页
         });
+    }
+}
+function updateTotalUse(type) {
+    if (type === 'money') {
+        $("#totalUse").val(totalUseMoney);
+        $("#unit").text('￥');
+    } else {
+        $("#totalUse").val(totalUseCount);
+        $("#unit").text('tokens');
     }
 }

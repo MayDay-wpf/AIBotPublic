@@ -111,7 +111,7 @@ namespace aibotPro.Service
             }
         }
 
-        public async Task<string> CallingAINotStream(string prompt, string model)
+        public async Task<string> CallingAINotStream(string prompt, string model, bool jsonModel = false)
         {
             var aImodels = _systemService.GetAImodel();
             string apiKey = aImodels.Where(x => x.ModelName == model).FirstOrDefault().ApiKey;
@@ -134,17 +134,31 @@ namespace aibotPro.Service
             request.AddHeader("Authorization", $"Bearer {apiKey}");
             request.AddHeader("Content-Type", "application/json");
             request.AddHeader("Connection", "keep-alive");
-
-            var requestBody = new
+            object requestBody = new
             {
                 model = model,
                 messages = new[]
-                {
+                 {
                     new { role = "user", content = prompt }
                 },
                 stream = false
             };
-
+            if (jsonModel)
+            {
+                requestBody = new
+                {
+                    model = model,
+                    response_format = new
+                    {
+                        type = "json_object"
+                    },
+                    messages = new[]
+                {
+                    new { role = "user", content = prompt }
+                },
+                    stream = false
+                };
+            }
             var body = JsonConvert.SerializeObject(requestBody, Formatting.Indented);
             request.AddParameter("application/json", body, ParameterType.RequestBody);
             RestResponse response = client.Execute(request);

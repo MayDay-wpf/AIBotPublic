@@ -191,6 +191,25 @@ namespace aibotPro.Controllers
             }
             return View();
         }
+        public IActionResult Grounding()
+        {
+            var username = GetUserFromToken();
+            if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
+            {
+                return RedirectToAction("Users", "Login");
+            }
+            return View();
+        }
+        public IActionResult Goods()
+        {
+            var username = GetUserFromToken();
+            if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
+            {
+                return RedirectToAction("Users", "Login");
+            }
+            return View();
+        }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult GetVisitorView()
@@ -836,7 +855,7 @@ namespace aibotPro.Controllers
                 data = cards
             });
         }
-        [Authorize]
+        [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult DeleteAdmin(int id)
         {
@@ -857,7 +876,7 @@ namespace aibotPro.Controllers
                 msg = "删除成功",
             });
         }
-        [Authorize]
+        [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult DeleteVip(string account)
         {
@@ -877,6 +896,81 @@ namespace aibotPro.Controllers
                 success = true,
                 msg = "删除成功",
             });
+        }
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public IActionResult ReleaseGood([FromForm] GoodReleaseDto model)
+        {
+            try
+            {
+                bool result = _financeService.ReleaseGood(model);
+                // 逻辑处理
+                return Json(new { success = result });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, msg = ex.Message });
+            }
+        }
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public IActionResult UploadGoodImage([FromForm] IFormFile file)
+        {
+            //保存图片
+            string path = Path.Combine("wwwroot/files/goodsimages", $"{DateTime.Now.ToString("yyyyMMdd")}");   //$"wwwroot\\files\\pluginavatar\\{DateTime.Now.ToString("yyyyMMdd")}";
+            string username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+            {
+                return Json(new
+                {
+                    success = false,
+                    msg = "账号异常"
+                });
+            }
+            string fileName = _systemService.SaveFiles(path, file, username);
+            //返回文件名
+            return Json(new
+            {
+                success = true,
+                filePath = fileName
+            });
+        }
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public IActionResult GetGoods(int pageIndex, int pageSize, string name, string onShelves)
+        {
+            bool? OnShelves = null;
+            if (!string.IsNullOrEmpty(onShelves))
+                OnShelves = bool.Parse(onShelves);
+            var data = _financeService.GetGoods(name, pageIndex, pageSize, OnShelves, out int total);
+            return Json(new { success = true, data = data, total = total });
+        }
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public IActionResult GetGood(string goodCode)
+        {
+            var data = _financeService.GetGood(goodCode);
+            return Json(new { success = true, data = data });
+        }
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public IActionResult DeleteGood(string goodCode)
+        {
+            _context.Goods.Remove(_context.Goods.FirstOrDefault(x => x.GoodCode == goodCode));
+            return _context.SaveChanges() > 0 ? Json(new { success = true }) : Json(new { success = false });
+        }
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public IActionResult PutonOrOffShelves(string goodCode, bool shelves)
+        {
+            var good = _context.Goods.FirstOrDefault(x => x.GoodCode == goodCode);
+            if (good == null)
+            {
+                return Json(new { success = false, msg = "商品不存在" });
+            }
+            good.OnShelves = shelves;
+            _context.Goods.Update(good);
+            return _context.SaveChanges() > 0 ? Json(new { success = true }) : Json(new { success = false });
         }
     }
 }

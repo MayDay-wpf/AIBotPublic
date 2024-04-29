@@ -20,7 +20,35 @@
         $(".clearRole").show();
         runMarketRole(type);
     }
+    $('[data-toggle="tooltip"]').tooltip();
+    $("#slidertemperature").val("0.5");
+    $("#slidertopp").val("1");
+    $("#sliderpresence").val("0.5");
+    $("#sliderfrequency").val("0.5");
 });
+var slidertemperature = document.getElementById("slidertemperature");
+slidertemperature.oninput = function () {
+    this.setAttribute('data-original-title', this.value);
+    $(this).tooltip('show');
+}
+
+var slidertopp = document.getElementById("slidertopp");
+slidertopp.oninput = function () {
+    this.setAttribute('data-original-title', this.value);
+    $(this).tooltip('show');
+}
+
+var sliderpresence = document.getElementById("sliderpresence");
+sliderpresence.oninput = function () {
+    this.setAttribute('data-original-title', this.value);
+    $(this).tooltip('show');
+}
+
+var sliderfrequency = document.getElementById("sliderfrequency");
+sliderfrequency.oninput = function () {
+    this.setAttribute('data-original-title', this.value);
+    $(this).tooltip('show');
+}
 let roleAvatar = 'A';
 var max_textarea = false;
 var textarea = document.getElementById("Q");
@@ -360,6 +388,10 @@ function sendMsg() {
     var msgid_u = generateGUID();
     var msgid_g = generateGUID();
     assistansBoxId = msgid_g;
+    var temperature = $("#slidertemperature").val();
+    var topp = $("#slidertopp").val();
+    var presence = $("#sliderpresence").val();
+    var frequency = $("#sliderfrequency").val();
     var data = {
         "msg": msg,
         "chatid": chatid,
@@ -370,6 +402,10 @@ function sendMsg() {
         "ip": IP,
         "image_path": image_path,
         "system_prompt": systemPrompt,
+        "temperature": parseFloat(temperature),
+        "top_p": parseFloat(topp),
+        "presence_penalty": parseFloat(presence),
+        "frequency_penalty": parseFloat(frequency)
     };
     max_textarea = true;
     max_textarea_Q();
@@ -897,6 +933,7 @@ function runMarketRole(type) {
             roleCode: type
         },
         success: function (res) {
+            loadingOverlay.hide();
             if (res.success) {
                 systemPrompt = res.data.roleSystemPrompt;
                 roleName = res.data.roleName;
@@ -907,11 +944,11 @@ function runMarketRole(type) {
                     writeChats(res.data.roleChat);
             } else {
                 newChat();
-                loadingOverlay.hide();
             }
 
         },
         error: function (e) {
+            loadingOverlay.hide();
             sendok = true;
             console.log("失败" + e);
         }

@@ -7,8 +7,35 @@
     $("#chat-files-nav").addClass('active');
     getAIModelList();
     getHistoryList(pageIndex, pageSize, true, true, "");
+    $('[data-toggle="tooltip"]').tooltip();
+    $("#slidertemperature").val("0.5");
+    $("#slidertopp").val("1");
+    $("#sliderpresence").val("0.5");
+    $("#sliderfrequency").val("0.5");
 })
+var slidertemperature = document.getElementById("slidertemperature");
+slidertemperature.oninput = function () {
+    this.setAttribute('data-original-title', this.value);
+    $(this).tooltip('show');
+}
 
+var slidertopp = document.getElementById("slidertopp");
+slidertopp.oninput = function () {
+    this.setAttribute('data-original-title', this.value);
+    $(this).tooltip('show');
+}
+
+var sliderpresence = document.getElementById("sliderpresence");
+sliderpresence.oninput = function () {
+    this.setAttribute('data-original-title', this.value);
+    $(this).tooltip('show');
+}
+
+var sliderfrequency = document.getElementById("sliderfrequency");
+sliderfrequency.oninput = function () {
+    this.setAttribute('data-original-title', this.value);
+    $(this).tooltip('show');
+}
 var max_textarea = false;
 var textarea = document.getElementById("Q");
 var $Q = $("#Q");
@@ -322,6 +349,10 @@ function sendMsg() {
     var msgid_u = generateGUID();
     var msgid_g = generateGUID();
     assistansBoxId = msgid_g;
+    var temperature = $("#slidertemperature").val();
+    var topp = $("#slidertopp").val();
+    var presence = $("#sliderpresence").val();
+    var frequency = $("#sliderfrequency").val();
     var data = {
         "msg": msg,
         "chatid": chatid,
@@ -331,7 +362,11 @@ function sendMsg() {
         "chatgroupid": chatgroupid,
         "ip": IP,
         "image_path": image_path,
-        "file_list": []
+        "file_list": [],
+        "temperature": parseFloat(temperature),
+        "top_p": parseFloat(topp),
+        "presence_penalty": parseFloat(presence),
+        "frequency_penalty": parseFloat(frequency)
     };
     // 遍历 onfilearr 数组，在每次迭代中将文件名添加到 file_list
     if (onfilearr.length > 0) {

@@ -155,6 +155,11 @@ function getNotice() {
                     $("#notice-box").html(res.data);
                     $(".speech-bubble-left").html(res.data);
                     noticemsg = res.data;
+                    var pathname = window.location.pathname;
+                    pathname = pathname.toLowerCase();
+                    if (pathname == "/openall/systemnotice") {
+                        $("#content").val(noticemsg);
+                    }
                 }
                 else {
                     noticemsg = "暂无公告";

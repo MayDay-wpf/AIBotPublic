@@ -20,6 +20,7 @@ namespace aibotPro.Models
         public string BaseUrl { get; set; }
         [StringLength(100)]
         public string ApiKey { get; set; }
+        public bool? VisionModel { get; set; }
         public int? Seq { get; set; }
     }
 }

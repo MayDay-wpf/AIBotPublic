@@ -18,7 +18,7 @@ namespace aibotPro.Models
         public string OrderCode { get; set; }
         [Column(TypeName = "money")]
         public decimal? OrderMoney { get; set; }
-        [StringLength(50)]
+        [StringLength(500)]
         public string OrderType { get; set; }
         [StringLength(50)]
         public string OrderStatus { get; set; }

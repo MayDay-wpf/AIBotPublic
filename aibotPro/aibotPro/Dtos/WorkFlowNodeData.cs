@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Runtime.Serialization;
+using static OpenAI.ObjectModels.SharedModels.IOpenAiModels;
 
 namespace aibotPro.Dtos
 {
@@ -56,6 +57,9 @@ namespace aibotPro.Dtos
                     break;
                 case "web":
                     Data = RawData.ToObject<WebData>();
+                    break;
+                case "ifelse":
+                    Data = RawData.ToObject<IfElseData>();
                     break;
                 case "end":
                     Data = RawData.ToObject<EndData>();
@@ -183,6 +187,13 @@ namespace aibotPro.Dtos
         public new WebOutput Output { get; set; }
         public override object GetOutput() => Output;
     }
+    //IF-ELSE派生类
+    public class IfElseData : NodeSpecificData
+    {
+        [JsonProperty("output")]
+        public new IfElse Output { get; set; }
+        public override object GetOutput() => Output;
+    }
 
     // End派生类
     public class EndData : NodeSpecificData
@@ -220,6 +231,12 @@ namespace aibotPro.Dtos
 
         [JsonProperty("requestUrl")]
         public string RequestUrl { get; set; }
+        [JsonProperty("judgescript")]
+        public string JudgeScript { get; set; }
+        [JsonProperty("httpmaxcount")]
+        public int HttpMaxcount { get; set; }
+        [JsonProperty("httpdelayed")]
+        public int HttpDelayed { get; set; }
     }
 
     public class LLMOutput
@@ -233,8 +250,12 @@ namespace aibotPro.Dtos
         public int Retry { get; set; }
         [JsonProperty("stream")]
         public bool Stream { get; set; }
+        [JsonProperty("jsonmodel")]
+        public bool JsonModel { get; set; }
         [JsonProperty("judgescript")]
         public string JudgeScript { get; set; }
+        [JsonProperty("llmmaxcount")]
+        public int LLMMaxcount { get; set; }
     }
     public class DALLOutput
     {
@@ -258,6 +279,11 @@ namespace aibotPro.Dtos
     {
         [JsonProperty("prompt")]
         public string Prompt { get; set; }
+    }
+    public class IfElse
+    {
+        [JsonProperty("judgresult")]
+        public string JudgResult { get; set; }
     }
     public class EndOutput
     {

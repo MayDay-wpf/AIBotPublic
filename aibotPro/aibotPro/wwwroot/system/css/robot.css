@@ -162,7 +162,7 @@
 
 .bot-chat-window {
     display: none;
-    position: absolute;
+    position: fixed;
     width: 300px;
     height: 430px;
     background-color: #fff;

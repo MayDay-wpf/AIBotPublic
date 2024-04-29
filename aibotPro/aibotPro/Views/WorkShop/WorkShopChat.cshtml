@@ -131,6 +131,44 @@
                     <i data-feather="plus">
                     </i>
                 </a>
+                &nbsp;&nbsp;
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#settingsModal">
+                    <i data-feather="settings"></i> 设置
+                </button>
+                <div class="modal fade" id="settingsModal" tabindex="-1" role="dialog" aria-labelledby="settingsModalLabel" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="settingsModalLabel">设置</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label>温度(temperature)</label><br />
+                                    <span style="font-size:12px;color:gray">值越大，回复越随机</span>
+                                    <input type="range" class="custom-range" id="slidertemperature" min="0.0" max="1" value="0.5" data-toggle="tooltip" data-placement="top" title="0.5" step="0.1">
+                                </div>
+                                <div class="form-group">
+                                    <label>采样(top_p)</label><br />
+                                    <span style="font-size:12px;color:gray">值越大，回复越随机不要和温度一起修改</span>
+                                    <input type="range" class="custom-range" id="slidertopp" min="0.0" max="1" value="1" data-toggle="tooltip" data-placement="top" title="1" step="0.1">
+                                </div>
+                                <div class="form-group">
+                                    <label>惩罚(presence_penalty)</label><br />
+                                    <span style="font-size:12px;color:gray">值越大，越有可能扩展到新话题</span>
+                                    <input type="range" class="custom-range" id="sliderpresence" min="-2" max="2" value="0.5" data-toggle="tooltip" data-placement="top" title="0.5" step="0.1">
+                                </div>
+                                <div class="form-group">
+                                    <label>惩罚频率(frequency_penalty)</label><br />
+                                    <span style="font-size:12px;color:gray">值越大，越有可能降低重复字词</span>
+                                    <input type="range" class="custom-range" id="sliderfrequency" min="-2" max="2" value="0.5" data-toggle="tooltip" data-placement="top" title="0.5" step="0.1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             @* <li class="divider-text">

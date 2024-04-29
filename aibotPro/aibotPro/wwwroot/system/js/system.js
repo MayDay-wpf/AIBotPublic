@@ -416,6 +416,21 @@ function isAdmin() {
                         </nav>
                     </li>
                     <li class="nav-item system-admin-aibot-pro">
+                        <a href="" class="nav-link with-sub" id="mall-main-menu">
+                            <i data-feather="shopping-cart">
+                            </i>
+                            商城管理 (Mall)
+                        </a>
+                        <nav class="nav nav-sub">
+                            <a href="/OpenAll/Grounding" class="nav-sub-link" id="grounding_mall_nav">
+                                商品上架（Grounding）
+                            </a>
+                            <a href="/OpenAll/Goods" class="nav-sub-link" id="goods_mall_nav">
+                                商品管理（Goods）
+                            </a>
+                        </nav>
+                    </li>
+                    <li class="nav-item system-admin-aibot-pro">
                         <a href="" class="nav-link with-sub" id="notification-main-menu">
                             <i data-feather="mail">
                             </i>

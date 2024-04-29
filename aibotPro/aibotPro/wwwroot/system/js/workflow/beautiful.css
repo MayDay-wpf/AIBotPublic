@@ -657,3 +657,18 @@ table {
 .side-panel-container {
     position: relative;
 }
+.drawflow-node.ifelse .outputs .output:nth-child(1):before {
+    display: block;
+    content: "True";
+    position: relative;
+    right: 30px;
+    font-size:12px;
+}
+
+.drawflow-node.ifelse .outputs .output:nth-child(2):before {
+    display: block;
+    content: "False";
+    position: relative;
+    right: 30px;
+    font-size: 12px;
+}

@@ -16,6 +16,9 @@ var httpdata = {
         paramsItems: [],
         headersItems: [],
         cookiesItems: [],
+        judgescript: "",
+        httpmaxcount: 10,
+        httpdelayed: 0
     }
 }
 var LLMdata = {
@@ -23,7 +26,10 @@ var LLMdata = {
         aimodel: "",
         prompt: "",
         retry: 0,
-        stream: false
+        stream: false,
+        jsonmodel: false,
+        judgescript: "",
+        llmmaxcount: 10
     }
 }
 var DALLdata = {
@@ -31,8 +37,7 @@ var DALLdata = {
         prompt: "",
         size: "",
         quality: "",
-        retry: 0,
-        judgescript: ""
+        retry: 0
     }
 }
 var DALLsmdata = {
@@ -50,6 +55,11 @@ var enddata = {
     output: {
         endaction: "",
         endscript: ""
+    }
+}
+var ifelsedata = {
+    output: {
+        judgresult: ""
     }
 }
 var regex = /'/;
@@ -107,6 +117,9 @@ function saveNodeData() {
                     paramsItems: [],
                     headersItems: [],
                     cookiesItems: [],
+                    judgescript: "",
+                    httpmaxcount: 10,
+                    httpdelayed: 0
                 }
             }
             var isEmpty = false;
@@ -169,9 +182,19 @@ function saveNodeData() {
                 layer.msg('请填写请求地址', { icon: 2, time: 2500 });
                 return false;
             }
+            var js = httpCodeeditor.getValue();
             httpdata.output.type = $('.http-type').val();
             httpdata.output.requestUrl = $('.requestUrl').val();
             httpdata.output.jsontemplate = jsontemplate.trim(); // 将 jsontemplate 添加到数组中
+            httpdata.output.judgescript = js;
+            if ($('.httpmaxcount').val() != "")
+                httpdata.output.httpmaxcount = $('.httpmaxcount').val();
+            else
+                httpdata.output.httpmaxcount = 10;
+            if ($('.httpdelayed').val() != "")
+                httpdata.output.httpdelayed = $('.httpdelayed').val();
+            else
+                httpdata.output.httpdelayed = 0;
             editor.updateNodeDataFromId(thisNodeId, httpdata);
             saveNodeDataToCache();
             return true;
@@ -182,13 +205,17 @@ function saveNodeData() {
                     aimodel: "",
                     prompt: "",
                     retry: 0,
-                    judgescript: ""
+                    stream: false,
+                    jsonmodel: false,
+                    judgescript: "",
+                    llmmaxcount: 10
                 }
             }
             var AImodel = $('.aimodel').val();
             var Prompt = $('.prompt').val();
             var Retry = $('.retry').val();
             var Stream = $('.stream').val();
+            var JsonModel = $('.jsonmodel').val();
             LLMdata.output.aimodel = AImodel;
             if (Prompt == "") {
                 layer.msg('请填写提示词', { icon: 2, time: 2500 });
@@ -202,6 +229,7 @@ function saveNodeData() {
             LLMdata.output.prompt = Prompt;
             LLMdata.output.retry = Retry;
             LLMdata.output.stream = Stream;
+            LLMdata.output.jsonmodel = JsonModel;
             LLMdata.output.judgescript = js;
             editor.updateNodeDataFromId(thisNodeId, LLMdata);
             saveNodeDataToCache();
@@ -278,6 +306,13 @@ function saveNodeData() {
             }
             DALLdata.output.prompt = Prompt;
             editor.updateNodeDataFromId(thisNodeId, DALLdata);
+            saveNodeDataToCache();
+            return true;
+            break;
+        case 'ifelse':
+            var js = ifelseCodeeditor.getValue();
+            ifelsedata.output.judgresult = js;
+            editor.updateNodeDataFromId(thisNodeId, ifelsedata);
             saveNodeDataToCache();
             return true;
             break;

@@ -72,6 +72,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[Goods]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[IPlook]",
          "ObjectType": 0
       },

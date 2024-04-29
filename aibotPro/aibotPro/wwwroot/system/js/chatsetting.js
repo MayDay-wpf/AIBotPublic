@@ -15,6 +15,7 @@ function addStLine() {
                  <td><input type="text" class="form-control" maxlength="50" placeholder="模型名称(实际请求时使用)" /></td>
                  <td><input type="text" class="form-control" maxlength="500" placeholder="Base URL"  /></td>
                  <td><input type="text" class="form-control" maxlength="500" placeholder="API KEY"  /></td>
+                 <td><input type="checkbox" class="form-control"></td>
                  <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`
     $("#AddSt").append(str);
     feather.replace();
@@ -74,7 +75,7 @@ function saveChatSetting() {
         var name = $(row).find("input").eq(1).val();
         var baseUrl = $(row).find("input").eq(2).val();
         var apiKey = $(row).find("input").eq(3).val();
-
+        var visionModel = $(row).find("input").eq(4).prop('checked');
         if (!removeSpaces(nickname) || !removeSpaces(name) || !removeSpaces(baseUrl) || !removeSpaces(apiKey)) {
             balert('请将空的【自定义对话模型】输入行删除，或填写完整', 'danger', false, 1500, 'top');
             issave = false;
@@ -84,6 +85,7 @@ function saveChatSetting() {
             formData.append(`MyChatModel[${index}].ChatModel`, name);
             formData.append(`MyChatModel[${index}].ChatBaseURL`, baseUrl);
             formData.append(`MyChatModel[${index}].ChatApiKey`, apiKey);
+            formData.append(`MyChatModel[${index}].VisionModel`, visionModel);
         }
     });
     if (issave) {
@@ -136,11 +138,13 @@ function getChatSetting() {
                     return;
                 if (data.myChatModel != null && data.myChatModel.length > 0) {
                     for (var i = 0; i < data.myChatModel.length; i++) {
+                        var checkedAttr = data.myChatModel[i].visionModel ? 'checked' : '';
                         var str = `<tr>
                                         <td><input type="text" class="form-control" maxlength="50" placeholder="模型昵称" value="${data.myChatModel[i].chatNickName}" /></td>
                                         <td><input type="text" class="form-control" maxlength="50" placeholder="模型名称(实际请求时使用)" value="${data.myChatModel[i].chatModel}" /></td>
                                         <td><input type="text" class="form-control" maxlength="500" placeholder="Base URL" value="${data.myChatModel[i].chatBaseURL}" /></td>
                                         <td><input type="text" class="form-control" maxlength="500" placeholder="API KEY" value="${data.myChatModel[i].chatApiKey}" /></td>
+                                        <td><input type="checkbox" class="form-control" ${checkedAttr}></td>
                                         <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`
                         $("#AddSt").append(str);
                         feather.replace();
@@ -190,9 +194,11 @@ function getAiModelSetting() {
                 if (data == null)
                     return;
                 for (var i = 0; i < data.length; i++) {
+                    var checkedAttr = data[i].visionModel ? 'checked' : '';
                     var str = `<tr>
                                 <td><input type="text" class="form-control" maxlength="50" placeholder="模型昵称" value="${data[i].modelNick}" readonly="readonly" /></td>
-                                <td style="display:none"><input type="text" class="form-control" maxlength="50" placeholder="模型名称(实际请求时使用)" value="${data[i].modelName}" /></td>
+                                <td><input type="text" class="form-control" maxlength="50" placeholder="模型名称" value="${data[i].modelName}" readonly="readonly" /></td>
+                                <td><input type="checkbox" class="form-control" ${checkedAttr} disabled></td>
                                 <td><input type="number" class="form-control" maxlength="500" placeholder="排序" value="${data[i].seq}" /></td></tr>`
                     $("#AddSt2").append(str);
 
@@ -212,7 +218,7 @@ function saveModelSeq() {
         // 非空校验
         var nickname = $(row).find("input").eq(0).val();
         var name = $(row).find("input").eq(1).val();
-        var seq = $(row).find("input").eq(2).val();
+        var seq = $(row).find("input").eq(3).val();
         if (!removeSpaces(nickname) || !removeSpaces(name) || !removeSpaces(seq)) {
             balert('请将空的输入行删除，或填写完整，检查排序是否为纯数字', 'danger', false, 2500, 'top');
             issave = false;
