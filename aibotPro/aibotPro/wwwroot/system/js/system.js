@@ -3,6 +3,7 @@ var IP;
 var Address;
 var Scrolling;
 var HeadImgPath;
+var UserNickText;
 let backgroundImg = '';
 let fontColor = '#000000';
 $(document).ready(function () {
@@ -616,6 +617,7 @@ function getUserInfo() {
             if (res.success) {
                 res = res.data;
                 HeadImgPath = res.headImg;
+                UserNickText = res.nick;
             }
         }
     });

@@ -56,8 +56,17 @@ $(document).ready(function () {
                         formatter: "模型：{b} <br/> 消耗：{c}<br/> 占比：{d}%"
                     },
                     legend: {
+                        type: 'scroll',
                         orient: 'vertical',
-                        left: 'left'
+                        left: 'left',
+                        align: 'left',
+                        pageButtonPosition: 'end',
+                        pageIconColor: '#2f4554',
+                        pageIconInactiveColor: '#aaa',
+                        pageIconSize: 15,
+                        pageTextStyle: {
+                            color: '#fff'
+                        }
                     },
                     series: [
                         {
@@ -74,7 +83,43 @@ $(document).ready(function () {
                             }
                         }
                     ],
-                    responsive: true
+                    responsive: true,
+                    media: [
+                        {
+                            query: {
+                                maxWidth: 600
+                            },
+                            option: {
+                                legend: {
+                                    orient: 'horizontal',
+                                    bottom: 'bottom',
+                                    align: 'center',
+                                    itemWidth: 20,
+                                    itemHeight: 14,
+                                    textStyle: {
+                                        fontSize: 12
+                                    },
+                                    pageButtonItemGap: 15,
+                                    pageButtonPosition: 'end',
+                                    pageFormatter: '{current}/{total}',
+                                    pageIconColor: '#2f4554',
+                                    pageIconInactiveColor: '#aaa',
+                                    pageIconSize: 15,
+                                    pageTextStyle: {
+                                        color: '#333'
+                                    },
+                                    formatter: function (name) {
+                                        return name.length > 6 ? name.slice(0, 6) + '...' : name;
+                                    }
+                                },
+                                series: [
+                                    {
+                                        center: ['50%', '40%']
+                                    }
+                                ]
+                            }
+                        }
+                    ]
                 };
 
                 myChart.setOption(option);

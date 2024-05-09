@@ -531,6 +531,11 @@ function getPluginInfo(plugincode, id, type) {
                 $('#nickname').val(plugin.pnickname);
                 $('#functionname').val(plugin.pfunctionname);
                 $('#functioninfo').val(plugin.pfunctioninfo);
+                if (plugin.popensource === 'yes') {
+                    $('#opensource').prop('checked', true);
+                } else if (plugin.popensource === 'no') {
+                    $('#unopensource').prop('checked', true);
+                }
                 avatar = plugin.pavatar;
                 nickname = plugin.pnickname;
                 functionname = plugin.pfunctionname;

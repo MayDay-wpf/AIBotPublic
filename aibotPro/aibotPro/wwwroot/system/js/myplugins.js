@@ -7,7 +7,32 @@ $(function () {
     $("#myplugins-cygf-nav").addClass('active');
     getMyInstall();
 });
+$(document).ready(function () {
+    $(document).on('change', '.plugin-checkbox', function () {
+        // 将所有其他的复选框设置为未选中
+        $('.plugin-checkbox').not(this).prop('checked', false);
+        // 获取选中的复选框的ID
+        var selectedPluginId = $(this).data('plugin-id');
+        var mustHit = this.checked;
+        //发起请求
+        $.ajax({
+            type: 'Post',
+            url: '/WorkShop/SetMandatoryHit',
+            data: {
+                id: selectedPluginId,
+                mustHit: mustHit
+            },
+            success: function (res) {
+                if (res.success) {
+                    balert(res.msg, "success", false, 1500);
+                } else {
+                    balert(res.msg, "danger", false, 2000);
+                }
+            }
+        });
 
+    });
+});
 //window.onload = function () {
 //    var elem = document.querySelector('#masonry-layout');
 //    new Masonry(elem, {
@@ -42,6 +67,7 @@ function getMyInstall() {
                 var html = '';
                 for (var i = 0; i < res.data.length; i++) {
                     var item = res.data[i];
+                    var change = item.mustHit ? 'checked' : '';
                     html += `<div class="col-lg-3 col-md-6 col-sm-12 mb-4 grid-item">
                                 <div class="card h-100">
                                     <img class="card-img-top" style="width: 50px;height: 50px;margin:10px auto;"
@@ -52,6 +78,9 @@ function getMyInstall() {
                                         <div class="d-flex justify-content-center flex-wrap">
                                             <button class="btn btn-sm btn-secondary" onclick="uninstallPlugin(`+ item.id + `)">卸载</button>
                                         </div>
+                                        <div style="display: flex; justify-content: center; align-items: center;">
+                                            <label class="ml-2"><input type="checkbox" class="plugin-checkbox" name="mandatoryHit" data-plugin-id="` + item.installId + `" ${change}> 是否必须使用 <a href="#" class="header-help-link" onclick="mustHitInfo()"><i data-feather="help-circle"></i></a></label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>`;
@@ -60,6 +89,7 @@ function getMyInstall() {
                     html += '<div class="col-12 text-center grid-item">暂无数据</div>';
                 }
                 $('#masonry-layout').html(html);
+                feather.replace();
                 //var elem = document.querySelector('#masonry-layout');
                 //new Masonry(elem, {
                 //    // 选项
@@ -70,6 +100,11 @@ function getMyInstall() {
             }
         }
     });
+}
+
+function mustHitInfo() {
+    var content = `<p>当您勾选<b>必须使用</b>时，在创意工坊的每次对话都会调用此插件</p>`;
+    showConfirmationModal("是否必须使用说明", content);
 }
 
 function getPlugins() {

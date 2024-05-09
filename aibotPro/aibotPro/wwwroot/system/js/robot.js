@@ -2,6 +2,7 @@
 $(function () {
     if (isMobile()) {
         $('.robot-container').hide();
+        $('.robotSM').hide();
     } else {
         getBotSetting();
         getNotice();
@@ -137,11 +138,22 @@ robotContainer.addEventListener('dblclick', function () {
     chatWindow.style.display = 'block';
     setTranslate(xOffset, yOffset, chatWindow);
 });
+robotContainer.addEventListener('contextmenu', function (event) {
+    event.preventDefault();  // 阻止默认的右键菜单
+    robotContainer.style.display = 'none';
+    $('.robotSM').show();
+});
 
 closeBtn.addEventListener('click', function () {
     chatWindow.style.display = 'none';
     robotContainer.style.display = 'block';
 });
+
+function showRobot() {
+    robotContainer.style.display = 'block';
+    chatWindow.style.display = 'none';
+    $('.robotSM').hide();
+}
 let noticemsg = ""
 function getNotice() {
     //发起请求

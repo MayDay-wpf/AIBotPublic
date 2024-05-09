@@ -272,6 +272,28 @@ function mobileChat(show) {
 var md = window.markdownit();
 var sysmsg = "";
 var jishuqi = 0;
+// 添加显示代码语言的 Labels
+function addLanguageLabels(useSpecificId = false, assistansBoxId = '') {
+    // 根据 useSpecificId 决定选择器的范围
+    var selector = useSpecificId && assistansBoxId ? $("#" + assistansBoxId + " pre code") : $("pre code");
+
+    selector.each(function () {
+        // 仅对尚未添加过语言标签的 code 元素进行处理
+        if ($(this).parent().find('.code-lang-label-container').length === 0) {
+            var lang = $(this).attr('class').match(/language-(\w+)/);
+            if (lang) {
+                // 创建语言标签容器
+                var langLabelContainer = $('<div class="code-lang-label-container" style="background-color: rgb(80, 80, 90);"></div>');
+                // 创建语言标签
+                var langLabel = $('<span class="code-lang-label" style="color: white;">' + lang[1] + '</span>');
+                // 将语言标签添加到容器中
+                langLabelContainer.append(langLabel);
+                // 将语言标签容器插入到代码块的顶部
+                $(this).before(langLabelContainer);
+            }
+        }
+    });
+}
 connection.on('ReceiveWorkShopMessage', function (message) {
     //console.log(message);
     if (!message.isfinish) {
@@ -290,6 +312,7 @@ connection.on('ReceiveWorkShopMessage', function (message) {
                 $("#" + assistansBoxId + " pre code").each(function (i, block) {
                     hljs.highlightElement(block);
                 });
+                addLanguageLabels(true, assistansBoxId);
                 if (Scrolling == 1)
                     chatBody.scrollTop(chatBody[0].scrollHeight);
             }
@@ -307,6 +330,7 @@ connection.on('ReceiveWorkShopMessage', function (message) {
         $("#" + assistansBoxId + " pre code").each(function (i, block) {
             hljs.highlightElement(block);
         });
+        addLanguageLabels(true, assistansBoxId);
         sysmsg = "";
         jishuqi = 0;
         $('.LDI').remove();
@@ -367,7 +391,10 @@ function sendMsg() {
     $("#Q").val("");
     $("#Q").focus();
     var html = `<div class="chat-message" data-group="` + chatgroupid + `">
-                    <div class="avatar"><img src='${HeadImgPath}'/></div>
+                     <div style="display: flex; align-items: center;">
+                        <div class="avatar"><img src='${HeadImgPath}'/></div>
+                        <div class="nickname" style="font-weight: bold; color: black;">${UserNickText}</div>
+                     </div>
                      <div class="chat-message-box">
                        <pre id="`+ msgid_u + `"></pre>
                      </div>
@@ -382,7 +409,10 @@ function sendMsg() {
         $("#" + msgid_u).append(`<br /><img src="` + image_path.replace("wwwroot", "") + `" style="max-width:50%" />`);
     }
     var gpthtml = `<div class="chat-message" data-group="` + chatgroupid + `">
-                    <div class="avatar gpt-avatar">A</div>
+                    <div style="display: flex; align-items: center;">
+                       <div class="avatar gpt-avatar">A</div>
+                       <div class="nickname" style="font-weight: bold; color: black;">AIBot</div>
+                    </div>
                     <div class="chat-message-box">
                         <div id="`+ msgid_g + `"></div><svg width="30" height="30" class="LDI"><circle cx="15" cy="15" r="7.5" fill="black" class="blinking-dot" /></svg>
                     </div>
@@ -601,7 +631,10 @@ function showHistoryDetail(id) {
                     if (content.indexOf('aee887ee6d5a79fdcmay451ai8042botf1443c04') == -1) {
                         content = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                         html += `<div class="chat-message" data-group="` + res.data[i].chatGroupId + `">
-                                    <div class="avatar"><img src='${HeadImgPath}'/></div>
+                                     <div style="display: flex; align-items: center;">
+                                        <div class="avatar"><img src='${HeadImgPath}'/></div>
+                                        <div class="nickname" style="font-weight: bold; color: black;">${UserNickText}</div>
+                                     </div>
                                      <div class="chat-message-box">
                                        <pre id="`+ res.data[i].chatCode + `">` + content + `</pre>
                                      </div>
@@ -613,7 +646,10 @@ function showHistoryDetail(id) {
                     } else {
                         var contentarr = content.split("aee887ee6d5a79fdcmay451ai8042botf1443c04");
                         html += `<div class="chat-message" data-group="` + res.data[i].chatGroupId + `">
-                                <div class="avatar"><img src='${HeadImgPath}'/></div>
+                                 <div style="display: flex; align-items: center;">
+                                    <div class="avatar"><img src='${HeadImgPath}'/></div>
+                                    <div class="nickname" style="font-weight: bold; color: black;">${UserNickText}</div>
+                                 </div>
                                  <div class="chat-message-box">
                                    <pre id="`+ res.data[i].chatCode + `">` + contentarr[0].replace(/</g, "&lt;").replace(/>/g, "&gt;") + contentarr[1] + `</pre>
                                  </div>
@@ -629,7 +665,10 @@ function showHistoryDetail(id) {
                     var markedcontent = marked(content); //md.render(content);
                     var encoder = new TextEncoder();
                     html += `<div class="chat-message" data-group="` + res.data[i].chatGroupId + `">
-                                <div class="avatar gpt-avatar">A</div>
+                                <div style="display: flex; align-items: center;">
+                                   <div class="avatar gpt-avatar">A</div>
+                                   <div class="nickname" style="font-weight: bold; color: black;">AIBot</div>
+                                </div>
                                 <div class="chat-message-box">
                                     <div id="`+ res.data[i].chatCode + `">` + markedcontent + `</div>
                                 </div>
@@ -646,9 +685,12 @@ function showHistoryDetail(id) {
             $(".chat-message pre code").each(function (i, block) {
                 hljs.highlightElement(block);
             });
+            addLanguageLabels();
             addCopyBtn();
             addExportButtonToTables();
             feather.replace();
+            //滚动到最底部
+            chatBody.scrollTop(chatBody[0].scrollHeight);
         },
         error: function (err) {
             //window.location.href = "/Users/Login";

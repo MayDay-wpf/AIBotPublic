@@ -147,7 +147,7 @@ function seePlugin(id) {
         success: function (res) {
             if (res.success) {
                 if (res.data == null) {
-                    balert('无法查看该插件', "danger", false, 2000, "top");
+                    balert('无法查看该插件', "danger", false, 2000, "center");
                 }
                 else {
                     window.location.href = '/WorkShop/MyWork?plugincode=' + res.data.pcode + '&id=' + res.data.id + '&type=see';

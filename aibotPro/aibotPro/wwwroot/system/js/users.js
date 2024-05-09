@@ -20,9 +20,23 @@ function isEmail(str) {
     var reg = /^(?:\w+\.?)*\w+@(?:qq|gmail|163|126)\.(?:com|cn|com\.cn)$/;
     return reg.test(str);
 }
+//按钮进入加载状态
+function loadingBtn(dom) {
+    //禁用按钮
+    $(dom).prop('disabled', true)
+    $(dom).append(` <span class="spinner-border spinner-border-sm"role="status"aria-hidden="true"></span>`);
+}
+//解除按钮加载状态
+function unloadingBtn(dom) {
+    //恢复按钮
+    $(dom).prop('disabled', false)
+    $(dom).find('span').remove();
+}
 function regiest() {
+    loadingBtn('.regiest');
     if (!$("#agree").is(":checked")) {
         balert('请勾选同意用户使用条例', 'danger', true, 2000, "top");
+        unloadingBtn('.regiest');
         return;
     }
     var nick = $('#nick').val().trim();
@@ -34,11 +48,13 @@ function regiest() {
         //nick小于2个字符或者大于10个字符
         if (nick.length < 2 || nick.length > 10) {
             balert('昵称长度应该在2-10之间', 'danger', true, 2000, "top");
+            unloadingBtn('.regiest');
             return;
         }
         //密码小于6个字符或者大于16个字符
         if (password.length < 6 || password.length > 16) {
             balert('密码长度应该在6-16之间', 'danger', true, 2000, "top");
+            unloadingBtn('.regiest');
             return;
         }
         //密码只允许数字和字母
@@ -50,6 +66,7 @@ function regiest() {
         //邮箱格式不正确
         if (!isEmail(email)) {
             balert('只允许使用qq,gmail,163,126 邮箱', 'danger', true, 2000, "top");
+            unloadingBtn('.regiest');
             return;
         }
         //var data = {
@@ -79,6 +96,7 @@ function regiest() {
             processData: false, // 确保 jQuery 不要处理数据
             contentType: false, // 不要设置任何内容类型头
             success: function (res) {
+                unloadingBtn('.regiest');
                 if (res.success) {
                     window.location.href = '/Users/Login';
                 }
@@ -86,12 +104,15 @@ function regiest() {
                     balert(res.msg, 'danger', true, 2000, "top");
             },
             error: function (xhr, status, error) {
+                unloadingBtn('.regiest');
                 // 处理错误的回调
                 console.error(error);
             }
         });
-    } else
+    } else {
         balert('请填写完整所有资料', 'danger', true, 2000, "top");
+        unloadingBtn('.regiest');
+    }
 }
 function login() {
     var account = $('#email').val().trim();

@@ -84,6 +84,11 @@ namespace aibotPro.Models
                 entity.ToView("IPlook_Stats_View");
             });
 
+            modelBuilder.Entity<PluginsInstall>(entity =>
+            {
+                entity.Property(e => e.MustHit).HasDefaultValueSql("((0))");
+            });
+
             modelBuilder.Entity<UISetting>(entity =>
             {
                 entity.Property(e => e.Id).ValueGeneratedNever();

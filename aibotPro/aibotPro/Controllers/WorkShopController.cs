@@ -101,7 +101,7 @@ namespace aibotPro.Controllers
                     _context.PluginsParams.RemoveRange(oldParam);
                 }
                 //删除原有的Json模板
-                var oldPrJson=_context.PluginsJsonPrs.Where(x => x.PrCode == oldPlugin.Pcode);
+                var oldPrJson = _context.PluginsJsonPrs.Where(x => x.PrCode == oldPlugin.Pcode);
                 if (oldPrJson != null)
                 {
                     _context.PluginsJsonPrs.RemoveRange(oldPrJson);
@@ -383,6 +383,20 @@ namespace aibotPro.Controllers
                 success = true,
                 data = list
             });
+        }
+        [Authorize]
+        [HttpPost]
+        public IActionResult SetMandatoryHit(int id, bool mustHit)
+        {
+            string username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            bool status = _workShop.SetMandatoryHit(username, id, mustHit);
+            //返回数据
+            return Json(new
+            {
+                success = status,
+                msg = status ? "更新成功" : "更新失败"
+            });
+
         }
         [Authorize]
         [HttpPost]

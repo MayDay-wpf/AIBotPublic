@@ -788,5 +788,24 @@ namespace aibotPro.Service
                 return JsonConvert.DeserializeObject<UISettingDto>(uISetting);
             }
         }
+        public void CopyPropertiesTo<T, TU>(T source, TU dest)
+        {
+            var sourceProps = typeof(T).GetProperties().Where(x => x.CanRead).ToList();
+            var destProps = typeof(TU).GetProperties()
+                .Where(x => x.CanWrite && sourceProps.Any(sp => sp.Name == x.Name)).ToList();
+
+            foreach (var sourceProp in sourceProps)
+            {
+                if (destProps.Any(x => x.Name == sourceProp.Name))
+                {
+                    var p = destProps.First(x => x.Name == sourceProp.Name);
+                    if (p.CanWrite) // 判断是否可写
+                    {
+                        // 将源对象的属性值赋给目标对象的同名属性
+                        p.SetValue(dest, sourceProp.GetValue(source, null), null);
+                    }
+                }
+            }
+        }
     }
 }

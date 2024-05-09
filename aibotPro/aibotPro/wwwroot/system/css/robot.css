@@ -50,6 +50,10 @@
     .robot-container {
         display: none;
     }
+
+    .robotSM {
+        display: none;
+    }
 }
 
 @font-face {
@@ -597,3 +601,15 @@
         border-bottom-left-radius: 40px;
     }
 }
+
+.robotSM {
+    width: 300px;
+    margin-left: 80px;
+    cursor: pointer;
+    display: none;
+}
+
+    .robotSM img {
+        width: 30px;
+        height: auto;
+    }

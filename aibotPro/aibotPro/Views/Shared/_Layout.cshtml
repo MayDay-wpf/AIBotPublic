@@ -11,9 +11,9 @@
     <meta name="keywords" content="AI, ChatGPT, GPT4, MJ绘画, SD绘画, Midjourney, DALL-E3, 知识库, 免费, AI文件处理, AI文件上传, GPT免费">
     <link href="~/static/css/all.min.css" rel="stylesheet">
     <link href="~/static/css/ionicons.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="~/static/css/cassie.css?v1">
+    <link rel="stylesheet" href="~/static/css/cassie.css?v1.2">
     <link href="~/static/css/bootstrap-tagsinput.css" rel="stylesheet" />
-    <link href="~/system/css/robot.css" rel="stylesheet" />
+    <link href="~/system/css/robot.css?v1" rel="stylesheet" />
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/static/js/bootstrap-tagsinput.min.js"></script>
     <script src="~/static/js/bootstrap.bundle.min.js"></script>
@@ -130,6 +130,9 @@
                 <small class="sidebar-logo-headline">
                     AIBot Pro System
                 </small>
+            </div>
+            <div class="robotSM" onclick="showRobot()">
+                <img src="~/system/images/robot_sm.png" />
             </div>
         </div>
         <div id="dpSidebarBody" class="sidebar-body">
@@ -396,7 +399,7 @@
         @RenderBody()
     </div>
     <script src="~/system/js/signalr.min.js"></script>
-    <script src="~/system/js/robot.js"></script>
+    <script src="~/system/js/robot.js?v1"></script>
     <script src="~/system/js/marked.min.js"></script>
     <link href="~/system/css/atom-one-dark.min.css" rel="stylesheet" />
     <script src="~/system/js/highlight.min.js"></script>

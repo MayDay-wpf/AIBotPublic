@@ -245,18 +245,22 @@ namespace aibotPro.Service
             };
             return workShopPlugin;
         }
-        public List<Plugin> GetPluginInstall(string account)
+        public List<PluginDto> GetPluginInstall(string account)
         {
             //获取用户安装的插件
             var pluginsInstall = _context.PluginsInstalls.Where(x => x.Account == account).ToList();
             //遍历插件安装记录，获取插件信息
-            List<Plugin> plugins = new List<Plugin>();
+            List<PluginDto> plugins = new List<PluginDto>();
             foreach (var item in pluginsInstall)
             {
                 var plugin = _context.Plugins.Where(x => x.Pcode == item.PluginsCode).FirstOrDefault();
                 if (plugin != null)
                 {
-                    plugins.Add(plugin);
+                    PluginDto pluginDto = new PluginDto();
+                    _systemService.CopyPropertiesTo(plugin, pluginDto);
+                    pluginDto.MustHit = item.MustHit == null ? false : item.MustHit;
+                    pluginDto.InstallId = item.Id;
+                    plugins.Add(pluginDto);
                 }
             }
             return plugins;
@@ -368,6 +372,7 @@ namespace aibotPro.Service
                     quality = entry.Value.ToString();
                 }
                 pluginResDto.result = await _aiServer.CreateDALLdraw(prompt, drawsize, quality, baseUrl, apiKey);
+                pluginResDto.dallprompt = prompt;
                 //扣费
                 if (shouldPay)
                     await _financeService.CreateUseLogAndUpadteMoney(account, "DALLE3", 0, 0, true);
@@ -582,7 +587,7 @@ namespace aibotPro.Service
                     {
                         runScript += jsCode;
                         jsEngine.Execute(runScript);
-                        pluginResDto.result = jsEngine.CallFunction<string>(fn.Name, arr);
+                        pluginResDto.result = jsEngine.CallFunction<string>(fn.Name);
                         if (useHtml == "true")
                         {
                             pluginResDto.doubletreating = false;
@@ -801,7 +806,27 @@ namespace aibotPro.Service
             }
             return nodedata;
         }
-
+        public bool SetMandatoryHit(string account, int id, bool mustHit)
+        {
+            //设置插件必中
+            var plugin = _context.PluginsInstalls.Where(x => x.Account == account && x.Id == id).FirstOrDefault();
+            if (plugin != null)
+            {
+                if (mustHit)
+                {
+                    //其他插件全部设置为非必中
+                    var otherInstalls = _context.PluginsInstalls.Where(x => x.Account == account && x.Id != id).ToList();
+                    foreach (var otherPlugin in otherInstalls)
+                    {
+                        otherPlugin.MustHit = false;
+                    }
+                }
+                plugin.MustHit = mustHit;
+                _context.SaveChanges();
+                return true;
+            }
+            return false;
+        }
         #region workflow通用函数
         private static string FillJsonTemplate(string jsonTemplate, Dictionary<string, string> parameters)
         {

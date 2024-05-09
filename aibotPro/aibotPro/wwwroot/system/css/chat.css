@@ -27,3 +27,20 @@
     position: fixed; /* 固定位置按钮 */
     z-index: 1000; /* 确保按钮显示在其他内容上方 */
 }
+.copy-container {
+    border-bottom-left-radius: 10px; /* 左下角圆角 */
+    border-bottom-right-radius: 10px; /* 右下角圆角 */
+}
+/* 代码语言显示标签样式 */
+.code-lang-label-container {
+    background-color: rgb(80, 80, 90); /* 设置背景色 */
+    border-top-left-radius: 10px; /* 左上角圆角 */
+    border-top-right-radius: 10px; /* 右上角圆角 */
+    padding: 2px 10px; /* 内填充 */
+}
+
+/* 代码语言显示标签样式 */
+.code-lang-label {
+    color: #fff; /* 文字颜色 */
+    font-size: 0.75em; /* 字体大小 */
+}

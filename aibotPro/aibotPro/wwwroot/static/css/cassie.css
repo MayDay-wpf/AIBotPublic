@@ -50,7 +50,7 @@ html {
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
     overflow-x: hidden;
-    scrollbar-width: none;
+    /*scrollbar-width: none;*/
 }
 
 article,
@@ -72365,6 +72365,7 @@ button.bg-twitter:focus,
     word-wrap: break-word;
     overflow-x: scroll;
     -ms-overflow-style: none;
+    -ms-overflow-style: -ms-autohiding-scrollbar;
 }
 
     .chat-message-box::-webkit-scrollbar {
@@ -72372,7 +72373,7 @@ button.bg-twitter:focus,
     }
 
 .chat-body-content::-webkit-scrollbar {
-    display: none;
+    /*display: none;*/
 }
 
 .chat-message-box code {
@@ -72395,6 +72396,7 @@ button.bg-twitter:focus,
     flex-grow: 1;
     /* 允许文本区域填充剩余空间 */
     display: inline;
+    -ms-overflow-style: -ms-autohiding-scrollbar;
 }
 
 .chat-message-box p {
@@ -72407,11 +72409,12 @@ button.bg-twitter:focus,
      border: 1px solid #ccc; */
     color: #333;
     font-size: 15px;
-    overflow: scroll;
+    /*overflow: scroll;*/
     /* 防止内容溢出 */
     flex-grow: 1;
     /* 允许文本区域填充剩余空间 */
-    display: inline;
+    /*display: inline;*/
+    -ms-overflow-style: -ms-autohiding-scrollbar;
 }
 
 /* 将.chat-message-box中的所有元素设为inline */

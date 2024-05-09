@@ -17,6 +17,7 @@ namespace aibotPro.Models
         public string Account { get; set; }
         [StringLength(50)]
         public string PluginsCode { get; set; }
+        public bool? MustHit { get; set; }
         [Column(TypeName = "datetime")]
         public DateTime? CreateTime { get; set; }
     }

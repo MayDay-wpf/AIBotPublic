@@ -1,6 +1,7 @@
 ﻿using aibotPro.Dtos;
 using aibotPro.Models;
 using OpenAI.ObjectModels.RequestModels;
+using System.Security.Principal;
 
 namespace aibotPro.Interface
 {
@@ -28,7 +29,7 @@ namespace aibotPro.Interface
         WorkShopPlugin GetPlugin(int pluginId, string account, string pcode = "", string pfunctionName = "");
 
         //获取插件安装列表
-        List<Plugin> GetPluginInstall(string account);
+        List<PluginDto> GetPluginInstall(string account);
 
         //获取插件的参数列表
         List<PluginParamDto> GetPluginParams(int pluginId);
@@ -45,5 +46,8 @@ namespace aibotPro.Interface
 
         //获取工作流节点数据
         Task<string> GetWorkFlowNodeData(string workflowcode);
+
+        //更新插件的命中
+        bool SetMandatoryHit(string account,int id, bool mustHit);
     }
 }

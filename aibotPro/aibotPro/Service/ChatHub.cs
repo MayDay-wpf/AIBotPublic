@@ -246,7 +246,7 @@ namespace aibotPro.Service
                     {
                         //如果是新对话直接填充用户输入
                         Message message = new Message();
-                        if (!string.IsNullOrEmpty(chatDto.system_prompt))
+                        if (!string.IsNullOrEmpty(chatDto.system_prompt) && chatDto.aiModel != "ERNIE-Bot-4")
                         {
                             message.Role = "system";
                             message.Content = chatDto.system_prompt;
@@ -309,18 +309,21 @@ namespace aibotPro.Service
                         historyCount = chatSetting.SystemSetting.HistoryCount;
                     List<ChatHistory> chatHistories = _aiServer.GetChatHistories(Account, chatId, historyCount);
                     //遍历填充历史记录
+                    bool systemPromptAdded = false;  // 添加一个标志来控制系统提示词是否已填充
+
                     foreach (var item in chatHistories)
                     {
                         input += item.Chat;
                         if (!isVisionModel)
                         {
                             Message message = new Message();
-                            if (!string.IsNullOrEmpty(chatDto.system_prompt))
+                            if (!systemPromptAdded && !string.IsNullOrEmpty(chatDto.system_prompt) && chatDto.aiModel != "ERNIE-Bot-4")
                             {
                                 message.Role = "system";
                                 message.Content = chatDto.system_prompt;
                                 messages.Add(message);
                                 input += chatDto.system_prompt;
+                                systemPromptAdded = true;  // 更新标志状态，表明系统提示词已经添加
                             }
                             message = new Message();
                             message.Role = item.Role;
@@ -329,12 +332,11 @@ namespace aibotPro.Service
                         }
                         else
                         {
-
-                            //Vision
+                            // Vision
                             VisionChatMesssage hisvisionChatMesssage = new VisionChatMesssage();
                             List<VisionContent> hiscontent = new List<VisionContent>();
                             VisionContent hisvisionContent = new VisionContent();
-                            if (!string.IsNullOrEmpty(chatDto.system_prompt) && chatDto.aiModel != "gemini-pro-vision")
+                            if (!systemPromptAdded && !string.IsNullOrEmpty(chatDto.system_prompt) && chatDto.aiModel != "gemini-pro-vision")
                             {
                                 hisvisionChatMesssage.role = "system";
                                 hisvisionContent.text = chatDto.system_prompt;
@@ -342,17 +344,15 @@ namespace aibotPro.Service
                                 hisvisionChatMesssage.content = hiscontent;
                                 tmpmsg_v.Add(hisvisionChatMesssage);
                                 input += chatDto.system_prompt;
+                                systemPromptAdded = true;  // 更新标志状态
                             }
                             hisvisionChatMesssage = new VisionChatMesssage();
                             if (item.Chat.Contains("aee887ee6d5a79fdcmay451ai8042botf1443c04"))
                             {
                                 hisvisionContent = new VisionContent();
                                 hisvisionContent.type = "image_url";
-                                // 正则表达式找到<img>标签的src属性
                                 const string pattern = @"<img.+?src=[""'](.*?)[""'].*?>";
-                                // 实例化正则表达式对象
                                 Regex regex = new Regex(pattern, RegexOptions.IgnoreCase);
-                                // 在文本字符串上进行匹配正则表达式的模式
                                 Match match = regex.Match(item.Chat);
                                 VisionImg visionImg1 = new VisionImg();
                                 visionImg1.url = match.Groups[1].Value;
@@ -367,9 +367,7 @@ namespace aibotPro.Service
                             hisvisionChatMesssage.role = item.Role;
                             hisvisionChatMesssage.content = hiscontent;
                             tmpmsg_v.Add(hisvisionChatMesssage);
-
                         }
-
                     }
                     if (!isVisionModel)
                     {
@@ -594,6 +592,7 @@ namespace aibotPro.Service
                                     .Validate()
                                     .Build();
                 var mytools = new List<ToolDefinition>();
+                List<PluginDto> myplugins = new List<PluginDto>();
                 if (onknowledge)//知识库检索状态
                 {
                     mytools.Add(ToolDefinition.DefineFunction(sysKnowledgeSearch));
@@ -608,7 +607,7 @@ namespace aibotPro.Service
                     }
                     mytools.Add(ToolDefinition.DefineFunction(fnGoogleSearch));
                     //获取用户插件列表
-                    var myplugins = _workShop.GetPluginInstall(Account);
+                    myplugins = _workShop.GetPluginInstall(Account);
                     if (myplugins != null && myplugins.Count > 0)
                     {
                         foreach (var pluginitem in myplugins)
@@ -723,14 +722,22 @@ namespace aibotPro.Service
                 ChatCompletionCreateRequest chatCompletionCreate = new ChatCompletionCreateRequest();
                 chatCompletionCreate.Messages = chatMessages;
                 chatCompletionCreate.Tools = mytools;
-                //if (onknowledge)
-                //    chatCompletionCreate.ToolChoice = new ToolChoice() {
-                //        Type="function",
-                //        Function = new ToolChoice.FunctionTool()
-                //        {
-                //            Name = "search_knowledge_base",
-                //        }
-                //    };
+                //插件选择
+                var tool_choice = myplugins.Where(x => x.MustHit == true).FirstOrDefault();
+                if (tool_choice != null)
+                {
+                    if (!onknowledge)
+                    {
+                        chatCompletionCreate.ToolChoice = new ToolChoice()
+                        {
+                            Type = "function",
+                            Function = new ToolChoice.FunctionTool()
+                            {
+                                Name = tool_choice.Pfunctionname
+                            }
+                        };
+                    }
+                }
                 chatCompletionCreate.Stream = true;
                 chatCompletionCreate.Model = chatDto.aiModel;
                 if (chatDto.temperature != null)
@@ -873,10 +880,14 @@ namespace aibotPro.Service
                                                     chatRes.message = res3;
                                                     await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                                                     Thread.Sleep(200);
-                                                    string res4 = @$"<br><b>如有需要，请及时下载您的图片，图片缓存我们将定时删除</b><a href=""{pluginResDto.result}"" target=""_blank"">【点击这里下载图片】</a>";
+                                                    string res4 = @$"<br>提示词：<b>{pluginResDto.dallprompt}</b>";
                                                     chatRes.message = res4;
                                                     await Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                                                    res = res1 + res2 + res3 + res4;
+                                                    Thread.Sleep(200);
+                                                    string res5 = @$"<br><b>如有需要，请及时下载您的图片，图片缓存我们将定时删除</b><a href=""{pluginResDto.result}"" target=""_blank"">【点击这里下载图片】</a>";
+                                                    chatRes.message = res5;
+                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                                                    res = res1 + res2 + res3 + res4 + res5;
                                                     break;
                                                 case "html":
                                                     res = pluginResDto.result;
@@ -907,6 +918,7 @@ namespace aibotPro.Service
                                             chatMessages.Add(ChatMessage.FromUser(pluginResDto.result));
                                             chatCompletionCreate.Messages = chatMessages;
                                             chatCompletionCreate.Tools = null;
+                                            chatCompletionCreate.ToolChoice = null;
                                             chatCompletionCreate.Stream = true;
                                             chatCompletionCreate.Model = chatDto.aiModel;
                                             if (chatDto.temperature != null)

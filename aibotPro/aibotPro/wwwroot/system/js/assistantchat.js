@@ -329,7 +329,10 @@ function sendMsg() {
     $("#Q").val("");
     $("#Q").focus();
     var html = `<div class="chat-message" data-group="` + chatgroupid + `">
-                    <div class="avatar"><img src='${HeadImgPath}'/></div>
+                     <div style="display: flex; align-items: center;">
+                        <div class="avatar"><img src='${HeadImgPath}'/></div>
+                        <div class="nickname" style="font-weight: bold; color: black;">${UserNickText}</div>
+                     </div>
                      <div class="chat-message-box">
                        <pre id="`+ msgid_u + `"></pre>
                      </div>
@@ -341,7 +344,10 @@ function sendMsg() {
     $(".chat-body-content").append(html);
     $("#" + msgid_u).text(msg);
     var gpthtml = `<div class="chat-message" data-group="` + chatgroupid + `">
-                    <div class="avatar gpt-avatar">A</div>
+                    <div style="display: flex; align-items: center;">
+                       <div class="avatar gpt-avatar">A</div>
+                       <div class="nickname" style="font-weight: bold; color: black;">AIBot</div>
+                    </div>
                     <div class="chat-message-box">
                         <div id="`+ msgid_g + `"></div><svg width="30" height="30" class="LDI"><circle cx="15" cy="15" r="7.5" fill="black" class="blinking-dot" /></svg>
                     </div>

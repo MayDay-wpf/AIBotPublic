@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RestSharp.Authenticators;
+using System.Text.RegularExpressions;
 
 namespace aibotPro.Controllers
 {
@@ -69,7 +70,12 @@ namespace aibotPro.Controllers
             PayResultDto payRes = _financeService.PayResult(out_trade_no);
             if (payRes.status == "1")
             {
-                var username = _systemService.UrlDecode(param.Split('|')[1]);
+                var username = GetMail(_systemService.UrlDecode(param));
+                if (username == null)
+                {
+                    _systemService.WriteLogUnAsync("在支付结果回调时，账号出现null", Dtos.LogLevel.Fatal, "system");
+                    return Ok("fail");
+                }
                 string goodCode = string.Empty;
                 if (_systemService.UrlDecode(param).Split('|').Length == 3)
                     goodCode = _systemService.UrlDecode(param).Split('|')[0];
@@ -271,12 +277,32 @@ namespace aibotPro.Controllers
                 return Redirect("/Pay/PayRes?success=0");
             }
         }
+        //VIP%7C15%7Cmaymay5jace%2540gmail.com
+        static string GetMail(string str)
+        {
+            // 使用正则表达式匹配邮箱
+            Regex regex = new Regex(@"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b");
+            Match match = regex.Match(str);
+            if (match.Success)
+            {
+                return match.Value;  // 返回匹配的邮箱
+            }
+            else
+            {
+                return null;
+            }
+        }
         public IActionResult Notify(string money, string out_trade_no, string trade_status, string param)
         {
             PayResultDto payRes = _financeService.PayResult(out_trade_no);
             if (payRes.status == "1")
             {
-                var username = _systemService.UrlDecode(param.Split('|')[1]);
+                var username = GetMail(_systemService.UrlDecode(param));
+                if (username == null)
+                {
+                    _systemService.WriteLogUnAsync("在支付结果回调时，账号出现null", Dtos.LogLevel.Fatal, "system");
+                    return Ok("fail");
+                }
                 string goodCode = string.Empty;
                 if (_systemService.UrlDecode(param).Split('|').Length == 3)
                     goodCode = _systemService.UrlDecode(param).Split('|')[0];
@@ -438,7 +464,7 @@ namespace aibotPro.Controllers
                                     _context.VIPs.Add(vip);
                                 }
                             }
-
+                            _financeService.UpdateGoodsStock(goodCode, 1);
                             _context.Users.Update(user);
                             order.OrderStatus = "YES";
                             _context.Orders.Update(order);

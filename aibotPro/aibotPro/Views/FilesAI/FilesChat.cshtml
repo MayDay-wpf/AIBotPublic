@@ -27,6 +27,37 @@
             <input type="search" class="form-control" placeholder="输入对话记录关键词，回车搜索" id="searchKey">
         </div>
         <button type="button" class="btn btn-danger" style="margin-left:10px;" onclick="deleteChatAll()"><i data-feather="trash-2"></i> 清空历史</button>
+        <div class="dropdown" style="text-align:center;width:auto;float:left;display:none;" id="onfilelist">
+            <a href="#" class="btn btn-info" id="fileDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span>已选用文件</span>
+                <i data-feather="chevron-down" style="width:20px;"></i>
+            </a>
+            <div class="dropdown-menu dropdown-menu-onfile" aria-labelledby="chatDropdown" style="max-height: 505px;width:300px;overflow-y:scroll;">
+                <ul class="list-group" id="onfilesitem">
+                    @* <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                    <input type="checkbox">
+                    Item 1
+                    </div>
+                    <div>
+                    <i class="icon ion-close"></i>
+                    </div>
+                    </li>
+
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                    <input type="checkbox">
+                    Item 2
+                    </div>
+                    <div>
+                    <i class="icon ion-close"></i>
+                    </div>
+                    </li> *@
+
+                    <!-- 可添加更多列表项 -->
+                </ul>
+            </div>
+        </div>
     </div>
     <div class="header-right">
     </div>
@@ -88,37 +119,6 @@
                     <div class="dropdown-menu dropdown-menu-left" aria-labelledby="chatDropdown" style="max-height: 505px;overflow-y:scroll" id="AIModel">
                         @*<a class="dropdown-item font-14" href="#" onclick="changeModel('chat','ChatGPT3.5')">ChatGPT3.5</a>
                         <a class="dropdown-item font-14" href="#" onclick="changeModel('chat16K','ChatGPT3.5-16K')">ChatGPT3.5-16K</a> *@
-                    </div>
-                </div>
-                <div class="dropdown" style="text-align:center;width:auto;float:left;display:none;" data-toggle="tooltip" title="选用的文件列表" id="onfilelist">
-                    <a href="#" style="color:deepskyblue" class="tx-14 tx-color-01 mg-b-0 mg-l-10" id="fileDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <span id="firstModel">已选用文件</span>
-                        <i data-feather="chevron-down" style="width:20px;"></i>
-                    </a>
-                    <div class="dropdown-menu dropdown-menu-onfile" aria-labelledby="chatDropdown" style="max-height: 505px;width:300px;overflow-y:scroll;">
-                        <ul class="list-group" id="onfilesitem">
-                            @* <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <div>
-                            <input type="checkbox">
-                            Item 1
-                            </div>
-                            <div>
-                            <i class="icon ion-close"></i>
-                            </div>
-                            </li>
-
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <div>
-                            <input type="checkbox">
-                            Item 2
-                            </div>
-                            <div>
-                            <i class="icon ion-close"></i>
-                            </div>
-                            </li> *@
-
-                            <!-- 可添加更多列表项 -->
-                        </ul>
                     </div>
                 </div>
                 &nbsp;&nbsp;

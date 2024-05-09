@@ -305,7 +305,7 @@ namespace aibotPro.Service
                 x.IsDel = 1;
             });
             //清除缓存
-            if (chatHistories != null)
+            if (chatHistories != null && chatHistories.Count > 0)
                 _redis.DeleteAsync(chatHistories[0].ChatId);
             return _context.SaveChanges() > 0;
         }

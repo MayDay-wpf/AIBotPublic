@@ -112,7 +112,7 @@ function updateGoodList(goods) {
             btn += ` <button class="btn btn-primary" onclick="putonOrOffShelves('${goods[i].goodCode}',true)">上架</button>`;
         var payTypes = goods[i].goodPayType.split(',');
         var payTypeHtml = ``;
-        payTypeHtml += payTypes.includes('wechat') ? ` <span class="badge badge-success">微信支付</span>` : '';
+        payTypeHtml += payTypes.includes('wxpay') ? ` <span class="badge badge-success">微信支付</span>` : '';
         payTypeHtml += payTypes.includes('alipay') ? ` <span class="badge badge-primary">支付宝支付</span>` : '';
         payTypeHtml += payTypes.includes('balancepay') ? ` <span class="badge badge-info">余额支付</span>` : '';
         str += `<tr><td><img src="${goods[i].goodImage}" style="width:80px;height:50px;" /></td>

@@ -35,5 +35,6 @@ namespace aibotPro.Interface
         bool CreateSystemCfg();//创建系统配置
         bool SaveSystemUI(UISettingDto uISettingDto, string account);//保存系统UI配置
         UISettingDto GetSystemUI(string account);//获取系统UI配置
+        void CopyPropertiesTo<T, TU>(T source, TU dest);//反射赋值
     }
 }
