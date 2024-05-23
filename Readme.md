@@ -35,8 +35,8 @@
 ## 自定义插件
 ![2](https://i.mij.rip/2024/02/27/56b35026e63d56ffe3cfe11b188d6af4.png)
 
-## 两种知识库全自动构建解决方案
-![3](https://i.mij.rip/2024/02/27/f0312d58d44b6bff918986b6c39f89df.png)
+## 多种知识库全自动构建解决方案，本地私有化知识库，支持自定义正则表达式灵活设计切片方案
+![3](https://github.com/MayDay-wpf/AIBotPublic/assets/58774414/66e73f60-8baa-4a93-8beb-30e341afaedd)
 
 ## 多文件并行处理的文件 AI
 ![4](https://i.mij.rip/2024/02/27/a1681df1f0ea887d74beacf72adff1a6.png)
