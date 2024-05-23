@@ -5,6 +5,7 @@
         public string FileName { get; set; }
         public int TotalChunks { get; set; }
         public string ProcessType { get; set; }
+        public string TypeCode { get; set; }
     }
 
     public class MJdrawBody

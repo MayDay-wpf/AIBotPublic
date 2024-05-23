@@ -4,6 +4,7 @@
 }
 <link href="/system/css/chatsetting.css" rel="stylesheet" />
 
+
 <div class="header">
     <div class="header-left">
         <a id="menuMain" href="" class="burger-menu">
@@ -120,14 +121,15 @@
                 对话模型排序 (数字越大越靠后)
             </h6>
             <button type="button" class="btn btn-info saveSeq" onclick="saveModelSeq()">
-                <i data-feather="save"></i>保存排序
+                <i data-feather="save"></i> 保存排序
             </button>
         </div>
         <div class="card-body">
             <div class="form-group">
-                <table class="form-table">
+                <table class="form-table" style="width:100%">
                     <thead>
                         <tr>
+                            <td>拖拽排序</td>
                             <td>模型昵称</td>
                             <td>模型名称</td>
                             <td>是否为视觉模型</td>

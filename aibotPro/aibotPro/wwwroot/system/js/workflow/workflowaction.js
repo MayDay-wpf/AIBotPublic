@@ -62,6 +62,13 @@ var ifelsedata = {
         judgresult: ""
     }
 }
+var knowledgedata = {
+    output: {
+        prompt: "",
+        retry: 0,
+        topk: 3
+    }
+}
 var regex = /'/;
 function saveNodeData() {
     switch (thisNodeName) {
@@ -313,6 +320,36 @@ function saveNodeData() {
             var js = ifelseCodeeditor.getValue();
             ifelsedata.output.judgresult = js;
             editor.updateNodeDataFromId(thisNodeId, ifelsedata);
+            saveNodeDataToCache();
+            return true;
+            break;
+        case 'knowledge':
+            knowledgedata = {
+                output: {
+                    prompt: "",
+                    retry: 0,
+                    topk: 3
+                }
+            }
+            var Prompt = $('.prompt').val();
+            var Retry = $('.retry').val();
+            var TopK = $('.topk').val();
+            if (Prompt == "") {
+                layer.msg('请填写提示词', { icon: 2, time: 2500 });
+                return false;
+            }
+            if (Retry == "" || Retry > 5) {
+                layer.msg('重试次数填写错误', { icon: 2, time: 2500 });
+                return false;
+            }
+            if (TopK == "" || TopK > 10 || TopK < 3) {
+                layer.msg('TopK填写错误', { icon: 2, time: 2500 });
+                return false;
+            }
+            knowledgedata.output.prompt = Prompt;
+            knowledgedata.output.retry = Retry;
+            knowledgedata.output.topk = TopK;
+            editor.updateNodeDataFromId(thisNodeId, knowledgedata);
             saveNodeDataToCache();
             return true;
             break;

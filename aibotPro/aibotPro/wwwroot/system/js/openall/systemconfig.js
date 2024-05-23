@@ -9,6 +9,7 @@
 });
 function addStLine() {
     var str = `<tr>
+                 <td><input type="text" class="form-control" maxlength="50" placeholder="名称" /></td>
                  <td><input type="text" class="form-control" maxlength="50" placeholder="键" /></td>
                  <td><input type="text" class="form-control" maxlength="50" placeholder="值" /></td>
                  <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`
@@ -24,15 +25,17 @@ function saveSystemConfig() {
     var issave = true;
     rows.each(function (index, row) {
         // 非空校验
-        var cfgcode = $(row).find("input").eq(0).val();
-        var cfgkey = $(row).find("input").eq(0).val();
-        var cfgvalue = $(row).find("input").eq(1).val();
+        var cfgname = $(row).find("input").eq(0).val();
+        var cfgcode = $(row).find("input").eq(1).val();
+        var cfgkey = $(row).find("input").eq(1).val();
+        var cfgvalue = $(row).find("input").eq(2).val();
 
         if (!removeSpaces(cfgcode) || !removeSpaces(cfgkey) || !removeSpaces(cfgvalue)) {
             balert('请将空的【自定义对话模型】输入行删除，或填写完整', 'danger', false, 1500, 'top');
             issave = false;
             return;
         } else {
+            formData.append(`SystemCfg[${index}].CfgName`, cfgname);
             formData.append(`SystemCfg[${index}].CfgCode`, cfgkey);
             formData.append(`SystemCfg[${index}].CfgKey`, cfgkey);
             formData.append(`SystemCfg[${index}].CfgValue`, cfgvalue);
@@ -77,6 +80,7 @@ function getSystemConfig() {
                     return;
                 for (var i = 0; i < data.length; i++) {
                     var str = `<tr>
+                                <td><input type="text" class="form-control" maxlength="50" placeholder="名称" value="${data[i].cfgName}" /></td>
                                 <td><input type="text" class="form-control" maxlength="50" placeholder="键" value="${data[i].cfgKey}" /></td>
                                 <td><input type="text" class="form-control" maxlength="500" placeholder="值" value="${data[i].cfgValue}" /></td>
                                 <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`

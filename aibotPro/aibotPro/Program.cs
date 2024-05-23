@@ -9,6 +9,10 @@ using System.Configuration;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using System.Net;
+using aibotPro.Dtos;
+using Microsoft.Extensions.Options;
+using Milvus.Client;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 // 读取 appsettings.json 配置
@@ -40,6 +44,14 @@ foreach (var endpoint in redisSection.GetSection("EndPoints").GetChildren())
     int port = endpoint.GetValue<int>("Port");
     configOptions.EndPoints.Add(host, port);
 }
+builder.Services.Configure<MilvusOptions>(builder.Configuration.GetSection("Milvus"));
+// 配置 MilvusClient
+builder.Services.AddSingleton<MilvusClient>(sp =>
+{
+    var options = sp.GetRequiredService<IOptions<MilvusOptions>>().Value;
+    var client = new MilvusClient(options.Host, options.UserName, options.Password, options.Port, options.UseSsl, options.Database);
+    return client;
+});
 
 // 注册 Redis 连接为单例服务
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(configOptions));
@@ -64,6 +76,7 @@ builder.Services.AddScoped<IFinanceService, FinanceService>();
 builder.Services.AddScoped<IAdminsService, AdminService>();
 builder.Services.AddScoped<IAuthorizationHandler, AdminRequirementHandler>();
 builder.Services.AddScoped<IAuthorizationHandler, APIRequirementHandler>();
+builder.Services.AddScoped<IMilvusService, MilvusService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddSignalR();
 

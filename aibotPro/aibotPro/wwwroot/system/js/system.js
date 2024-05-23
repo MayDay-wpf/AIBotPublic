@@ -221,6 +221,17 @@ function getCurrentDateTime() {
 
     return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
 }
+function isoStringToDateTime(isoString) {
+    const date = new Date(isoString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
 //获取URL参数
 function getUrlParam(name) {
     var reg = new RegExp('(^|&)' + name + '=([^&]*)(&|$)');
@@ -733,4 +744,22 @@ function customMenu() {
                 </li>`;
     $("#custommenu").append(html);
     feather.replace();
+}
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+function escapeQuotes(str) {
+    return str.replace(/'/g, "\\'");
+}
+function truncateString(str, num) {
+    if (str.length > num) {
+        return str.slice(0, num) + "...";
+    } else {
+        return str;
+    }
 }

@@ -458,12 +458,32 @@ editor.on('nodeSelected', function (id) {
                     <input type="number" class="llmmaxcount" value="10" max="20" min="0" />
                     <p>循环条件脚本：</p>
                     <textarea id="llmTextarea"></textarea>
-                    <p class="nodeinfo">
-                    * 当下级节点需要获取AI处理的返回数据时，使用{{LLM+节点Id.data}}获取，例如{{LLM1.data}}<br><br>
-                    * 当Stream选择true时 API会中途返回LLM响应至客户端<br><br>
-                    * 当需要循环执行时，return true;代表结束循环，return 其他时，会以返回值作为prompt继续提交给LLM<br><br>
-                    * 当需要获取当前节点的数据作为参数时可以使用 {{this.LLM+节点Id.data}}获取<br><br>
-                    </p>`
+                    <p></p>
+                    <div class="nodeinfo">
+                      * 当下级节点需要获取AI处理的返回数据时，使用{{LLM+节点Id.data}}获取，例如{{LLM1.data}}<br><br>
+                      * 当Stream选择true时 API会中途返回LLM响应至客户端<br><br>
+                      * 当需要循环执行时，return true;代表结束循环，return 其他时，会以返回值作为prompt继续提交给LLM<br><br>
+                      * 当需要获取当前节点的数据作为参数时可以使用 {{this.LLM+节点Id.data}}获取<br><br>
+                      * 当使用JsonModel时，最终Json合成格式为：LLM+节点Id+Json,例如：<br>
+                      要求AI生成的Json为：
+<pre><code>
+{
+    "oldprompt": "aaaaa",
+    "newprompt": "bbbbb"
+}
+</code></pre>
+系统最终合成的Json为：
+<pre><code>
+{
+  "LLM2": {
+    "oldprompt": "aaaaa",
+    "newprompt": "bbbbb"
+  }
+}
+</code></pre>
+取值方式：{{LLM2.newprompt}}
+  <br><br>
+</div>`
             $('.configure').html(html);
             getAIModelList(function () {
                 var code = `function LLM${id}(){
@@ -597,9 +617,34 @@ editor.on('nodeSelected', function (id) {
             }
             initIfElseCodeEditor(code);
             break;
+        case 'knowledge':
+            var html = `<p>检索关键词（模板示例{{参数}}，必填）：</p>
+                    <textarea class="prompt" style="width:100%;height:150px;"></textarea>
+                    <p>失败重试次数（≤5）：</p>
+                    <input type="number" class="retry" value="0" max="5" min="0" />
+                    <p>topK（3≤topK≤10）：</p>
+                    <input type="number" class="topk" value="3" max="10" min="3" />
+                    <p class="nodeinfo">
+                    当下级节点需要获取知识库检索结果时，使用{{knowledge+节点Id.data}}获取，例如{{knowledge1.data}}
+                    </p>`
+            $('.configure').html(html);
+            if (node && node.data && Object.entries(node.data).length > 0) {
+                //回写
+                var data = node.data;
+                if (data.output.prompt) {
+                    $(".prompt").val(data.output.prompt);
+                }
+                if (data.output.retry) {
+                    $(".retry").val(data.output.retry);
+                }
+                if (data.output.topk) {
+                    $(".topk").val(data.output.topk);
+                }
+            }
+            break;
         case 'end':
             html = `<div class="box">
-                         <div class="custom-select">
+                       <div class="custom-select">
                            <p>结束动作：</p>
                            <select class="endAction">
                               <option value="ai" selected>AI再次处理</option>
@@ -918,6 +963,19 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
                 }
             }, ifelse);
             break;
+        case 'knowledge':
+            var knowledge = `
+             <div>
+              <div class="title-box"><i class="fas fa-database"></i> <span class="nodeText">knowledge</span></div>
+             </div>`;
+            editor.addNode('knowledge', 1, 1, pos_x, pos_y, 'knowledge', {
+                output: {
+                    prompt: "",
+                    retry: 0,
+                    topk: 3
+                }
+            }, knowledge);
+            break;
         case 'end':
             var end = `
             <div>
@@ -1123,16 +1181,6 @@ function changeModule(event) {
 //    }
 
 //}
-function escapeHtml(unsafe) {
-    return unsafe
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
-
 function exportDrawFlow() {
     const jsonString = JSON.stringify(editor.export(), null, 4);
     layer.open({

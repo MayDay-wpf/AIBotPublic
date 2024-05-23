@@ -15,6 +15,8 @@ namespace aibotPro.Models
         public int Id { get; set; }
         [StringLength(50)]
         public string CfgCode { get; set; }
+        [StringLength(100)]
+        public string CfgName { get; set; }
         [StringLength(50)]
         public string CfgKey { get; set; }
         public string CfgValue { get; set; }

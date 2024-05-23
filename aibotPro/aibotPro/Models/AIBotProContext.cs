@@ -37,8 +37,10 @@ namespace aibotPro.Models
         public virtual DbSet<IPlook_Stats_View> IPlook_Stats_Views { get; set; }
         public virtual DbSet<Knowledge> Knowledges { get; set; }
         public virtual DbSet<KnowledgeList> KnowledgeLists { get; set; }
+        public virtual DbSet<KnowledgeType> KnowledgeTypes { get; set; }
         public virtual DbSet<ModelPrice> ModelPrices { get; set; }
         public virtual DbSet<Notice> Notices { get; set; }
+        public virtual DbSet<OpenAPIModelSetting> OpenAPIModelSettings { get; set; }
         public virtual DbSet<Order> Orders { get; set; }
         public virtual DbSet<Plugin> Plugins { get; set; }
         public virtual DbSet<PluginsCookie> PluginsCookies { get; set; }
@@ -82,6 +84,13 @@ namespace aibotPro.Models
             modelBuilder.Entity<IPlook_Stats_View>(entity =>
             {
                 entity.ToView("IPlook_Stats_View");
+            });
+
+            modelBuilder.Entity<ModelPrice>(entity =>
+            {
+                entity.Property(e => e.OnceFee).HasDefaultValueSql("((0))");
+
+                entity.Property(e => e.VipOnceFee).HasDefaultValueSql("((0))");
             });
 
             modelBuilder.Entity<PluginsInstall>(entity =>

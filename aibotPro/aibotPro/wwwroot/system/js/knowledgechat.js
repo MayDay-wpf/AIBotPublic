@@ -12,30 +12,28 @@
     $("#slidertopp").val("1");
     $("#sliderpresence").val("0.5");
     $("#sliderfrequency").val("0.5");
+    getKonwLedgeTypeByMilvus('init');
 });
 var slidertemperature = document.getElementById("slidertemperature");
 slidertemperature.oninput = function () {
-    this.setAttribute('data-original-title', this.value);
-    $(this).tooltip('show');
+    $(".temperature").html(this.value);
 }
 
 var slidertopp = document.getElementById("slidertopp");
 slidertopp.oninput = function () {
-    this.setAttribute('data-original-title', this.value);
-    $(this).tooltip('show');
+    $(".top_p").html(this.value);
 }
 
 var sliderpresence = document.getElementById("sliderpresence");
 sliderpresence.oninput = function () {
-    this.setAttribute('data-original-title', this.value);
-    $(this).tooltip('show');
+    $(".presence_penalty").html(this.value);
 }
 
 var sliderfrequency = document.getElementById("sliderfrequency");
 sliderfrequency.oninput = function () {
-    this.setAttribute('data-original-title', this.value);
-    $(this).tooltip('show');
+    $(".frequency_penalty").html(this.value);
 }
+
 var max_textarea = false;
 var textarea = document.getElementById("Q");
 var $Q = $("#Q");
@@ -44,11 +42,13 @@ var chatBody = $(".chat-body-content");
 var thisAiModel = "gpt-3.5-turbo-0125"; //当前AI模型
 var processOver = true; //是否处理完毕
 var image_path = "";
-var file_list = [];
+var onknowledgearr = [];
 var chatid = "";
 var assistansBoxId = "";
 let pageIndex = 1;
 let pageSize = 20;
+let pageIndex_k = 1;
+let pageSize_k = 20;
 // websocket连接设置
 var connection = new signalR.HubConnectionBuilder()
     .withUrl('/chatHub', {
@@ -119,6 +119,12 @@ $(document).keypress(function (e) {
         if (e.which == 13) {
             //按下回车键搜索
             getHistoryList(1, 20, true, true, $("#searchKey").val().trim());
+        }
+    }
+    if ($("#seachKnowledge").is(":focus")) {
+        if (e.which == 13) {
+            //按下回车键搜索
+            getKonwLedgeTypeByMilvus('init');
         }
     }
 });
@@ -221,6 +227,10 @@ function max_textarea_Q() {
 //隐藏历史记录列表
 var isShowHistory = true;
 function hideHistoary() {
+    if (!processOver) {
+        balert("对话进行中,请结束后再试", "warning", false, 2000);
+        return;
+    }
     if (isMobile()) {
         mobileChat(false);
     }
@@ -411,6 +421,7 @@ function sendMsg() {
                     <div style="display: flex; align-items: center;">
                        <div class="avatar gpt-avatar">A</div>
                        <div class="nickname" style="font-weight: bold; color: black;">AIBot</div>
+                       <span class="badge badge-info ${thisAiModel.replace('.', '')}">${thisAiModel}</span>
                     </div>
                     <div class="chat-message-box">
                         <div id="`+ msgid_g + `"></div><svg width="30" height="30" class="LDI"><circle cx="15" cy="15" r="7.5" fill="black" class="blinking-dot" /></svg>
@@ -424,7 +435,7 @@ function sendMsg() {
     $(".chat-body-content").append(gpthtml);
     adjustTextareaHeight();
     chatBody.scrollTop(chatBody[0].scrollHeight);
-    connection.invoke("SendWorkShopMessage", data, onknowledge)
+    connection.invoke("SendWorkShopMessage", data, onknowledge, onknowledgearr)
         .then(function () {
         })
         .catch(function (err) {
@@ -667,6 +678,7 @@ function showHistoryDetail(id) {
                                 <div style="display: flex; align-items: center;">
                                    <div class="avatar gpt-avatar">A</div>
                                    <div class="nickname" style="font-weight: bold; color: black;">AIBot</div>
+                                   <span class="badge badge-info ${res.data[i].model.replace('.', '')}">${res.data[i].model}</span>
                                 </div>
                                 <div class="chat-message-box">
                                     <div id="`+ res.data[i].chatCode + `">` + markedcontent + `</div>
@@ -679,7 +691,7 @@ function showHistoryDetail(id) {
                             </div>`;
                 }
             }
-            chatBody.html(html);
+            chatBody.html(html).hide().fadeIn(300);
             MathJax.typeset();
             $(".chat-message pre code").each(function (i, block) {
                 hljs.highlightElement(block);
@@ -699,6 +711,10 @@ function showHistoryDetail(id) {
 }
 //新建会话
 function newChat() {
+    if (!processOver) {
+        balert("对话进行中,请结束后再试", "warning", false, 2000);
+        return;
+    }
     mobileChat(true);
     chatid = "";
     chatBody.html("");
@@ -909,10 +925,10 @@ function getAIModelList() {
         success: function (res) {
             var html = "";
             if (res.success) {
-                $("#firstModel").text(res.data[0].modelNick);
+                $("#firstModel").html(res.data[0].modelNick);
                 thisAiModel = res.data[0].modelName;
                 for (var i = 0; i < res.data.length; i++) {
-                    html += `<a class="dropdown-item font-14" href="#" onclick="changeModel('` + res.data[i].modelName + `','` + res.data[i].modelNick + `')">` + res.data[i].modelNick + `</a>`;
+                    html += `<a class="dropdown-item font-14" href="#" onclick="changeModel('${escapeQuotes(res.data[i].modelName)}','${escapeQuotes(res.data[i].modelNick)}')">` + res.data[i].modelNick + `</a>`;
                 }
                 $('#AIModel').html(html);
             }
@@ -950,6 +966,66 @@ function quote(id) {
     $Q.focus();
     adjustTextareaHeight();
 }
+$(document).on('click', '.dropdown-menu-onfile', function (event) {
+    event.stopPropagation();
+
+});
+function getKonwLedgeTypeByMilvus(type) {
+    if (type == 'loadmore')
+        loadingBtn('.loadmorebtn');
+    var name = $("#seachKnowledge").val();
+    $.ajax({
+        type: "Post",
+        url: "/KnowledgeAI/GetKnowledgeType",
+        dataType: "json",
+        data: {
+            name: name,
+            page: pageIndex_k,
+            pageSize: pageSize_k
+        },
+        success: function (res) {
+            unloadingBtn('.loadmorebtn');
+            var html = ``;
+            res = res.data;
+            if (res.length > 0) {
+                if (res.length < pageSize_k)
+                    $('.loadmorebtn').hide();
+                for (var i = 0; i < res.length; i++) {
+                    html += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <input type="checkbox" value='${res[i].typeCode}'>
+                                        ${truncateString(res[i].typeName, 15)}
+                                    </div>
+                                 </li>`;
+                }
+            } else {
+                html = `没有知识库~`;
+                $('.loadmorebtn').hide();
+            }
+            $('#onknowledgeitem').html(html);
+        },
+        error: function (e) {
+            unloadingBtn('.loadmorebtn');
+        }
+    });
+}
+// 当复选框状态改变时
+$('#onknowledgeitem').on('change', 'input[type="checkbox"]', function (e) {
+    var typecode = $(this).val();
+    if ($(this).is(':checked')) {
+        // 如果onknowledgearr已存在这个code，则不添加
+        if (onknowledgearr.findIndex(item => item === typecode) === -1) {
+            // 添加到onfilearr
+            onknowledgearr.push(typecode);
+        }
+    } else {
+        // 从onfilearr中移除
+        onknowledgearr = onknowledgearr.filter(item => item !== typecode);
+    }
+});
+
+
+
 //----------------------通用函数----------------------
 function adjustTextareaHeight() {
     if (max_textarea)

@@ -15,7 +15,8 @@ namespace aibotPro.Controllers
         private readonly IWorkShop _workShop;
         private readonly IUsersService _usersService;
         private readonly IRedisService _redisService;
-        public WorkShopController(AIBotProContext context, ISystemService systemService, JwtTokenManager jwtTokenManager, IWorkShop workShop, IUsersService usersService, IRedisService redisService)
+        private readonly IFinanceService _financeService;
+        public WorkShopController(AIBotProContext context, ISystemService systemService, JwtTokenManager jwtTokenManager, IWorkShop workShop, IUsersService usersService, IRedisService redisService, IFinanceService financeService)
         {
             _context = context;
             _systemService = systemService;
@@ -23,6 +24,7 @@ namespace aibotPro.Controllers
             _workShop = workShop;
             _usersService = usersService;
             _redisService = redisService;
+            _financeService = financeService;
         }
 
         public IActionResult WorkShopChat()
@@ -533,6 +535,55 @@ namespace aibotPro.Controllers
                 success = true,
                 data = result
             });
+        }
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> GetFreePlan()
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var result = await _financeService.GetFreePlan(username);
+            return Json(new
+            {
+                success = true,
+                data = result
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> GetFreePlanInfo()
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var systemCfg = _systemService.GetSystemCfgs();
+            var freeModel = systemCfg.Where(x => x.CfgKey == "WorkShop_FreeModel").FirstOrDefault();
+            var freeCount = systemCfg.Where(x => x.CfgKey == "WorkShop_FreeModel_Count").FirstOrDefault();
+            var freeCountVIP = systemCfg.Where(x => x.CfgKey == "WorkShop_FreeModel_Count_VIP").FirstOrDefault();
+            var freePlanUpdate = systemCfg.Where(x => x.CfgKey == "WorkShop_FreeModel_UpdateHour").FirstOrDefault();
+            var nextRefreshTime = await _financeService.GetFreePlan(username);
+            DateTime dateTime = DateTime.MaxValue;
+            if (nextRefreshTime != null)
+            {
+                dateTime = nextRefreshTime.ExpireTime;
+            }
+            if (freeModel != null && freeCount != null && freeCountVIP != null && freePlanUpdate != null)
+            {
+                return Json(new
+                {
+                    success = true,
+                    freeCount = freeCount.CfgValue,
+                    freeCountVIP = freeCountVIP.CfgValue,
+                    freeModel = freeModel.CfgValue,
+                    freePlanUpdate = freePlanUpdate.CfgValue,
+                    nextRefreshTime = dateTime
+                });
+            }
+            else
+            {
+                return Json(new
+                {
+                    success = false
+                });
+            }
+
         }
 
     }

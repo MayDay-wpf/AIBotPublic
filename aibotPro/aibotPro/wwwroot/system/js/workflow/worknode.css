@@ -8,11 +8,8 @@
 }
 */
 .custom-select select {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-color: #f1f1f1;
-    padding: 10px;
+    background-color: white;
+    padding: 5px;
     border: 1px solid #ccc;
     border-radius: 5px;
     width: 200px;

@@ -90,6 +90,10 @@ $(document).keypress(function (e) {
     }
 });
 function newChat() {
+    if (!processOver) {
+        balert("对话进行中,请结束后再试", "warning", false, 2000);
+        return;
+    }
     chatid = "";
     threadId = "";
     chatBody.html("");

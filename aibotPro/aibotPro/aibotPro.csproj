@@ -34,9 +34,14 @@
     <PackageReference Include="JavaScriptEngineSwitcher.Extensions.MsDependencyInjection" Version="3.24.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.26" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.26">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.26" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.5" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="6.0.16" />
+    <PackageReference Include="Milvus.Client" Version="2.3.0-preview.1" />
     <PackageReference Include="RestSharp" Version="110.2.0" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.3" />
     <PackageReference Include="Spire.Doc" Version="12.2.1" />
@@ -55,6 +60,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="efpt.config.json.user" />
     <None Include="wwwroot\lib\pay\images\.DS_Store" />
     <None Include="wwwroot\lib\pay\js\.DS_Store" />
     <None Include="wwwroot\lib\pay\js\jquery.min.js" />

@@ -20,6 +20,8 @@ namespace aibotPro.Models
         [StringLength(500)]
         public string FilePath { get; set; }
         [StringLength(50)]
+        public string TypeCode { get; set; }
+        [StringLength(50)]
         public string Account { get; set; }
         [Column(TypeName = "datetime")]
         public DateTime? CreateTime { get; set; }

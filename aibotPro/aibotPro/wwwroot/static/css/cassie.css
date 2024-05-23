@@ -72399,6 +72399,10 @@ button.bg-twitter:focus,
     -ms-overflow-style: -ms-autohiding-scrollbar;
 }
 
+.chat-message-box img {
+    width: 100%;
+}
+
 .chat-message-box p {
     margin: 0;
     font-family: inherit;

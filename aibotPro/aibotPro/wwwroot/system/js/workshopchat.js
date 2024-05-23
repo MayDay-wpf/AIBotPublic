@@ -68,29 +68,26 @@ $(function () {
     $("#slidertopp").val("1");
     $("#sliderpresence").val("0.5");
     $("#sliderfrequency").val("0.5");
+    getFreePlan();
 })
 var slidertemperature = document.getElementById("slidertemperature");
 slidertemperature.oninput = function () {
-    this.setAttribute('data-original-title', this.value);
-    $(this).tooltip('show');
+    $(".temperature").html(this.value);
 }
 
 var slidertopp = document.getElementById("slidertopp");
 slidertopp.oninput = function () {
-    this.setAttribute('data-original-title', this.value);
-    $(this).tooltip('show');
+    $(".top_p").html(this.value);
 }
 
 var sliderpresence = document.getElementById("sliderpresence");
 sliderpresence.oninput = function () {
-    this.setAttribute('data-original-title', this.value);
-    $(this).tooltip('show');
+    $(".presence_penalty").html(this.value);
 }
 
 var sliderfrequency = document.getElementById("sliderfrequency");
 sliderfrequency.oninput = function () {
-    this.setAttribute('data-original-title', this.value);
-    $(this).tooltip('show');
+    $(".frequency_penalty").html(this.value);
 }
 //监听键盘事件
 $(document).keypress(function (e) {
@@ -221,6 +218,10 @@ function max_textarea_Q() {
 //隐藏历史记录列表
 var isShowHistory = true;
 function hideHistoary() {
+    if (!processOver) {
+        balert("对话进行中,请结束后再试", "warning", false, 2000);
+        return;
+    }
     if (isMobile()) {
         mobileChat(false);
     }
@@ -338,6 +339,7 @@ connection.on('ReceiveWorkShopMessage', function (message) {
         addCopyBtn();
         getHistoryList(1, 20, true, false, "");
         addExportButtonToTables();
+        getFreePlan();
         if (Scrolling == 1)
             chatBody.scrollTop(chatBody[0].scrollHeight);
     }
@@ -412,6 +414,7 @@ function sendMsg() {
                     <div style="display: flex; align-items: center;">
                        <div class="avatar gpt-avatar">A</div>
                        <div class="nickname" style="font-weight: bold; color: black;">AIBot</div>
+                       <span class="badge badge-info ${thisAiModel.replace('.', '')}">${thisAiModel}</span>
                     </div>
                     <div class="chat-message-box">
                         <div id="`+ msgid_g + `"></div><svg width="30" height="30" class="LDI"><circle cx="15" cy="15" r="7.5" fill="black" class="blinking-dot" /></svg>
@@ -668,6 +671,7 @@ function showHistoryDetail(id) {
                                 <div style="display: flex; align-items: center;">
                                    <div class="avatar gpt-avatar">A</div>
                                    <div class="nickname" style="font-weight: bold; color: black;">AIBot</div>
+                                   <span class="badge badge-info ${res.data[i].model.replace('.', '')}">${res.data[i].model}</span>
                                 </div>
                                 <div class="chat-message-box">
                                     <div id="`+ res.data[i].chatCode + `">` + markedcontent + `</div>
@@ -680,7 +684,7 @@ function showHistoryDetail(id) {
                             </div>`;
                 }
             }
-            chatBody.html(html);
+            chatBody.html(html).hide().fadeIn(300);
             MathJax.typeset();
             $(".chat-message pre code").each(function (i, block) {
                 hljs.highlightElement(block);
@@ -700,6 +704,10 @@ function showHistoryDetail(id) {
 }
 //新建会话
 function newChat() {
+    if (!processOver) {
+        balert("对话进行中,请结束后再试", "warning", false, 2000);
+        return;
+    }
     mobileChat(true);
     chatid = "";
     chatBody.html("");
@@ -910,10 +918,10 @@ function getAIModelList() {
         success: function (res) {
             var html = "";
             if (res.success) {
-                $("#firstModel").text(res.data[0].modelNick);
+                $("#firstModel").html(res.data[0].modelNick);
                 thisAiModel = res.data[0].modelName;
                 for (var i = 0; i < res.data.length; i++) {
-                    html += `<a class="dropdown-item font-14" href="#" onclick="changeModel('` + res.data[i].modelName + `','` + res.data[i].modelNick + `')">` + res.data[i].modelNick + `</a>`;
+                    html += `<a class="dropdown-item font-14" href="#" onclick="changeModel('${escapeQuotes(res.data[i].modelName)}','${escapeQuotes(res.data[i].modelNick)}')">` + res.data[i].modelNick + `</a>`;
                 }
                 $('#AIModel').html(html);
             }
@@ -974,3 +982,53 @@ textarea.addEventListener("input", adjustTextareaHeight);
 textarea.addEventListener("keyup", adjustTextareaHeight);
 //绑定change事件
 textarea.addEventListener("change", adjustTextareaHeight);
+function getFreePlan() {
+    $.ajax({
+        type: "Post",
+        url: "/WorkShop/GetFreePlan",
+        dataType: "json",
+        success: function (res) {
+            if (res.success) {
+                var data = res.data;
+                var minValue = 0; // 最小值
+                var maxValue = data.totalCount; // 最大值
+                var currentValue = data.remainCount; // 当前值
+                $(".progress-bar").attr("aria-valuemin", minValue)
+                    .attr("aria-valuemax", maxValue)
+                    .attr("aria-valuenow", currentValue)
+                    .css("width", currentValue / maxValue * 100 + "%")
+                    .text(currentValue); // 显示数值
+            }
+        },
+        error: function (err) {
+            //window.location.href = "/Users/Login";
+            balert("系统必要参数加载失败", "danger", false, 2000, "center");
+        }
+    });
+}
+
+function freePlanInfo() {
+    $.ajax({
+        type: "Post",
+        url: "/WorkShop/GetFreePlanInfo",
+        dataType: "json",
+        success: function (res) {
+            var content = '';
+            if (res.success) {
+                content = `<p>1、免费模型只可在<b>创意工坊</b>中使用</p>
+                   <p>2、免费模型有：<b>${res.freeModel}</b></p>
+                   <p>3、普通用户免费次数：<b>${res.freeCount}</b></p>
+                   <p>4、会员用户免费次数：<b>${res.freeCountVIP}</b></p>
+                   <p>5、免费次数刷新频率：上线后<b>${res.freePlanUpdate}小时</b>一次，剩余不累加</p>
+                   <p>6、下一次刷新时间：<b>${isoStringToDateTime(res.nextRefreshTime)}</b></p>`;
+            } else {
+                content = `<p>系统暂未开放免费</p>`;
+            }
+            showConfirmationModal("免费次数说明", content);
+        },
+        error: function (err) {
+            //window.location.href = "/Users/Login";
+            balert("系统必要参数加载失败", "danger", false, 2000, "center");
+        }
+    });
+}

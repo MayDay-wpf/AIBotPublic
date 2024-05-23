@@ -20,16 +20,20 @@
 <div class="content-body">
     <div class="side-panel-container">
         <div id="sidePanel" class="side-panel">
-            <!-- 关闭按钮 -->
-            <a href="javascript:void(0)" class="close-btn" id="closePanelBtn">&times;</a>
+            <!-- 标题和关闭按钮 -->
+            <div class="panel-header">
+                <span onclick="optionMax()" style="cursor:pointer">
+                    <i id="togglePanelIcon" class="fas fa-chevron-left"></i>
+                    <span class="panel-title">属性面板</span>
+                </span>
+                <a href="javascript:void(0)" class="close-btn" id="closePanelBtn">&times;</a>
+            </div>
             <!-- 内容 -->
-            <h2 style="color:black">
-                <i id="togglePanelIcon" style="cursor:pointer" class="fas fa-chevron-left" onclick="optionMax()"></i>
-                <span class="panel-title">属性面板</span>
-            </h2>
-            <div class="configure"></div>
-            <br />
-            <button class="btn btn-info" onclick="saveNodeData()">保存</button>
+            <div class="panel-content">
+                <div class="configure"></div>
+                <br />
+                <button class="btn btn-info" onclick="saveNodeData()">保存</button>
+            </div>
         </div>
     </div>
     <div class="wrapper">
@@ -60,6 +64,9 @@
             </div>
             <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="ifelse">
                 <i class="fas fa-question-circle"></i><span> if-else（ifelse）</span>
+            </div>
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="knowledge">
+                <i class="fas fa-database"></i><span> 知识库查询（knowledge）</span>
             </div>
             <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="end">
                 <i class="fas fa-stop-circle"></i><span> 结束（end）</span>

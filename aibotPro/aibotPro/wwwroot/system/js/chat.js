@@ -165,6 +165,7 @@ function handleFileUpload(file) {
     }
 }
 $(function () {
+    $('[data-toggle="tooltip"]').tooltip();
     $('.nav-sub-link').removeClass('active');
     $('.nav-link').removeClass('active');
     $("#ai-main-menu").addClass('active');
@@ -184,26 +185,22 @@ $(function () {
 })
 var slidertemperature = document.getElementById("slidertemperature");
 slidertemperature.oninput = function () {
-    this.setAttribute('data-original-title', this.value);
-    $(this).tooltip('show');
+    $(".temperature").html(this.value);
 }
 
 var slidertopp = document.getElementById("slidertopp");
 slidertopp.oninput = function () {
-    this.setAttribute('data-original-title', this.value);
-    $(this).tooltip('show');
+    $(".top_p").html(this.value);
 }
 
 var sliderpresence = document.getElementById("sliderpresence");
 sliderpresence.oninput = function () {
-    this.setAttribute('data-original-title', this.value);
-    $(this).tooltip('show');
+    $(".presence_penalty").html(this.value);
 }
 
 var sliderfrequency = document.getElementById("sliderfrequency");
 sliderfrequency.oninput = function () {
-    this.setAttribute('data-original-title', this.value);
-    $(this).tooltip('show');
+    $(".frequency_penalty").html(this.value);
 }
 
 var languageSelect = $("#languageSelect").val();
@@ -242,17 +239,74 @@ function getAIModelList() {
         success: function (res) {
             var html = "";
             if (res.success) {
-                $("#firstModel").text(res.data[0].modelNick);
+                $("#firstModel").html(res.data[0].modelNick);
                 thisAiModel = res.data[0].modelName;
                 for (var i = 0; i < res.data.length; i++) {
-                    html += `<a class="dropdown-item font-14" href="#" onclick="changeModel('` + res.data[i].modelName + `','` + res.data[i].modelNick + `')">` + res.data[i].modelNick + `</a>`;
+                    html += `<a class="dropdown-item font-14" href="#" data-model-name="${res.data[i].modelName}" data-model-nick="${res.data[i].modelNick}" data-seq="${res.data[i].seq}">` + res.data[i].modelNick + `</a>`;
                 }
                 $('#AIModel').html(html);
+                $('#AIModel a').on('click', function (e) {
+                    e.preventDefault();
+                    var modelName = $(this).data('model-name');
+                    var modelNick = $(this).data('model-nick');
+                    changeModel(modelName, modelNick);
+                });
+                if (!isMobile()) {
+                    // 初始化拖动排序
+                    $("#AIModel").sortable({
+                        revert: 100,
+                        start: function (event, ui) {
+                            // 在拖动开始时禁用点击事件
+                            $('#AIModel a').off('click');
+                        },
+                        stop: function (event, ui) {
+                            saveModelSeq();
+                            $('#AIModel a').on('click', function (e) {
+                                e.preventDefault();
+                                var modelName = $(this).data('model-name');
+                                var modelNick = $(this).data('model-nick');
+                                changeModel(modelName, modelNick);
+                            });
+                        }
+                    }).disableSelection();
+                }
             }
         },
         error: function (err) {
-            //window.location.href = "/Users/Login";
-            balert("系统未配置AI模型", "info", false, 2000, "center");
+            //balert("系统未配置AI模型", "info", false, 2000, "center");
+        }
+    });
+}
+function saveModelSeq() {
+    var items = $("#AIModel").find("a");
+    var formData = new FormData();
+    items.each(function (index, item) {
+        var modelName = $(item).data("model-name");
+        var modelNick = $(item).data("model-nick");
+        var seq = index + 1;
+        formData.append(`ChatModelSeq[${index}].ModelNick`, modelNick);
+        formData.append(`ChatModelSeq[${index}].ModelName`, modelName);
+        formData.append(`ChatModelSeq[${index}].Seq`, seq);
+    });
+
+    //loadingBtn('.saveSeq');
+    $.ajax({
+        type: 'POST',
+        url: '/Home/SaveModelSeq',
+        processData: false,
+        contentType: false,
+        data: formData,
+        success: function (res) {
+            //unloadingBtn('.saveSeq');
+            if (res.success) {
+                balert(res.msg, 'success', false, 1500, 'top');
+            } else {
+                balert(res.msg, 'danger', false, 1500, 'top');
+            }
+        },
+        error: function (error) {
+            //unloadingBtn('.saveSeq');
+            sendExceptionMsg("保存排序异常");
         }
     });
 }
@@ -269,6 +323,10 @@ function changeModel(modelName, modelNick) {
 //隐藏历史记录列表
 var isShowHistory = true;
 function hideHistoary() {
+    if (!processOver) {
+        balert("对话进行中,请结束后再试", "warning", false, 2000);
+        return;
+    }
     if (isMobile()) {
         mobileChat(false);
     }
@@ -427,7 +485,7 @@ function sendMsg() {
         "top_p": parseFloat(topp),
         "presence_penalty": parseFloat(presence),
         "frequency_penalty": parseFloat(frequency),
-        "system_prompt": `${shortcutSystemPrompt},Please follow this setting, your reply language is only not related to the setting of the language used by the user,Your reply language is set to:${languageSelect}`
+        "system_prompt": `${shortcutSystemPrompt},Please follow this setting: Please use the current context, giving priority to responding in the language requested by the user. If the user does not specify a specific language preference, the system-set response language is used by default.System language is set to:${languageSelect}`
     };
     max_textarea = true;
     max_textarea_Q();
@@ -455,6 +513,7 @@ function sendMsg() {
                     <div style="display: flex; align-items: center;">
                        <div class="avatar gpt-avatar">A</div>
                        <div class="nickname" style="font-weight: bold; color: black;">AIBot</div>
+                       <span class="badge badge-info ${thisAiModel.replace('.', '')}">${thisAiModel}</span>
                     </div>
                     <div class="chat-message-box">
                         <div id="`+ msgid_g + `"></div><svg width="30" height="30" class="LDI"><circle cx="15" cy="15" r="7.5" fill="black" class="blinking-dot" /></svg>
@@ -711,6 +770,7 @@ function showHistoryDetail(id) {
                                  <div style="display: flex; align-items: center;">
                                     <div class="avatar gpt-avatar">A</div>
                                     <div class="nickname" style="font-weight: bold; color: black;">AIBot</div>
+                                    <span class="badge badge-info ${res.data[i].model.replace('.', '')}">${res.data[i].model}</span>
                                  </div>
                                 <div class="chat-message-box">
                                     <div id="`+ res.data[i].chatCode + `">` + markedcontent + `</div>
@@ -723,7 +783,7 @@ function showHistoryDetail(id) {
                             </div>`;
                 }
             }
-            chatBody.html(html);
+            chatBody.html(html).hide().fadeIn(300);
             MathJax.typeset();
             $(".chat-message pre code").each(function (i, block) {
                 hljs.highlightElement(block);
@@ -743,6 +803,10 @@ function showHistoryDetail(id) {
 }
 //新建会话
 function newChat() {
+    if (!processOver) {
+        balert("对话进行中,请结束后再试", "warning", false, 2000);
+        return;
+    }
     mobileChat(true);
     chatid = "";
     chatBody.html("");

@@ -405,22 +405,13 @@ namespace aibotPro.Service
                 //准备调用AI接口，缓存存入工作中状态
                 await _redis.SetAsync($"{chatId}_process", "true", TimeSpan.FromHours(1));
                 string sysmsg = string.Empty;
-                await foreach (var responseContent in _aiServer.CallingAI(aiChat, apiSetting, visionBody))
+                await foreach (var responseContent in _aiServer.CallingAI(aiChat, apiSetting, chatId, visionBody))
                 {
-                    string thisTask = await _redis.GetAsync($"{chatId}_process");
-                    if (string.IsNullOrEmpty(thisTask))
-                        break;
-                    if (bool.Parse(thisTask))
-                    {
-                        sysmsg += responseContent.Choices[0].Delta.Content;
-                        chatRes.message = responseContent.Choices[0].Delta.Content;
-                        await Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                        //Thread.Sleep(50);
-                    }
-                    else
-                    {
-                        break;
-                    }
+                    sysmsg += responseContent.Choices[0].Delta.Content;
+                    chatRes.message = responseContent.Choices[0].Delta.Content;
+                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                    //Thread.Sleep(50);
+
                 }
                 await _redis.DeleteAsync($"{chatId}_process");
                 //保存对话记录
@@ -430,10 +421,6 @@ namespace aibotPro.Service
                 }
                 output = sysmsg;
                 TikToken tikToken = TikToken.GetEncoding("cl100k_base");
-                await _aiServer.SaveChatHistory(Account, chatId, chatDto.msg, chatDto.msgid_u, chatDto.chatgroupid, "user", chatDto.aiModel);
-                await _aiServer.SaveChatHistory(Account, chatId, sysmsg, chatDto.msgid_g, chatDto.chatgroupid, "assistant", chatDto.aiModel);
-                if (!string.IsNullOrEmpty(output))
-                    await _financeService.CreateUseLogAndUpadteMoney(Account, chatDto.aiModel, tikToken.Encode(input).Count, tikToken.Encode(output).Count);
                 if (chatDto.chatid.Contains("gridview"))
                 {
                     sysmsg = sysmsg.ToLower();
@@ -459,6 +446,10 @@ namespace aibotPro.Service
                 chatRes.message = "";
                 chatRes.isfinish = true;
                 await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                await _aiServer.SaveChatHistory(Account, chatId, chatDto.msg, chatDto.msgid_u, chatDto.chatgroupid, "user", chatDto.aiModel);
+                await _aiServer.SaveChatHistory(Account, chatId, sysmsg, chatDto.msgid_g, chatDto.chatgroupid, "assistant", chatDto.aiModel);
+                if (!string.IsNullOrEmpty(output))
+                    await _financeService.CreateUseLogAndUpadteMoney(Account, chatDto.aiModel, tikToken.Encode(input).Count, tikToken.Encode(output).Count);
             }
             catch (Exception e)
             {
@@ -473,7 +464,7 @@ namespace aibotPro.Service
         }
 
         //创意工坊交互
-        public async Task SendWorkShopMessage(ChatDto chatDto, bool onknowledge)
+        public async Task SendWorkShopMessage(ChatDto chatDto, bool onknowledge, List<string> typeCode)
         {
             var httpContext = Context.GetHttpContext();
             string? token = string.Empty;
@@ -693,7 +684,7 @@ namespace aibotPro.Service
                         }
                     }
                     if (!chatDto.isbot)
-                        chatDto.system_prompt = "对于要插入函数的值，不要做任何假设。如果用户的请求不清晰，可以要求澄清。";
+                        chatDto.system_prompt = "对于要插入函数的值，不要做任何假设。如果用户的请求不清晰，可以要求澄清，也可以询问用户是否需要调用函数插件";
                 }
                 List<ChatMessage> chatMessages = new List<ChatMessage>();
                 chatMessages.Add(ChatMessage.FromSystem(chatDto.system_prompt));
@@ -759,28 +750,39 @@ namespace aibotPro.Service
                 {
                     chatCompletionCreate.PresencePenalty = chatDto.presence_penalty;
                 }
-                var completionResult = openAiService.ChatCompletion.CreateCompletionAsStream(chatCompletionCreate);
+                CancellationTokenSource cts = new CancellationTokenSource();
+                CancellationToken cancellationToken = cts.Token;
+                cancellationToken.Register(async () => await _redis.DeleteAsync($"{chatId}_process"));
+                var completionResult = openAiService.ChatCompletion.CreateCompletionAsStream(chatCompletionCreate, chatCompletionCreate.Model, true, cancellationToken);
                 await _redis.SetAsync($"{chatId}_process", "true", TimeSpan.FromHours(1));
                 string sysmsg = string.Empty;
                 var functionArguments = new Dictionary<int, string>();
                 PluginResDto pluginResDto = new PluginResDto();
                 TikToken tikToken = TikToken.GetEncoding("cl100k_base");
-                await foreach (var responseContent in completionResult)
+                await foreach (var responseContent in completionResult.WithCancellation(cancellationToken))
                 {
                     if (responseContent.Successful)
                     {
                         string thisTask = await _redis.GetAsync($"{chatId}_process");
                         if (string.IsNullOrEmpty(thisTask))
+                        {
+                            cts.Cancel();
                             break;
+                        }
                         if (bool.Parse(thisTask))
                         {
                             var choice = responseContent.Choices.FirstOrDefault();
-                            if (choice != null)
+                            if (choice != null && choice.Message != null)
                             {
                                 sysmsg += choice.Message.Content;
                                 output += choice.Message.Content;
                                 chatRes.message = choice.Message.Content;
                                 await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                            }
+                            else
+                            {
+                                await _systemService.WriteLog("Function Calling执行失败，该问题通常重试后即可", Dtos.LogLevel.Error, "system");
+                                throw new Exception("Function Calling执行失败，该问题通常重试后即可");
                             }
                             var tools = choice.Message.ToolCalls;
                             if (tools != null)
@@ -855,7 +857,7 @@ namespace aibotPro.Service
                                                 }
                                             });
                                         }
-                                        pluginResDto = await _workShop.RunPlugin(Account, fn, chatId, senMethod);
+                                        pluginResDto = await _workShop.RunPlugin(Account, fn, chatId, senMethod, typeCode);
                                         if (!pluginResDto.doubletreating)
                                         {
                                             string res = string.Empty;
@@ -865,7 +867,8 @@ namespace aibotPro.Service
                                                     dalleloadding = false;
                                                     if (!string.IsNullOrEmpty(pluginResDto.errormsg) || string.IsNullOrEmpty(pluginResDto.result))
                                                     {
-                                                        chatRes.message = $"绘制失败，请重试！";
+                                                        chatRes.message = $"绘制失败，请重试！({pluginResDto.errormsg})";
+                                                        await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                                                         break;
                                                     }
                                                     string res1 = "<p>已为您绘制完成</p>";
@@ -940,18 +943,21 @@ namespace aibotPro.Service
                                             {
                                                 chatCompletionCreate.PresencePenalty = chatDto.presence_penalty;
                                             }
-                                            completionResult = openAiService.ChatCompletion.CreateCompletionAsStream(chatCompletionCreate);
-                                            await foreach (var responseContent_sec in completionResult)
+                                            completionResult = openAiService.ChatCompletion.CreateCompletionAsStream(chatCompletionCreate, chatCompletionCreate.Model, true, cancellationToken);
+                                            await foreach (var responseContent_sec in completionResult.WithCancellation(cancellationToken))
                                             {
                                                 if (responseContent_sec.Successful)
                                                 {
                                                     thisTask = await _redis.GetAsync($"{chatId}_process");
                                                     if (string.IsNullOrEmpty(thisTask))
+                                                    {
+                                                        cts.Cancel();
                                                         break;
+                                                    }
                                                     if (bool.Parse(thisTask))
                                                     {
                                                         var choice_sec = responseContent_sec.Choices.FirstOrDefault();
-                                                        if (choice_sec != null)
+                                                        if (choice_sec != null && choice_sec.Message != null)
                                                         {
                                                             sysmsg += choice_sec.Message.Content;
                                                             output += choice_sec.Message.Content;
@@ -961,6 +967,7 @@ namespace aibotPro.Service
                                                     }
                                                     else
                                                     {
+                                                        cts.Cancel();
                                                         break;
                                                     }
                                                 }
@@ -974,6 +981,7 @@ namespace aibotPro.Service
                         }
                         else
                         {
+                            cts.Cancel();
                             break;
                         }
                     }
@@ -987,7 +995,18 @@ namespace aibotPro.Service
                 await _aiServer.SaveChatHistory(Account, chatId, chatDto.msg, chatDto.msgid_u, chatDto.chatgroupid, "user", chatDto.aiModel);
                 await _aiServer.SaveChatHistory(Account, chatId, sysmsg, chatDto.msgid_g, chatDto.chatgroupid, "assistant", chatDto.aiModel);
                 if (!string.IsNullOrEmpty(sysmsg))
-                    await _financeService.CreateUseLogAndUpadteMoney(Account, chatDto.aiModel, tikToken.Encode(input).Count, tikToken.Encode(output).Count);
+                {
+                    var freePlan = await _financeService.CheckFree(Account, chatDto.aiModel);
+                    if (freePlan.RemainCount > 0)
+                    {
+                        await _financeService.UpdateFree(Account);
+                        await _financeService.CreateUseLog(Account, chatDto.aiModel, tikToken.Encode(input).Count, tikToken.Encode(output).Count, 0);
+                    }
+                    else
+                    {
+                        await _financeService.CreateUseLogAndUpadteMoney(Account, chatDto.aiModel, tikToken.Encode(input).Count, tikToken.Encode(output).Count);
+                    }
+                }
                 chatRes.message = "";
                 chatRes.isfinish = true;
                 await Clients.Group(chatId).SendAsync(senMethod, chatRes);

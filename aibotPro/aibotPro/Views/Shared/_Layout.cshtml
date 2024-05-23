@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="~/static/css/cassie.css?v1.2">
     <link href="~/static/css/bootstrap-tagsinput.css" rel="stylesheet" />
     <link href="~/system/css/robot.css?v1" rel="stylesheet" />
+    <link href="~/lib/jquery/dist/jquery-ui.css" rel="stylesheet" />
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/static/js/bootstrap-tagsinput.min.js"></script>
     <script src="~/static/js/bootstrap.bundle.min.js"></script>
@@ -25,6 +26,29 @@
     <script src="~/system/js/system.js"></script>
     <script src="~/system/js/balert.js"></script>
     <script src="~/system/js/markdown-it.min.js"></script>
+    <script src="~/lib/jquery/dist/jquery-ui.js"></script>
+    <style>
+        .drag-handle {
+            cursor: move;
+            text-align: center;
+            color: #333;
+        }
+
+        .dragging {
+            background-color: #f0f0f0;
+            border: 2px dashed #ccc;
+            opacity: 0.8;
+            transition: background-color 0.3s ease;
+        }
+
+        .drag-placeholder {
+            background-color: #eee;
+            border: 2px dashed #ccc;
+            height: 40px;
+            margin-bottom: 5px;
+        }
+
+    </style>
     <script>
         $(function () {
             // 页面加载完成后恢复滚动位置
@@ -241,6 +265,9 @@
                         </a>
                         <a href="/KnowledgeAI/KnowledgeBuild" class="nav-sub-link" id="build-knowledge-nav">
                             知识库构建（Build）
+                        </a>
+                        <a href="/KnowledgeAI/KnowledgeAllInMilvus" class="nav-sub-link" id="milvus-knowledge-nav">
+                            Milvus知识库构建（Milvus）
                         </a>
                     </nav>
                 </li>

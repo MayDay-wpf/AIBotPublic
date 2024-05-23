@@ -196,13 +196,33 @@ function getAiModelSetting() {
                 for (var i = 0; i < data.length; i++) {
                     var checkedAttr = data[i].visionModel ? 'checked' : '';
                     var str = `<tr>
+                                <td class="drag-handle"><i data-feather="align-justify"></i></td>
                                 <td><input type="text" class="form-control" maxlength="50" placeholder="模型昵称" value="${data[i].modelNick}" readonly="readonly" /></td>
                                 <td><input type="text" class="form-control" maxlength="50" placeholder="模型名称" value="${data[i].modelName}" readonly="readonly" /></td>
                                 <td><input type="checkbox" class="form-control" ${checkedAttr} disabled></td>
-                                <td><input type="number" class="form-control" maxlength="500" placeholder="排序" value="${data[i].seq}" /></td></tr>`
+                                <td><input type="number" class="form-control seq-input" maxlength="500" placeholder="排序" value="${data[i].seq}" /></td></tr>`
                     $("#AddSt2").append(str);
-
                 }
+                feather.replace();
+
+                // 初始化拖动排序
+                $("#AddSt2").sortable({
+                    handle: '.drag-handle',
+                    placeholder: 'drag-placeholder',
+                    forcePlaceholderSize: true,
+                    start: function (event, ui) {
+                        ui.item.addClass('dragging');
+                    },
+                    stop: function (event, ui) {
+                        ui.item.removeClass('dragging');
+                    },
+                    update: function (event, ui) {
+                        // 更新排序文本框的值
+                        $('#AddSt2 tr').each(function (index) {
+                            $(this).find('.seq-input').val(index + 1);
+                        });
+                    }
+                }).disableSelection();
             } else {
                 balert(res.msg, "danger", false, 1500, 'top');
             }

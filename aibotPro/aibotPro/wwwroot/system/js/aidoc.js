@@ -90,6 +90,7 @@ connection.on('ReceiveMessage', function (message) {
         $("#copyBtn").slideDown();
         $("#send").text("重试");
         $("#send").slideDown();
+        sysmsg = "";
     }
 });
 function send(prompt, chatId) {
@@ -106,6 +107,7 @@ function send(prompt, chatId) {
         "ip": IP,
         "image_path": ''
     };
+    $("#chatbox").text('稍等一下☀️');
     connection.invoke('SendMessage', data)
         .then(function () {
 

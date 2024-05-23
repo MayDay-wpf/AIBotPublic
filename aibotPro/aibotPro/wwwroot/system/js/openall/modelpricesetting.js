@@ -17,6 +17,8 @@ function addStLine() {
                  <td><input type="text" class="form-control" maxlength="50" placeholder="倍率"  /></td>
                  <td><input type="text" class="form-control" maxlength="50" placeholder="（VIP）倍率"  /></td>
                  <td><input type="text" class="form-control" maxlength="50" placeholder="单次消耗最大金额(超出时按此设置计费)"  /></td>
+                 <td><input type="text" class="form-control" maxlength="50" placeholder="大于0时按次计费"  /></td>
+                 <td><input type="text" class="form-control" maxlength="50" placeholder="（VIP）大于0时按次计费"  /></td>
                  <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`
     $("#AddSt").append(str);
     feather.replace();
@@ -44,6 +46,8 @@ function getModelPrice() {
                                 <td><input type="text" class="form-control" maxlength="50" placeholder="倍率" value="${data[i].rebate}" /></td>
                                 <td><input type="text" class="form-control" maxlength="50" placeholder="（VIP）倍率" value="${data[i].vipRebate}" /></td>
                                 <td><input type="text" class="form-control" maxlength="50" placeholder="单次消耗最大金额(超出时按此设置计费)" value="${data[i].maximum}" /></td>
+                                <td><input type="text" class="form-control" maxlength="50" placeholder="按次计费" value="${data[i].onceFee}" /></td>
+                                <td><input type="text" class="form-control" maxlength="50" placeholder="（VIP）按次计费" value="${data[i].vipOnceFee}" /></td>
                                 <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`
                     $("#AddSt").append(str);
                     feather.replace();
@@ -70,6 +74,8 @@ function saveModelPrice() {
         var rebate = $(row).find("input").eq(5).val();
         var viprebate = $(row).find("input").eq(6).val();
         var maximum = $(row).find("input").eq(7).val();
+        var oncefee = $(row).find("input").eq(8).val();
+        var viponcefee = $(row).find("input").eq(9).val();
 
         if (!removeSpaces(modelname) || !removeSpaces(modelpriceinput) || !removeSpaces(modelpriceoutput) ||
             !removeSpaces(vipmodelpriceinput) || !removeSpaces(vipmodelpriceoutput) || !removeSpaces(rebate) || !removeSpaces(viprebate)) {
@@ -85,6 +91,8 @@ function saveModelPrice() {
             formData.append(`ModelPrice[${index}].Rebate`, rebate);
             formData.append(`ModelPrice[${index}].VipRebate`, viprebate);
             formData.append(`ModelPrice[${index}].Maximum`, maximum);
+            formData.append(`ModelPrice[${index}].OnceFee`, oncefee);
+            formData.append(`ModelPrice[${index}].VipOnceFee`, viponcefee);
         }
     });
     if (issave) {

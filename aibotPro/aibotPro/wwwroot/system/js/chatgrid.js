@@ -51,7 +51,7 @@ connection.onreconnected((connectionId) => {
 });
 var sysmsg = "";
 var jishuqi = 0;
-var thisAiModel = 'gpt-3.5-turbo-0125';
+var thisAiModel = 'gpt-4-turbo-preview';
 connection.on('ReceiveMessage', function (message) {
     //console.log(message);
     if (!message.isfinish) {

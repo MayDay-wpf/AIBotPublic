@@ -5,6 +5,7 @@ using aibotPro.Dtos;
 using aibotPro.Interface;
 using aibotPro.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
@@ -83,28 +84,42 @@ namespace aibotPro.Service
                     {
                         //查询用户是否是VIP
                         bool vip = await IsVip(account);
+                        decimal? onceFee = 0;
                         if (vip)
                         {
                             //如果是VIP，使用VIP价格
                             modelPrice.ModelPriceInput = modelPrice.VipModelPriceInput;
                             modelPrice.ModelPriceOutput = modelPrice.VipModelPriceOutput;
                             modelPrice.Rebate = modelPrice.VipRebate;
+                            onceFee = modelPrice.VipOnceFee;
+                        }
+                        else
+                        {
+                            onceFee = modelPrice.OnceFee;
                         }
                         //如果是绘画
                         if (isdraw)
                         {
-                            realOutputMoney = modelPrice.ModelPriceOutput * modelPrice.Rebate;
+                            if (onceFee > 0)
+                                realOutputMoney = onceFee;
+                            else
+                                realOutputMoney = modelPrice.ModelPriceOutput * modelPrice.Rebate;
                         }
                         else
                         {
-                            //更新用户余额,字数要除以1000
-                            var inputMoney = modelPrice.ModelPriceInput * inputCount / 1000;
-                            var outputMoney = modelPrice.ModelPriceOutput * outputCount / 1000;
-                            //根据折扣计算实际扣费
-                            var rebate = modelPrice.Rebate;
-                            realOutputMoney = (inputMoney + outputMoney) * rebate;
-                            if (realOutputMoney > modelPrice.Maximum)
-                                realOutputMoney = modelPrice.Maximum;
+                            if (onceFee > 0)
+                                realOutputMoney = onceFee;
+                            else
+                            {
+                                //更新用户余额,字数要除以1000
+                                var inputMoney = modelPrice.ModelPriceInput * inputCount / 1000;
+                                var outputMoney = modelPrice.ModelPriceOutput * outputCount / 1000;
+                                //根据折扣计算实际扣费
+                                var rebate = modelPrice.Rebate;
+                                realOutputMoney = (inputMoney + outputMoney) * rebate;
+                                if (realOutputMoney > modelPrice.Maximum)
+                                    realOutputMoney = modelPrice.Maximum;
+                            }
                         }
                         //扣除用户余额
                         user.Mcoin -= realOutputMoney;
@@ -136,6 +151,135 @@ namespace aibotPro.Service
                     return false;
                 }
             }
+        }
+
+        public async Task<bool> CreateUseLog(string account, string modelName, int inputCount, int outputCount, decimal realOutputMoney)
+        {
+            using (var transaction = _context.Database.BeginTransaction())
+            {
+                try
+                {
+                    var log = new UseUpLog
+                    {
+                        Account = account,
+                        InputCount = inputCount,
+                        OutputCount = outputCount,
+                        UseMoney = realOutputMoney,
+                        CreateTime = DateTime.Now,
+                        ModelName = modelName
+                    };
+                    _context.UseUpLogs.Add(log);
+                    //保存变更到数据库
+                    await _context.SaveChangesAsync();
+                    transaction.Commit();
+                    return true;
+                }
+                catch (Exception)
+                {
+                    transaction.Rollback();
+                    return false;
+                }
+            }
+        }
+        public async Task<FreePlanDto> CheckFree(string account, string modelName)
+        {
+            FreePlanDto freePlanDto = new FreePlanDto();
+            var systemCfg = _systemService.GetSystemCfgs();
+            var workShopFreeModel = systemCfg.Where(x => x.CfgKey == "WorkShop_FreeModel").FirstOrDefault();
+            if (workShopFreeModel != null)//如果有免费模型
+            {
+                var workShopFreeModel_list = workShopFreeModel.CfgValue.Split(",");
+                if (workShopFreeModel_list.Contains(modelName))//如果使用模型属于免费模型
+                {
+                    string freePlanKey = "FreePlan_" + account;//免费方案Redis Key
+                    var freePlan = await _redisService.GetAsync(freePlanKey);
+                    if (freePlan == null)//如果没有免费方案
+                    {
+                        bool isVip = await IsVip(account);
+                        var workShopFreeModelUpdateHour = double.Parse(systemCfg.Where(x => x.CfgKey == "WorkShop_FreeModel_UpdateHour").FirstOrDefault().CfgValue.ToString());
+                        if (isVip)
+                        {
+                            var workShopFreeModelCountVip = int.Parse(systemCfg.Where(x => x.CfgKey == "WorkShop_FreeModel_Count_VIP").FirstOrDefault().CfgValue.ToString());
+                            freePlanDto.TotalCount = workShopFreeModelCountVip;
+                            freePlanDto.UsedCount = 0;
+                            freePlanDto.RemainCount = workShopFreeModelCountVip;
+                            freePlanDto.ExpireTime = DateTime.Now.AddHours(workShopFreeModelUpdateHour);
+                        }
+                        else
+                        {
+                            var workShopFreeModelCount = int.Parse(systemCfg.Where(x => x.CfgKey == "WorkShop_FreeModel_Count").FirstOrDefault().CfgValue.ToString());
+                            freePlanDto.TotalCount = workShopFreeModelCount;
+                            freePlanDto.UsedCount = 0;
+                            freePlanDto.RemainCount = workShopFreeModelCount;
+                            freePlanDto.ExpireTime = DateTime.Now.AddHours(workShopFreeModelUpdateHour);
+                        }
+                        //免费计划写入缓存
+                        await _redisService.SetAsync(freePlanKey, JsonConvert.SerializeObject(freePlanDto), freePlanDto.ExpireTime - DateTime.Now);
+                    }
+                    else
+                    {
+                        freePlanDto = JsonConvert.DeserializeObject<FreePlanDto>(freePlan);
+                    }
+                }
+            }
+            return freePlanDto;
+        }
+        public async Task<bool> UpdateFree(string account, int deductions = 1)
+        {
+            string freePlanKey = "FreePlan_" + account;//免费方案Redis Key
+            var freePlan = await _redisService.GetAsync(freePlanKey);
+            if (freePlan != null)
+            {
+                FreePlanDto freePlanDto = JsonConvert.DeserializeObject<FreePlanDto>(freePlan);
+                if (freePlanDto.RemainCount > 0)
+                {
+                    freePlanDto.RemainCount -= deductions;
+                    freePlanDto.UsedCount += deductions;
+                    //更新缓存
+                    await _redisService.SetAsync(freePlanKey, JsonConvert.SerializeObject(freePlanDto), freePlanDto.ExpireTime - DateTime.Now);
+                    return true;
+                }
+            }
+            return false;
+        }
+        public async Task<FreePlanDto> GetFreePlan(string account)
+        {
+            FreePlanDto freePlanDto = new FreePlanDto();
+            var systemCfg = _systemService.GetSystemCfgs();
+            var workShopFreeModel = systemCfg.Where(x => x.CfgKey == "WorkShop_FreeModel").FirstOrDefault();
+            if (workShopFreeModel != null)//如果有免费模型
+            {
+                string freePlanKey = "FreePlan_" + account;//免费方案Redis Key
+                var freePlan = await _redisService.GetAsync(freePlanKey);
+                if (freePlan == null)//如果没有免费方案
+                {
+                    bool isVip = await IsVip(account);
+                    var workShopFreeModelUpdateHour = double.Parse(systemCfg.Where(x => x.CfgKey == "WorkShop_FreeModel_UpdateHour").FirstOrDefault().CfgValue.ToString());
+                    if (isVip)
+                    {
+                        var workShopFreeModelCountVip = int.Parse(systemCfg.Where(x => x.CfgKey == "WorkShop_FreeModel_Count_VIP").FirstOrDefault().CfgValue.ToString());
+                        freePlanDto.TotalCount = workShopFreeModelCountVip;
+                        freePlanDto.UsedCount = 0;
+                        freePlanDto.RemainCount = workShopFreeModelCountVip;
+                        freePlanDto.ExpireTime = DateTime.Now.AddHours(workShopFreeModelUpdateHour);
+                    }
+                    else
+                    {
+                        var workShopFreeModelCount = int.Parse(systemCfg.Where(x => x.CfgKey == "WorkShop_FreeModel_Count").FirstOrDefault().CfgValue.ToString());
+                        freePlanDto.TotalCount = workShopFreeModelCount;
+                        freePlanDto.UsedCount = 0;
+                        freePlanDto.RemainCount = workShopFreeModelCount;
+                        freePlanDto.ExpireTime = DateTime.Now.AddHours(workShopFreeModelUpdateHour);
+                    }
+                    //将免费方案存入缓存
+                    await _redisService.SetAsync(freePlanKey, JsonConvert.SerializeObject(freePlanDto), freePlanDto.ExpireTime - DateTime.Now);
+                }
+                else
+                {
+                    freePlanDto = JsonConvert.DeserializeObject<FreePlanDto>(freePlan);
+                }
+            }
+            return freePlanDto;
         }
         public async Task<bool> IsVip(string account)
         {

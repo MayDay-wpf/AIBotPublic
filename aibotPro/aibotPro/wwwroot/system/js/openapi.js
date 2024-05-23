@@ -1,4 +1,5 @@
-﻿$(function () {
+﻿let options = '';
+$(function () {
     $('.nav-sub-link').removeClass('active');
     $('.nav-link').removeClass('active');
     $("#cygf-main-menu").addClass('active');
@@ -8,6 +9,7 @@
     getApiKey();
     getSystemPlugin();
     getAIModelList();
+    getOpenAPISetting();
     // 绑定 checkbox 的点击事件
     $('.custom-control-input').change(function () {
         if ($(this).is(':checked')) {
@@ -29,6 +31,10 @@ function getAIModelList() {
             if (res.success) {
                 for (var i = 0; i < res.data.length; i++) {
                     html += `${res.data[i].modelName}、`;
+                    if (i == 0)
+                        options += `<option checked="checked">${res.data[i].modelName}</option>`;
+                    else
+                        options += `<option>${res.data[i].modelName}</option>`;
                 }
                 html = html.substring(0, html.length - 1);
                 $('#canUseModel').html(html);
@@ -119,4 +125,78 @@ function getSystemPlugin() {
             loadingOverlay.hide();
         }
     });
+}
+function addStLine() {
+    var str = `<tr>
+                 <td><input type="text" class="form-control" maxlength="50" placeholder="自定义模型名" /></td>
+                 <td><select class="form-control">${options}</select></td>
+                 <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`
+    $("#AddSt").append(str);
+    feather.replace();
+}
+function delLine() {
+    $(event.target).closest('tr').remove();
+}
+function getOpenAPISetting() {
+    $.ajax({
+        type: 'Post',
+        url: '/OpenAPI/GetOpenAPISetting',
+        success: function (res) {
+            loadingOverlay.hide();
+            var data = res.data;
+            if (data == null)
+                return;
+            for (var i = 0; i < data.length; i++) {
+                addStLine();
+                $('#AddSt tr').eq(i).find('td').eq(0).find('input').val(data[i].fromModelName);
+                $('#AddSt tr').eq(i).find('td').eq(1).find('select').val(data[i].toModelName);
+                feather.replace();
+            }
+        },
+        error: function () {
+            loadingOverlay.hide();
+        }
+    });
+}
+function saveOpenAPISetting() {
+    var formData = new FormData();
+    var rows = $("#AddSt").find("tr");
+    var issave = true;
+    rows.each(function (index, row) {
+        // 非空校验
+        var fromModelName = $(row).find("input").eq(0).val();
+        var toModelName = $(row).find("select").eq(0).val();
+
+        if (!removeSpaces(fromModelName) || !removeSpaces(toModelName)) {
+            balert('请将空的【自定义API模型】输入行删除，或填写完整', 'danger', false, 1500, 'top');
+            issave = false;
+            return;
+        } else {
+            formData.append(`openAPIModelSettings[${index}].FromModelName`, fromModelName);
+            formData.append(`openAPIModelSettings[${index}].ToModelName`, toModelName);
+        }
+    });
+    if (issave) {
+        loadingBtn('.save');
+        $.ajax({
+            type: 'POST',
+            url: '/OpenAPI/SaveOpenAPISetting',
+            processData: false,  // 告诉jQuery不要处理发送的数据
+            contentType: false,  // 告诉jQuery不要设置contentType
+            data: formData,
+            success: function (res) {
+                unloadingBtn('.save');
+                if (res.success) {
+                    balert("保存成功", 'success', false, 1500, 'top');
+                } else {
+                    balert("保存失败", 'danger', false, 1500, 'top');
+                }
+            },
+            error: function (error) {
+                unloadingBtn('.save');
+                sendExceptionMsg(error);
+                balert('保存失败，请稍后再试', 'danger', false, 1500, 'top');
+            }
+        });
+    }
 }

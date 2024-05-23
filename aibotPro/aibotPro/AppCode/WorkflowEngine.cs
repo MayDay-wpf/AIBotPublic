@@ -8,9 +8,11 @@ using JavaScriptEngineSwitcher.Core;
 using JavaScriptEngineSwitcher.Extensions.MsDependencyInjection;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Spire.Doc;
+using Spire.Presentation;
 using Spire.Presentation.Charts;
 using StackExchange.Redis;
 using System.Diagnostics;
@@ -39,7 +41,8 @@ namespace aibotPro.AppCode
         private readonly List<WorkFlowCharging> _workFlowChargings = new List<WorkFlowCharging>();
         private readonly IServiceProvider _serviceProvider;
         private readonly IHubContext<ChatHub> _hubContext;
-        public WorkflowEngine(WorkFlowNodeData workflowData, IAiServer aiServer, ISystemService systemService, IFinanceService financeService, AIBotProContext context, string account, IServiceProvider serviceProvider, IHubContext<ChatHub> hubContext, string chatId, string senMethod)
+        private readonly IRedisService _redisService;
+        public WorkflowEngine(WorkFlowNodeData workflowData, IAiServer aiServer, ISystemService systemService, IFinanceService financeService, AIBotProContext context, string account, IServiceProvider serviceProvider, IHubContext<ChatHub> hubContext, string chatId, string senMethod, IRedisService redisService)
         {
             _workflowData = workflowData;
             _aiServer = aiServer;
@@ -51,6 +54,7 @@ namespace aibotPro.AppCode
             _hubContext = hubContext;
             _chatId = chatId;
             _senMethod = senMethod;
+            _redisService = redisService;
         }
         public async Task<List<NodeOutput>> Execute(string startNodeOutput)
         {
@@ -247,6 +251,9 @@ namespace aibotPro.AppCode
                 case "ifelse":
                     nodeOutput = await ProcessIfElseNode(node, result);
                     break;
+                case "knowledge":
+                    nodeOutput = await ProcessKonwledgeNode(node, result);
+                    break;
                 case "end":
                     nodeOutput = await ProcessEndNode(node, result);
                     break;
@@ -312,7 +319,7 @@ namespace aibotPro.AppCode
             if (!string.IsNullOrEmpty(_chatId))
             {
                 ChatRes chatRes = new ChatRes();
-                chatRes.message = $"👨‍💻";
+                chatRes.message = $"👨‍💻\n";
                 await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
             }
             string ExecuteResult = RunScript(nodeName + nodeId, jsData.Output.JavaScript);
@@ -335,7 +342,7 @@ namespace aibotPro.AppCode
             if (!string.IsNullOrEmpty(_chatId))
             {
                 ChatRes chatRes = new ChatRes();
-                chatRes.message = $"📎";
+                chatRes.message = $"📎\n";
                 await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
             }
             Dictionary<string, object> parameters = new Dictionary<string, object>();
@@ -424,7 +431,7 @@ namespace aibotPro.AppCode
             if (!string.IsNullOrEmpty(_chatId))
             {
                 ChatRes chatRes = new ChatRes();
-                chatRes.message = $"🤖";
+                chatRes.message = $"🤖\n";
                 await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
             }
             string aimodel = llmData.Output.AiModel;
@@ -512,7 +519,7 @@ namespace aibotPro.AppCode
                             aiChat.Messages = messages;
                             try
                             {
-                                await foreach (var responseContent in _aiServer.CallingAI(aiChat, apiSetting))
+                                await foreach (var responseContent in _aiServer.CallingAI(aiChat, apiSetting, _chatId))
                                 {
                                     result += responseContent.Choices[0].Delta.Content;
                                     await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, new ChatRes { message = responseContent.Choices[0].Delta.Content });
@@ -671,7 +678,7 @@ namespace aibotPro.AppCode
             if (!string.IsNullOrEmpty(_chatId))
             {
                 ChatRes chatRes = new ChatRes();
-                chatRes.message = $"✍";
+                chatRes.message = $"✍\n";
                 await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
             }
             string prompt = FillScriptWithValues(dallsmData.Output.Prompt, result);
@@ -747,7 +754,7 @@ namespace aibotPro.AppCode
             if (!string.IsNullOrEmpty(_chatId))
             {
                 ChatRes chatRes = new ChatRes();
-                chatRes.message = $"🌐";
+                chatRes.message = $"🌐\n";
                 await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
             }
             List<SystemCfg> systemConfig = _systemService.GetSystemCfgs();
@@ -828,6 +835,83 @@ namespace aibotPro.AppCode
             nodeOutput.NodeName = nodeName + nodeId;
             nodeOutput.OutputData = jsonBuilder.ToString();
             //查找下一个节点
+            return nodeOutput;
+        }
+
+        private async Task<NodeOutput> ProcessKonwledgeNode(NodeData node, List<NodeOutput> result)
+        {
+            NodeOutput nodeOutput = new NodeOutput();
+            KnowledgeData knowledgeData = (KnowledgeData)node.Data;
+            string prompt = FillScriptWithValues(knowledgeData.Output.Prompt, result);
+            var nodeName = node.Name;
+            var nodeId = node.Id;
+            if (!string.IsNullOrEmpty(_chatId))
+            {
+                ChatRes chatRes = new ChatRes();
+                chatRes.message = $"🔎📄\n";
+                await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
+            }
+            string airesult = string.Empty;
+            int retryCount = knowledgeData.Output.Retry; // 重试次数
+            int initialRetryCount = retryCount;
+            List<SystemCfg> systemCfgs = _systemService.GetSystemCfgs();
+            var Alibaba_DashVectorApiKey = systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorApiKey")?.CfgValue;
+            var Alibaba_DashVectorEndpoint = systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorEndpoint")?.CfgValue;
+            var Alibaba_DashVectorCollectionName = systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorCollectionName")?.CfgValue;
+            var EmbeddingsUrl = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsUrl")?.CfgValue;
+            var EmbeddingsApiKey = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsApiKey")?.CfgValue;
+            VectorHelper vectorHelper = new VectorHelper(_redisService, Alibaba_DashVectorApiKey, Alibaba_DashVectorEndpoint, Alibaba_DashVectorCollectionName, EmbeddingsUrl, EmbeddingsApiKey);
+            List<string> pm = new List<string>();
+            pm.Add(prompt);
+            List<List<double>> vectorList = new List<List<double>>();
+            do
+            {
+                vectorList = await vectorHelper.StringToVectorAsync("text-embedding-3-small", pm.Select(s => s.Replace("\r", "").Replace("\n", "")).ToList(), _account);
+                if (vectorList != null && vectorList.Count > 0) break; // 如果结果非空，退出循环
+                if (!string.IsNullOrEmpty(_chatId) && retryCount > 0)
+                {
+                    // 计算剩余重试次数
+                    int remainingRetries = retryCount - 1;
+                    string retryMessage = $"🔄 Knowledge重试 {initialRetryCount - remainingRetries}/{initialRetryCount}...";
+
+                    await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, new ChatRes { message = retryMessage });
+                }
+                await Task.Delay(500);
+            } while (--retryCount >= 0);
+            SearchVectorPr searchVectorPr = new SearchVectorPr();
+            searchVectorPr.filter = $"account = '{_account}'";
+            searchVectorPr.topk = knowledgeData.Output.TopK;
+            searchVectorPr.vector = vectorList[0];
+            SearchVectorResult searchVectorResult = vectorHelper.SearchVector(searchVectorPr);
+            string data = string.Empty;
+            if (searchVectorResult.output != null)
+            {
+                for (int i = 0; i < searchVectorResult.output.Count; i++)
+                {
+                    Output output = searchVectorResult.output[i];
+                    data += $"{i + 1}：{output.fields.knowledge} \n";
+                }
+                data = $@"知识库查询结果如下：
+                                     {data}
+                                     - 保持回答尽可能参考知识库的内容。 
+                                     - 使用 Markdown 语法优化回答格式。
+                                     - 以知识库中的理念和说话风格来解答用户的问题。 
+                                     - 使用与问题相同的语言回答。";
+            }
+            else
+                data = "知识库中没有查到关于这个问题的内容,请自行回答";
+            var jobject = new JObject
+            {
+                [$"{node.Name}{node.Id}"] = new JObject
+                {
+                    ["data"] = data
+                }
+            };
+            // 将JObject转换成JSON字符串
+            string jsonStr = jobject.ToString(Formatting.None);
+            nodeOutput.NodeName = nodeName + nodeId;
+            nodeOutput.OutputData = jsonStr;
+            nodeOutput.NextNodes = FindNextNode(node.Outputs);
             return nodeOutput;
         }
         private async Task<NodeOutput> ProcessEndNode(NodeData node, List<NodeOutput> result)

@@ -79,6 +79,26 @@
     <p></p>
     <div class="card">
         <div class="card-header">
+            <h5>
+                自定义模型名
+            </h5>
+            <button type="button" class="btn btn-primary save" onclick="saveOpenAPISetting()">
+                <i data-feather="save"></i>保存定义
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <table id="AddSt" class="form-table">
+                </table>
+                <button type="button" class="btn btn-success" onclick="addStLine()">
+                    <i data-feather="plus"></i>新增一行
+                </button>
+            </div>
+        </div>
+    </div>
+    <p></p>
+    <div class="card">
+        <div class="card-header">
             <h5>请求示例</h5>
             <p>完全遵循OpenAI请求方式，您可以使用OpenAI SDK进行调用</p>
         </div>

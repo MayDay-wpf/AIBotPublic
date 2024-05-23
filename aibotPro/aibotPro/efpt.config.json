@@ -87,11 +87,19 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[KnowledgeType]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[ModelPrice]",
          "ObjectType": 0
       },
       {
          "Name": "[dbo].[Notice]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[OpenAPIModelSetting]",
          "ObjectType": 0
       },
       {
@@ -193,6 +201,7 @@
    ],
    "UiHint": null,
    "UncountableWords": null,
+   "UseAsyncStoredProcedureCalls": true,
    "UseBoolPropertiesWithoutDefaultSql": false,
    "UseDatabaseNames": true,
    "UseDateOnlyTimeOnly": false,

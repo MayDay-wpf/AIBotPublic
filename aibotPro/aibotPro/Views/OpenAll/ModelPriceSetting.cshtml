@@ -26,7 +26,24 @@
         </div>
         <div class="card-body">
             <div class="form-group">
-                <table id="AddSt" class="form-table">
+                <table class="form-table">
+                    <thead>
+                        <tr>
+                            <td>模型名称</td>
+                            <td>用户输入价格</td>
+                            <td>用户输出价格</td>
+                            <td>VIP输入价格</td>
+                            <td>VIP输出价格</td>
+                            <td>用户倍率</td>
+                            <td>VIP倍率</td>
+                            <td>单次最大消耗</td>
+                            <td>按次计费</td>
+                            <td>VIP按次计费</td>
+                            <td>删除</td>
+                        </tr>
+                    </thead>
+                    <tbody id="AddSt">
+                    </tbody>
                 </table>
                 <button type="button" class="btn btn-success" onclick="addStLine()">
                     <i data-feather="plus"></i>新增一行

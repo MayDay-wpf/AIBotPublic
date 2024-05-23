@@ -8,6 +8,10 @@ namespace aibotPro.Interface
     {
         bool UpdateUserMoney(string account, decimal money, string type, out string errormsg);//更新用户余额
         Task<bool> CreateUseLogAndUpadteMoney(string account, string modelName, int inputCount, int outputCount, bool isdraw = false);//创建消耗记录并更新用户余额
+        Task<bool> CreateUseLog(string account, string modelName, int inputCount, int outputCount, decimal realOutputMoney);//创建消耗记录
+        Task<FreePlanDto> CheckFree(string account, string modelName);//检查免费详情
+        Task<bool> UpdateFree(string account, int deductions = 1);//更新免费详情
+        Task<FreePlanDto> GetFreePlan(string account);//获取免费详情
         Task<bool> IsVip(string account);//是否是VIP
         Task<List<VIP>> GetVipData(string account);//获取VIP信息
         Task<bool> VipExceed(string account);//VIP是否过期

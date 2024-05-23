@@ -28,26 +28,22 @@
 });
 var slidertemperature = document.getElementById("slidertemperature");
 slidertemperature.oninput = function () {
-    this.setAttribute('data-original-title', this.value);
-    $(this).tooltip('show');
+    $(".temperature").html(this.value);
 }
 
 var slidertopp = document.getElementById("slidertopp");
 slidertopp.oninput = function () {
-    this.setAttribute('data-original-title', this.value);
-    $(this).tooltip('show');
+    $(".top_p").html(this.value);
 }
 
 var sliderpresence = document.getElementById("sliderpresence");
 sliderpresence.oninput = function () {
-    this.setAttribute('data-original-title', this.value);
-    $(this).tooltip('show');
+    $(".presence_penalty").html(this.value);
 }
 
 var sliderfrequency = document.getElementById("sliderfrequency");
 sliderfrequency.oninput = function () {
-    this.setAttribute('data-original-title', this.value);
-    $(this).tooltip('show');
+    $(".frequency_penalty").html(this.value);
 }
 let roleAvatar = 'A';
 var max_textarea = false;
@@ -243,10 +239,10 @@ function getAIModelList() {
         success: function (res) {
             var html = "";
             if (res.success) {
-                $("#firstModel").text(res.data[0].modelNick);
+                $("#firstModel").html(res.data[0].modelNick);
                 thisAiModel = res.data[0].modelName;
                 for (var i = 0; i < res.data.length; i++) {
-                    html += `<a class="dropdown-item font-14" href="#" onclick="changeModel('` + res.data[i].modelName + `','` + res.data[i].modelNick + `')">` + res.data[i].modelNick + `</a>`;
+                    html += `<a class="dropdown-item font-14" href="#" onclick="changeModel('${escapeQuotes(res.data[i].modelName)}','${escapeQuotes(res.data[i].modelNick)}')">` + res.data[i].modelNick + `</a>`;
                 }
                 $('#AIModel').html(html);
             }
@@ -271,6 +267,10 @@ function changeModel(modelName, modelNick) {
 //隐藏历史记录列表
 var isShowHistory = true;
 function hideHistoary() {
+    if (!processOver) {
+        balert("对话进行中,请结束后再试", "warning", false, 2000);
+        return;
+    }
     if (isMobile()) {
         mobileChat(false);
     }
@@ -455,8 +455,9 @@ function sendMsg() {
     }
     var gpthtml = `<div class="chat-message" data-group="` + chatgroupid + `">
                     <div style="display: flex; align-items: center;">
-                        <div class="avatar"><img src='${roleAvatar}'/></div>
+                        <div class="avatar">${roleAvatar}</div>
                         <div class="nickname" style="font-weight: bold; color: black;">${roleName}</div>
+                        <span class="badge badge-info ${thisAiModel.replace('.', '')}">${thisAiModel}</span>
                      </div>
                     <div class="chat-message-box">
                         <div id="`+ msgid_g + `"></div><svg width="30" height="30" class="LDI"><circle cx="15" cy="15" r="7.5" fill="black" class="blinking-dot" /></svg>
@@ -692,7 +693,7 @@ function showHistoryDetail(id) {
                         var contentarr = content.split("aee887ee6d5a79fdcmay451ai8042botf1443c04");
                         html += `<div class="chat-message" data-group="` + res.data[i].chatGroupId + `">
                                  <div style="display: flex; align-items: center;">
-                                    <div class="avatar"><img src='${HeadImgPath}'/></div>
+                                    <div class="avatar">${roleAvatar}</div>
                                     <div class="nickname" style="font-weight: bold; color: black;">${UserNickText}</div>
                                  </div>
                                  <div class="chat-message-box">
@@ -711,8 +712,9 @@ function showHistoryDetail(id) {
                     var encoder = new TextEncoder();
                     html += `<div class="chat-message" data-group="` + res.data[i].chatGroupId + `">
                                 <div style="display: flex; align-items: center;">
-                                    <div class="avatar"><img src='${roleAvatar}'/></div>
+                                    <div class="avatar">${roleAvatar}</div>
                                     <div class="nickname" style="font-weight: bold; color: black;">${roleName}</div>
+                                    <span class="badge badge-info ${res.data[i].model.replace('.', '')}">${res.data[i].model}</span>
                                 </div>
                                 <div class="chat-message-box">
                                     <div id="`+ res.data[i].chatCode + `">` + markedcontent + `</div>
@@ -725,7 +727,7 @@ function showHistoryDetail(id) {
                             </div>`;
                 }
             }
-            chatBody.html(html);
+            chatBody.html(html).hide().fadeIn(300);
             MathJax.typeset();
             $(".chat-message pre code").each(function (i, block) {
                 hljs.highlightElement(block);
@@ -745,6 +747,10 @@ function showHistoryDetail(id) {
 }
 //新建会话
 function newChat() {
+    if (!processOver) {
+        balert("对话进行中,请结束后再试", "warning", false, 2000);
+        return;
+    }
     mobileChat(true);
     chatid = "";
     chatBody.html("");

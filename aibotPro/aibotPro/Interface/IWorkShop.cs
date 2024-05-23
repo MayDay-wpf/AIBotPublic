@@ -42,12 +42,15 @@ namespace aibotPro.Interface
         List<PluginCookieDto> GetPluginCookies(int pluginId);
 
         //运行插件
-        Task<PluginResDto> RunPlugin(string account, FunctionCall fn, string chatId = "", string senMethod = "");
+        Task<PluginResDto> RunPlugin(string account, FunctionCall fn, string chatId = "", string senMethod = "", List<string> typeCode = null);
 
         //获取工作流节点数据
         Task<string> GetWorkFlowNodeData(string workflowcode);
 
         //更新插件的命中
-        bool SetMandatoryHit(string account,int id, bool mustHit);
+        bool SetMandatoryHit(string account, int id, bool mustHit);
+        //获取OpenAPI的模型映射关系
+        Task<List<OpenAPIModelSetting>> GetOpenAPIModelSetting(string account);
+        Task<bool> SaveOpenAPIModelSetting(string account, List<OpenAPIModelSetting> openAPIModelSetting);
     }
 }

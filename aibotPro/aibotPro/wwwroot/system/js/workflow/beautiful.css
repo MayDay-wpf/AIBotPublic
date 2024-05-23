@@ -594,69 +594,77 @@ table {
     right: 0;
     background-color: rgb(244,244,244);
     overflow-y: scroll;
-    /*transition: 0.5s;*/
-    padding: 0 30px 0 30px;
-    color: black;
+    padding: 0;
     display: none;
     width: 400px;
     transition: width 0.5s ease-in-out;
-    border-left: 3px solid rgb(46,46,46);
+    border-left: 1px solid rgb(202,202,202);
 }
 
-    .side-panel a.close-btn {
+.panel-header {
+    position: sticky;
+    top: 0;
+    background-color: rgb(46,46,46);
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 9999;
+    color: white;
+}
+
+    .panel-header span {
+        margin: 0;
+    }
+
+    .panel-header .close-btn {
         padding: 8px;
         text-decoration: none;
-        font-size: 36px;
-        color: black;
-        position: absolute;
-        top: 0;
-        right: 25px;
+        font-size: 25px;
+        color: white;
     }
 
-    .side-panel h2 {
-        margin-top: 0;
-        color: #f1f1f1;
-    }
-
-    .side-panel input {
-        padding: 10px;
-        border-radius: 5px; /* 圆角 */
-        box-sizing: border-box; /* 使宽度包含内边距和边框 */
-        transition: border-color 0.3s, box-shadow 0.3s; /* 平滑过渡效果 */
-        outline: none;
-    }
-
-        .side-panel input:focus {
-            box-shadow: 0 0 8px 0 rgba(0,123,255,0.5); /* 聚焦时的阴影效果 */
-        }
-
-    .side-panel .retry {
-        padding: 10px;
-        border-radius: 5px; /* 圆角 */
-        box-sizing: border-box; /* 使宽度包含内边距和边框 */
-        transition: border-color 0.3s, box-shadow 0.3s; /* 平滑过渡效果 */
-    }
-
-        .side-panel .retry:focus {
-            box-shadow: 0 0 8px 0 rgba(0,123,255,0.5); /* 聚焦时的阴影效果 */
-        }
-
-    .side-panel textarea {
-        padding: 10px;
-        border-radius: 5px; /* 圆角 */
-        box-sizing: border-box; /* 使宽度包含内边距和边框 */
-        transition: border-color 0.3s, box-shadow 0.3s; /* 平滑过渡效果 */
-        outline: none;
-    }
-
-        .side-panel textarea:focus {
-            box-shadow: 0 0 8px 0 rgba(0,123,255,0.5); /* 聚焦时的阴影效果 */
-        }
-
-
-.side-panel-container {
-    position: relative;
+.panel-content {
+    padding: 15px 15px;
 }
+
+
+.side-panel input {
+    padding: 10px;
+    border-radius: 5px; /* 圆角 */
+    box-sizing: border-box; /* 使宽度包含内边距和边框 */
+    transition: border-color 0.3s, box-shadow 0.3s; /* 平滑过渡效果 */
+    outline: none;
+}
+
+    .side-panel input:focus {
+        box-shadow: 0 0 8px 0 rgba(0,123,255,0.5); /* 聚焦时的阴影效果 */
+    }
+
+.side-panel .retry {
+    padding: 10px;
+    border-radius: 5px; /* 圆角 */
+    box-sizing: border-box; /* 使宽度包含内边距和边框 */
+    transition: border-color 0.3s, box-shadow 0.3s; /* 平滑过渡效果 */
+}
+
+    .side-panel .retry:focus {
+        box-shadow: 0 0 8px 0 rgba(0,123,255,0.5); /* 聚焦时的阴影效果 */
+    }
+
+.side-panel textarea {
+    padding: 10px;
+    border-radius: 5px; /* 圆角 */
+    box-sizing: border-box; /* 使宽度包含内边距和边框 */
+    transition: border-color 0.3s, box-shadow 0.3s; /* 平滑过渡效果 */
+    outline: none;
+}
+
+    .side-panel textarea:focus {
+        box-shadow: 0 0 8px 0 rgba(0,123,255,0.5); /* 聚焦时的阴影效果 */
+    }
+
+
 .drawflow-node.ifelse .outputs .output:nth-child(1):before {
     display: block;
     content: "True";

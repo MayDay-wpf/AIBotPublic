@@ -16,6 +16,7 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using System.Text;
 using Microsoft.AspNetCore.SignalR;
+using System.Collections.Generic;
 
 namespace aibotPro.Service
 {
@@ -29,7 +30,8 @@ namespace aibotPro.Service
         private readonly IFinanceService _financeService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IHubContext<ChatHub> _hubContext;
-        public WorkShopService(AIBotProContext context, ISystemService systemService, IAiServer aiServer, IUsersService usersService, IRedisService redisService, IFinanceService financeService, IServiceProvider serviceProvider, IHubContext<ChatHub> hubContext)
+        private readonly IMilvusService _milvusService;
+        public WorkShopService(AIBotProContext context, ISystemService systemService, IAiServer aiServer, IUsersService usersService, IRedisService redisService, IFinanceService financeService, IServiceProvider serviceProvider, IHubContext<ChatHub> hubContext, IMilvusService milvusService)
         {
             _context = context;
             _systemService = systemService;
@@ -39,6 +41,7 @@ namespace aibotPro.Service
             _financeService = financeService;
             _serviceProvider = serviceProvider;
             _hubContext = hubContext;
+            _milvusService = milvusService;
         }
         public bool InstallPlugin(string account, int pluginId, out string errormsg)
         {
@@ -326,7 +329,7 @@ namespace aibotPro.Service
             }).ToList();
             return pluginCookies;
         }
-        public async Task<PluginResDto> RunPlugin(string account, FunctionCall fn, string chatId = "", string senMethod = "")
+        public async Task<PluginResDto> RunPlugin(string account, FunctionCall fn, string chatId = "", string senMethod = "", List<string> typeCode = null)
         {
             PluginResDto pluginResDto = new PluginResDto();
             //获取插件信息
@@ -339,6 +342,14 @@ namespace aibotPro.Service
                 string baseUrl = string.Empty;
                 string apiKey = string.Empty;
                 bool shouldPay = true;
+                //检查用户余额
+                var user = _usersService.GetUserData(account);
+                if (user.Mcoin <= 0)
+                {
+                    pluginResDto.result = string.Empty;
+                    pluginResDto.errormsg = "DALL-E3为付费插件，您的余额不足";
+                    return pluginResDto;
+                }
                 //获取对话设置
                 var chatSetting = _usersService.GetChatSetting(account);
                 if (chatSetting != null && chatSetting.MyDall != null && chatSetting.MyDall.ApiKey != null && chatSetting.MyDall.BaseURL != null)
@@ -354,6 +365,7 @@ namespace aibotPro.Service
                     {
                         pluginResDto.result = string.Empty;
                         pluginResDto.errormsg = "AI模型不存在";
+                        return pluginResDto;
                     }
                     baseUrl = aiModel.BaseUrl;
                     apiKey = aiModel.ApiKey;
@@ -432,11 +444,39 @@ namespace aibotPro.Service
                 List<string> pm = new List<string>();
                 pm.Add(query);
                 List<List<double>> vectorList = await vectorHelper.StringToVectorAsync("text-embedding-3-small", pm.Select(s => s.Replace("\r", "").Replace("\n", "")).ToList(), account);
+                if (vectorList[0] == null)
+                {
+                    await _systemService.WriteLog("text-embedding-3-small模型执行失败，该问题通常重试后即可", Dtos.LogLevel.Error, "system");
+                    throw new Exception("text-embedding-3-small模型执行失败，该问题通常重试后即可");
+                }
                 SearchVectorPr searchVectorPr = new SearchVectorPr();
                 searchVectorPr.filter = $"account = '{account}'";
                 searchVectorPr.topk = 3;
                 searchVectorPr.vector = vectorList[0];
-                SearchVectorResult searchVectorResult = vectorHelper.SearchVector(searchVectorPr);
+                SearchVectorResult searchVectorResult = new SearchVectorResult();
+                if (typeCode != null && typeCode.Count > 0)
+                {
+                    List<float> vectorByMilvus = searchVectorPr.vector.ConvertAll(x => (float)x);
+                    var resultByMilvus = await _milvusService.SearchVector(vectorByMilvus, account, typeCode, searchVectorPr.topk);
+                    searchVectorResult = new SearchVectorResult
+                    {
+                        code = resultByMilvus.Code,
+                        request_id = Guid.NewGuid().ToString(),
+                        message = string.Empty,
+                        output = resultByMilvus.Data.Select(data => new Output
+                        {
+                            id = data.Id,
+                            fields = new Fields
+                            {
+                                account = string.Empty,
+                                knowledge = data.VectorContent
+                            },
+                            score = (double)data.Distance
+                        }).ToList()
+                    };
+                }
+                else
+                    searchVectorResult = vectorHelper.SearchVector(searchVectorPr);
                 string knowledge = string.Empty;
                 if (searchVectorResult.output != null)
                 {
@@ -766,7 +806,7 @@ namespace aibotPro.Service
                                 {
                                     startOutputJson = "{}";
                                 }
-                                WorkflowEngine workflowEngine = new WorkflowEngine(workFlowNodeData, _aiServer, _systemService, _financeService, _context, account, _serviceProvider, _hubContext, chatId, senMethod);
+                                WorkflowEngine workflowEngine = new WorkflowEngine(workFlowNodeData, _aiServer, _systemService, _financeService, _context, account, _serviceProvider, _hubContext, chatId, senMethod, _redisService);
                                 List<NodeOutput> workflowResult = await workflowEngine.Execute(startOutputJson);
                                 //查询工作流结束模式
                                 var endNodeData = (EndData)workFlowNodeData.Drawflow.Home.Data.Values.FirstOrDefault(x => x.Name == "end").Data;
@@ -826,6 +866,50 @@ namespace aibotPro.Service
                 return true;
             }
             return false;
+        }
+        public async Task<List<OpenAPIModelSetting>> GetOpenAPIModelSetting(string account)
+        {
+            List<OpenAPIModelSetting> openAPIModelSettings = new List<OpenAPIModelSetting>();
+            //获取缓存中的设置
+            string openapiKey = $"OpenAPI_{account}";
+            var openApiSetting = await _redisService.GetAsync(openapiKey);
+            if (openApiSetting == null)
+            {
+                openAPIModelSettings = _context.OpenAPIModelSettings.AsNoTracking().Where(x => x.Account == account).ToList();
+                if (openAPIModelSettings != null && openAPIModelSettings.Count > 0)
+                {
+                    //写入缓存
+                    await _redisService.SetAsync(openapiKey, JsonConvert.SerializeObject(openAPIModelSettings));
+                }
+                return openAPIModelSettings;
+            }
+            else
+            {
+                openAPIModelSettings = JsonConvert.DeserializeObject<List<OpenAPIModelSetting>>(openApiSetting);
+                return openAPIModelSettings;
+            }
+        }
+        public async Task<bool> SaveOpenAPIModelSetting(string account, List<OpenAPIModelSetting> openAPIModelSetting)
+        {
+            string openapiKey = $"OpenAPI_{account}";
+            //删除用户原有的设置
+            _context.OpenAPIModelSettings.RemoveRange(_context.OpenAPIModelSettings.Where(x => x.Account == account));
+            //写入新的配置
+            foreach (var item in openAPIModelSetting)
+            {
+                OpenAPIModelSetting openAPIModel = new OpenAPIModelSetting
+                {
+                    Account = account,
+                    FromModelName = item.FromModelName,
+                    ToModelName = item.ToModelName
+                };
+                _context.OpenAPIModelSettings.Add(openAPIModel);
+            }
+            _context.SaveChanges();
+            //更新缓存
+            var newSettings = _context.OpenAPIModelSettings.Where(x => x.Account == account);
+            await _redisService.SetAsync(openapiKey, JsonConvert.SerializeObject(newSettings));
+            return true;
         }
         #region workflow通用函数
         private static string FillJsonTemplate(string jsonTemplate, Dictionary<string, string> parameters)

@@ -25,6 +25,8 @@ using TiktokenSharp;
 using static OpenAI.ObjectModels.SharedModels.IOpenAiModels;
 using System.Numerics;
 using aibotPro.Dtos;
+using System.Collections;
+
 namespace aibotPro.Service
 {
     public class SystemService : ISystemService
@@ -33,6 +35,8 @@ namespace aibotPro.Service
         private readonly AIBotProContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IRedisService _redis;
+
+
         public SystemService(AIBotProContext context, IHttpContextAccessor httpContextAccessor, IRedisService redis)
         {
             _context = context;
@@ -548,120 +552,140 @@ namespace aibotPro.Service
         {
             SystemCfg Mail = new SystemCfg()
             {
+                CfgName = "系统邮箱",
                 CfgKey = "Mail",
                 CfgCode = "Mail",
                 CfgValue = "After"
             };
             SystemCfg MailPwd = new SystemCfg()
             {
+                CfgName = "系统邮箱密码",
                 CfgKey = "MailPwd",
                 CfgCode = "MailPwd",
                 CfgValue = "After"
             };
             SystemCfg RegiestMcoin = new SystemCfg()
             {
+                CfgName = "注册赠送M币",
                 CfgKey = "RegiestMcoin",
                 CfgCode = "RegiestMcoin",
                 CfgValue = "3"
             };
             SystemCfg Baidu_TXT_AK = new SystemCfg()
             {
+                CfgName = "百度文字识别AccessKey",
                 CfgKey = "Baidu_TXT_AK",
                 CfgCode = "Baidu_TXT_AK",
                 CfgValue = "After"
             };
             SystemCfg Baidu_TXT_SK = new SystemCfg()
             {
+                CfgName = "百度文字识别SecretKey",
                 CfgKey = "Baidu_TXT_SK",
                 CfgCode = "Baidu_TXT_SK",
                 CfgValue = "After"
             };
             SystemCfg GoogleSearchApiKey = new SystemCfg()
             {
+                CfgName = "谷歌搜索ApiKey",
                 CfgKey = "GoogleSearchApiKey",
                 CfgCode = "GoogleSearchApiKey",
                 CfgValue = "After"
             };
             SystemCfg GoogleSearchEngineId = new SystemCfg()
             {
+                CfgName = "谷歌搜索引擎Id",
                 CfgKey = "GoogleSearchEngineId",
                 CfgCode = "GoogleSearchEngineId",
                 CfgValue = "After"
             };
             SystemCfg Alibaba_Captcha_AK = new SystemCfg()
             {
+                CfgName = "阿里巴巴滑动验证AccessKey(弃用)",
                 CfgKey = "Alibaba_Captcha_AK",
                 CfgCode = "Alibaba_Captcha_AK",
                 CfgValue = "After"
             };
             SystemCfg Alibaba_Captcha_SK = new SystemCfg()
             {
+                CfgName = "阿里巴巴滑动验证SecretKey(弃用)",
                 CfgKey = "Alibaba_Captcha_SK",
                 CfgCode = "Alibaba_Captcha_SK",
                 CfgValue = "After"
             };
             SystemCfg Alibaba_Captcha_Endpoint = new SystemCfg()
             {
+                CfgName = "阿里巴巴滑动验证Endpoint(弃用)",
                 CfgKey = "Alibaba_Captcha_Endpoint",
                 CfgCode = "Alibaba_Captcha_Endpoint",
                 CfgValue = "After"
             };
             SystemCfg Domain = new SystemCfg()
             {
+                CfgName = "系统域名",
                 CfgKey = "Domain",
                 CfgCode = "Domain",
                 CfgValue = "After"
             };
             SystemCfg Alibaba_DashVectorApiKey = new SystemCfg()
             {
+                CfgName = "阿里巴巴向量检索ApiKey",
                 CfgKey = "Alibaba_DashVectorApiKey",
                 CfgCode = "Alibaba_DashVectorApiKey",
                 CfgValue = "After"
             };
             SystemCfg Alibaba_DashVectorEndpoint = new SystemCfg()
             {
+                CfgName = "阿里巴巴向量检索Endpoint",
                 CfgKey = "Alibaba_DashVectorEndpoint",
                 CfgCode = "Alibaba_DashVectorEndpoint",
                 CfgValue = "After"
             };
             SystemCfg Alibaba_DashVectorCollectionName = new SystemCfg()
             {
+                CfgName = "阿里巴巴向量检索CollectionName",
                 CfgKey = "Alibaba_DashVectorCollectionName",
                 CfgCode = "Alibaba_DashVectorCollectionName",
                 CfgValue = "After"
             };
             SystemCfg EmbeddingsUrl = new SystemCfg()
             {
+                CfgName = "嵌入AI模型BaseUrl",
                 CfgKey = "EmbeddingsUrl",
                 CfgCode = "EmbeddingsUrl",
                 CfgValue = "After"
             };
             SystemCfg EmbeddingsApiKey = new SystemCfg()
             {
+                CfgName = "嵌入AI模型ApiKey",
                 CfgKey = "EmbeddingsApiKey",
                 CfgCode = "EmbeddingsApiKey",
                 CfgValue = "After"
             };
             SystemCfg QAurl = new SystemCfg()
             {
+                CfgName = "(gpt3.5)数据清洗AI模型BaseUrl",
                 CfgKey = "QAurl",
                 CfgCode = "QAurl",
                 CfgValue = "After"
             };
             SystemCfg ShareMcoin = new SystemCfg()
             {
+                CfgName = "分享注册用户获得M币",
                 CfgKey = "ShareMcoin",
                 CfgCode = "ShareMcoin",
                 CfgValue = "3"
             };
             SystemCfg Baidu_OBJ_AK = new SystemCfg()
             {
+                CfgName = "百度场景识别AccessKey",
                 CfgKey = "Baidu_OBJ_AK",
                 CfgCode = "Baidu_OBJ_AK",
                 CfgValue = "After"
             };
             SystemCfg Baidu_OBJ_SK = new SystemCfg()
             {
+                CfgName = "百度场景识别SecretKey",
                 CfgKey = "Baidu_OBJ_SK",
                 CfgCode = "Baidu_OBJ_SK",
                 CfgValue = "After"

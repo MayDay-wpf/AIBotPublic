@@ -15,9 +15,9 @@ namespace aibotPro.Models
         public int Id { get; set; }
         [StringLength(500)]
         public string Account { get; set; }
-        [StringLength(50)]
+        [StringLength(1000)]
         public string ModelNick { get; set; }
-        [StringLength(50)]
+        [StringLength(1000)]
         public string ModelName { get; set; }
         public int? Seq { get; set; }
     }

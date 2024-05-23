@@ -135,6 +135,15 @@ namespace aibotPro.Controllers
                 jsonBody = await reader.ReadToEndAsync();
             }
             ChatSession chatSession = JsonConvert.DeserializeObject<ChatSession>(jsonBody);
+            //获取模型关系映射并切换
+            var openapiSetting = await _workShop.GetOpenAPIModelSetting(Account);
+            if (openapiSetting != null)
+            {
+                var trueModelName = openapiSetting.Where(x => x.FromModelName == chatSession.Model).FirstOrDefault();
+                if (trueModelName != null)
+                    chatSession.Model = trueModelName.ToModelName;
+            }
+
             //检查该模型是否需要收费
             var modelPrice = await _financeService.ModelPrice(chatSession.Model);
             bool isVip = await _financeService.IsVip(Account);
@@ -577,6 +586,22 @@ namespace aibotPro.Controllers
                 throw e;
             }
 
+        }
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> GetOpenAPISetting()
+        {
+            string username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var result = await _workShop.GetOpenAPIModelSetting(username);
+            return Ok(new { success = true, msg = "Success", data = result });
+        }
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> SaveOpenAPISetting([FromForm] List<OpenAPIModelSetting> openAPIModelSettings)
+        {
+            string username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            bool result = await _workShop.SaveOpenAPIModelSetting(username, openAPIModelSettings);
+            return Ok(new { success = result });
         }
     }
 }

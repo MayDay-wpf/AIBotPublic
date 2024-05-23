@@ -27,6 +27,7 @@
     position: fixed; /* 固定位置按钮 */
     z-index: 1000; /* 确保按钮显示在其他内容上方 */
 }
+
 .copy-container {
     border-bottom-left-radius: 10px; /* 左下角圆角 */
     border-bottom-right-radius: 10px; /* 右下角圆角 */
@@ -43,4 +44,65 @@
 .code-lang-label {
     color: #fff; /* 文字颜色 */
     font-size: 0.75em; /* 字体大小 */
+}
+
+.badge {
+    margin-left: 5px;
+}
+
+.gpt-4-turbo-preview {
+    background-color: rgb(243,212,223);
+    color: rgb(126,5,58);
+}
+
+.gpt-4-turbo-preview-CYGF {
+    background-color: rgb(243,212,223);
+    color: rgb(126,5,58);
+}
+
+.gpt-4-turbo-preview-openai {
+    background-color: rgb(243,212,223);
+    color: rgb(126,5,58);
+}
+
+
+.gpt-35-turbo-0125 {
+    background-color: rgb(240,248,217);
+    color: rgb(72,125,135);
+}
+
+.gpt-35-turbo-0125-CYGF {
+    background-color: rgb(240,248,217);
+    color: rgb(72,125,135);
+}
+
+.gpt-35-turbo-0125-openai {
+    background-color: rgb(240,248,217);
+    color: rgb(72,125,135);
+}
+
+
+.gpt-35-turbo-16k-0613 {
+    background-color: rgb(243,212,223);
+    color: rgb(126,5,58);
+}
+
+.ERNIE-Bot-4 {
+    background-color: rgb(245,216,213);
+    color: rgb(142,8,5);
+}
+
+.claude-3-haiku-20240307 {
+    background-color: rgb(244,234,211);
+    color: rgb(120,70,6);
+}
+
+.claude-3-sonnet-20240229 {
+    background-color: rgb(208,223,245);
+    color: rgb(0,61,143);
+}
+
+.claude-3-opus-20240229 {
+    background-color: rgb(217,235,218);
+    color: rgb(27,89,36);
 }

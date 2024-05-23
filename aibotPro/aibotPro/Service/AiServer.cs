@@ -22,7 +22,8 @@ using SixLabors.ImageSharp.Advanced; // 高级操作
 using SixLabors.ImageSharp.PixelFormats;
 using OpenAI;
 using OpenAI.ObjectModels.RequestModels;
-using OpenAI.Managers; // 像素格式
+using OpenAI.Managers;
+using System.Runtime.CompilerServices; // 像素格式
 
 namespace aibotPro.Service
 {
@@ -38,7 +39,7 @@ namespace aibotPro.Service
             _redis = redis;
         }
         //实现接口
-        public async IAsyncEnumerable<AiRes> CallingAI(AiChat aiChat, APISetting apiSetting, VisionBody visionBody = null)
+        public async IAsyncEnumerable<AiRes> CallingAI(AiChat aiChat, APISetting apiSetting, string chatId, VisionBody visionBody = null)
         {
             //标准化baseurl
             string baseUrl = apiSetting.BaseUrl;
@@ -73,6 +74,11 @@ namespace aibotPro.Service
                             string line;
                             while (!reader.EndOfStream)
                             {
+                                string thisTask = await _redis.GetAsync($"{chatId}_process");
+                                if (string.IsNullOrEmpty(thisTask) || !bool.Parse(thisTask))
+                                {
+                                    yield break;
+                                }
                                 line = await reader.ReadLineAsync();
                                 if (line.StartsWith("data:"))
                                 {
@@ -507,7 +513,7 @@ namespace aibotPro.Service
             }
             catch (Exception e)
             {
-                _systemService.WriteLog(e.Message, Dtos.LogLevel.Error, "system");
+                await _systemService.WriteLog(e.Message, Dtos.LogLevel.Error, "system");
                 return false;
             }
 

@@ -61,6 +61,9 @@ namespace aibotPro.Dtos
                 case "ifelse":
                     Data = RawData.ToObject<IfElseData>();
                     break;
+                case "knowledge":
+                    Data = RawData.ToObject<KnowledgeData>();
+                    break;
                 case "end":
                     Data = RawData.ToObject<EndData>();
                     break;
@@ -194,7 +197,13 @@ namespace aibotPro.Dtos
         public new IfElse Output { get; set; }
         public override object GetOutput() => Output;
     }
-
+    //Knowledge派生类
+    public class KnowledgeData : NodeSpecificData
+    {
+        [JsonProperty("output")]
+        public new Konwledge Output { get; set; }
+        public override object GetOutput() => Output;
+    }
     // End派生类
     public class EndData : NodeSpecificData
     {
@@ -284,6 +293,15 @@ namespace aibotPro.Dtos
     {
         [JsonProperty("judgresult")]
         public string JudgResult { get; set; }
+    }
+    public class Konwledge
+    {
+        [JsonProperty("prompt")]
+        public string Prompt { get; set; }
+        [JsonProperty("retry")]
+        public int Retry { get; set; }
+        [JsonProperty("topk")]
+        public int TopK { get; set; }
     }
     public class EndOutput
     {

@@ -40,13 +40,14 @@
         <div class="card">
             <div class="card-header">
                 <h5>第一步：输入提示词</h5>
+                <button class="btn btn-outline-success greatePrompt" onclick="sendMsg()"><img src="~/system/images/magic_stick.png" style="width:20px;" />优化提示词</button>
             </div>
             <div class="card-body">
                 <div class="textarea-container">
-                    <textarea class="form-control" rows="5" maxlength="500"
+                    <textarea class="form-control" rows="10" maxlength="3000"
                               placeholder="请描述画面中的内容，描述的方式，顺序，措辞等都会对画面产生不同的影响效果" id="inputText"></textarea>
                     <div class="char-count">
-                        <span id="charCount">0</span>/<span class="char-limit">500</span>
+                        <span id="charCount">0</span>/<span class="char-limit">3000</span>
                     </div>
                 </div>
             </div>
@@ -101,6 +102,7 @@
         <p></p>
     </div>
 </div>
+<script src="~/system/js/signalr.min.js"></script>
 <link rel="stylesheet" href="~/system/css/magnific-popup.min.css">
 <script src="~/system/js/jquery.magnific-popup.min.js"></script>
 <script src="~/system/js/dall.js"></script>
