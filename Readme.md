@@ -15,11 +15,17 @@
 ## 第三方依赖：
 * 百度AI OCR
 * 阿里巴巴滑动验证（2.0.2及以上版本已移除对于此项的依赖）
-* 阿里巴巴向量检索服务
+* 阿里巴巴向量检索服务（2.0.9及以上版本已移除对于此项的依赖）
+* Milvus 向量数据库（2.0.9及以上版本加入对于此项的依赖）
+* Milvus .NET SDK（2.0.9及以上版本加入对于此项的依赖） [https://github.com/milvus-io/milvus-sdk-csharp ](https://github.com/milvus-io/milvus-sdk-csharp )
 * Google Search
 * QQ邮箱服务
 * Drawflow.js [https://github.com/jerosoler/Drawflow](https://github.com/jerosoler/Drawflow)
-*  [one-api](https://github.com/songquanpeng/one-api) or [new-api](https://github.com/Calcium-Ion/new-api) 
+*  [one-api](https://github.com/songquanpeng/one-api) or [new-api](https://github.com/Calcium-Ion/new-api)
+  
+## 贡献列表
+* [@weianweigan](https://github.com/weianweigan)
+
 ## 相关截图
 ![1](https://i.mij.rip/2024/02/27/b47660352729d9028be6f7edd0bd2c51.png)
 
