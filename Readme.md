@@ -10,6 +10,7 @@
 ## Windows部署文档PDF：[Deploy.pdf](https://github.com/MayDay-wpf/AIBotPublic/blob/main/Deploy.pdf)
 ## Windows部署文档Markdown：[https://55555.wiki/doc/7/](https://55555.wiki/doc/7/)
 ## Linux CentOS7宝塔面板部署文档：[https://55555.wiki/doc/4/](https://55555.wiki/doc/4/)
+## Milvus docker部署以及配置方法文档：[https://55555.wiki/doc/8/](https://55555.wiki/doc/8/)
 
 
 ## 第三方依赖：
