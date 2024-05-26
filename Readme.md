@@ -4,9 +4,10 @@
 ## 开源版与闭源版差异：开源版本移除了对用户历史记录、用户资料等敏感信息的特殊加密算法，改用简易的base64编码存储，其他与闭源完全一致
 ## 技术栈
 * 前端：bootstrap4
-* 后端：.Net6.0
+* 后端：.NET6.0
 * 数据库：SqlServer 2012及以上
 * 缓存：Redis
+* 向量数据库：[Milvus](https://github.com/milvus-io/milvus)
 ## Windows部署文档PDF：[Deploy.pdf](https://github.com/MayDay-wpf/AIBotPublic/blob/main/Deploy.pdf)
 ## Windows部署文档Markdown：[https://55555.wiki/doc/7/](https://55555.wiki/doc/7/)
 ## Linux CentOS7宝塔面板部署文档：[https://55555.wiki/doc/4/](https://55555.wiki/doc/4/)
