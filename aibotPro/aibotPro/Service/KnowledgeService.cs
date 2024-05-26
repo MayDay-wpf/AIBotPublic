@@ -3,6 +3,7 @@ using aibotPro.Interface;
 using aibotPro.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using NuGet.Packaging;
 using RestSharp;
 using StackExchange.Redis;
 using System.Collections;
@@ -313,7 +314,7 @@ namespace aibotPro.Service
                 else if (processType == "DoubleNewline")// 双换行符切片
                 {
                     // 使用正则表达式匹配所有类型的双重换行符进行分割，并去除空白项。
-                    var blocks = Regex.Split(content, @"(\r?\n){2}")
+                    var blocks = Regex.Split(content, @"\r?\n\r?\n")
                                       .Select(block => block.Trim().Replace("\r", "").Replace("\n", "").Replace("\"", "“"))
                                       .Where(block => !string.IsNullOrWhiteSpace(block));
 
@@ -323,16 +324,12 @@ namespace aibotPro.Service
                 {
                     try
                     {
-                        Regex regex = new Regex(processType);
-                        var matches = regex.Matches(content);
+                        Regex regex = new Regex(processType, RegexOptions.Singleline);
+                        MatchCollection matches = regex.Matches(content);
 
                         foreach (Match match in matches)
                         {
-                            string value = match.Value.Trim().Replace("\"", "“");
-                            if (!string.IsNullOrWhiteSpace(value))
-                            {
-                                chunkList.Add(value);
-                            }
+                            chunkList.Add(match.Value.Replace("\r", "").Replace("\n", "").Replace("\"", "“"));
                         }
                     }
                     catch (ArgumentException ex)
@@ -364,28 +361,38 @@ namespace aibotPro.Service
                 await semaphore.WaitAsync(); //等待可用的并发插槽
                 tasks.Add(Task.Run(async () =>
                 {
-                    try
+                    int retryCount = 0;
+                    const int maxRetryCount = 3; // 最大重试次数
+                    while (retryCount < maxRetryCount)
                     {
-                        var request = CreateRequest(model, input, embeddingsapikey);
-                        var response = await client.ExecuteAsync(request);
-                        Interlocked.Increment(ref completeCount);
-                        List<float> vector = ParseResponse(response);
-                        if (vector != null)
+                        try
                         {
-                            Dictionary<List<float>, string> pairs = new Dictionary<List<float>, string>();
-                            pairs.Add(vector, input);
-                            return pairs;
+                            var request = CreateRequest(model, input, embeddingsapikey);
+                            var response = await client.ExecuteAsync(request);
+                            if (response.IsSuccessful)
+                            {
+                                Interlocked.Increment(ref completeCount);
+                                List<float> vector = ParseResponse(response);
+                                Dictionary<List<float>, string> pairs = new Dictionary<List<float>, string>();
+                                pairs.Add(vector, input);
+                                return pairs;
+                            }
+                            else
+                            {
+                                retryCount++;
+                            }
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            return null;
+                            retryCount++;
+                        }
+                        finally
+                        {
+                            await _redisService.SetAsync($"knowledge_{fileCode}", $"{((double)completeCount / totalCount * 100).ToString("F2")}");
+                            semaphore.Release();
                         }
                     }
-                    finally
-                    {
-                        semaphore.Release();
-                        await _redisService.SetAsync($"knowledge_{fileCode}", $"{((double)completeCount / totalCount * 100).ToString("F2")}");// 在释放并发资源的时候更新完成的任务数
-                    }
+                    return null; // 重试达到上限后返回null
                 }));
             }
 
@@ -435,18 +442,35 @@ namespace aibotPro.Service
                 await semaphore.WaitAsync(); //等待可用的并发插槽
                 tasks.Add(Task.Run(async () =>
                 {
-                    try
+                    int retryCount = 0;
+                    const int maxRetryCount = 3; // 最大重试次数
+                    while (retryCount < maxRetryCount)
                     {
-                        var request = CreateQARequest(model, input, embeddingsapikey);
-                        var response = await client.ExecuteAsync(request);
-                        Interlocked.Increment(ref completeCount);
-                        return ParseQAResponse(response);
+                        try
+                        {
+                            var request = CreateQARequest(model, input, embeddingsapikey);
+                            var response = await client.ExecuteAsync(request);
+                            if (response.IsSuccessful)
+                            {
+                                Interlocked.Increment(ref completeCount);
+                                return ParseQAResponse(response);
+                            }
+                            else
+                            {
+                                retryCount++;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            retryCount++;
+                        }
+                        finally
+                        {
+                            semaphore.Release();
+                            await _redisService.SetAsync($"knowledge_{fileCode}", $"{((double)completeCount / totalCount * 100).ToString("F2")}");// 在释放并发资源的时候更新完成的任务数
+                        }
                     }
-                    finally
-                    {
-                        semaphore.Release();
-                        await _redisService.SetAsync($"knowledge_{fileCode}", $"{((double)completeCount / totalCount * 100).ToString("F2")}");// 在释放并发资源的时候更新完成的任务数
-                    }
+                    return null; // 重试达到上限后返回null
                 }));
             }
 

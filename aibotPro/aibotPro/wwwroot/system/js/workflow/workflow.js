@@ -1,5 +1,7 @@
 ﻿var workflowcode = '';
 var jsonmodelAI = ['gpt-3.5-turbo-0125', 'gpt-3.5-turbo-0125-openai', 'gpt-4-0125-preview', 'gpt-4-0125-preview-openai'];
+let pageIndex_k = 1;
+let pageSize_k = 20;
 $(function () {
     //changeMode('lock');
     workflowcode = getUrlParam('workflowcode');
@@ -170,7 +172,46 @@ function getAIModelList(callback) {
         }
     });
 }
-
+function getKonwLedgeTypeByMilvus(type, callback) {
+    if (type == 'loadmore')
+        loadingBtn('.loadmorebtn');
+    var name = $("#seachKnowledge").val();
+    $.ajax({
+        type: "Post",
+        url: "/KnowledgeAI/GetKnowledgeType",
+        dataType: "json",
+        data: {
+            name: name,
+            page: pageIndex_k,
+            pageSize: pageSize_k
+        },
+        success: function (res) {
+            unloadingBtn('.loadmorebtn');
+            var html = ``;
+            res = res.data;
+            if (res.length > 0) {
+                if (res.length < pageSize_k)
+                    $('.loadmorebtn').hide();
+                for (var i = 0; i < res.length; i++) {
+                    html += `<div class="list-group-item">
+                                    <div>
+                                        <input type="checkbox" value='${res[i].typeCode}'>
+                                        ${truncateString(res[i].typeName, 15)}
+                                    </div>
+                             </div>`;
+                }
+            } else {
+                html = `没有知识库~`;
+                $('.loadmorebtn').hide();
+            }
+            $('#onknowledgeitem').html(html);
+            callback && callback();
+        },
+        error: function (e) {
+            unloadingBtn('.loadmorebtn');
+        }
+    });
+}
 
 var thisNodeId = 0;
 var thisNodeName = '';
@@ -624,23 +665,36 @@ editor.on('nodeSelected', function (id) {
                     <input type="number" class="retry" value="0" max="5" min="0" />
                     <p>topK（3≤topK≤10）：</p>
                     <input type="number" class="topk" value="3" max="10" min="3" />
+                    <p>知识库选用：</p>
+                    <div id="onknowledgeitem">加载中...</div>
                     <p class="nodeinfo">
                     当下级节点需要获取知识库检索结果时，使用{{knowledge+节点Id.data}}获取，例如{{knowledge1.data}}
                     </p>`
             $('.configure').html(html);
-            if (node && node.data && Object.entries(node.data).length > 0) {
-                //回写
-                var data = node.data;
-                if (data.output.prompt) {
-                    $(".prompt").val(data.output.prompt);
+            getKonwLedgeTypeByMilvus("init", function () {
+                if (node && node.data && Object.entries(node.data).length > 0) {
+                    //回写
+                    var data = node.data;
+                    if (data.output.prompt) {
+                        $(".prompt").val(data.output.prompt);
+                    }
+                    if (data.output.retry) {
+                        $(".retry").val(data.output.retry);
+                    }
+                    if (data.output.topk) {
+                        $(".topk").val(data.output.topk);
+                    }
+                    $('#onknowledgeitem input[type="checkbox"]').each(function () {
+                        var typecode = $(this).val();
+                        if (data.output.typecode.includes(typecode)) {
+                            $(this).prop('checked', true);
+                        } else {
+                            $(this).prop('checked', false);
+                        }
+                    });
                 }
-                if (data.output.retry) {
-                    $(".retry").val(data.output.retry);
-                }
-                if (data.output.topk) {
-                    $(".topk").val(data.output.topk);
-                }
-            }
+            });
+
             break;
         case 'end':
             html = `<div class="box">
@@ -972,7 +1026,8 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
                 output: {
                     prompt: "",
                     retry: 0,
-                    topk: 3
+                    topk: 3,
+                    typecode: []
                 }
             }, knowledge);
             break;

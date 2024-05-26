@@ -66,7 +66,8 @@ var knowledgedata = {
     output: {
         prompt: "",
         retry: 0,
-        topk: 3
+        topk: 3,
+        typecode: []
     }
 }
 var regex = /'/;
@@ -328,7 +329,8 @@ function saveNodeData() {
                 output: {
                     prompt: "",
                     retry: 0,
-                    topk: 3
+                    topk: 3,
+                    typecode: []
                 }
             }
             var Prompt = $('.prompt').val();
@@ -344,6 +346,17 @@ function saveNodeData() {
             }
             if (TopK == "" || TopK > 10 || TopK < 3) {
                 layer.msg('TopK填写错误', { icon: 2, time: 2500 });
+                return false;
+            }
+            $('#onknowledgeitem input[type="checkbox"]:checked').each(function () {
+                var typecode = $(this).val();
+                // 添加到knowledgedata.output.typecode
+                if (knowledgedata.output.typecode.findIndex(item => item === typecode) === -1) {
+                    knowledgedata.output.typecode.push(typecode);
+                }
+            });
+            if (knowledgedata.output.typecode.length == 0) {
+                layer.msg('请选用知识库', { icon: 2, time: 2500 });
                 return false;
             }
             knowledgedata.output.prompt = Prompt;

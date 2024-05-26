@@ -15,6 +15,7 @@ using Spire.Doc;
 using Spire.Presentation;
 using Spire.Presentation.Charts;
 using StackExchange.Redis;
+using System;
 using System.Diagnostics;
 using System.Security.AccessControl;
 using System.Security.Principal;
@@ -42,7 +43,8 @@ namespace aibotPro.AppCode
         private readonly IServiceProvider _serviceProvider;
         private readonly IHubContext<ChatHub> _hubContext;
         private readonly IRedisService _redisService;
-        public WorkflowEngine(WorkFlowNodeData workflowData, IAiServer aiServer, ISystemService systemService, IFinanceService financeService, AIBotProContext context, string account, IServiceProvider serviceProvider, IHubContext<ChatHub> hubContext, string chatId, string senMethod, IRedisService redisService)
+        private readonly IMilvusService _milvusService;
+        public WorkflowEngine(WorkFlowNodeData workflowData, IAiServer aiServer, ISystemService systemService, IFinanceService financeService, AIBotProContext context, string account, IServiceProvider serviceProvider, IHubContext<ChatHub> hubContext, string chatId, string senMethod, IRedisService redisService, IMilvusService milvusService)
         {
             _workflowData = workflowData;
             _aiServer = aiServer;
@@ -55,6 +57,7 @@ namespace aibotPro.AppCode
             _chatId = chatId;
             _senMethod = senMethod;
             _redisService = redisService;
+            _milvusService = milvusService;
         }
         public async Task<List<NodeOutput>> Execute(string startNodeOutput)
         {
@@ -194,7 +197,20 @@ namespace aibotPro.AppCode
                     {
                         if (!string.IsNullOrEmpty(nodeOutput.OutputData))
                         {
-                            result.Add(nodeOutput);
+                            // 查找是否已经有相同NodeName的NodeOutput
+                            var existingItem = result.FirstOrDefault(no => no.NodeName == nodeOutput.NodeName);
+
+                            if (existingItem != null)
+                            {
+                                // 如果存在，替换旧的NodeOutput
+                                int index = result.IndexOf(existingItem);
+                                result[index] = nodeOutput;
+                            }
+                            else
+                            {
+                                // 如果不存在，添加新的NodeOutput到列表
+                                result.Add(nodeOutput);
+                            }
                         }
                     }
                 }
@@ -659,7 +675,7 @@ namespace aibotPro.AppCode
                     string savePath = Path.Combine("wwwroot", "files/dallres", _account);
                     await _aiServer.DownloadImageAsync(airesult, savePath, newFileName);
                     var aiSaveService = scope.ServiceProvider.GetRequiredService<IAiServer>(); // 假设保存记录方法在IAiSaveService中。
-                    await aiSaveService.SaveAiDrawResult(_account, "DALLE3", imgResPath, "workflow_Engine", "workflow_Engine");
+                    await aiSaveService.SaveAiDrawResult(_account, "DALLE3", imgResPath, prompt, "workflow_Engine");
                 }
             });
             nodeOutput.NodeName = nodeName + nodeId;
@@ -734,7 +750,7 @@ namespace aibotPro.AppCode
                     string savePath = Path.Combine("wwwroot", "files/dallres", _account);
                     await _aiServer.DownloadImageAsync(airesult, savePath, newFileName);
                     var aiSaveService = scope.ServiceProvider.GetRequiredService<IAiServer>(); // 假设保存记录方法在IAiSaveService中。
-                    await aiSaveService.SaveAiDrawResult(_account, "DALLE2", imgResPath, "workflow_Engine", "workflow_Engine");
+                    await aiSaveService.SaveAiDrawResult(_account, "DALLE2", imgResPath, prompt, "workflow_Engine");
                 }
             });
             nodeOutput.NodeName = nodeName + nodeId;
@@ -882,7 +898,32 @@ namespace aibotPro.AppCode
             searchVectorPr.filter = $"account = '{_account}'";
             searchVectorPr.topk = knowledgeData.Output.TopK;
             searchVectorPr.vector = vectorList[0];
-            SearchVectorResult searchVectorResult = vectorHelper.SearchVector(searchVectorPr);
+            List<string> typeCode = knowledgeData.Output.TypeCode;
+            //SearchVectorResult searchVectorResult = vectorHelper.SearchVector(searchVectorPr);
+            SearchVectorResult searchVectorResult = new SearchVectorResult();
+            if (typeCode != null && typeCode.Count > 0)
+            {
+                List<float> vectorByMilvus = searchVectorPr.vector.ConvertAll(x => (float)x);
+                var resultByMilvus = await _milvusService.SearchVector(vectorByMilvus, _account, typeCode, searchVectorPr.topk);
+                searchVectorResult = new SearchVectorResult
+                {
+                    code = resultByMilvus.Code,
+                    request_id = Guid.NewGuid().ToString(),
+                    message = string.Empty,
+                    output = resultByMilvus.Data.Select(data => new Output
+                    {
+                        id = data.Id,
+                        fields = new Fields
+                        {
+                            account = string.Empty,
+                            knowledge = data.VectorContent
+                        },
+                        score = (double)data.Distance
+                    }).ToList()
+                };
+            }
+            else
+                searchVectorResult = vectorHelper.SearchVector(searchVectorPr);
             string data = string.Empty;
             if (searchVectorResult.output != null)
             {

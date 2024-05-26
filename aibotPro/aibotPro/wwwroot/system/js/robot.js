@@ -351,7 +351,7 @@ function sendMsg_bot() {
                    </div>`;
     $(".bot-chat-body").append(gpthtml);
     $(".bot-chat-body").scrollTop($(".bot-chat-body")[0].scrollHeight);
-    connection_bot.invoke("SendWorkShopMessage", data, false)
+    connection_bot.invoke("SendWorkShopMessage", data, false, [])
         .then(function () {
         })
         .catch(function (err) {

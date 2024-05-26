@@ -153,13 +153,13 @@ namespace aibotPro.Controllers
             //不是会员且余额为0时不提供服务
             if (!isVip && user.Mcoin <= 0)
             {
-                throw new Exception("本站已停止向【非会员且余额为0】的用户提供服务，您可以前往充值1元及以上，长期使用本站的免费服务");
+                return Ok("本站已停止向【非会员且余额为0】的用户提供服务，您可以前往充值1元及以上，长期使用本站的免费服务");
             }
 
             // 检查用户余额是否不足，只有在需要收费时检查
             if (shouldCharge && user.Mcoin <= 0)
             {
-                throw new Exception("余额不足，请充值后再使用，您可以前往充值");
+                return Ok("余额不足，请充值后再使用，您可以前往充值");
             }
             //记录系统使用日志
             await _systemService.WriteLog($"用户调用API：{chatSession.Model}", Dtos.LogLevel.Info, Account);
@@ -167,11 +167,11 @@ namespace aibotPro.Controllers
             aImodels = _systemService.GetWorkShopAImodel();
             if (aImodels == null || aImodels.Count == 0)
             {
-                throw new Exception("模型不存在");
+                return Ok("模型不存在");
             }
             if (aImodels.Where(x => x.ModelName == chatSession.Model).FirstOrDefault() == null)
             {
-                throw new Exception("模型不存在");
+                return Ok("模型不存在");
             }
             OpenAiOptions openAiOptions = new OpenAiOptions();
             openAiOptions.BaseDomain = aImodels.Where(x => x.ModelName == chatSession.Model).FirstOrDefault().BaseUrl;
@@ -330,6 +330,10 @@ namespace aibotPro.Controllers
                                 await response.Body.FlushAsync();// 确保立即发送消息
                                 output += chatCompletionResponse.Choices[0].delta.Content;
                             }
+                            else
+                            {
+                                return Ok("模型未回复，请重试");
+                            }
                             var tools = choice.Message.ToolCalls;
                             if (tools != null)
                             {
@@ -348,7 +352,7 @@ namespace aibotPro.Controllers
                                                 case "dalle3":
                                                     if (!string.IsNullOrEmpty(pluginResDto.errormsg) || string.IsNullOrEmpty(pluginResDto.result))
                                                     {
-                                                        throw new Exception("Draw Fail");
+                                                        return Ok("Draw Fail");
                                                     }
                                                     res = $"绘制完成 图片地址：{pluginResDto.result}";
                                                     break;
@@ -465,6 +469,8 @@ namespace aibotPro.Controllers
                     if (completionResult.Successful)
                     {
                         var choice = completionResult.Choices.First();
+                        if (choice == null || choice.Message == null)
+                            return Ok("模型未回复，请重试");
                         if (choice.Message.ToolCalls != null && choice.Message.ToolCalls[0].FunctionCall != null)
                         {
                             var fn = choice.Message.ToolCalls[0].FunctionCall;
@@ -479,7 +485,7 @@ namespace aibotPro.Controllers
                                         case "dalle3":
                                             if (!string.IsNullOrEmpty(pluginResDto.errormsg) || string.IsNullOrEmpty(pluginResDto.result))
                                             {
-                                                throw new Exception("Draw Fail");
+                                                return Ok("Draw Fail");
                                             }
                                             res = $"绘制完成 图片地址：{pluginResDto.result}";
                                             break;
@@ -579,11 +585,12 @@ namespace aibotPro.Controllers
                         }
                     }
                 }
-                throw new Exception("Error");
+                return Ok("error");
             }
             catch (Exception e)
             {
-                throw e;
+                await _systemService.WriteLog(e.Message, Dtos.LogLevel.Error, "system");
+                return Ok(e.Message);
             }
 
         }

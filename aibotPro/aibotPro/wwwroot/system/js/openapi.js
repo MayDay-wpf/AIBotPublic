@@ -26,6 +26,7 @@ function getAIModelList() {
         type: "Post",
         url: "/WorkShop/GetWorkShopAImodel",
         dataType: "json",
+        async: false,
         success: function (res) {
             var html = "";
             if (res.success) {

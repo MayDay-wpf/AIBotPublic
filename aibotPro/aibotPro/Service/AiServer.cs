@@ -222,6 +222,7 @@ namespace aibotPro.Service
                 //写入缓存
                 _redis.SetAsync(chatId, JsonConvert.SerializeObject(chatHistories), TimeSpan.FromHours(1));
             }
+            chatHistories = chatHistories.OrderBy(x => x.CreateTime).ToList();
             //使用historyCount截取chatHistories,因为chatHistories是双行的所以要乘以2
             if (chatHistories.Count > historyCount * 2)
                 chatHistories = chatHistories.Skip(chatHistories.Count - historyCount * 2).Take(historyCount * 2).ToList();
@@ -293,7 +294,8 @@ namespace aibotPro.Service
             List<ChatHistory> chatHistories = new List<ChatHistory>();
             //从数据库加载
             chatHistories = _context.ChatHistories
-                                     .Where(x => x.ChatId == chatId && x.IsDel == 0 && x.Account == account).ToList();
+                                     .Where(x => x.ChatId == chatId && x.IsDel == 0 && x.Account == account)
+                                     .OrderBy(y => y.CreateTime).ToList();
             //写入缓存
             _redis.SetAsync(chatId, JsonConvert.SerializeObject(chatHistories), TimeSpan.FromHours(1));
 

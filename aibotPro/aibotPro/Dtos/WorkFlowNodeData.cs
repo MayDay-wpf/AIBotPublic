@@ -302,6 +302,8 @@ namespace aibotPro.Dtos
         public int Retry { get; set; }
         [JsonProperty("topk")]
         public int TopK { get; set; }
+        [JsonProperty("typecode")]
+        public List<string> TypeCode { get; set; }
     }
     public class EndOutput
     {

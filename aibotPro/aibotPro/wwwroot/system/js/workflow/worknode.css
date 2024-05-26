@@ -69,3 +69,18 @@ table select {
     margin-bottom: -200px;
     margin-right: 5px;
 }
+
+.list-group-item {
+    background-color: rgb(255,255,255);
+    margin-bottom: 10px;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+#onknowledgeitem {
+    height: 200px;
+    overflow-y: scroll;
+    border: 1px solid lightgray;
+    border-radius: 5px;
+    padding: 10px;
+}

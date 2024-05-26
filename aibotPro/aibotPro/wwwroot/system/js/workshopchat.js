@@ -22,11 +22,11 @@ var connection = new signalR.HubConnectionBuilder()
 // 启动连接
 connection.start()
     .then(function () {
-        console.log('与服务器握手成功 :-)'); // 与服务器握手成功
+        console.log('与工坊服务器握手成功 :-)'); // 与服务器握手成功
     })
     .catch(function (error) {
-        console.log('与服务器握手失败 :-( 原因: ' + error); // 与服务器握手失败
-        sendExceptionMsg('与服务器握手失败 :-( 原因: ' + error);
+        console.log('与工坊服务器握手失败 :-( 原因: ' + error); // 与服务器握手失败
+        sendExceptionMsg('与工坊服务器握手失败 :-( 原因: ' + error);
         // 检查令牌是否过期，如果是，则跳转到登录页面
         if (isTokenExpiredError(error)) {
             window.location.href = "/Users/Login";
@@ -45,13 +45,13 @@ function isTokenExpiredError(error) {
 // You can also handle the reconnection events if needed:
 connection.onreconnecting((error) => {
     console.assert(connection.state === signalR.HubConnectionState.Reconnecting);
-    console.log(`由于错误"${error}"失去连接。正在尝试重新连接。`);
+    console.log(`由于错误"${error}"失去连接。正在尝试重新连接工坊。`);
     // Here you might want to inform the user that the connection is being reattempted.
 });
 
 connection.onreconnected((connectionId) => {
     console.assert(connection.state === signalR.HubConnectionState.Connected);
-    console.log(`连接已重新建立。已连接到connectionId为"${connectionId}"。`);
+    console.log(`工坊连接已重新建立。已连接到connectionId为"${connectionId}"。`);
     // Here you might want to inform the user that the connection has been successfully reestablished.
 });
 $(function () {
@@ -428,7 +428,7 @@ function sendMsg() {
     $(".chat-body-content").append(gpthtml);
     adjustTextareaHeight();
     chatBody.scrollTop(chatBody[0].scrollHeight);
-    connection.invoke("SendWorkShopMessage", data, false)
+    connection.invoke("SendWorkShopMessage", data, false, [])
         .then(function () {
         })
         .catch(function (err) {

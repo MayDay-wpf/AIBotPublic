@@ -42,6 +42,7 @@ function loadImage(event) {
             success: function (res) {
                 if (res.success) {
                     avatar = res.filePath.replace('wwwroot', '');
+                    HeadImgPath = res.filePath.replace('wwwroot', '');
                 }
                 else {
                     balert(res.msg, 'danger', false, 1500, 'center');
