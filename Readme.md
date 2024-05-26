@@ -15,10 +15,10 @@
 
 ## 第三方依赖：
 * 百度AI OCR
-* 阿里巴巴滑动验证（2.0.2及以上版本已移除对于此项的依赖）
-* 阿里巴巴向量检索服务（2.0.9及以上版本已移除对于此项的依赖）
-* Milvus 向量数据库（2.0.9及以上版本加入对于此项的依赖）
-* Milvus .NET SDK（2.0.9及以上版本加入对于此项的依赖） [https://github.com/milvus-io/milvus-sdk-csharp ](https://github.com/milvus-io/milvus-sdk-csharp )
+* 阿里巴巴滑动验证（2.0.2及以上版本已【移除】对于此项的依赖）
+* 阿里巴巴向量检索服务（2.0.9及以上版本已【移除】对于此项的依赖）
+* Milvus 向量数据库（2.0.9及以上版本【加入】对于此项的依赖）
+* Milvus C# SDK（2.0.9及以上版本【加入】对于此项的依赖） [https://github.com/milvus-io/milvus-sdk-csharp ](https://github.com/milvus-io/milvus-sdk-csharp )
 * Google Search
 * QQ邮箱服务
 * Drawflow.js [https://github.com/jerosoler/Drawflow](https://github.com/jerosoler/Drawflow)
@@ -38,8 +38,7 @@
 ## 多种知识库全自动构建解决方案，本地私有化知识库，支持自定义正则表达式灵活设计切片方案
 ![3](https://github.com/MayDay-wpf/AIBotPublic/assets/58774414/66e73f60-8baa-4a93-8beb-30e341afaedd)
 
-![image](https://github.com/MayDay-wpf/AIBotPublic/assets/58774414/d5f353b4-e53e-475b-ab6f-4e975a180c93)
-
+![image](https://github.com/MayDay-wpf/AIBotPublic/assets/58774414/bff03cfc-9afc-4462-8ec9-a7cdd9035a84)
 
 ## 多文件并行处理的文件 AI
 ![4](https://i.mij.rip/2024/02/27/a1681df1f0ea887d74beacf72adff1a6.png)
