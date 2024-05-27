@@ -10,6 +10,8 @@ services:
     depends_on:
       - db
       - cache
+    volumes:
+      - app-wwwroot:/app/wwwroot
       
   db:
     image: mcr.microsoft.com/mssql/server:2017-latest
@@ -36,3 +38,4 @@ services:
     
 volumes:
   db-data:
+  app-wwwroot:
