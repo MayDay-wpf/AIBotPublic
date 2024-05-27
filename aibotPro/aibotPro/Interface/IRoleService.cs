@@ -15,5 +15,7 @@ namespace aibotPro.Interface
         List<RoleSetting> GetRoleList(int page, int pageSize, string name, out int total);
         //获取角色
         RoleSettingDto GetRole(string roleCode);
+        //删除角色
+        bool DelRole(string account, string roleCode, out string errormsg);
     }
 }

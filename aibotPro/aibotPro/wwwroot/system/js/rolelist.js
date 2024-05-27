@@ -47,7 +47,10 @@ function getRoleList(type) {
                     html += '<h5 class="card-title">' + item.roleName + '</h5>';
                     html += '<p class="card-text" style="max-height: 100px; overflow: auto;">' + item.roleInfo + '</p>';
                     html += '<div class="d-flex justify-content-center">';
-                    html += `<a href="/Role/RoleChat?type=` + item.roleCode + `" class="btn btn-primary" style="margin-right:10px;">对话</a>`;
+                    html += `<a href="/Role/RoleChat?type=` + item.roleCode + `" class="btn btn-primary">对话</a>`;
+                    html += `<a href="/Role/CustomRole?code=` + item.roleCode + `" class="btn btn-info">编辑</a>`;
+                    if (item.canDelete)
+                        html += `<button onclick="delRole('${item.roleCode}')" class="btn btn-danger">删除</button>`;
                     html += '</div>';
                     html += '</div>';
                     html += '</div>';
@@ -69,6 +72,30 @@ function getRoleList(type) {
         error: function (res) {
             loadingOverlay.hide();
         }
+    });
+}
+function delRole(code) {
+    //二次确认
+    showConfirmationModal("提示", "确定删除这个角色吗？", function () {
+        $.ajax({
+            type: "Post",
+            url: "/Role/DelRole",
+            dataType: "json",
+            data: {
+                roleCode: code
+            },
+            success: function (res) {
+                if (res.success) {
+                    balert("删除成功", "success", false, 1000, "top");
+                    getRoleList('init');
+                } else
+                    balert(res.errormsg, "danger", false, 1000, "top");
+            },
+            error: function (err) {
+                //window.location.href = "/Users/Login";
+                balert("删除失败，错误请联系管理员：err", "danger", false, 2000, "center");
+            }
+        });
     });
 }
 //function throttle(func, limit) {

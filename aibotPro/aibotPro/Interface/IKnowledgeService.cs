@@ -15,5 +15,6 @@ namespace aibotPro.Interface
         Task<List<MilvusDataDto>> CreateMilvusList(string account, string filePath, string embModel, string processType, string aiModel, string type, string fileCode);//创建复合要求的Milvus集合
         bool CreateKnowledgeType(string typeName, string typeCode, string account);
         List<KnowledgeType> GetKnowledgeType(int page, int pageSize, string name, out int total, string account = "");
+        Task<List<string>> CutFile(string content, string processType, string account, string aiModel, string fileCode);
     }
 }

@@ -45,6 +45,10 @@ namespace aibotPro.Controllers
         {
             return View();
         }
+        public IActionResult CutFileTest()
+        {
+            return View();
+        }
         [Authorize]
         [HttpPost]
         public async Task<IActionResult> Upload([FromForm] IFormFile file, [FromForm] int chunkNumber, [FromForm] string fileName)
@@ -284,6 +288,57 @@ namespace aibotPro.Controllers
                 path = path
             });
         }
+
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> UploadByTest([FromForm] IFormFile file, [FromForm] int chunkNumber, [FromForm] string fileName)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest("请选择文件");
+            }
+
+            var allowedExtensions = new List<string> { ".txt", ".pdf", ".ppt", ".doc", ".docx", ".xls", ".xlsx" };
+            var fileExtension = Path.GetExtension(fileName).ToLower();
+
+            if (!allowedExtensions.Contains(fileExtension))
+            {
+                return BadRequest("只允许上传 TXT, PDF, PPT, WORD, EXCEL 文件");
+            }
+
+            var path = await _systemService.UploadFileChunkAsync(file, chunkNumber, fileName, "wwwroot/files/cuttest");
+            return Ok(new { path });
+        }
+
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> MergeFilesByTest([FromBody] MergeRequest request)
+        {
+            var uniqueFileName = Guid.NewGuid().ToString() + "_" + request.FileName; // 使用 GUID 生成唯一文件名
+            //获取用户名
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var path = await _systemService.MergeFileAsync(uniqueFileName, request.TotalChunks, username, "wwwroot/files/cuttest");
+            //读取文件内容返回
+            string content = await _systemService.GetFileText(path);
+            //删除文件
+            _systemService.DeleteFile(path);
+            return Ok(new
+            {
+                data = content
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> CutFile(string text, string regular)
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var result = await _knowledgeService.CutFile(text, regular, username, "", "");
+            return Ok(new
+            {
+                data = result
+            });
+        }
+
         [Authorize]
         [HttpPost]
         public async Task<IActionResult> GetProcess(List<string> fileCodes)

@@ -481,6 +481,35 @@ namespace aibotPro.Service
                 return "暂不支持该文件类型";
             }
         }
+        private string SaveImage(Stream stream, string fileName, string savePath)
+        {
+            // 确保保存路径存在
+            if (!Directory.Exists(savePath))
+                Directory.CreateDirectory(savePath);
+
+            // 组合完整的文件路径
+            string filePath = System.IO.Path.Combine(savePath, fileName);
+
+            try
+            {
+                // 使用using语句确保FileStream在写入后被正确关闭和释放资源
+                using (FileStream fileStream = File.Create(filePath))
+                {
+                    // 将传入的流复制到文件流中，从而将数据写入文件
+                    stream.CopyTo(fileStream);
+                }
+
+                // 返回处理过的文件路径（适用于URL）
+                return filePath.Replace("\\", "/");
+            }
+            catch (Exception ex)
+            {
+                // 在异常情况下进行处理，记录日志信息
+                WriteLogUnAsync($"Error saving image: {ex.Message}", Dtos.LogLevel.Error, "system");
+                // 可能需要根据实际情况决定是否要重新抛出异常或返回null/空字符串
+                return null;  // 或者 throw;
+            }
+        }
         public string UrlEncode(string text)
         {
             return HttpUtility.UrlEncode(text);

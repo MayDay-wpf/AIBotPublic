@@ -72401,6 +72401,7 @@ button.bg-twitter:focus,
 
 .chat-message-box img {
     width: 350px;
+    border-radius: 10px;
 }
 
 .chat-message-box p {

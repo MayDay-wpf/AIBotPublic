@@ -16,6 +16,7 @@ namespace aibotPro.Dtos
         public string Account { get; set; }
         public DateTime? CreateTime { get; set; }
         public List<RoleChat> RoleChat { get; set; }
+        public bool CanDelete { get; set; }
     }
     public class RoleChat
     {

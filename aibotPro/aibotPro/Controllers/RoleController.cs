@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System.Security.Principal;
+using static iTextSharp.text.pdf.AcroFields;
 
 namespace aibotPro.Controllers
 {
@@ -76,6 +77,36 @@ namespace aibotPro.Controllers
             }
             string errormsg = string.Empty;
             if (_roleService.SaveRole(username, roleSetting, out errormsg))
+            {
+                return Json(new
+                {
+                    success = true,
+                    msg = errormsg
+                });
+            }
+            else
+            {
+                return Json(new
+                {
+                    success = false,
+                    msg = errormsg
+                });
+            }
+        }
+        //删除角色
+        public IActionResult DelRole(string roleCode)
+        {
+            string username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+            {
+                return Json(new
+                {
+                    success = false,
+                    msg = "账号异常"
+                });
+            }
+            string errormsg = string.Empty;
+            if (_roleService.DelRole(username, roleCode, out errormsg))
             {
                 return Json(new
                 {
@@ -192,11 +223,23 @@ namespace aibotPro.Controllers
         {
             int total = 0;
             var list = _roleService.GetRoleList(page, pageSize, name, out total);
+            List<RoleSettingDto> roles = new List<RoleSettingDto>();
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            foreach (var item in list)
+            {
+                RoleSettingDto roleSettingDto = new RoleSettingDto();
+                _systemService.CopyPropertiesTo(item, roleSettingDto);
+                if (item.Account == username)
+                    roleSettingDto.CanDelete = true;
+                else
+                    roleSettingDto.CanDelete = false;
+                roles.Add(roleSettingDto);
+            }
             //返回数据
             return Json(new
             {
                 success = true,
-                data = list,
+                data = roles,
                 total = total
             });
         }
@@ -208,6 +251,11 @@ namespace aibotPro.Controllers
             var role = _roleService.GetRole(roleCode);
             if (role != null)
             {
+                var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+                if (role.Account == username)
+                    role.CanDelete = true;
+                else
+                    role.CanDelete = false;
                 return Json(new
                 {
                     success = true,

@@ -1,5 +1,7 @@
 ﻿var regex = /'/;
 var roleAvatar = '';
+var code = '';
+var chatcode = '';
 $(function () {
     $('.nav-sub-link').removeClass('active');
     $('.nav-link').removeClass('active');
@@ -8,7 +10,67 @@ $(function () {
     $("#role-main-menu").parent().siblings().removeClass('show');
     $("#custom-role-nav").addClass('active');
     getTestRole();
+    code = getUrlParam("code");
+    if (code != "") {
+        getRole(code);
+    }
 });
+function getRole(code) {
+    //发起请求
+    loadingOverlay.show();
+    $.ajax({
+        url: "/Role/GetMarketRole",
+        type: "post",
+        data: {
+            roleCode: code
+        },
+        success: function (res) {
+            loadingOverlay.hide();
+            if (res.success) {
+                var data = res.data;
+                if (data.canDelete) {
+                    $("#avatar-image").attr("src", data.roleAvatar);
+                    roleAvatar = data.roleAvatar;
+                    $("#roleName").val(data.roleName);
+                    $("#roleInfo").val(data.roleInfo);
+                    $("#roleSystemChat").val(data.roleSystemPrompt);
+                    var roleChat = data.roleChat;
+                    for (var i = 0; i < roleChat.length; i++) {
+                        var str = `<tr>
+                                     <td><input type="text" class="form-control" maxlength="1024" value="${roleChat[i].userInput}" /></td>
+                                     <td><input type="text" class="form-control" maxlength="1024" value="${roleChat[i].assistantOutput}" /></td>
+                                     <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`;
+                        $("#AddRoleChat1").append(str);
+                        chatcode = roleChat[i].roleChatCode;
+                    }
+                    feather.replace();
+                } else {
+                    $("#roleName2").val(data.roleName);
+                    $("#roleSystemChat2").val(data.roleSystemPrompt);
+                    var roleChat = data.roleChat;
+                    for (var i = 0; i < roleChat.length; i++) {
+                        var str = `<tr>
+                                     <td><input type="text" class="form-control" maxlength="1024" value="${roleChat[i].userInput}" /></td>
+                                     <td><input type="text" class="form-control" maxlength="1024" value="${roleChat[i].assistantOutput}" /></td>
+                                     <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`;
+                        $("#AddRoleChat2").append(str);
+                    }
+                    //屏幕滚动到最底部
+                    $('html, body').animate({
+                        scrollTop: $(document).height() - $(window).height()
+                    }, 500);
+                }
+
+            }
+
+        },
+        error: function (e) {
+            loadingOverlay.hide();
+            sendok = true;
+            console.log("失败" + e);
+        }
+    });
+}
 function addRoleChatLine(index) {
     var str = `<tr>
                  <td><input type="text" class="form-control" maxlength="1024" placeholder="用户输入" /></td>
@@ -67,7 +129,6 @@ function saveRole() {
     var roleInfo = $('#roleInfo').val();
     var roleSystemChat = $('#roleSystemChat').val();
     var chat1 = [];
-    var guid = generateGUID();
     var isEmpty = false;
     $('#AddRoleChat1 tr').each(function () {
         var columns = $(this).find('td');
@@ -102,13 +163,14 @@ function saveRole() {
     }
     //表单提交
     var formData = new FormData();
+    formData.append('roleSetting.RoleCode', code);
     formData.append('roleSetting.RoleName', roleName);
     formData.append('roleSetting.RoleInfo', roleInfo);
     formData.append('roleSetting.RoleAvatar', roleAvatar);
     formData.append('roleSetting.RoleSystemPrompt', roleSystemChat);
-    formData.append('roleSetting.RoleChatCode', guid);
+    formData.append('roleSetting.RoleChatCode', chatcode);
     chat1.forEach((chat, index) => {
-        formData.append(`roleSetting.RoleChat[${index}].RoleChatCode`, guid);
+        formData.append(`roleSetting.RoleChat[${index}].RoleChatCode`, chatcode);
         formData.append(`roleSetting.RoleChat[${index}].UserInput`, chat.UserInput);
         formData.append(`roleSetting.RoleChat[${index}].AssistantOutput`, chat.AssistantOutput);
     });

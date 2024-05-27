@@ -268,7 +268,7 @@ namespace aibotPro.Service
             }
             return milvusDataDtos;
         }
-        private async Task<List<string>> CutFile(string content, string processType, string account, string aiModel, string fileCode)
+        public async Task<List<string>> CutFile(string content, string processType, string account, string aiModel, string fileCode)
         {
             try
             {

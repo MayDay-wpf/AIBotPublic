@@ -14,16 +14,25 @@ namespace aibotPro.Service
         public bool SaveRole(string account, RoleSettingDto roleSetting, out string errormsg)
         {
             errormsg = string.Empty;
+            if (!string.IsNullOrEmpty(roleSetting.RoleCode))
+            {
+                //RoleCode 不为空则是更新,删除原有角色
+                var oldrole = _context.RoleSettings.Where(r => r.RoleCode == roleSetting.RoleCode).FirstOrDefault();
+                _context.RoleSettings.Remove(oldrole);
+                var oldrolechat = _context.RoleChats.Where(c => c.RoleChatCode == roleSetting.RoleChatCode).ToList();
+                _context.RoleChats.RemoveRange(oldrolechat);
+            }
+            string roleCode = Guid.NewGuid().ToString("N");
             //保存角色设置
             var role = new RoleSetting();
             role.CreateTime = System.DateTime.Now;
             role.Account = account;
-            role.RoleCode = Guid.NewGuid().ToString();
+            role.RoleCode = roleCode;
             role.RoleAvatar = roleSetting.RoleAvatar;
             role.RoleName = roleSetting.RoleName;
             role.RoleInfo = roleSetting.RoleInfo;
             role.RoleSystemPrompt = roleSetting.RoleSystemPrompt;
-            role.RoleChatCode = roleSetting.RoleChatCode;
+            role.RoleChatCode = roleCode;
             _context.RoleSettings.Add(role);
             //保存角色对话
             if (roleSetting.RoleChat != null)
@@ -31,7 +40,7 @@ namespace aibotPro.Service
                 foreach (var item in roleSetting.RoleChat)
                 {
                     var roleChat = new Models.RoleChat();
-                    roleChat.RoleChatCode = roleSetting.RoleChatCode;
+                    roleChat.RoleChatCode = roleCode;
                     roleChat.UserInput = item.UserInput;
                     roleChat.AssistantOutput = item.AssistantOutput;
                     _context.RoleChats.Add(roleChat);
@@ -47,6 +56,7 @@ namespace aibotPro.Service
                 errormsg = "保存失败";
                 return false;
             }
+
         }
         public List<RoleSetting> GetRoleList(int page, int pageSize, string name, out int total)
         {
@@ -82,6 +92,7 @@ namespace aibotPro.Service
                 roleSetting.RoleInfo = role.RoleInfo;
                 roleSetting.RoleSystemPrompt = role.RoleSystemPrompt;
                 roleSetting.RoleChatCode = role.RoleChatCode;
+                roleSetting.Account = role.Account;
                 //获取角色对话
                 var roleChats = _context.RoleChats.Where(x => x.RoleChatCode == role.RoleChatCode).ToList();
                 if (roleChats != null && roleChats.Count > 0)
@@ -101,6 +112,21 @@ namespace aibotPro.Service
             {
                 return null;
             }
+        }
+        public bool DelRole(string account, string roleCode, out string errormsg)
+        {
+            errormsg = string.Empty;
+            var role = _context.RoleSettings.Where(r => r.RoleCode == roleCode && r.Account == account).FirstOrDefault();
+            if (role == null)
+            {
+                errormsg = "角色不存在或用户无删除权限";
+                return false;
+            }
+            var rolechat = _context.RoleChats.Where(c => c.RoleChatCode == role.RoleChatCode).ToList();
+            _context.RoleSettings.Remove(role);
+            _context.RoleChats.RemoveRange(rolechat);
+            _context.SaveChanges();
+            return true;
         }
     }
 }
