@@ -3,23 +3,36 @@ version: '3.8'
 services:
   webapp:
     build:
-      context: https://github.com/MayDay-wpf/AIBotPublic.git#main:aibotPro/aibotPro
+      context: https://github.com/MayDay-wpf/AIBotPublic.git#main:aibotPro/aibotPro 
       dockerfile: Dockerfile
+    ports:
+      - "5000:80"
     depends_on:
       - db
       - cache
-
+      
   db:
     image: mcr.microsoft.com/mssql/server:2017-latest
     environment:
-      SA_PASSWORD: "Abc1233211234567@#"
+      SA_PASSWORD: "Abc123@#"
       ACCEPT_EULA: "Y"
-      MSSQL_PID: "Express" # 设置为 Express 版本以避免强制密码策略
-      MSSQL_COLLATION: "Chinese_PRC_CI_AS" # 设置默认排序规则为简体中文
+      MSSQL_PID: "Express"
+      MSSQL_COLLATION: "Chinese_PRC_CI_AS"
     ports:
-      - "1433:1433"
-
-  cache:
+      - "1433:1433"  
+    volumes:
+      - db-data:/var/opt/mssql
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "Abc123@#" -Q "SELECT 1" 
+      interval: 30s
+      timeout: 20s
+      retries: 10
+      start_period: 30s
+    
+  cache:   
     image: redis
     ports:
       - "6379:6379"
+    
+volumes:
+  db-data:
