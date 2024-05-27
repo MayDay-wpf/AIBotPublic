@@ -15,4 +15,7 @@ RUN dotnet publish "aibotPro.sln" -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
+ENV ASPNETCORE_ENVIRONMENT=Production
+ENV Redis__EndPoints__0__Host=cache
+ENV Redis__EndPoints__0__Port=6379
 ENTRYPOINT ["dotnet", "aibotPro.dll"]
