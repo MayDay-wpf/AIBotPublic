@@ -12,6 +12,7 @@
 ## Windows部署文档Markdown：[https://55555.wiki/doc/7/](https://55555.wiki/doc/7/)
 ## Linux CentOS7宝塔面板部署文档：[https://55555.wiki/doc/4/](https://55555.wiki/doc/4/)
 ## Milvus docker部署以及配置方法文档：[https://55555.wiki/doc/8/](https://55555.wiki/doc/8/)
+## 功能说明书（持续更新）：[https://55555.wiki/project-3/](https://55555.wiki/project-3/)
 
 
 ## 第三方依赖：
