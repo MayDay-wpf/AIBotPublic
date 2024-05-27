@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  webapp:
+    build:
+      context: https://github.com/MayDay-wpf/AIBotPublic.git#main
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+      - cache
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2017-latest
+    environment:
+      SA_PASSWORD: "Abc23@#"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+
+  cache:
+    image: redis
+    ports:
+      - "6379:6379"
