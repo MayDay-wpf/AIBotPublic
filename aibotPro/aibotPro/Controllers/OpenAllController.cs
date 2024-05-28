@@ -404,7 +404,7 @@ namespace aibotPro.Controllers
                     vip.CreateTime = DateTime.Now;
                     _context.VIPs.Add(vip);
                 }
-                user.Mcoin = user.Mcoin + 100;
+                //user.Mcoin = user.Mcoin + 100;
                 _context.Users.Update(user);
                 _context.SaveChanges();
                 await _systemService.WriteLog("管理员充值VIP|90", Dtos.LogLevel.Info, account);
