@@ -11,6 +11,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
 using System.Security.Principal;
+using System.Text;
 
 namespace aibotPro.Controllers
 {
@@ -37,8 +38,31 @@ namespace aibotPro.Controllers
         public IActionResult Install()
         {
             //检查是否已经安装，验证aibotinstall.lock 文件是否存在
-            if (System.IO.File.Exists("aibotinstall.lock"))
-                return Redirect("/Home/Index");
+            var check = _context.Admins.AsNoTracking().FirstOrDefault();
+            if (System.IO.File.Exists("aibotinstall.lock") || check != null)
+            {
+                //锁定安装页
+                try
+                {
+                    string lockFilePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "aibotinstall.lock");
+                    if (!System.IO.File.Exists(lockFilePath))
+                    {
+                        using (FileStream lockFile = System.IO.File.Create(lockFilePath))
+                        {
+                            // 写入一些内容到锁文件，可以是空内容或者一些标识信息
+                            byte[] content = Encoding.UTF8.GetBytes("Lock file created by the application.");
+                            lockFile.Write(content, 0, content.Length);
+                        }
+                    }
+                    return Redirect("/Home/Index");
+                }
+                catch (Exception ex)
+                {
+                    _systemService.WriteLogUnAsync($"创建锁定文件时出现异常：{ex.Message}", Dtos.LogLevel.Error, "system");
+                    return Redirect("/Home/Index");
+                }
+
+            }
             return View();
         }
         public IActionResult Index()
@@ -343,29 +367,59 @@ namespace aibotPro.Controllers
         {
             //检查是否已经安装，验证aibotinstall.lock 文件是否存在
             if (System.IO.File.Exists("aibotinstall.lock"))
+            {
                 return Json(new
                 {
                     success = false,
                     msg = "非法请求"
                 });
-            //创建管理员
-            var result = _systemService.CreateAdmin(Account, Password);
-            return Json(new
+            }
+            else
             {
-                success = result,
-                msg = result ? $"创建管理员{Account}:{Password}成功" : "创建管理员失败"
-            });
+                //查询管理员列表中是否已有数据
+                var check = _context.Admins.AsNoTracking().FirstOrDefault();
+                if (check != null)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        msg = "已存在管理员"
+                    });
+                }
+                //创建管理员
+                var result = _systemService.CreateAdmin(Account, Password);
+                return Json(new
+                {
+                    success = result,
+                    msg = result ? $"创建管理员{Account}:{Password}成功" : "创建管理员失败"
+                });
+            }
         }
         [HttpPost]
         public IActionResult CreateSystemCfg()
         {
             //检查是否已经安装，验证aibotinstall.lock 文件是否存在
             if (System.IO.File.Exists("aibotinstall.lock"))
+            {
                 return Json(new
                 {
                     success = false,
                     msg = "非法请求"
                 });
+            }
+            else
+            {
+                //查询管理员列表中是否已有数据
+                var check = _context.Admins.AsNoTracking().FirstOrDefault();
+                if (check != null)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        msg = "已存在管理员"
+                    });
+                }
+            }
             var result = _systemService.CreateSystemCfg();
             return Json(new
             {

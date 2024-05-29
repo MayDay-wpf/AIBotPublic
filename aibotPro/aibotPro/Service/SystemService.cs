@@ -658,21 +658,21 @@ namespace aibotPro.Service
             };
             SystemCfg Alibaba_DashVectorApiKey = new SystemCfg()
             {
-                CfgName = "阿里巴巴向量检索ApiKey",
+                CfgName = "阿里巴巴向量检索ApiKey(弃用)",
                 CfgKey = "Alibaba_DashVectorApiKey",
                 CfgCode = "Alibaba_DashVectorApiKey",
                 CfgValue = "After"
             };
             SystemCfg Alibaba_DashVectorEndpoint = new SystemCfg()
             {
-                CfgName = "阿里巴巴向量检索Endpoint",
+                CfgName = "阿里巴巴向量检索Endpoint(弃用)",
                 CfgKey = "Alibaba_DashVectorEndpoint",
                 CfgCode = "Alibaba_DashVectorEndpoint",
                 CfgValue = "After"
             };
             SystemCfg Alibaba_DashVectorCollectionName = new SystemCfg()
             {
-                CfgName = "阿里巴巴向量检索CollectionName",
+                CfgName = "阿里巴巴向量检索CollectionName(弃用)",
                 CfgKey = "Alibaba_DashVectorCollectionName",
                 CfgCode = "Alibaba_DashVectorCollectionName",
                 CfgValue = "After"
@@ -719,6 +719,34 @@ namespace aibotPro.Service
                 CfgCode = "Baidu_OBJ_SK",
                 CfgValue = "After"
             };
+            SystemCfg WorkShop_FreeModel = new SystemCfg()
+            {
+                CfgName = "创意工坊免费模型",
+                CfgKey = "WorkShop_FreeModel",
+                CfgCode = "WorkShop_FreeModel",
+                CfgValue = "0"
+            };
+            SystemCfg WorkShop_FreeModel_Count = new SystemCfg()
+            {
+                CfgName = "创意工坊免费模型可用次数(用户)",
+                CfgKey = "WorkShop_FreeModel_Count",
+                CfgCode = "WorkShop_FreeModel_Count",
+                CfgValue = "0"
+            };
+            SystemCfg WorkShop_FreeModel_Count_VIP = new SystemCfg()
+            {
+                CfgName = "创意工坊免费模型可用次数(VIP)",
+                CfgKey = "WorkShop_FreeModel_Count_VIP",
+                CfgCode = "WorkShop_FreeModel_Count_VIP",
+                CfgValue = "0"
+            };
+            SystemCfg WorkShop_FreeModel_UpdateHour = new SystemCfg()
+            {
+                CfgName = "创意工坊免费模型更新频率(小时)",
+                CfgKey = "WorkShop_FreeModel_UpdateHour",
+                CfgCode = "WorkShop_FreeModel_UpdateHour",
+                CfgValue = "1"
+            };
             _context.SystemCfgs.Add(Mail);
             _context.SystemCfgs.Add(MailPwd);
             _context.SystemCfgs.Add(RegiestMcoin);
@@ -739,6 +767,11 @@ namespace aibotPro.Service
             _context.SystemCfgs.Add(ShareMcoin);
             _context.SystemCfgs.Add(Baidu_OBJ_AK);
             _context.SystemCfgs.Add(Baidu_OBJ_SK);
+            _context.SystemCfgs.Add(WorkShop_FreeModel);
+            _context.SystemCfgs.Add(WorkShop_FreeModel_Count);
+            _context.SystemCfgs.Add(WorkShop_FreeModel_Count_VIP);
+            _context.SystemCfgs.Add(WorkShop_FreeModel_UpdateHour);
+
 
             if (_context.SaveChanges() > 0)
             {
