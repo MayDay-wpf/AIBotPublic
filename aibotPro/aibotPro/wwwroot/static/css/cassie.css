@@ -16959,7 +16959,8 @@ body {
         }
 
         .toggle-sidebar .content {
-            transform: translateX(230px)
+            transform: translateX(230px);
+            transition: transform 0.3s ease;
         }
 }
 
@@ -16971,7 +16972,7 @@ body {
     }
 
     .toggle-sidebar .content {
-        margin-left: 0
+        margin-left: 0;
     }
 
     .toggle-sidebar .header {
@@ -16986,7 +16987,8 @@ body {
     top: 0;
     left: -230px;
     z-index: 20;
-    background-color: #fff
+    background-color: #fff;
+    transition: left 0.3s ease;
 }
 
 @media(min-width:992px) {
@@ -17076,7 +17078,7 @@ body {
     padding: 20px 10px;
     position: relative;
     height: calc(100% - 60px);
-    overflow: hidden
+    overflow-y: scroll
 }
 
 @media(min-width:576px) {
@@ -17093,6 +17095,29 @@ body {
 
 .sidebar-body .nav-sidebar:last-of-type {
     margin-bottom: 25px
+}
+.sidebar-body::-webkit-scrollbar {
+    width: 3px;
+    height: 10px;
+    /**/
+}
+
+.sidebar-body::-webkit-scrollbar-track {
+    background: rgb(239, 239, 239);
+    border-radius: 2px;
+}
+
+.sidebar-body::-webkit-scrollbar-thumb {
+    background: #bfbfbf;
+    border-radius: 10px;
+}
+
+    .sidebar-body::-webkit-scrollbar-thumb:hover {
+        background: #333;
+    }
+
+.sidebar-body::-webkit-scrollbar-corner {
+    background: #179a16;
 }
 
 .nav-sidebar {
@@ -17225,7 +17250,7 @@ body {
 
 .content {
     position: relative;
-    min-height: 100vh
+    min-height: 100vh;
 }
 
 @media(min-width:992px) {
@@ -18887,8 +18912,32 @@ body {
 .chat-sidebar-body {
     position: relative;
     height: calc(100% - 100px);
-    overflow: scroll;
+    overflow-y: scroll;
 }
+    .chat-sidebar-body::-webkit-scrollbar {
+        width: 3px;
+        height: 10px;
+        /**/
+    }
+
+    .chat-sidebar-body::-webkit-scrollbar-track {
+        background: rgb(239, 239, 239);
+        border-radius: 2px;
+    }
+
+    .chat-sidebar-body::-webkit-scrollbar-thumb {
+        background: #bfbfbf;
+        border-radius: 10px;
+    }
+
+        .chat-sidebar-body::-webkit-scrollbar-thumb:hover {
+            background: #333;
+        }
+
+    .chat-sidebar-body::-webkit-scrollbar-corner {
+        background: #179a16;
+    }
+
 
 .chat-list {
     padding: 0;

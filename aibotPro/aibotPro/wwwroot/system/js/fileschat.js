@@ -417,6 +417,7 @@ function sendMsg() {
                      </div>
                      <div>
                       <i data-feather="refresh-cw" class="chatbtns" onclick="tryAgain('`+ msgid_u + `')"></i>
+                      <i data-feather="edit-3" class="chatbtns" onclick="editChat('`+ msgid_u + `')"></i>
                      </div>
                 </div>`;
     $(".chat-body-content").append(html);

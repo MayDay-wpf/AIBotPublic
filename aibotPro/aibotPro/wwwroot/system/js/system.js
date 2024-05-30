@@ -6,6 +6,8 @@ var HeadImgPath;
 var UserNickText;
 let backgroundImg = '';
 let fontColor = '#000000';
+var menuShow = true;
+
 $(document).ready(function () {
     let savedScrollPosition = localStorage.getItem('sidebarScrollPosition');
     if (savedScrollPosition) {
@@ -518,9 +520,9 @@ function isAdmin() {
             } else {
                 $(".system-admin-aibot-pro").remove();
             }
-            const psSidebarBody = new PerfectScrollbar('#dpSidebarBody', {
-                suppressScrollX: false
-            });
+            //const psSidebarBody = new PerfectScrollbar('#dpSidebarBody', {
+            //    suppressScrollX: false
+            //});
             $('.nav-sidebar .with-sub').on('click', function (e) {
                 e.preventDefault();
 
@@ -541,17 +543,17 @@ function isAdmin() {
                     // 如果子菜单之前不可见（收起状态），则把它展开
                     $subMenu.slideDown(300, function () {
                         $parentLi.addClass('show');
-                        if (psSidebarBody && typeof psSidebarBody.update === 'function') {
-                            psSidebarBody.update();
-                        }
+                        //if (psSidebarBody && typeof psSidebarBody.update === 'function') {
+                        //    psSidebarBody.update();
+                        //}
                     });
                 } else {
                     // 如果子菜单之前可见（展开状态），则把它收起
                     $subMenu.slideUp(300, function () {
                         $parentLi.removeClass('show');
-                        if (psSidebarBody && typeof psSidebarBody.update === 'function') {
-                            psSidebarBody.update();
-                        }
+                        //if (psSidebarBody && typeof psSidebarBody.update === 'function') {
+                        //    psSidebarBody.update();
+                        //}
                     });
                 }
             });

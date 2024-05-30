@@ -3,12 +3,12 @@
 
     feather.replace();
 
-    const psSidebarBody = new PerfectScrollbar('#dpSidebarBody', {
-        suppressScrollX: true,
-        wheelSpeed: 0.05,
-        swipeEasing: true,
-        wheelPropagation: true
-    });
+    //const psSidebarBody = new PerfectScrollbar('#dpSidebarBody', {
+    //    suppressScrollX: true,
+    //    wheelSpeed: 0.05,
+    //    swipeEasing: true,
+    //    wheelPropagation: true
+    //});
 
     //$('.nav-sidebar .with-sub').on('click', function (e) {
     //    e.preventDefault();

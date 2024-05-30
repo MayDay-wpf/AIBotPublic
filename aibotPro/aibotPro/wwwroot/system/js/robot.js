@@ -82,7 +82,7 @@ function dragEnd(e) {
 
     isDragging = false;
     //speechBubble.style.display = 'none';
-    speechBubble.innerHTML = '我是AIBot,可以拖动我哦😘<br />双击我，可以跟我交流😉<br />在设置中可以关闭我🥺';
+    speechBubble.innerHTML = '我是AIBot,右键最小化😘<br />双击我，可以跟我交流😉<br />在设置中可以关闭我🥺';
 }
 
 function drag(e) {
