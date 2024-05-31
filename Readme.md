@@ -29,8 +29,8 @@
 *  [betalgo/openai](https://github.com/betalgo/openai)
   
 ## 贡献列表
-* [@weianweigan](https://github.com/weianweigan)
-* [@kayhantolga](https://github.com/kayhantolga)
+* [@weianweigan](https://github.com/weianweigan)——Milvus C# SDK指导
+* [@kayhantolga](https://github.com/kayhantolga)——Betalgo OpenAI .NET SDK指导
 
 ## 相关截图
 ![1](https://i.mij.rip/2024/02/27/b47660352729d9028be6f7edd0bd2c51.png)
