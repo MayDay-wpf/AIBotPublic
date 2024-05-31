@@ -1,6 +1,6 @@
 # AIBotPro 开源版
 ## 作者运营地址：[https://aibotpro.cn](https://aibotpro.cn)
-## QQ交流群：833716234（群内免费提供技术支持，任何问题都会得到解答）
+## QQ交流群：833716234 [点击加入群聊【AIBot-MayMay】](https://qm.qq.com/q/2Wqd6MpW3S)（群内免费提供技术支持，任何问题都会得到解答）
 ## 开源版与闭源版差异：开源版本移除了对用户历史记录、用户资料等敏感信息的特殊加密算法，改用简易的base64编码存储，其他与闭源完全一致
 ## 技术栈
 * 前端：bootstrap4
@@ -55,7 +55,7 @@
 ## 完全自由的 API 托管，兼容 one-api 等
 ![7](https://i.mij.rip/2024/02/27/cc8b844bdd329ddd301c169f312d5594.png)
 
-## OpenAPI 支持外部调用AIBotPro的插件（联网、知识库、绘画、workflow等），实现AI特色功能输出，完全遵循OpenAI调用规则，免去复杂的function call传参
+## OpenAPI 支持外部调用AIBotPro的插件（联网、知识库、绘画、workflow等），实现AI特色功能输出，完全遵循OpenAI调用规则，免去复杂的function calling传参
 ![a8ffbb11bcd5406fb58c8f0ab87dfb6b.png](https://ice.frostsky.com/2024/04/05/a8ffbb11bcd5406fb58c8f0ab87dfb6b.png)
 
 ## WorkFlow（AI流程引擎）
