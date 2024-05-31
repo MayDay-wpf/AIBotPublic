@@ -246,7 +246,7 @@ namespace aibotPro.Service
                     {
                         //如果是新对话直接填充用户输入
                         Message message = new Message();
-                        if (!string.IsNullOrEmpty(chatDto.system_prompt) && chatDto.aiModel != "ERNIE-Bot-4")
+                        if (!string.IsNullOrEmpty(chatDto.system_prompt))
                         {
                             message.Role = "system";
                             message.Content = chatDto.system_prompt;
@@ -317,7 +317,7 @@ namespace aibotPro.Service
                         if (!isVisionModel)
                         {
                             Message message = new Message();
-                            if (!systemPromptAdded && !string.IsNullOrEmpty(chatDto.system_prompt) && chatDto.aiModel != "ERNIE-Bot-4")
+                            if (!systemPromptAdded && !string.IsNullOrEmpty(chatDto.system_prompt))
                             {
                                 message.Role = "system";
                                 message.Content = chatDto.system_prompt;

@@ -806,7 +806,10 @@ namespace aibotPro.Service
                                 {
                                     startOutputJson = "{}";
                                 }
-                                WorkflowEngine workflowEngine = new WorkflowEngine(workFlowNodeData, _aiServer, _systemService, _financeService, _context, account, _serviceProvider, _hubContext, chatId, senMethod, _redisService, _milvusService);
+                                int workflowLimit = 20;
+                                if (_systemService.GetSystemCfgs().Where(s => s.CfgCode == "WorkFlow_Limit").FirstOrDefault() != null)
+                                    workflowLimit = int.Parse(_systemService.GetSystemCfgs().Where(s => s.CfgCode == "WorkFlow_Limit").FirstOrDefault().CfgValue);
+                                WorkflowEngine workflowEngine = new WorkflowEngine(workFlowNodeData, _aiServer, _systemService, _financeService, _context, account, _serviceProvider, _hubContext, chatId, senMethod, _redisService, _milvusService, workflowLimit);
                                 List<NodeOutput> workflowResult = await workflowEngine.Execute(startOutputJson);
                                 //查询工作流结束模式
                                 var endNodeData = (EndData)workFlowNodeData.Drawflow.Home.Data.Values.FirstOrDefault(x => x.Name == "end").Data;

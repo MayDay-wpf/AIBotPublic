@@ -747,6 +747,13 @@ namespace aibotPro.Service
                 CfgCode = "WorkShop_FreeModel_UpdateHour",
                 CfgValue = "1"
             };
+            SystemCfg WorkFlow_Limit = new SystemCfg()
+            {
+                CfgName = "流程引擎死循环保护的极限重复次数",
+                CfgKey = "WorkFlow_Limit",
+                CfgCode = "WorkFlow_Limit",
+                CfgValue = "20"
+            };
             _context.SystemCfgs.Add(Mail);
             _context.SystemCfgs.Add(MailPwd);
             _context.SystemCfgs.Add(RegiestMcoin);
@@ -771,6 +778,7 @@ namespace aibotPro.Service
             _context.SystemCfgs.Add(WorkShop_FreeModel_Count);
             _context.SystemCfgs.Add(WorkShop_FreeModel_Count_VIP);
             _context.SystemCfgs.Add(WorkShop_FreeModel_UpdateHour);
+            _context.SystemCfgs.Add(WorkFlow_Limit);
 
 
             if (_context.SaveChanges() > 0)

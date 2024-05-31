@@ -10,8 +10,8 @@
     $('[data-toggle="tooltip"]').tooltip();
     $("#slidertemperature").val("0.5");
     $("#slidertopp").val("1");
-    $("#sliderpresence").val("0.5");
-    $("#sliderfrequency").val("0.5");
+    $("#sliderpresence").val("1");
+    $("#sliderfrequency").val("1");
     getKonwLedgeTypeByMilvus('init');
 });
 var slidertemperature = document.getElementById("slidertemperature");

@@ -141,14 +141,14 @@
                                     <input type="range" class="custom-range" id="slidertopp" min="0.0" max="1" value="1" step="0.1">
                                 </div>
                                 <div class="form-group">
-                                    <label>惩罚(presence_penalty)</label>：<b class="presence_penalty">0.5</b><br />
+                                    <label>惩罚(presence_penalty)</label>：<b class="presence_penalty">1</b><br />
                                     <span style="font-size:12px;color:gray">值越大，越有可能扩展到新话题</span>
-                                    <input type="range" class="custom-range" id="sliderpresence" min="-2" max="2" value="0.5" step="0.1">
+                                    <input type="range" class="custom-range" id="sliderpresence" min="-2" max="2" value="1" step="0.1">
                                 </div>
                                 <div class="form-group">
-                                    <label>惩罚频率(frequency_penalty)</label>：<b class="frequency_penalty">0.5</b><br />
+                                    <label>惩罚频率(frequency_penalty)</label>：<b class="frequency_penalty">1</b><br />
                                     <span style="font-size:12px;color:gray">值越大，越有可能降低重复字词</span>
-                                    <input type="range" class="custom-range" id="sliderfrequency" min="-2" max="2" value="0.5" step="0.1">
+                                    <input type="range" class="custom-range" id="sliderfrequency" min="-2" max="2" value="1" step="0.1">
                                 </div>
                                 <div class="form-group">
                                     <label for="languageSelect">选择AI语言</label>
@@ -222,7 +222,7 @@
     </div>
 </div>
 <script src="~/system/js/signalr.min.js"></script>
-<script src="~/system/js/workshopchat.js"></script>
+<script src="~/system/js/workshopchat.js?v1"></script>
 <script src="~/system/js/marked.min.js"></script>
 <link href="~/system/css/atom-one-dark.min.css" rel="stylesheet" />
 <script src="~/system/js/highlight.min.js"></script>

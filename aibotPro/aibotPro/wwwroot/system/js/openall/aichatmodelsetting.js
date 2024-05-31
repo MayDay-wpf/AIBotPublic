@@ -14,6 +14,7 @@ function whatMyChatSetting() {
 }
 function addStLine() {
     var str = `<tr>
+                 <td class="drag-handle"><i data-feather="align-justify"></i></td>
                  <td><input type="text" class="form-control" placeholder="模型昵称" /></td>
                  <td><input type="text" class="form-control" placeholder="模型名称(实际请求时使用)" /></td>
                  <td><input type="text" class="form-control" placeholder="Base URL"  /></td>
@@ -90,16 +91,34 @@ function getChatSetting() {
                 for (var i = 0; i < data.length; i++) {
                     var checkedAttr = data[i].visionModel ? 'checked' : '';
                     var str = `<tr>
+                                <td class="drag-handle"><i data-feather="align-justify"></i></td>
                                 <td><input type="text" class="form-control" placeholder="模型昵称" value="${data[i].modelNick}" /></td>
                                 <td><input type="text" class="form-control" placeholder="模型名称(实际请求时使用)" value="${data[i].modelName}" /></td>
                                 <td><input type="text" class="form-control" placeholder="Base URL" value="${data[i].baseUrl}" /></td>
                                 <td><input type="text" class="form-control" placeholder="API KEY" value="${data[i].apiKey}" /></td>
                                 <td><input type="checkbox" class="form-control" ${checkedAttr}></td>
-                                <td><input type="number" class="form-control" placeholder="排序" value="${data[i].seq}" /></td>
+                                <td><input type="number" class="form-control seq-input" placeholder="排序" value="${data[i].seq}" /></td>
                                 <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`
                     $("#AddSt").append(str);
                     feather.replace();
-
+                    // 初始化拖动排序
+                    $("#AddSt").sortable({
+                        handle: '.drag-handle',
+                        placeholder: 'drag-placeholder',
+                        forcePlaceholderSize: true,
+                        start: function (event, ui) {
+                            ui.item.addClass('dragging');
+                        },
+                        stop: function (event, ui) {
+                            ui.item.removeClass('dragging');
+                        },
+                        update: function (event, ui) {
+                            // 更新排序文本框的值
+                            $('#AddSt tr').each(function (index) {
+                                $(this).find('.seq-input').val(index + 1);
+                            });
+                        }
+                    }).disableSelection();
                 }
             } else {
                 balert(res.msg, "danger", false, 1500, 'top');

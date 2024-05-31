@@ -79,8 +79,10 @@
                     @* <li onclick="editor.changeModule('Other'); changeModule(event);">Other Module</li> *@
                     <li onclick="hideTools()"><i class="fas fa-bars" style="font-size:20px;"></i></li>
                     <li><button class="btn btn-danger" onclick="editor.clearModuleSelected()">清空</button></li>
+                    <li><button class="btn btn-info" onclick="window.location.href='/WorkShop/MyPlugins'">返回插件列表</button></li>
                     <li><button class="btn btn-info" onclick="exportDrawFlow()">预览Json</button></li>
                     <li><button class="btn btn-info" onclick="saveNodeDataToCache()">保存</button></li>
+                    <li><button class="btn btn-info" onclick="pushtoPlugin()">发布至插件</button></li>
                 </ul>
             </div>
             <div id="drawflow" ondrop="drop(event)" ondragover="allowDrop(event)">

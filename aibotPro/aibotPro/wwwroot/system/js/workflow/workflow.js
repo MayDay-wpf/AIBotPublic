@@ -1,11 +1,13 @@
 ﻿var workflowcode = '';
+var plugincode = '';
 var jsonmodelAI = ['gpt-3.5-turbo-0125', 'gpt-3.5-turbo-0125-openai', 'gpt-4-0125-preview', 'gpt-4-0125-preview-openai'];
 let pageIndex_k = 1;
 let pageSize_k = 20;
 $(function () {
     //changeMode('lock');
     workflowcode = getUrlParam('workflowcode');
-    if (workflowcode == '')
+    plugincode = getUrlParam('plugincode');
+    if (workflowcode == '' || plugincode == '')
         layer.msg("未经许可的访问方式", { icon: 2, time: 1500 }, function () {
             window.location.href = "/Home/Index";
         });
@@ -1267,6 +1269,26 @@ function optionMax() {
         $("#togglePanelIcon").toggleClass("fas fa-chevron-left");
         optionMax_b = false;
     }
+}
+
+function pushtoPlugin() {
+    $.ajax({
+        type: "POST",
+        async: false,
+        url: "/WorkShop/PushtoPlugin",
+        data: {
+            plugincode: plugincode,
+            workflowcode: workflowcode
+        },
+        success: function (data) {
+            if (data.success) {
+                layer.msg('发布成功', { icon: 1, offset: 't', time: 2000 });
+            }
+            else {
+                layer.msg(data.msg, { icon: 2, offset: 't', time: 2000 });
+            }
+        }
+    });
 }
 
 editor.createCurvature = function (start_pos_x, start_pos_y, end_pos_x, end_pos_y, curvature_value, type) {

@@ -212,6 +212,7 @@ function sendExceptionMsg(msg) {
         }
     });
 }
+//获取当前时间
 function getCurrentDateTime() {
     const now = new Date();
     const year = now.getFullYear();
@@ -223,6 +224,11 @@ function getCurrentDateTime() {
 
     return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
 }
+//获取当前时间戳
+function getCurrentTimestamp() {
+    return new Date().getTime();
+}
+//iso时间转换为标准时间格式
 function isoStringToDateTime(isoString) {
     const date = new Date(isoString);
     const year = date.getFullYear();

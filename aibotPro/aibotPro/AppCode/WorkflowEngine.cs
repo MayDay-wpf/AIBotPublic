@@ -44,7 +44,8 @@ namespace aibotPro.AppCode
         private readonly IHubContext<ChatHub> _hubContext;
         private readonly IRedisService _redisService;
         private readonly IMilvusService _milvusService;
-        public WorkflowEngine(WorkFlowNodeData workflowData, IAiServer aiServer, ISystemService systemService, IFinanceService financeService, AIBotProContext context, string account, IServiceProvider serviceProvider, IHubContext<ChatHub> hubContext, string chatId, string senMethod, IRedisService redisService, IMilvusService milvusService)
+        private static int _checkCount;
+        public WorkflowEngine(WorkFlowNodeData workflowData, IAiServer aiServer, ISystemService systemService, IFinanceService financeService, AIBotProContext context, string account, IServiceProvider serviceProvider, IHubContext<ChatHub> hubContext, string chatId, string senMethod, IRedisService redisService, IMilvusService milvusService, int checkCount)
         {
             _workflowData = workflowData;
             _aiServer = aiServer;
@@ -58,6 +59,7 @@ namespace aibotPro.AppCode
             _senMethod = senMethod;
             _redisService = redisService;
             _milvusService = milvusService;
+            _checkCount = checkCount;
         }
         public async Task<List<NodeOutput>> Execute(string startNodeOutput)
         {
@@ -183,10 +185,8 @@ namespace aibotPro.AppCode
             List<NodeData> nextNodes = new List<NodeData>();
             var startNode = _workflowData.Drawflow.Home.Data.Values.FirstOrDefault(x => x.Name == "start");
             nextNodes.Add(startNode);
-
             while (nextNodes.Count != 0)
             {
-
                 var tasks = nextNodes.Select(node => ExecuteNode(node, result)).ToArray();
                 // 等待这个build中所有node的处理完成
                 var nodeOutputs = await Task.WhenAll(tasks);
@@ -809,6 +809,10 @@ namespace aibotPro.AppCode
         }
         private async Task<NodeOutput> ProcessIfElseNode(NodeData node, List<NodeOutput> result)
         {
+            if (_checkCount <= 0)
+            {
+                throw new Exception($"判断次数超出系统设定的极限,触发流程引擎死循环保护,请修正您的WorkFlow");
+            }
             NodeOutput nodeOutput = new NodeOutput();
             List<int> nodeIds = new List<int>();
             IfElseData ifElseData = (IfElseData)node.Data;
@@ -819,10 +823,12 @@ namespace aibotPro.AppCode
             Dictionary<string, NodeConnection> keyValuePairs = new Dictionary<string, NodeConnection>();
             if (ExecuteResult == "True")
             {
+                _checkCount--;
                 keyValuePairs = node.Outputs.Where(x => x.Key == "output_1").ToDictionary(x => x.Key, x => x.Value);
             }
             else
             {
+                _checkCount--;
                 keyValuePairs = node.Outputs.Where(x => x.Key == "output_2").ToDictionary(x => x.Key, x => x.Value);
             }
 

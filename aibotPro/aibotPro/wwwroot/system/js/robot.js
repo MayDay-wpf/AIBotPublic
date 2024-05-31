@@ -19,8 +19,19 @@ function getBotSetting() {
                 if (data == null)
                     return;
                 if (data.systemSetting != null) {
-                    if (data.systemSetting.goodHistory == '1')
+                    if (data.systemSetting.goodHistory == '1') {
                         $('.robot-container').show();
+                        var robotSMtimespan = localStorage.getItem('robotSMtimespan');
+                        if (robotSMtimespan != null) {
+                            if (getCurrentTimestamp() - robotSMtimespan > 86400000) {
+                                localStorage.removeItem('robotSMtimespan');
+                                localStorage.removeItem('robotSM');
+                            } else {
+                                $('.robotSM').show();
+                                $('.robot-container').hide();
+                            }
+                        }
+                    }
                     else
                         $('.robot-container').hide();
                 }
@@ -49,9 +60,18 @@ const initialYPositionPercentage = 5;
 window.addEventListener('load', function () {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
-    const initialXPosition = (screenWidth * initialXPositionPercentage) / 100;
-    const initialYPosition = (screenHeight * initialYPositionPercentage) / 100;
-
+    var storedTimestamp = localStorage.getItem('timestamp');
+    if (storedTimestamp != null && getCurrentTimestamp() - storedTimestamp > 86400000) {
+        localStorage.removeItem('xPosition');
+        localStorage.removeItem('yPosition');
+        localStorage.removeItem('timestamp');
+    }
+    var xPositionLog = localStorage.getItem('xPosition');
+    var yPositionLog = localStorage.getItem('yPosition');
+    const initialXPosition = xPositionLog != null ? xPositionLog : (screenWidth * initialXPositionPercentage) / 100;
+    const initialYPosition = yPositionLog != null ? yPositionLog : (screenHeight * initialYPositionPercentage) / 100;
+    currentX = initialXPosition;
+    currentY = initialYPosition;
     setTranslate(initialXPosition, initialYPosition, robotContainer);
     xOffset = initialXPosition;
     yOffset = initialYPosition;
@@ -79,7 +99,9 @@ function dragStart(e) {
 function dragEnd(e) {
     initialX = currentX;
     initialY = currentY;
-
+    localStorage.setItem('xPosition', currentX);
+    localStorage.setItem('yPosition', currentY);
+    localStorage.setItem('timestamp', getCurrentTimestamp());
     isDragging = false;
     //speechBubble.style.display = 'none';
     speechBubble.innerHTML = '我是AIBot,右键最小化😘<br />双击我，可以跟我交流😉<br />在设置中可以关闭我🥺';
@@ -141,7 +163,11 @@ robotContainer.addEventListener('dblclick', function () {
 robotContainer.addEventListener('contextmenu', function (event) {
     event.preventDefault();  // 阻止默认的右键菜单
     robotContainer.style.display = 'none';
+    localStorage.setItem('xPosition', currentX);
+    localStorage.setItem('yPosition', currentY);
     $('.robotSM').show();
+    localStorage.setItem('robotSM', true);
+    localStorage.setItem('robotSMtimespan', getCurrentTimestamp());
 });
 
 closeBtn.addEventListener('click', function () {
@@ -153,6 +179,8 @@ function showRobot() {
     robotContainer.style.display = 'block';
     chatWindow.style.display = 'none';
     $('.robotSM').hide();
+    localStorage.removeItem('robotSM');
+    localStorage.removeItem('robotSMtimespan');
 }
 let noticemsg = ""
 function getNotice() {

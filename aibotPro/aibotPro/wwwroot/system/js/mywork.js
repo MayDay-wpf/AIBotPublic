@@ -302,7 +302,7 @@ var usehtml = '';
 var regex = /'/;
 var jsonPr = '';
 
-function PostPlugin(type) {
+function PostPlugin(type, callback) {
     nickname = $('#nickname').val();
     functionname = $('#functionname').val();
     functioninfo = $('#functioninfo').val();
@@ -496,6 +496,7 @@ function PostPlugin(type) {
                 unloadingBtn('.uploadPluginBtn');
                 unloadingBtn('.savePluginBtn');
                 balert(data.msg, 'success', false, 1500, 'center');
+                callback(type, data.pcode);
             }
             else {
                 balert(data.msg, 'danger', false, 1500, 'center');
@@ -649,7 +650,7 @@ function getPluginInfo(plugincode, id, type) {
 function workflowDrive() {
     if (workflowcode != '') {
         //edit
-        window.open('/WorkShop/WorkFlow?workflowcode=' + workflowcode);
+        window.location.href = '/WorkShop/WorkFlow?workflowcode=' + workflowcode + '&plugincode=' + plugincode;
     }
     else {
         //new
@@ -659,6 +660,54 @@ function workflowDrive() {
                     <p>${workflowcode}</p>`;
         $('#workflowBox').html(html);
         loadingOverlay.hide();
-        window.open('/WorkShop/WorkFlow?workflowcode=' + workflowcode);
+        //生成默认工作流保存
+        saveDefaultWorkflow(workflowcode)
+        //保存插件到插件库
+        PostPlugin('test', gotoEditor);
     }
+}
+function gotoEditor(type, pcode) {
+    window.location.href = '/WorkShop/WorkFlow?workflowcode=' + workflowcode + '&plugincode=' + pcode
+}
+function saveDefaultWorkflow(workflowcode) {
+    var nodeData = JSON.stringify({
+        "drawflow": {
+            "Home": {
+                "data": {
+                    "5": {
+                        "id": 5,
+                        "name": "start",
+                        "data": {
+                            "output": {
+                                "prItems": []
+                            }
+                        },
+                        "class": "start",
+                        "html": "\n            <div>\n              <div class=\"title-box\"><i class=\"far fa-play-circle\"></i> <span class=\"nodeText\">开始(start)<span></div>\n            </div>\n            ",
+                        "typenode": false,
+                        "inputs": {},
+                        "outputs": {
+                            "output_1": {
+                                "connections": []
+                            }
+                        },
+                        "pos_x": 311,
+                        "pos_y": 180
+                    }
+                }
+            }
+        }
+    });
+    $.ajax({
+        type: "POST",
+        async: false,
+        url: "/WorkShop/SaveNodeDataToCache",
+        data: {
+            workflowcode: workflowcode,
+            nodeData: nodeData
+        },
+        success: function (data) {
+
+        }
+    });
 }

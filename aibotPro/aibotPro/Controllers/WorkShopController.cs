@@ -4,6 +4,7 @@ using aibotPro.Models;
 using aibotPro.Service;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using NuGet.Protocol.Plugins;
 
 namespace aibotPro.Controllers
 {
@@ -149,7 +150,7 @@ namespace aibotPro.Controllers
             try
             {
                 //写入Plugin主表
-                Plugin pluginEntity = new Plugin
+                Models.Plugin pluginEntity = new Models.Plugin
                 {
                     Pcode = plugin.Pcode,
                     Account = username,
@@ -249,14 +250,44 @@ namespace aibotPro.Controllers
                 }
                 _context.SaveChanges();
                 if (plugin.IsPublic == "yes")
-                    return Json(new { success = true, msg = "插件已发布" });
+                    return Json(new { success = true, msg = "插件已发布", pcode = plugin.Pcode });
                 else
-                    return Json(new { success = true, msg = "插件已存入草稿，请前往【我的制作】查看" });
+                    return Json(new { success = true, msg = "插件已存入草稿，请前往【我的制作】查看", pcode = plugin.Pcode });
             }
             catch (Exception e)
             {
                 return Json(new { success = false, msg = e.Message });
             }
+        }
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> PushtoPlugin(string plugincode, string workflowcode)
+        {
+            string username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            //从缓存中获取工作流数据
+            var nodeData = await _redisService.GetAsync(workflowcode);
+            //如果缓存中没有，则抛出异常
+            if (string.IsNullOrEmpty(nodeData))
+            {
+                return Json(new { success = false, msg = "工作流数据未保存" });
+            }
+            //删除原有的流程数据
+            var oldwork = _context.WorkFlows.Where(w => w.FlowCode == workflowcode && w.Pcode == plugincode).FirstOrDefault();
+            if (oldwork == null)
+                return Json(new { success = false, msg = "工作流与插件匹配错误" });
+            _context.WorkFlows.Remove(oldwork);
+            //写入新的数据
+            WorkFlow workFlow = new WorkFlow
+            {
+                Account = username,
+                FlowCode = workflowcode,
+                Pcode = plugincode,
+                FlowJson = nodeData,
+                CreateTime = DateTime.Now
+            };
+            _context.WorkFlows.Add(workFlow);
+            _context.SaveChanges();
+            return Json(new { success = true, msg = "工作流已发布至插件" });
         }
         [Authorize]
         [HttpPost]
