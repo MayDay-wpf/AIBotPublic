@@ -20,13 +20,20 @@ function addStLine() {
                  <td><input type="text" class="form-control" placeholder="Base URL"  /></td>
                  <td><input type="text" class="form-control" placeholder="API KEY"  /></td>
                  <td><input type="checkbox" class="form-control"></td>
-                 <td><input type="number" class="form-control" placeholder="排序"  /></td>
+                 <td><input type="number" class="form-control seq-input" placeholder="排序"  /></td>
+                 <td><input type="number" class="form-control" placeholder="流延时(ms)"  /></td>
                  <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`
     $("#AddSt").append(str);
     feather.replace();
+    $('#AddSt tr').each(function (index) {
+        $(this).find('.seq-input').val(index + 1);
+    });
 }
 function delLine() {
     $(event.target).closest('tr').remove();
+    $('#AddSt tr').each(function (index) {
+        $(this).find('.seq-input').val(index + 1);
+    });
 }
 function saveChatSetting() {
     var formData = new FormData();
@@ -40,6 +47,7 @@ function saveChatSetting() {
         var apiKey = $(row).find("input").eq(3).val();
         var visionModel = $(row).find("input").eq(4).prop('checked');
         var seq = $(row).find("input").eq(5).val();
+        var delay = $(row).find("input").eq(6).val() < 0 ? 0 : $(row).find("input").eq(6).val();
         if (!removeSpaces(nickname) || !removeSpaces(name) || !removeSpaces(baseUrl) || !removeSpaces(apiKey)) {
             balert('请将空的【自定义对话模型】输入行删除，或填写完整', 'danger', false, 1500, 'top');
             issave = false;
@@ -51,6 +59,7 @@ function saveChatSetting() {
             formData.append(`AImodel[${index}].ApiKey`, apiKey);
             formData.append(`AImodel[${index}].VisionModel`, visionModel);
             formData.append(`AImodel[${index}].Seq`, seq);
+            formData.append(`AImodel[${index}].Delay`, delay);
         }
     });
     if (issave) {
@@ -98,6 +107,7 @@ function getChatSetting() {
                                 <td><input type="text" class="form-control" placeholder="API KEY" value="${data[i].apiKey}" /></td>
                                 <td><input type="checkbox" class="form-control" ${checkedAttr}></td>
                                 <td><input type="number" class="form-control seq-input" placeholder="排序" value="${data[i].seq}" /></td>
+                                <td><input type="number" class="form-control" placeholder="流延时(ms)" value="${data[i].delay}" /></td>
                                 <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`
                     $("#AddSt").append(str);
                     feather.replace();

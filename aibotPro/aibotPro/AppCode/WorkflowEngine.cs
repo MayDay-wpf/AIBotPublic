@@ -45,6 +45,7 @@ namespace aibotPro.AppCode
         private readonly IRedisService _redisService;
         private readonly IMilvusService _milvusService;
         private static int _checkCount;
+        private Dictionary<string, int> _nodeCheckCounts = new Dictionary<string, int>();
         public WorkflowEngine(WorkFlowNodeData workflowData, IAiServer aiServer, ISystemService systemService, IFinanceService financeService, AIBotProContext context, string account, IServiceProvider serviceProvider, IHubContext<ChatHub> hubContext, string chatId, string senMethod, IRedisService redisService, IMilvusService milvusService, int checkCount)
         {
             _workflowData = workflowData;
@@ -325,36 +326,51 @@ namespace aibotPro.AppCode
 
         private async Task<NodeOutput> ProcessJavaScriptNode(NodeData node, List<NodeOutput> result)
         {
+            var nodeKey = node.Name + node.Id;
+            if (!_nodeCheckCounts.ContainsKey(nodeKey))
+            {
+                _nodeCheckCounts[nodeKey] = _checkCount;
+            }
+            if (_nodeCheckCounts[nodeKey] <= 0)
+            {
+                throw new Exception($"节点 {nodeKey} 的运行次数超出系统设定的极限, 触发流程引擎死循环保护, 请修正您的 WorkFlow");
+            }
             NodeOutput nodeOutput = new NodeOutput();
             //获取javascript节点的脚本内容
             var jsData = (JavaScriptData)node.Data;
             //替换脚本中的变量
             jsData.Output.JavaScript = FillScriptWithValues(jsData.Output.JavaScript, result);
-            var nodeName = node.Name;
-            var nodeId = node.Id;
             if (!string.IsNullOrEmpty(_chatId))
             {
                 ChatRes chatRes = new ChatRes();
                 chatRes.message = $"👨‍💻\n";
                 await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
             }
-            string ExecuteResult = RunScript(nodeName + nodeId, jsData.Output.JavaScript);
-            nodeOutput.NodeName = nodeName + nodeId;
-            nodeOutput.OutputData = BuilderJson(nodeName + nodeId, ExecuteResult);
+            string ExecuteResult = RunScript(nodeKey, jsData.Output.JavaScript);
+            nodeOutput.NodeName = nodeKey;
+            nodeOutput.OutputData = BuilderJson(nodeKey, ExecuteResult);
             nodeOutput.NextNodes = FindNextNode(node.Outputs);
+            _nodeCheckCounts[nodeKey]--;
             return nodeOutput;
         }
 
         private async Task<NodeOutput> ProcessHttpNode(NodeData node, List<NodeOutput> result)
         {
+            var nodeKey = node.Name + node.Id;
+            if (!_nodeCheckCounts.ContainsKey(nodeKey))
+            {
+                _nodeCheckCounts[nodeKey] = _checkCount;
+            }
+            if (_nodeCheckCounts[nodeKey] <= 0)
+            {
+                throw new Exception($"节点 {nodeKey} 的运行次数超出系统设定的极限, 触发流程引擎死循环保护, 请修正您的 WorkFlow");
+            }
             NodeOutput nodeOutput = new NodeOutput();
             // 处理 "http" 节点,执行 HTTP 请求,返回 JSON 字符串
             HttpData httpData = (HttpData)node.Data;
             string type = httpData.Output.Type;
             string url = FillScriptWithValues(httpData.Output.RequestUrl, result);
             string body = string.Empty;
-            var nodeName = node.Name;
-            var nodeId = node.Id;
             if (!string.IsNullOrEmpty(_chatId))
             {
                 ChatRes chatRes = new ChatRes();
@@ -398,7 +414,7 @@ namespace aibotPro.AppCode
             while (true)
             {
                 if (maxcount < 0)
-                    throw new Exception($"{nodeName + nodeId}循环次数已超出允许的最大次数");
+                    throw new Exception($"{nodeKey}循环次数已超出允许的最大次数");
                 maxcount--;
                 string httpScript = httpData.Output.JudgeScript;
                 httpResult = await Task.Run(async () =>
@@ -414,8 +430,8 @@ namespace aibotPro.AppCode
                     }
                     return httpresult;
                 });
-                httpScript = FillScriptWithValues(httpScript, result, BuilderJson(nodeName + nodeId, httpResult));
-                string ExecuteResult = RunScript(nodeName + nodeId, httpScript);
+                httpScript = FillScriptWithValues(httpScript, result, BuilderJson(nodeKey, httpResult));
+                string ExecuteResult = RunScript(nodeKey, httpScript);
                 if (ExecuteResult == "True")
                 {
                     break; // 如果返回值为"true",结束循环
@@ -428,20 +444,28 @@ namespace aibotPro.AppCode
                 }
                 Thread.Sleep(httpdelayed);
             }
-            nodeOutput.NodeName = nodeName + nodeId;
-            nodeOutput.OutputData = BuilderJson(nodeName + nodeId, httpResult);
+            nodeOutput.NodeName = nodeKey;
+            nodeOutput.OutputData = BuilderJson(nodeKey, httpResult);
             nodeOutput.NextNodes = FindNextNode(node.Outputs);
+            _nodeCheckCounts[nodeKey]--;
             return nodeOutput;
         }
 
         private async Task<NodeOutput> ProcessLLMNode(NodeData node, List<NodeOutput> result)
         {
+            var nodeKey = node.Name + node.Id;
+            if (!_nodeCheckCounts.ContainsKey(nodeKey))
+            {
+                _nodeCheckCounts[nodeKey] = _checkCount;
+            }
+            if (_nodeCheckCounts[nodeKey] <= 0)
+            {
+                throw new Exception($"节点 {nodeKey} 的运行次数超出系统设定的极限, 触发流程引擎死循环保护, 请修正您的 WorkFlow");
+            }
             NodeOutput nodeOutput = new NodeOutput();
             // 处理 "LLM" 节点,执行 LLM 代码,返回 JSON 字符串
             LLMData llmData = (LLMData)node.Data;
             TikToken tikToken = TikToken.GetEncoding("cl100k_base");
-            var nodeName = node.Name;
-            var nodeId = node.Id;
             string inputtokens = "";
             string outputtokens = "";
             if (!string.IsNullOrEmpty(_chatId))
@@ -461,7 +485,7 @@ namespace aibotPro.AppCode
             while (true)
             {
                 if (maxcount < 0)
-                    throw new Exception($"{nodeName + nodeId}循环次数已超出允许的最大次数");
+                    throw new Exception($"{nodeKey}循环次数已超出允许的最大次数");
                 maxcount--;
                 airesult += await Task.Run(async () =>
                 {
@@ -574,7 +598,7 @@ namespace aibotPro.AppCode
                 string jsonStr = jobject.ToString(Formatting.None);
                 string llmScript = llmData.Output.JudgeScript;
                 llmScript = FillScriptWithValues(llmScript, result, jsonStr);
-                string ExecuteResult = RunScript(nodeName + nodeId, llmScript);
+                string ExecuteResult = RunScript(nodeKey, llmScript);
                 if (ExecuteResult == "True")
                 {
                     inputtokens = prompt;
@@ -602,19 +626,27 @@ namespace aibotPro.AppCode
             };
 
             // 将JObject转换成JSON字符串
-            string jsonStrRes = jsonModel ? BuilderJson(nodeName + nodeId, JsonConvert.SerializeObject(JsonConvert.DeserializeObject(airesult))) : jobjectRes.ToString(Formatting.None);
-            nodeOutput.NodeName = nodeName + nodeId;
+            string jsonStrRes = jsonModel ? BuilderJson(nodeKey, JsonConvert.SerializeObject(JsonConvert.DeserializeObject(airesult))) : jobjectRes.ToString(Formatting.None);
+            nodeOutput.NodeName = nodeKey;
             nodeOutput.OutputData = jsonStrRes;
             nodeOutput.NextNodes = FindNextNode(node.Outputs);
+            _nodeCheckCounts[nodeKey]--;
             return nodeOutput;
         }
         private async Task<NodeOutput> ProcessDALLNode(NodeData node, List<NodeOutput> result)
         {
+            var nodeKey = node.Name + node.Id;
+            if (!_nodeCheckCounts.ContainsKey(nodeKey))
+            {
+                _nodeCheckCounts[nodeKey] = _checkCount;
+            }
+            if (_nodeCheckCounts[nodeKey] <= 0)
+            {
+                throw new Exception($"节点 {nodeKey} 的运行次数超出系统设定的极限, 触发流程引擎死循环保护, 请修正您的 WorkFlow");
+            }
             NodeOutput nodeOutput = new NodeOutput();
             // 处理 "DALL" 节点,执行 DALL 代码,返回 JSON 字符串
             DALLData dallData = (DALLData)node.Data;
-            var nodeName = node.Name;
-            var nodeId = node.Id;
             if (!string.IsNullOrEmpty(_chatId))
             {
                 ChatRes chatRes = new ChatRes();
@@ -678,19 +710,27 @@ namespace aibotPro.AppCode
                     await aiSaveService.SaveAiDrawResult(_account, "DALLE3", imgResPath, prompt, "workflow_Engine");
                 }
             });
-            nodeOutput.NodeName = nodeName + nodeId;
+            nodeOutput.NodeName = nodeKey;
             nodeOutput.OutputData = jsonBuilder.ToString();
             nodeOutput.NextNodes = FindNextNode(node.Outputs);
+            _nodeCheckCounts[nodeKey]--;
             return nodeOutput;
         }
 
         private async Task<NodeOutput> ProcessDALLsmNode(NodeData node, List<NodeOutput> result)
         {
+            var nodeKey = node.Name + node.Id;
+            if (!_nodeCheckCounts.ContainsKey(nodeKey))
+            {
+                _nodeCheckCounts[nodeKey] = _checkCount;
+            }
+            if (_nodeCheckCounts[nodeKey] <= 0)
+            {
+                throw new Exception($"节点 {nodeKey} 的运行次数超出系统设定的极限, 触发流程引擎死循环保护, 请修正您的 WorkFlow");
+            }
             NodeOutput nodeOutput = new NodeOutput();
             // 处理 "DALL" 节点,执行 DALL 代码,返回 JSON 字符串
             DALLsmData dallsmData = (DALLsmData)node.Data;
-            var nodeName = node.Name;
-            var nodeId = node.Id;
             if (!string.IsNullOrEmpty(_chatId))
             {
                 ChatRes chatRes = new ChatRes();
@@ -753,20 +793,28 @@ namespace aibotPro.AppCode
                     await aiSaveService.SaveAiDrawResult(_account, "DALLE2", imgResPath, prompt, "workflow_Engine");
                 }
             });
-            nodeOutput.NodeName = nodeName + nodeId;
+            nodeOutput.NodeName = nodeKey;
             nodeOutput.OutputData = jsonBuilder.ToString();
             nodeOutput.NextNodes = FindNextNode(node.Outputs);
+            _nodeCheckCounts[nodeKey]--;
             return nodeOutput;
         }
 
         private async Task<NodeOutput> ProcessWebNode(NodeData node, List<NodeOutput> result)
         {
+            var nodeKey = node.Name + node.Id;
+            if (!_nodeCheckCounts.ContainsKey(nodeKey))
+            {
+                _nodeCheckCounts[nodeKey] = _checkCount;
+            }
+            if (_nodeCheckCounts[nodeKey] <= 0)
+            {
+                throw new Exception($"节点 {nodeKey} 的运行次数超出系统设定的极限, 触发流程引擎死循环保护, 请修正您的 WorkFlow");
+            }
             NodeOutput nodeOutput = new NodeOutput();
             // 处理 "web" 节点,执行 web 代码,返回 JSON 字符串
             WebData webData = (WebData)node.Data;
             string prompt = FillScriptWithValues(webData.Output.Prompt, result);
-            var nodeName = node.Name;
-            var nodeId = node.Id;
             if (!string.IsNullOrEmpty(_chatId))
             {
                 ChatRes chatRes = new ChatRes();
@@ -802,36 +850,38 @@ namespace aibotPro.AppCode
             {
                 [node.Name + node.Id] = new { data }
             };
-            nodeOutput.NodeName = nodeName + nodeId;
+            nodeOutput.NodeName = nodeKey;
             nodeOutput.OutputData = System.Text.Json.JsonSerializer.Serialize(jsonObject);
             nodeOutput.NextNodes = FindNextNode(node.Outputs);
+            _nodeCheckCounts[nodeKey]--;
             return nodeOutput;
         }
         private async Task<NodeOutput> ProcessIfElseNode(NodeData node, List<NodeOutput> result)
         {
-            if (_checkCount <= 0)
+            var nodeKey = node.Name + node.Id;
+            if (!_nodeCheckCounts.ContainsKey(nodeKey))
             {
-                throw new Exception($"判断次数超出系统设定的极限,触发流程引擎死循环保护,请修正您的WorkFlow");
+                _nodeCheckCounts[nodeKey] = _checkCount;
+            }
+
+            if (_nodeCheckCounts[nodeKey] <= 0)
+            {
+                throw new Exception($"节点 {nodeKey} 的运行次数超出系统设定的极限, 触发流程引擎死循环保护, 请修正您的 WorkFlow");
             }
             NodeOutput nodeOutput = new NodeOutput();
             List<int> nodeIds = new List<int>();
             IfElseData ifElseData = (IfElseData)node.Data;
-            var nodeName = node.Name;
-            var nodeId = node.Id;
             string judgresult = FillScriptWithValues(ifElseData.Output.JudgResult, result);
-            string ExecuteResult = RunScript(nodeName + nodeId, judgresult);
+            string ExecuteResult = RunScript(nodeKey, judgresult);
             Dictionary<string, NodeConnection> keyValuePairs = new Dictionary<string, NodeConnection>();
             if (ExecuteResult == "True")
             {
-                _checkCount--;
                 keyValuePairs = node.Outputs.Where(x => x.Key == "output_1").ToDictionary(x => x.Key, x => x.Value);
             }
             else
             {
-                _checkCount--;
                 keyValuePairs = node.Outputs.Where(x => x.Key == "output_2").ToDictionary(x => x.Key, x => x.Value);
             }
-
             List<NodeData> nextNodes = new List<NodeData>();
             foreach (var item in keyValuePairs)
             {
@@ -853,20 +903,29 @@ namespace aibotPro.AppCode
             jsonBuilder.Append($"{bool.Parse(ExecuteResult.ToLower()).ToString().ToLower()}");
             jsonBuilder.Append("}");
             jsonBuilder.Append("}");
-            nodeOutput.NextNodes = nextNodes;
-            nodeOutput.NodeName = nodeName + nodeId;
-            nodeOutput.OutputData = jsonBuilder.ToString();
             //查找下一个节点
+            nodeOutput.NextNodes = nextNodes;
+            nodeOutput.NodeName = nodeKey;
+            nodeOutput.OutputData = jsonBuilder.ToString();
+            _nodeCheckCounts[nodeKey]--;
             return nodeOutput;
         }
 
         private async Task<NodeOutput> ProcessKonwledgeNode(NodeData node, List<NodeOutput> result)
         {
+            var nodeKey = node.Name + node.Id;
+            if (!_nodeCheckCounts.ContainsKey(nodeKey))
+            {
+                _nodeCheckCounts[nodeKey] = _checkCount;
+            }
+
+            if (_nodeCheckCounts[nodeKey] <= 0)
+            {
+                throw new Exception($"节点 {nodeKey} 的运行次数超出系统设定的极限, 触发流程引擎死循环保护, 请修正您的 WorkFlow");
+            }
             NodeOutput nodeOutput = new NodeOutput();
             KnowledgeData knowledgeData = (KnowledgeData)node.Data;
             string prompt = FillScriptWithValues(knowledgeData.Output.Prompt, result);
-            var nodeName = node.Name;
-            var nodeId = node.Id;
             if (!string.IsNullOrEmpty(_chatId))
             {
                 ChatRes chatRes = new ChatRes();
@@ -956,9 +1015,10 @@ namespace aibotPro.AppCode
             };
             // 将JObject转换成JSON字符串
             string jsonStr = jobject.ToString(Formatting.None);
-            nodeOutput.NodeName = nodeName + nodeId;
+            nodeOutput.NodeName = nodeKey;
             nodeOutput.OutputData = jsonStr;
             nodeOutput.NextNodes = FindNextNode(node.Outputs);
+            _nodeCheckCounts[nodeKey]--;
             return nodeOutput;
         }
         private async Task<NodeOutput> ProcessEndNode(NodeData node, List<NodeOutput> result)

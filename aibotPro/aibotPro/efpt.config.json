@@ -2,6 +2,7 @@
    "CodeGenerationMode": 2,
    "ContextClassName": "AIBotProContext",
    "ContextNamespace": null,
+   "DefaultDacpacSchema": null,
    "FilterSchemas": false,
    "IncludeConnectionString": true,
    "ModelNamespace": null,
@@ -163,6 +164,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[SystemPluginsInstall]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[TxOrders]",
          "ObjectType": 0
       },
@@ -199,9 +204,8 @@
          "ObjectType": 3
       }
    ],
-   "UiHint": null,
+   "UiHint": "win-l2mf25l7av2.AIBotPro.dbo",
    "UncountableWords": null,
-   "UseAsyncStoredProcedureCalls": true,
    "UseBoolPropertiesWithoutDefaultSql": false,
    "UseDatabaseNames": true,
    "UseDateOnlyTimeOnly": false,

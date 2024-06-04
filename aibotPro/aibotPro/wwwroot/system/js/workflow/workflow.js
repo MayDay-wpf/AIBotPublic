@@ -1272,22 +1272,24 @@ function optionMax() {
 }
 
 function pushtoPlugin() {
-    $.ajax({
-        type: "POST",
-        async: false,
-        url: "/WorkShop/PushtoPlugin",
-        data: {
-            plugincode: plugincode,
-            workflowcode: workflowcode
-        },
-        success: function (data) {
-            if (data.success) {
-                layer.msg('发布成功', { icon: 1, offset: 't', time: 2000 });
+    saveNodeDataToCache(function () {
+        $.ajax({
+            type: "POST",
+            async: false,
+            url: "/WorkShop/PushtoPlugin",
+            data: {
+                plugincode: plugincode,
+                workflowcode: workflowcode
+            },
+            success: function (data) {
+                if (data.success) {
+                    layer.msg('发布成功', { icon: 1, offset: 't', time: 2000 });
+                }
+                else {
+                    layer.msg(data.msg, { icon: 2, offset: 't', time: 2000 });
+                }
             }
-            else {
-                layer.msg(data.msg, { icon: 2, offset: 't', time: 2000 });
-            }
-        }
+        });
     });
 }
 

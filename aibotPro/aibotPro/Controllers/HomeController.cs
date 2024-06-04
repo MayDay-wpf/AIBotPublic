@@ -215,11 +215,11 @@ namespace aibotPro.Controllers
         }
         [Authorize]
         [HttpPost]
-        public IActionResult StopGenerate(string chatId)
+        public async Task<IActionResult> StopGenerate(string chatId)
         {
             //修改缓存中的状态
             string key = chatId + "_process";
-            _redis.SetAsync(key, "false", TimeSpan.FromHours(1));
+            await _redis.DeleteAsync(key);
             return Json(new
             {
                 success = true,
@@ -228,12 +228,22 @@ namespace aibotPro.Controllers
         }
         [Authorize]
         [HttpPost]
-        public IActionResult SaveImg(IFormFile file, string thisAiModel)
+        public async Task<IActionResult> SaveImg(IFormFile file, string thisAiModel)
         {
             //以年月日生成文件路径
             var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
-            string path = Path.Combine("wwwroot", "files/uploadImg", DateTime.Now.ToString("yyyyMMdd"));
-            string fileName = _systemService.SaveFiles(path, file, username);
+            List<SystemCfg> systemConfig = _systemService.GetSystemCfgs();
+            var imgHost = systemConfig.Where(s => s.CfgKey == "ImageHosting").FirstOrDefault();
+            string fileName = string.Empty;
+            if (imgHost == null)
+            {
+                string path = Path.Combine("wwwroot", "files/uploadImg", DateTime.Now.ToString("yyyyMMdd"));
+                fileName = _systemService.SaveFiles(path, file, username);
+            }
+            else
+            {
+                fileName = await _systemService.UploadFileToImageHosting(file, username);
+            }
             //返回文件名
             return Json(new
             {

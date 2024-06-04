@@ -26,7 +26,22 @@
         </div>
         <div class="card-body">
             <div class="form-group">
-                <table id="AddSt" class="form-table">
+                <table class="form-table" style="width:100%;">
+                    <thead>
+                        <tr>
+                            <td>拖拽排序</td>
+                            <td>模型昵称</td>
+                            <td>模型名称</td>
+                            <td>BaseUrl</td>
+                            <td>ApiKey</td>
+                            <td>视觉模型</td>
+                            <td>排序</td>
+                            <td>流延时(ms)</td>
+                            <td>删除</td>
+                        </tr>
+                    </thead>
+                    <tbody id="AddSt">
+                    </tbody>
                 </table>
                 <button type="button" class="btn btn-success" onclick="addStLine()">
                     <i data-feather="plus"></i>新增一行
@@ -35,4 +50,4 @@
         </div>
     </div>
 </div>
-<script src="~/system/js/openall/workshopmodelsetting.js"></script>
+<script src="~/system/js/openall/workshopmodelsetting.js?v1"></script>

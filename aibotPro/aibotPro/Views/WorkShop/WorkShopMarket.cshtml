@@ -2,6 +2,13 @@
     ViewData["Title"] = "插件市场（Market）";
     Layout = "_Layout";
 }
+<style>
+    .systemPluginBox {
+        border: 1px solid lightgray;
+        padding: 10px;
+        border-radius: 10px;
+    }
+</style>
 <script src="/system/js/masonry.pkgd.min.js"></script>
 <div class="header">
     <div class="header-left">
@@ -29,6 +36,18 @@
             </h4>
             <span>无所不有的插件市场 🛒💨💨💨</span>
             <p></p>
+            <div class="systemPluginBox">
+                <b><i data-feather="settings" style="width:18px;"></i> 系统插件选装</b>
+                <p></p>
+                <div style="display: flex; gap: 10px;">
+                    <label><input type="checkbox" name="options" class="systemPlugins" value="use_dalle3_withpr"> DALL-E3绘画</label>
+                    <i data-feather="help-circle" style="width:18px;cursor:pointer" onclick="dalleinfo()" data-toggle="tooltip" title="当您安装此插件，您可以在【创意工坊对话】中，描述您的【绘画要求】，插件会根据您的语义选择调用时机"></i>
+                    <label><input type="checkbox" name="options" class="systemPlugins" value="search_google_when_gpt_cannot_answer"> 谷歌搜索</label>
+                    <i data-feather="help-circle" style="width:18px;cursor:pointer" onclick="googlesearchinfo()" data-toggle="tooltip" title="当您安装此插件，您可以在【创意工坊对话】中，要求AI进行【谷歌搜索】，适用于工坊中所有AI模型"></i>
+                    <label><input type="checkbox" name="options" class="systemPlugins" value="search_knowledge_base"> 知识库检索</label>
+                    <i data-feather="help-circle" style="width:18px;cursor:pointer" onclick="knowledgeinfo()" data-toggle="tooltip" title="当您安装此插件，您可以在【知识库对话】中，令AI查询您的【私有知识库】，如【未安装】此插件，您将【无法使用知识库对话】"></i>
+                </div>
+            </div>
         </div>
     </div>
     <div class="content-main text-center">
@@ -63,4 +82,4 @@
         </div>
     </div>
 </div>
-<script src="~/system/js/workshopmarket.js"></script>
+<script src="~/system/js/workshopmarket.js?v1"></script>

@@ -21,5 +21,8 @@ namespace aibotPro.Models
         public string BaseUrl { get; set; }
         [StringLength(200)]
         public string ApiKey { get; set; }
+        public bool? VisionModel { get; set; }
+        public int? Seq { get; set; }
+        public int? Delay { get; set; }
     }
 }

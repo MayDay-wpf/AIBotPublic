@@ -52,5 +52,7 @@ namespace aibotPro.Interface
         //获取OpenAPI的模型映射关系
         Task<List<OpenAPIModelSetting>> GetOpenAPIModelSetting(string account);
         Task<bool> SaveOpenAPIModelSetting(string account, List<OpenAPIModelSetting> openAPIModelSetting);
+        Task<bool> InstallOrUninstallSystemPlugins(string account, string pluginName, bool status);
+        Task<List<SystemPluginsInstall>> GetSystemPluginsInstall(string account);
     }
 }

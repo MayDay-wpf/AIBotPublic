@@ -512,6 +512,8 @@ namespace aibotPro.Controllers
                 x.BaseUrl = string.Empty;
                 x.ApiKey = string.Empty;
             });
+            //根据Seq从小到大顺序排序
+            aiModel_lst = aiModel_lst.OrderBy(x => x.Seq).ToList();
             return Json(new
             {
                 success = true,
@@ -615,6 +617,29 @@ namespace aibotPro.Controllers
                 });
             }
 
+        }
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> InstallOrUninstallSystemPlugins(string pluginName, bool status)
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var result = await _workShop.InstallOrUninstallSystemPlugins(username, pluginName, status);
+            return Json(new
+            {
+                success = result
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> GetSystemPluginsInstall()
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var result = await _workShop.GetSystemPluginsInstall(username);
+            return Json(new
+            {
+                success = true,
+                data = result
+            });
         }
 
     }

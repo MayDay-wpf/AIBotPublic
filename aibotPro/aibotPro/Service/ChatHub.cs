@@ -15,10 +15,12 @@ using OpenAI.Managers;
 using OpenAI.ObjectModels.RequestModels;
 using OpenAI.ObjectModels.SharedModels;
 using Spire.Presentation.Charts;
+using System.Security.Policy;
 using System.Security.Principal;
 using System.Text;
 using System.Text.RegularExpressions;
 using TiktokenSharp;
+using static OpenAI.ObjectModels.StaticValues;
 
 namespace aibotPro.Service
 {
@@ -140,6 +142,7 @@ namespace aibotPro.Service
                 //生成设置参数
                 APISetting apiSetting = new APISetting();
                 List<AImodel> aImodels = new List<AImodel>();
+                int delay = 0;
                 if (chatSetting != null && chatSetting.MyChatModel != null && chatSetting.MyChatModel.Count > 0)
                 {
                     foreach (var item in chatSetting.MyChatModel)
@@ -160,13 +163,24 @@ namespace aibotPro.Service
                 {
                     //获取模型设置
                     aImodels = _systemService.GetAImodel();
-                    apiSetting.BaseUrl = aImodels.Where(x => x.ModelName == chatDto.aiModel).FirstOrDefault().BaseUrl;
-                    apiSetting.ApiKey = aImodels.Where(x => x.ModelName == chatDto.aiModel).FirstOrDefault().ApiKey;
+                    if (aImodels != null)
+                    {
+                        var useModel = aImodels.Where(x => x.ModelName == chatDto.aiModel).FirstOrDefault();
+                        if (useModel != null)
+                        {
+                            apiSetting.BaseUrl = useModel.BaseUrl;
+                            apiSetting.ApiKey = useModel.ApiKey;
+                            if (useModel.VisionModel.HasValue)
+                                isVisionModel = useModel.VisionModel.Value;
+                            if (useModel.Delay.HasValue && useModel.Delay.Value >= 0)
+                                delay = useModel.Delay.Value;
+                        }
+                        else
+                            throw new Exception($"系统未配置{chatDto.aiModel}模型，请联系管理员");
+                    }
+                    else
+                        throw new Exception("系统未配置任何模型，请联系管理员");
                 }
-
-                //if (chatDto.aiModel == "gpt-4-vision-preview" || chatDto.aiModel == "gpt-4-turbo" || chatDto.aiModel == "gpt-4-turbo-2024-04-09" || chatDto.aiModel == "gemini-pro-vision")
-                if (aImodels.Where(x => x.ModelName == chatDto.aiModel).FirstOrDefault().VisionModel.HasValue)
-                    isVisionModel = aImodels.Where(x => x.ModelName == chatDto.aiModel).FirstOrDefault().VisionModel.Value;
                 //生成AI请求参数
                 string input = string.Empty;
                 string output = string.Empty;
@@ -196,22 +210,38 @@ namespace aibotPro.Service
                 //如果有图片
                 if (!string.IsNullOrEmpty(chatDto.image_path))
                 {
+                    //检查图片是路径还是链接
+                    string urlPattern = @"^(http|https)://";
+                    // 检查输入字符串是否匹配正则表达式
+                    bool isUrl = Regex.IsMatch(chatDto.image_path, urlPattern, RegexOptions.IgnoreCase);
                     if (!isVisionModel)
                     {
-                        string imageData = _systemService.ImgConvertToBase64(chatDto.image_path);
+                        if (!isUrl)
+                            chatDto.image_path = "wwwroot" + chatDto.image_path;
+                        string imageData = await _systemService.ImgConvertToBase64(chatDto.image_path);
                         imgTxt = _baiduService.GetText(imageData);
                         imgRes = _baiduService.GetRes(imageData);
                         promptHeadle = $"请你充当图片内容分析师，图像中的文字识别结果为：{imgTxt},图像中物体和场景识别结果为：{imgRes},请根据识别结果进行专业的分析回答:{promptHeadle}";
                     }
                     if (chatDto.aiModel == "gpt-4-all")
                     {
-                        promptHeadle = $"{chatDto.msg}\n\n图片链接：{Context.GetHttpContext().Request.Scheme}://{systemCfg.Where(x => x.CfgCode == "Domain").FirstOrDefault().CfgValue}{chatDto.image_path.Replace("wwwroot", "")}".Replace("\\", "/");
+                        if (isUrl)
+                            promptHeadle = $"{chatDto.msg}\n\n图片链接：{chatDto.image_path}".Replace("\\", "/");
+                        else
+                            promptHeadle = $"{chatDto.msg}\n\n图片链接：{Context.GetHttpContext().Request.Scheme}://{systemCfg.Where(x => x.CfgCode == "Domain").FirstOrDefault().CfgValue}{chatDto.image_path.Replace("wwwroot", "")}".Replace("\\", "/");
                     }
                     else
                     {
-                        string imgBase64 = _systemService.ImgConvertToBase64(chatDto.image_path);
-                        string dataHeader = "data:image/jpeg;base64,";
-                        visionImg.url = dataHeader + imgBase64;//$"{Context.GetHttpContext().Request.Scheme}://{systemCfg.Where(x => x.CfgCode == "Domain").FirstOrDefault().CfgValue}{chatDto.image_path.Replace("wwwroot", "")}".Replace("\\", "/");
+                        if (isUrl)
+                        {
+                            visionImg.url = chatDto.image_path;
+                        }
+                        else
+                        {
+                            string imgBase64 = await _systemService.ImgConvertToBase64(chatDto.image_path);
+                            string dataHeader = "data:image/jpeg;base64,";
+                            visionImg.url = dataHeader + imgBase64;//$"{Context.GetHttpContext().Request.Scheme}://{systemCfg.Where(x => x.CfgCode == "Domain").FirstOrDefault().CfgValue}{chatDto.image_path.Replace("wwwroot", "")}".Replace("\\", "/");
+                        }
                     }
                 }
                 if (string.IsNullOrEmpty(chatDto.image_path) && chatDto.aiModel == "gemini-pro-vision")
@@ -403,17 +433,16 @@ namespace aibotPro.Service
                 if (!isVisionModel)
                     visionBody = null;
                 //准备调用AI接口，缓存存入工作中状态
-                await _redis.SetAsync($"{chatId}_process", "true", TimeSpan.FromHours(1));
+                await _redis.SetAsync($"{chatDto.chatgroupid}_process", "true", TimeSpan.FromHours(1));
                 string sysmsg = string.Empty;
-                await foreach (var responseContent in _aiServer.CallingAI(aiChat, apiSetting, chatId, visionBody))
+                await foreach (var responseContent in _aiServer.CallingAI(aiChat, apiSetting, chatDto.chatgroupid, visionBody))
                 {
                     sysmsg += responseContent.Choices[0].Delta.Content;
                     chatRes.message = responseContent.Choices[0].Delta.Content;
                     await Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                    //Thread.Sleep(50);
-
+                    Thread.Sleep(delay);
                 }
-                await _redis.DeleteAsync($"{chatId}_process");
+                await _redis.DeleteAsync($"{chatDto.chatgroupid}_process");
                 //保存对话记录
                 if (!string.IsNullOrEmpty(chatDto.image_path))
                 {
@@ -542,16 +571,6 @@ namespace aibotPro.Service
                 await _systemService.WriteLog("异常行为：用户尝试修改Robot的基底模型", Dtos.LogLevel.Fatal, Account);
                 return;
             }
-            //如果有图片
-            if (!string.IsNullOrEmpty(chatDto.image_path))
-            {
-                string imageData = _systemService.ImgConvertToBase64(chatDto.image_path);
-                imgTxt = _baiduService.GetText(imageData);
-                imgRes = _baiduService.GetRes(imageData);
-                promptHeadle = $"请你充当图片内容分析师，图像中的文字识别结果为：{imgTxt},图像中物体和场景识别结果为：{imgRes},请根据识别结果进行专业的分析回答:{promptHeadle}";
-
-            }
-            input += promptHeadle;
             try
             {
                 //获取对话设置
@@ -561,32 +580,45 @@ namespace aibotPro.Service
                     newChat = true;
                 //生成设置参数
                 APISetting apiSetting = new APISetting();
+                int delay = 0;
                 List<WorkShopAIModel> aImodels = new List<WorkShopAIModel>();
                 //获取模型设置
                 aImodels = _systemService.GetWorkShopAImodel();
                 OpenAiOptions openAiOptions = new OpenAiOptions();
-                openAiOptions.BaseDomain = aImodels.Where(x => x.ModelName == chatDto.aiModel).FirstOrDefault().BaseUrl;
-                openAiOptions.ApiKey = aImodels.Where(x => x.ModelName == chatDto.aiModel).FirstOrDefault().ApiKey;
+                bool? visionModel = false;
+                if (aImodels != null)
+                {
+                    var useModel = aImodels.Where(x => x.ModelName == chatDto.aiModel).FirstOrDefault();
+                    if (useModel != null)
+                    {
+                        openAiOptions.BaseDomain = useModel.BaseUrl;
+                        openAiOptions.ApiKey = useModel.ApiKey;
+                        if (useModel.VisionModel.HasValue)
+                            visionModel = useModel.VisionModel;
+                        if (useModel.Delay.HasValue && useModel.Delay.Value >= 0)
+                            delay = useModel.Delay.Value;
+                    }
+                    else
+                        throw new Exception($"系统未配置{chatDto.aiModel}模型，请联系管理员");
+                }
+                else
+                    throw new Exception("系统未配置任何模型，请联系管理员");
                 var openAiService = new OpenAIService(openAiOptions);
-                var fnDall = new FunctionDefinitionBuilder("use_dalle3_withpr", "结合上下文生成DALL-E3提示词并绘制")
-                            .AddParameter("drawprompt", PropertyDefinition.DefineString("根据绘画要求，结合上下文优化后的DALL-E3绘画提示词"))
-                            .AddParameter("drawsize", PropertyDefinition.DefineEnum(new List<string> { "1024x1024", "1792x1024", "1024x1792" }, "需要绘制的图片尺寸,默认1024x1024"))
-                            .AddParameter("quality", PropertyDefinition.DefineEnum(new List<string> { "standard", "hd" }, "绘制图片的质量，默认standard标准质量，当许要更高清晰度和更多细节时，使用hd质量"))
-                            .Validate()
-                            .Build();
-                var fnGoogleSearch = new FunctionDefinitionBuilder("search_google_when_gpt_cannot_answer", "当 gpt 遇到无法回答的或者需要搜索引擎协助回答时从 google 搜索")
-                            .AddParameter("message", PropertyDefinition.DefineString("搜索句，支持中文或者英文"))
-                            .Validate()
-                            .Build();
-                var sysKnowledgeSearch = new FunctionDefinitionBuilder("search_knowledge_base", "从知识库中查询或搜索GPT无法得知的内容")
-                                    .AddParameter("message", PropertyDefinition.DefineString("搜索用的关键词，支持中文或者英文"))
-                                    .Validate()
-                                    .Build();
+                var systemPluginsInstallList = await _workShop.GetSystemPluginsInstall(Account);
                 var mytools = new List<ToolDefinition>();
                 List<PluginDto> myplugins = new List<PluginDto>();
                 if (onknowledge)//知识库检索状态
                 {
-                    mytools.Add(ToolDefinition.DefineFunction(sysKnowledgeSearch));
+                    if (systemPluginsInstallList.Where(p => p.PluginName == "search_knowledge_base").FirstOrDefault() == null)
+                    {
+                        chatRes.message = "尚未安装知识库检索插件，<a href='/WorkShop/WorkShopMarket'>【点击前往安装】</a>";
+                        await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                        chatRes.message = "";
+                        chatRes.isfinish = true;
+                        await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                        return;
+                    }
+                    mytools.Add(ToolDefinition.DefineFunction(SystemPlugins.SysKnowledgeSearch));
                     //mytools.Add(ToolDefinition.DefineFunction(fnGoogleSearch));
                     chatDto.system_prompt = "你是知识库阅览专家，任何问题你先查询知识库，如知识库中无记录再自行结合上下文回答，请记住，先查询知识库";
                 }
@@ -594,9 +626,11 @@ namespace aibotPro.Service
                 {
                     if (!chatDto.isbot)
                     {
-                        mytools.Add(ToolDefinition.DefineFunction(fnDall));
+                        if (systemPluginsInstallList.Where(p => p.PluginName == "use_dalle3_withpr").FirstOrDefault() != null)
+                            mytools.Add(ToolDefinition.DefineFunction(SystemPlugins.FnDall));
                     }
-                    mytools.Add(ToolDefinition.DefineFunction(fnGoogleSearch));
+                    if (systemPluginsInstallList.Where(p => p.PluginName == "search_google_when_gpt_cannot_answer").FirstOrDefault() != null)
+                        mytools.Add(ToolDefinition.DefineFunction(SystemPlugins.FnGoogleSearch));
                     //获取用户插件列表
                     myplugins = _workShop.GetPluginInstall(Account);
                     if (myplugins != null && myplugins.Count > 0)
@@ -684,13 +718,46 @@ namespace aibotPro.Service
                         }
                     }
                     if (!chatDto.isbot)
-                        chatDto.system_prompt = "对于要插入函数的值，不要做任何假设。如果用户的请求不清晰，可以要求澄清，也可以询问用户是否需要调用函数插件";
+                        chatDto.system_prompt = "对于要插入函数的值，不要做任何假设。如果用户的请求不清晰，可以要求澄清，也询问用户以明确是否需要调用函数。";
                 }
+                List<MessageContent> visionMessageContent = new List<MessageContent>();
+                //如果有图片
+                if (!string.IsNullOrEmpty(chatDto.image_path))
+                {
+                    string urlPattern = @"^(http|https)://";
+                    // 检查输入字符串是否匹配正则表达式
+                    bool isUrl = Regex.IsMatch(chatDto.image_path, urlPattern, RegexOptions.IgnoreCase);
+                    string imageData = string.Empty;
+                    if (visionModel.HasValue && visionModel.Value)
+                    {
+                        imageData = isUrl ? chatDto.image_path : await _systemService.ImgConvertToBase64(chatDto.image_path);
+                        if (!isUrl) imageData = "data:image/jpeg;base64," + imageData;
+                        visionMessageContent = new List<MessageContent>
+                            {
+                                MessageContent.TextContent(promptHeadle),
+                                MessageContent.ImageUrlContent(
+                                    imageData,
+                                    ImageStatics.ImageDetailTypes.High
+                                )
+                            };
+                    }
+                    else
+                    {
+                        imageData = await _systemService.ImgConvertToBase64(chatDto.image_path);
+                        imgTxt = _baiduService.GetText(imageData);
+                        imgRes = _baiduService.GetRes(imageData);
+                        promptHeadle = $"请你充当图片内容分析师，图像中的文字识别结果为：{imgTxt},图像中物体和场景识别结果为：{imgRes},请根据识别结果进行专业的分析回答:{promptHeadle}";
+                    }
+                }
+                input += promptHeadle;
                 List<ChatMessage> chatMessages = new List<ChatMessage>();
                 chatMessages.Add(ChatMessage.FromSystem(chatDto.system_prompt));
                 if (newChat)
                 {
-                    chatMessages.Add(ChatMessage.FromUser(promptHeadle));
+                    if (visionMessageContent.Count > 0)
+                        chatMessages.Add(ChatMessage.FromUser(visionMessageContent));
+                    else
+                        chatMessages.Add(ChatMessage.FromUser(promptHeadle));
                 }
                 else
                 {
@@ -708,7 +775,10 @@ namespace aibotPro.Service
                             chatMessages.Add(ChatMessage.FromAssistant(item.Chat));
                         input += item.Chat;
                     }
-                    chatMessages.Add(ChatMessage.FromUser(promptHeadle));
+                    if (visionMessageContent.Count > 0)
+                        chatMessages.Add(ChatMessage.FromUser(visionMessageContent));
+                    else
+                        chatMessages.Add(ChatMessage.FromUser(promptHeadle));
                 }
                 ChatCompletionCreateRequest chatCompletionCreate = new ChatCompletionCreateRequest();
                 chatCompletionCreate.Messages = chatMessages;
@@ -752,9 +822,9 @@ namespace aibotPro.Service
                 }
                 CancellationTokenSource cts = new CancellationTokenSource();
                 CancellationToken cancellationToken = cts.Token;
-                cancellationToken.Register(async () => await _redis.DeleteAsync($"{chatId}_process"));
+                cancellationToken.Register(async () => await _redis.DeleteAsync($"{chatDto.chatgroupid}_process"));
                 var completionResult = openAiService.ChatCompletion.CreateCompletionAsStream(chatCompletionCreate, chatCompletionCreate.Model, true, cancellationToken);
-                await _redis.SetAsync($"{chatId}_process", "true", TimeSpan.FromHours(1));
+                await _redis.SetAsync($"{chatDto.chatgroupid}_process", "true", TimeSpan.FromHours(1));
                 string sysmsg = string.Empty;
                 var functionArguments = new Dictionary<int, string>();
                 PluginResDto pluginResDto = new PluginResDto();
@@ -763,7 +833,7 @@ namespace aibotPro.Service
                 {
                     if (responseContent.Successful)
                     {
-                        string thisTask = await _redis.GetAsync($"{chatId}_process");
+                        string thisTask = await _redis.GetAsync($"{chatDto.chatgroupid}_process");
                         if (string.IsNullOrEmpty(thisTask))
                         {
                             cts.Cancel();
@@ -772,212 +842,210 @@ namespace aibotPro.Service
                         if (bool.Parse(thisTask))
                         {
                             var choice = responseContent.Choices.FirstOrDefault();
-                            if (choice != null && choice.Message != null)
+                            if (choice != null)
                             {
-                                sysmsg += choice.Message.Content;
-                                output += choice.Message.Content;
-                                chatRes.message = choice.Message.Content;
-                                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                            }
-                            else
-                            {
-                                await _systemService.WriteLog("Function Calling执行失败，该问题通常重试后即可", Dtos.LogLevel.Error, "system");
-                                throw new Exception("Function Calling执行失败，该问题通常重试后即可");
-                            }
-                            var tools = choice.Message.ToolCalls;
-                            if (tools != null)
-                            {
-                                //函数并行待定......
-                                //for (int i = 0; i < tools.Count; i++)
-                                //{
-                                //    var toolCall = tools[i];
-                                //    var fn = toolCall.FunctionCall;
-                                //    if (fn != null)
-                                //    {
-                                //        if (!string.IsNullOrEmpty(fn.Name))
-                                //        {
-                                //            pluginResDto = await _workShop.RunPlugin(Account, fn);
-                                //        }
-                                //    }
-                                //}
-                                var toolCall = tools[0];
-                                var fn = toolCall.FunctionCall;
-                                if (fn != null)
+                                if (choice.Message != null)
                                 {
-                                    if (!string.IsNullOrEmpty(fn.Name))
+                                    sysmsg += choice.Message.Content;
+                                    output += choice.Message.Content;
+                                    chatRes.message = choice.Message.Content;
+                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                                    var tools = choice.Message.ToolCalls;
+                                    if (tools != null)
                                     {
-                                        bool dalleloadding = true;
-                                        bool websearchloadding = true;
-                                        bool knowledgeloadding = true;
-                                        if (fn.Name == "use_dalle3_withpr")
+                                        //函数并行待定......
+                                        //for (int i = 0; i < tools.Count; i++)
+                                        //{
+                                        //    var toolCall = tools[i];
+                                        //    var fn = toolCall.FunctionCall;
+                                        //    if (fn != null)
+                                        //    {
+                                        //        if (!string.IsNullOrEmpty(fn.Name))
+                                        //        {
+                                        //            pluginResDto = await _workShop.RunPlugin(Account, fn);
+                                        //        }
+                                        //    }
+                                        //}
+                                        var toolCall = tools[0];
+                                        var fn = toolCall.FunctionCall;
+                                        if (fn != null)
                                         {
-                                            chatRes.message = "使用【DALL·E3】组件执行绘制,这需要大约1-2分钟";
-                                            await Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                                            var emojiList = new List<string> { "🖌", "🎨", "🔧", "🖊", "🖍", "🖼", "🤯" };
-                                            var random = new Random();
-                                            // 线程开始
-                                            var emojiTask = Task.Run(async () =>
+                                            if (!string.IsNullOrEmpty(fn.Name))
                                             {
-                                                while (dalleloadding)
+                                                bool dalleloadding = true;
+                                                bool websearchloadding = true;
+                                                bool knowledgeloadding = true;
+                                                if (fn.Name == "use_dalle3_withpr")
                                                 {
-                                                    var randomEmoji = emojiList[random.Next(emojiList.Count)]; //从列表中随机选择一个
-                                                    chatRes.message = $"{randomEmoji}";
+                                                    chatRes.message = "使用【DALL·E3】组件执行绘制,这需要大约1-2分钟";
                                                     await Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                                                    await Task.Delay(1000);
-                                                }
-                                            });
-                                        }
-                                        else if (fn.Name == "search_google_when_gpt_cannot_answer")
-                                        {
-                                            chatRes.message = "请稍候，让我Google一下";
-                                            await Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                                            // 线程开始
-                                            var websearchTask = Task.Run(async () =>
-                                            {
-                                                while (websearchloadding)
-                                                {
-                                                    chatRes.message = $"🌐";
-                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                                                    await Task.Delay(1000);
-                                                }
-                                            });
-                                        }
-                                        else if (fn.Name == "search_knowledge_base")
-                                        {
-                                            chatRes.message = "请稍候，让我尝试检索知识库";
-                                            await Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                                            // 线程开始
-                                            var websearchTask = Task.Run(async () =>
-                                            {
-                                                while (knowledgeloadding)
-                                                {
-                                                    chatRes.message = $"🔎📄";
-                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                                                    await Task.Delay(1000);
-                                                }
-                                            });
-                                        }
-                                        pluginResDto = await _workShop.RunPlugin(Account, fn, chatId, senMethod, typeCode);
-                                        if (!pluginResDto.doubletreating)
-                                        {
-                                            string res = string.Empty;
-                                            switch (pluginResDto.doubletype)
-                                            {
-                                                case "dalle3":
-                                                    dalleloadding = false;
-                                                    if (!string.IsNullOrEmpty(pluginResDto.errormsg) || string.IsNullOrEmpty(pluginResDto.result))
+                                                    var emojiList = new List<string> { "🖌", "🎨", "🔧", "🖊", "🖍", "🖼", "🤯" };
+                                                    var random = new Random();
+                                                    // 线程开始
+                                                    var emojiTask = Task.Run(async () =>
                                                     {
-                                                        chatRes.message = $"绘制失败，请重试！({pluginResDto.errormsg})";
-                                                        await Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                                                        break;
-                                                    }
-                                                    string res1 = "<p>已为您绘制完成</p>";
-                                                    chatRes.message = res1;
-                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                                                    Thread.Sleep(200);
-                                                    string res2 = "<p>绘制结果如下,请您查阅：</p><br />";
-                                                    chatRes.message = res2;
-                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                                                    Thread.Sleep(200);
-                                                    string res3 = $"<img src='{pluginResDto.result}' style='width:300px;'/>";
-                                                    chatRes.message = res3;
-                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                                                    Thread.Sleep(200);
-                                                    string res4 = @$"<br>提示词：<b>{pluginResDto.dallprompt}</b>";
-                                                    chatRes.message = res4;
-                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                                                    Thread.Sleep(200);
-                                                    string res5 = @$"<br><b>如有需要，请及时下载您的图片，图片缓存我们将定时删除</b><a href=""{pluginResDto.result}"" target=""_blank"">【点击这里下载图片】</a>";
-                                                    chatRes.message = res5;
-                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                                                    res = res1 + res2 + res3 + res4 + res5;
-                                                    break;
-                                                case "html":
-                                                    res = pluginResDto.result;
-                                                    chatRes.message = res;
-                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                                                    break;
-                                                case "js":
-                                                    chatRes.message = "";
-                                                    chatRes.jscode = pluginResDto.result;
-                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                                                    chatRes.jscode = "";
-                                                    break;
-                                                default:
-                                                    res = pluginResDto.result;
-                                                    chatRes.message = res;
-                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                                                    break;
-                                            }
-                                            sysmsg = res;
-                                        }
-                                        //反馈GPT函数执行结果
-                                        else
-                                        {
-                                            websearchloadding = false;
-                                            knowledgeloadding = false;
-                                            //生成对话参数
-                                            input += pluginResDto.result;
-                                            chatMessages.Add(ChatMessage.FromUser(pluginResDto.result));
-                                            chatCompletionCreate.Messages = chatMessages;
-                                            chatCompletionCreate.Tools = null;
-                                            chatCompletionCreate.ToolChoice = null;
-                                            chatCompletionCreate.Stream = true;
-                                            chatCompletionCreate.Model = chatDto.aiModel;
-                                            if (chatDto.temperature != null)
-                                            {
-                                                chatCompletionCreate.Temperature = chatDto.temperature;
-                                            }
-
-                                            if (chatDto.top_p != null)
-                                            {
-                                                chatCompletionCreate.TopP = chatDto.top_p;
-                                            }
-
-                                            if (chatDto.frequency_penalty != null)
-                                            {
-                                                chatCompletionCreate.FrequencyPenalty = chatDto.frequency_penalty;
-                                            }
-
-                                            if (chatDto.presence_penalty != null)
-                                            {
-                                                chatCompletionCreate.PresencePenalty = chatDto.presence_penalty;
-                                            }
-                                            completionResult = openAiService.ChatCompletion.CreateCompletionAsStream(chatCompletionCreate, chatCompletionCreate.Model, true, cancellationToken);
-                                            await foreach (var responseContent_sec in completionResult.WithCancellation(cancellationToken))
-                                            {
-                                                if (responseContent_sec.Successful)
-                                                {
-                                                    thisTask = await _redis.GetAsync($"{chatId}_process");
-                                                    if (string.IsNullOrEmpty(thisTask))
-                                                    {
-                                                        cts.Cancel();
-                                                        break;
-                                                    }
-                                                    if (bool.Parse(thisTask))
-                                                    {
-                                                        var choice_sec = responseContent_sec.Choices.FirstOrDefault();
-                                                        if (choice_sec != null && choice_sec.Message != null)
+                                                        while (dalleloadding)
                                                         {
-                                                            sysmsg += choice_sec.Message.Content;
-                                                            output += choice_sec.Message.Content;
-                                                            chatRes.message = choice_sec.Message.Content;
+                                                            var randomEmoji = emojiList[random.Next(emojiList.Count)]; //从列表中随机选择一个
+                                                            chatRes.message = $"{randomEmoji}";
                                                             await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                                                            await Task.Delay(1000);
+                                                        }
+                                                    });
+                                                }
+                                                else if (fn.Name == "search_google_when_gpt_cannot_answer")
+                                                {
+                                                    chatRes.message = "请稍候，让我Google一下";
+                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                                                    // 线程开始
+                                                    var websearchTask = Task.Run(async () =>
+                                                    {
+                                                        while (websearchloadding)
+                                                        {
+                                                            chatRes.message = $"🌐";
+                                                            await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                                                            await Task.Delay(1000);
+                                                        }
+                                                    });
+                                                }
+                                                else if (fn.Name == "search_knowledge_base")
+                                                {
+                                                    chatRes.message = "请稍候，让我尝试检索知识库";
+                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                                                    // 线程开始
+                                                    var websearchTask = Task.Run(async () =>
+                                                    {
+                                                        while (knowledgeloadding)
+                                                        {
+                                                            chatRes.message = $"🔎📄";
+                                                            await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                                                            await Task.Delay(1000);
+                                                        }
+                                                    });
+                                                }
+                                                pluginResDto = await _workShop.RunPlugin(Account, fn, chatId, senMethod, typeCode);
+                                                if (!pluginResDto.doubletreating)
+                                                {
+                                                    string res = string.Empty;
+                                                    switch (pluginResDto.doubletype)
+                                                    {
+                                                        case "dalle3":
+                                                            dalleloadding = false;
+                                                            if (!string.IsNullOrEmpty(pluginResDto.errormsg) || string.IsNullOrEmpty(pluginResDto.result))
+                                                            {
+                                                                chatRes.message = $"绘制失败，请重试！({pluginResDto.errormsg})";
+                                                                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                                                                break;
+                                                            }
+                                                            string res1 = "<p>已为您绘制完成</p>";
+                                                            chatRes.message = res1;
+                                                            await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                                                            Thread.Sleep(200);
+                                                            string res2 = "<p>绘制结果如下,请您查阅：</p><br />";
+                                                            chatRes.message = res2;
+                                                            await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                                                            Thread.Sleep(200);
+                                                            string res3 = $"<img src='{pluginResDto.result}' style='width:300px;'/>";
+                                                            chatRes.message = res3;
+                                                            await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                                                            Thread.Sleep(200);
+                                                            string res4 = @$"<br>提示词：<b>{pluginResDto.dallprompt}</b>";
+                                                            chatRes.message = res4;
+                                                            await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                                                            Thread.Sleep(200);
+                                                            string res5 = @$"<br><b>如有需要，您可以前往【个人中心】->【图库】下载此图片，或者</b><a href=""{pluginResDto.result}"" target=""_blank"">【点击这里下载此图片】</a>";
+                                                            chatRes.message = res5;
+                                                            await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                                                            res = res1 + res2 + res3 + res4 + res5;
+                                                            break;
+                                                        case "html":
+                                                            res = pluginResDto.result;
+                                                            chatRes.message = res;
+                                                            await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                                                            break;
+                                                        case "js":
+                                                            chatRes.message = "";
+                                                            chatRes.jscode = pluginResDto.result;
+                                                            await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                                                            chatRes.jscode = "";
+                                                            break;
+                                                        default:
+                                                            res = pluginResDto.result;
+                                                            chatRes.message = res;
+                                                            await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                                                            break;
+                                                    }
+                                                    sysmsg = res;
+                                                }
+                                                //反馈GPT函数执行结果
+                                                else
+                                                {
+                                                    websearchloadding = false;
+                                                    knowledgeloadding = false;
+                                                    //生成对话参数
+                                                    input += pluginResDto.result;
+                                                    chatMessages.Add(ChatMessage.FromUser(pluginResDto.result));
+                                                    chatCompletionCreate.Messages = chatMessages;
+                                                    chatCompletionCreate.Tools = null;
+                                                    chatCompletionCreate.ToolChoice = null;
+                                                    chatCompletionCreate.Stream = true;
+                                                    chatCompletionCreate.Model = chatDto.aiModel;
+                                                    if (chatDto.temperature != null)
+                                                    {
+                                                        chatCompletionCreate.Temperature = chatDto.temperature;
+                                                    }
+
+                                                    if (chatDto.top_p != null)
+                                                    {
+                                                        chatCompletionCreate.TopP = chatDto.top_p;
+                                                    }
+
+                                                    if (chatDto.frequency_penalty != null)
+                                                    {
+                                                        chatCompletionCreate.FrequencyPenalty = chatDto.frequency_penalty;
+                                                    }
+
+                                                    if (chatDto.presence_penalty != null)
+                                                    {
+                                                        chatCompletionCreate.PresencePenalty = chatDto.presence_penalty;
+                                                    }
+                                                    completionResult = openAiService.ChatCompletion.CreateCompletionAsStream(chatCompletionCreate, chatCompletionCreate.Model, true, cancellationToken);
+                                                    await foreach (var responseContent_sec in completionResult.WithCancellation(cancellationToken))
+                                                    {
+                                                        if (responseContent_sec.Successful)
+                                                        {
+                                                            thisTask = await _redis.GetAsync($"{chatDto.chatgroupid}_process");
+                                                            if (string.IsNullOrEmpty(thisTask))
+                                                            {
+                                                                cts.Cancel();
+                                                                break;
+                                                            }
+                                                            if (bool.Parse(thisTask))
+                                                            {
+                                                                var choice_sec = responseContent_sec.Choices.FirstOrDefault();
+                                                                if (choice_sec != null && choice_sec.Message != null)
+                                                                {
+                                                                    sysmsg += choice_sec.Message.Content;
+                                                                    output += choice_sec.Message.Content;
+                                                                    chatRes.message = choice_sec.Message.Content;
+                                                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                cts.Cancel();
+                                                                break;
+                                                            }
                                                         }
                                                     }
-                                                    else
-                                                    {
-                                                        cts.Cancel();
-                                                        break;
-                                                    }
                                                 }
+
                                             }
                                         }
-
                                     }
                                 }
                             }
-                            //Thread.Sleep(50);
+                            Thread.Sleep(delay);
                         }
                         else
                         {

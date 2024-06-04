@@ -729,7 +729,14 @@ function customMenu() {
     if ($("#custommenu #QQ").length > 0 || $("#custommenu #ABOUTUS").length > 0 || $("#custommenu #GITHUB").length > 0) {
         return;
     }
-    var html = `<li class="nav-item" id="QQ">
+    var html = `<li class="nav-item" id="ImgHost">
+                    <a href="https://img.maymay5.com/" style="color:rgb(112,188,255)" class="nav-link" target="_blank">
+                        <i data-feather="image">
+                        </i>
+                        只是图床
+                    </a>
+                </li>
+                <li class="nav-item" id="QQ">
                     <a href="https://qm.qq.com/q/gNwQHVDhkc" style="color:rgb(23,223,135)" class="nav-link" target="_blank">
                         <i data-feather="message-circle">
                         </i>
@@ -770,4 +777,43 @@ function truncateString(str, num) {
     } else {
         return str;
     }
+}
+function completeMarkdown(markdown) {
+    const lines = markdown.split('\n');
+    let inCodeBlock = false;
+    let completedMarkdown = '';
+    let codeBlockLines = [];
+    let codeBlockLanguage = '';
+
+    function addCompletedCodeBlock() {
+        if (codeBlockLines.length > 0) {
+            completedMarkdown += '```' + codeBlockLanguage + '\n';
+            completedMarkdown += codeBlockLines.join('\n') + '\n';
+            completedMarkdown += '```\n';
+            codeBlockLines = [];
+            codeBlockLanguage = '';
+        }
+    }
+
+    lines.forEach((line, index) => {
+        if (line.trim().startsWith('```')) {
+            if (inCodeBlock) {
+                addCompletedCodeBlock();
+                inCodeBlock = false;
+            } else {
+                codeBlockLanguage = line.trim().slice(3);
+                inCodeBlock = true;
+            }
+        } else if (inCodeBlock) {
+            codeBlockLines.push(line);
+        } else {
+            completedMarkdown += line + '\n';
+        }
+
+        if (index === lines.length - 1 && inCodeBlock) {
+            addCompletedCodeBlock();
+        }
+    });
+
+    return completedMarkdown;
 }

@@ -110,6 +110,11 @@ function saveNodeData() {
             return true;
             break;
         case 'javascript':
+            javascriptdata = {
+                output: {
+                    javascript: ""
+                }
+            }
             var js = codeeditor.getValue();
             javascriptdata.output.javascript = js;
             editor.updateNodeDataFromId(thisNodeId, javascriptdata);
@@ -318,6 +323,11 @@ function saveNodeData() {
             return true;
             break;
         case 'ifelse':
+            ifelsedata = {
+                output: {
+                    judgresult: ""
+                }
+            }
             var js = ifelseCodeeditor.getValue();
             ifelsedata.output.judgresult = js;
             editor.updateNodeDataFromId(thisNodeId, ifelsedata);
@@ -385,7 +395,7 @@ function saveNodeData() {
     }
 }
 
-function saveNodeDataToCache() {
+function saveNodeDataToCache(callback) {
     var nodeData = JSON.stringify(editor.export(), null, 4);
     $.ajax({
         type: "POST",
@@ -397,6 +407,7 @@ function saveNodeDataToCache() {
         success: function (data) {
             if (data.success) {
                 layer.msg('保存完成', { icon: 1, offset: 't', time: 2000 });
+                callback();
             }
             else {
                 layer.msg(data.msg, { icon: 2, offset: 't', time: 2000 });

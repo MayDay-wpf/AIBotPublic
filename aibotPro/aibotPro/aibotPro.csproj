@@ -68,6 +68,7 @@
     <None Include="wwwroot\system\chart\daterangepicker.min.js" />
     <None Include="wwwroot\system\chart\echarts.min.js" />
     <None Include="wwwroot\system\chart\moment.min.js" />
+    <None Include="wwwroot\system\js\output\chtml\fonts\tex.js" />
     <None Include="wwwroot\system\js\workflow\mobile\layer.js" />
     <None Include="wwwroot\system\js\workflow\workflowaction.js" />
     <None Include="wwwroot\system\pdfjs\pdf.min.js" />

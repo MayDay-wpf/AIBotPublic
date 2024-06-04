@@ -106,6 +106,7 @@ $(document).ready(function () {
             max_textarea_Q();
         }
     });
+
     $("#sendBtn").on("click", function () {
         if (!processOver) {
             stopGenerate();
@@ -116,9 +117,14 @@ $(document).ready(function () {
 });
 
 
-function addCopyBtn() {
+function addCopyBtn(id = '') {
     // 遍历所有含有 'hljs' 类的 code 标签
-    $('pre code.hljs').each(function () {
+    var codebox;
+    if (id != '')
+        codebox = $('#' + id + ' pre code.hljs');
+    else
+        codebox = $('pre code.hljs');
+    codebox.each(function () {
         var codeBlock = $(this); // 当前的 code 标签
 
         // 为复制按钮创建一个容器
@@ -173,7 +179,7 @@ function tryAgain(id) {
         $elem.find("img").each(function () {
             // 为每个<img>标签提取src属性
             var imgSrc = $(this).attr("src");
-            image_path = "wwwroot" + imgSrc;
+            image_path = imgSrc;
             $Q.val($elem.text());
         });
     } else {
@@ -191,7 +197,7 @@ function editChat(id) {
         $elem.find("img").each(function () {
             // 为每个<img>标签提取src属性
             var imgSrc = $(this).attr("src");
-            image_path = "wwwroot" + imgSrc;
+            image_path = imgSrc;
             $("#openCamera").css("color", "red");
             $Q.val($elem.text());
         });
@@ -209,7 +215,7 @@ function quote(id) {
         $elem.find("img").each(function () {
             // 为每个<img>标签提取src属性
             var imgSrc = $(this).attr("src");
-            image_path = "wwwroot" + imgSrc;
+            image_path = imgSrc;
             $("#openCamera").css("color", "red");
             $Q.val("回复：" + $elem.text());
         });
@@ -264,6 +270,7 @@ connection.on('ReceiveAssistantMessage', function (message) {
                 $("#" + assistansBoxId + " pre code").each(function (i, block) {
                     hljs.highlightElement(block);
                 });
+                addCopyBtn(assistansBoxId);
                 if (Scrolling == 1)
                     chatBody.scrollTop(chatBody[0].scrollHeight);
             }
@@ -273,7 +280,7 @@ connection.on('ReceiveAssistantMessage', function (message) {
     } else {
         processOver = true;
         //"sandbox:/mnt/data/";
-        $("#" + assistansBoxId).html(marked(sysmsg));
+        $("#" + assistansBoxId).html(marked(completeMarkdown(sysmsg)));
         $("#" + assistansBoxId).find("a").each(function () {
             var href = $(this).attr("href");
             if (href && href.includes("sandbox:/mnt/data/")) {
@@ -290,7 +297,7 @@ connection.on('ReceiveAssistantMessage', function (message) {
         jishuqi = 0;
         $('.LDI').remove();
         $stopBtn.hide();
-        addCopyBtn();
+        addCopyBtn(assistansBoxId);
         getHistoryList(1, 20, true, false, "");
         addExportButtonToTables();
         if (Scrolling == 1)
@@ -362,7 +369,9 @@ function sendMsg() {
                 </div>`;
     $(".chat-body-content").append(gpthtml);
     adjustTextareaHeight();
-    chatBody.scrollTop(chatBody[0].scrollHeight);
+    chatBody.animate({
+        scrollTop: chatBody.prop("scrollHeight")
+    }, 500);
     feather.replace();
     connection.invoke("SendAssistantMessage", data)
         .then(function () {

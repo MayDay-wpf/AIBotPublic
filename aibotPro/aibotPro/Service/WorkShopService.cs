@@ -17,6 +17,7 @@ using Newtonsoft.Json;
 using System.Text;
 using Microsoft.AspNetCore.SignalR;
 using System.Collections.Generic;
+using NuGet.Protocol.Plugins;
 
 namespace aibotPro.Service
 {
@@ -127,18 +128,18 @@ namespace aibotPro.Service
             return true;
         }
 
-        public List<Plugin> GetPlugins(string account)
+        public List<Models.Plugin> GetPlugins(string account)
         {
             //获取用户制作的插件列表
             var plugins = _context.Plugins.Where(x => x.Account == account).ToList();
             return plugins;
         }
 
-        public List<Plugin> GetWorkShopPlugins(int page, int pageSize, string name, out int total)
+        public List<Models.Plugin> GetWorkShopPlugins(int page, int pageSize, string name, out int total)
         {
             //分页获取插件
             // 利用IQueryable延迟执行，直到真正需要数据的时候才去数据库查询
-            IQueryable<Plugin> query = _context.Plugins.Where(p => p.IsPublic == "yes");
+            IQueryable<Models.Plugin> query = _context.Plugins.Where(p => p.IsPublic == "yes");
 
             // 如果name不为空，则加上name的过滤条件
             if (!string.IsNullOrEmpty(name))
@@ -185,7 +186,7 @@ namespace aibotPro.Service
 
         public WorkShopPlugin GetPlugin(int pluginId, string account, string pcode = "", string pfunctionName = "")
         {
-            Plugin plugin = new Plugin();
+            Models.Plugin plugin = new Models.Plugin();
             //获取插件信息，如果pcode不为空，则根据pcode获取
             if (!string.IsNullOrEmpty(pcode))
                 plugin = _context.Plugins.Where(x => x.Pcode == pcode && (x.IsPublic == "yes" || x.Account == account)).FirstOrDefault();
@@ -913,6 +914,53 @@ namespace aibotPro.Service
             var newSettings = _context.OpenAPIModelSettings.Where(x => x.Account == account);
             await _redisService.SetAsync(openapiKey, JsonConvert.SerializeObject(newSettings));
             return true;
+        }
+        public async Task<bool> InstallOrUninstallSystemPlugins(string account, string pluginName, bool status)
+        {
+            bool result = false;
+            var plugin = await _context.SystemPluginsInstalls.Where(p => p.PluginName == pluginName && p.Account == account).FirstOrDefaultAsync();
+            if (status)
+            {
+                if (plugin == null)
+                {
+                    //安装
+                    SystemPluginsInstall systemPluginsInstall = new SystemPluginsInstall
+                    {
+                        Account = account,
+                        PluginName = pluginName
+                    };
+                    _context.SystemPluginsInstalls.Add(systemPluginsInstall);
+                    result = true;
+                }
+            }
+            else
+            {
+                if (plugin != null)
+                    _context.SystemPluginsInstalls.Remove(plugin);
+                result = true;
+            }
+            await _context.SaveChangesAsync();
+            //系统插件信息写入缓存
+            var plugins = _context.SystemPluginsInstalls.Where(p => p.Account == account).ToList();
+            string key = $"SystemPluginsInstall_{account}";
+            await _redisService.SetAsync(key, JsonConvert.SerializeObject(plugins));
+            return result;
+        }
+        public async Task<List<SystemPluginsInstall>> GetSystemPluginsInstall(string account)
+        {
+            List<SystemPluginsInstall> systemPluginsInstallList = new List<SystemPluginsInstall>();
+            string key = $"SystemPluginsInstall_{account}";
+            //尝试获取缓存
+            var pluginsCache = await _redisService.GetAsync(key);
+            if (string.IsNullOrEmpty(pluginsCache))
+            {
+                //从数据库获取
+                systemPluginsInstallList = _context.SystemPluginsInstalls.Where(p => p.Account == account).ToList();
+                await _redisService.SetAsync(key, JsonConvert.SerializeObject(systemPluginsInstallList));
+            }
+            else
+                systemPluginsInstallList = JsonConvert.DeserializeObject<List<SystemPluginsInstall>>(pluginsCache);
+            return systemPluginsInstallList;
         }
         #region workflow通用函数
         private static string FillJsonTemplate(string jsonTemplate, Dictionary<string, string> parameters)

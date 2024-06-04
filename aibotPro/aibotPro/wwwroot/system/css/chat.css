@@ -50,59 +50,244 @@
     margin-left: 5px;
 }
 
-.gpt-4-turbo-preview {
-    background-color: rgb(243,212,223);
-    color: rgb(126,5,58);
+.dropdown-menu::-webkit-scrollbar {
+    width: 3px;
+    height: 10px;
+    /**/
 }
 
-.gpt-4-turbo-preview-CYGF {
-    background-color: rgb(243,212,223);
-    color: rgb(126,5,58);
+.dropdown-menu::-webkit-scrollbar-track {
+    background: rgb(239, 239, 239);
+    border-radius: 2px;
 }
 
-.gpt-4-turbo-preview-openai {
-    background-color: rgb(243,212,223);
-    color: rgb(126,5,58);
+.dropdown-menu::-webkit-scrollbar-thumb {
+    background: #bfbfbf;
+    border-radius: 10px;
 }
 
+    .dropdown-menu::-webkit-scrollbar-thumb:hover {
+        background: #333;
+    }
 
-.gpt-35-turbo-0125 {
-    background-color: rgb(240,248,217);
-    color: rgb(72,125,135);
-}
-
-.gpt-35-turbo-0125-CYGF {
-    background-color: rgb(240,248,217);
-    color: rgb(72,125,135);
-}
-
-.gpt-35-turbo-0125-openai {
-    background-color: rgb(240,248,217);
-    color: rgb(72,125,135);
+.dropdown-menu::-webkit-scrollbar-corner {
+    background: #179a16;
 }
 
 
-.gpt-35-turbo-16k-0613 {
-    background-color: rgb(243,212,223);
-    color: rgb(126,5,58);
+
+.chat-body-content::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+    /**/
+}
+
+.chat-body-content::-webkit-scrollbar-track {
+    background: rgb(239, 239, 239);
+    border-radius: 2px;
+}
+
+.chat-body-content::-webkit-scrollbar-thumb {
+    background: #bfbfbf;
+    border-radius: 10px;
+}
+
+    .chat-body-content::-webkit-scrollbar-thumb:hover {
+        background: #333;
+    }
+
+.gpt-4-turbo-preview, .gpt-4-turbo-preview-CYGF, .gpt-4-turbo-preview-openai, .gpt-35-turbo-16k-0613 {
+    background-color: rgb(243, 212, 223);
+    color: rgb(126, 5, 58);
+}
+
+.gpt-35-turbo-0125, .gpt-35-turbo-0125-CYGF, .gpt-35-turbo-0125-openai, .gpt-3-5-turbo-0125 {
+    background-color: rgb(240, 248, 217);
+    color: rgb(72, 125, 135);
 }
 
 .ERNIE-Bot-4 {
-    background-color: rgb(245,216,213);
-    color: rgb(142,8,5);
+    background-color: rgb(245, 216, 213);
+    color: rgb(142, 8, 5);
 }
 
 .claude-3-haiku-20240307 {
-    background-color: rgb(244,234,211);
-    color: rgb(120,70,6);
+    background-color: rgb(244, 234, 211);
+    color: rgb(120, 70, 6);
 }
 
 .claude-3-sonnet-20240229 {
-    background-color: rgb(208,223,245);
-    color: rgb(0,61,143);
+    background-color: rgb(208, 223, 245);
+    color: rgb(0, 61, 143);
 }
 
 .claude-3-opus-20240229 {
-    background-color: rgb(217,235,218);
-    color: rgb(27,89,36);
+    background-color: rgb(217, 235, 218);
+    color: rgb(27, 89, 36);
+}
+
+/* 新模型颜色组合 */
+.gpt-4-vision-preview {
+    background-color: rgb(230, 230, 250);
+    color: rgb(75, 0, 130);
+}
+
+.gpt-4o {
+    background-color: rgb(255, 239, 213);
+    color: rgb(255, 140, 0);
+}
+
+.gpt-4-all {
+    background-color: rgb(224, 255, 255);
+    color: rgb(0, 206, 209);
+}
+
+.gpt-4-turbo-2024-04-09 {
+    background-color: rgb(253, 245, 230);
+    color: rgb(255, 69, 0);
+}
+
+.gpt-4-0613 {
+    background-color: rgb(250, 240, 230);
+    color: rgb(255, 140, 105);
+}
+
+.gpt-4-32k {
+    background-color: rgb(240, 255, 240);
+    color: rgb(34, 139, 34);
+}
+
+.gpt-4o-openai {
+    background-color: rgb(255, 228, 225);
+    color: rgb(255, 182, 193);
+}
+
+.gpt-4-turbo-2024-04-09-openai {
+    background-color: rgb(255, 218, 185);
+    color: rgb(255, 127, 80);
+}
+
+.gpt-3-5free-2 {
+    background-color: rgb(245, 245, 220);
+    color: rgb(218, 165, 32);
+}
+
+.bing {
+    background-color: rgb(238, 232, 170);
+    color: rgb(189, 183, 107);
+}
+
+.gemini-pro {
+    background-color: rgb(245, 222, 179);
+    color: rgb(244, 164, 96);
+}
+
+.gemini-pro-vision {
+    background-color: rgb(255, 250, 240);
+    color: rgb(210, 105, 30);
+}
+
+.moonshot-v1-8k {
+    background-color: rgb(255, 228, 196);
+    color: rgb(160, 82, 45);
+}
+
+.ERNIE-Speed-128K {
+    background-color: rgb(253, 245, 230);
+    color: rgb(255, 160, 122);
+}
+
+.qwen-plus {
+    background-color: rgb(250, 250, 210);
+    color: rgb(255, 215, 0);
+}
+
+.qwen-max {
+    background-color: rgb(230, 230, 250);
+    color: rgb(75, 0, 130);
+}
+
+.qwen-long {
+    background-color: rgb(176, 224, 230);
+    color: rgb(70, 130, 180);
+}
+
+.qwen-max-longcontext {
+    background-color: rgb(240, 230, 140);
+    color: rgb(189, 183, 107);
+}
+
+.SparkDesk-v3-5 {
+    background-color: rgb(255, 222, 173);
+    color: rgb(205, 92, 92);
+}
+
+.glm-4 {
+    background-color: rgb(249, 228, 183);
+    color: rgb(255, 127, 80);
+}
+
+.glm-3-turbo {
+    background-color: rgb(175, 238, 238);
+    color: rgb(72, 209, 204);
+}
+
+.360gpt-pro {
+    background-color: rgb(240, 248, 255);
+    color: rgb(173, 216, 230);
+}
+
+.360gpt-turbo-responsibility-8k {
+    background-color: rgb(240, 255, 240);
+    color: rgb(34, 139, 34);
+}
+
+.step-1 {
+    background-color: rgb(135, 206, 250);
+    color: rgb(0, 0, 139);
+}
+
+.llama3-70b-8192 {
+    background-color: rgb(245, 255, 250);
+    color: rgb(46, 139, 87);
+}
+
+.deepseek-chat {
+    background-color: rgb(152, 251, 152);
+    color: rgb(60, 179, 113);
+}
+
+.deepseek-coder {
+    background-color: rgb(255, 240, 245);
+    color: rgb(255, 105, 180);
+}
+
+.suno-v3 {
+    background-color: rgb(255, 250, 205);
+    color: rgb(255, 215, 0);
+}
+
+.hunyuan-pro {
+    background-color: rgb(240, 255, 240);
+    color: rgb(0, 128, 0);
+}
+
+.hunyuan-standard-256k {
+    background-color: rgb(250, 235, 215);
+    color: rgb(255, 69, 0);
+}
+
+.hunyuan-lite {
+    background-color: rgb(240, 255, 255);
+    color: rgb(0, 255, 255);
+}
+
+.gemini-1-5-pro-latest {
+    background-color: rgb(245, 255, 250);
+    color: rgb(127, 255, 212);
+}
+
+.gemini-1-5-flash-latest {
+    background-color: rgb(255, 248, 220);
+    color: rgb(255, 165, 0);
 }

@@ -19,7 +19,8 @@ namespace aibotPro.Interface
         List<AImodelsUserSeq> GetAImodelSeq(string account);//获取AI模型序列
         List<WorkShopAIModel> GetWorkShopAImodel();//获取插件基底模型
         string SaveFiles(string path, IFormFile file, string Account = ""); //保存文件到指定路径,返回图片路径
-        string ImgConvertToBase64(string imagePath);//图片转base64
+        Task<string> UploadFileToImageHosting(IFormFile file, string Account = "");//图片上传到“只是图床”
+        Task<string> ImgConvertToBase64(string imagePath);//图片转base64
         int TokenMath(string str, double divisor);//计算token
         List<SystemCfg> GetSystemCfgs();//获取系统配置
         Task<string> UploadFileChunkAsync(IFormFile file, int chunkNumber, string fileName, string filePathhead);//上传文件分片

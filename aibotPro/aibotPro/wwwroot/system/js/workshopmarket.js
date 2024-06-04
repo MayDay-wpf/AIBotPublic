@@ -8,7 +8,30 @@ $(function () {
     $("#cygf-main-menu").parent().addClass('show');
     $("#cygf-main-menu").parent().siblings().removeClass('show');
     $("#workshopmarket-cygf-nav").addClass('active');
+    $('[data-toggle="tooltip"]').tooltip();
     getWorkShopPlugins('init');
+    getSystemPluginsInstallList();
+});
+$(document).ready(function () {
+    $('.systemPlugins').change(function () {
+        var status = $(this).is(':checked') ? true : false;
+        $.ajax({
+            type: 'Post',
+            url: '/WorkShop/InstallOrUninstallSystemPlugins',
+            data: {
+                pluginName: $(this).val(),
+                status: status
+            },
+            success: function (res) {
+                if (res.success) {
+                    balert("操作成功", "success", false, 1500);
+                } else {
+                    balert("操作失败", "danger", false, 2000);
+                    $(".systemPlugins[value='" + $(this).val() + "']").prop('checked', !status);
+                }
+            }
+        });
+    });
 });
 //window.onload = () => {
 //    var elem = document.querySelector('#masonry-layout');
@@ -157,4 +180,38 @@ function seePlugin(id) {
             }
         }
     });
+}
+
+function getSystemPluginsInstallList() {
+    $.ajax({
+        type: 'Post',
+        url: '/WorkShop/GetSystemPluginsInstall',
+        success: function (res) {
+            if (res.success) {
+                if (res.data.length > 0) {
+                    var data = res.data;
+                    $('.systemPlugins').prop('checked', false);
+                    for (var i = 0; i < data.length; i++) {
+                        // 根据value值查找对应复选框并设置为选中状态
+                        $(".systemPlugins[value='" + data[i].pluginName + "']").prop('checked', true);
+                    }
+                }
+            }
+        },
+        error: function (xhr, status, error) {
+            console.error("AJAX请求发生错误：", status, error);
+        }
+    });
+}
+function dalleinfo() {
+    var content = `<p>当您安装此插件，您可以在<b>【创意工坊对话】</b>中，描述您的<b>【绘画要求】</b>，插件会根据您的语义选择调用时机</p>`;
+    showConfirmationModal("DALL·E3插件说明", content);
+}
+function googlesearchinfo() {
+    var content = `<p>当您安装此插件，您可以在<b>【创意工坊对话】</b>中，要求AI进行<b>【谷歌搜索】</b>，适用于工坊中所有AI模型</p>`;
+    showConfirmationModal("谷歌搜索插件说明", content);
+}
+function knowledgeinfo() {
+    var content = `<p>当您安装此插件，您可以在<b>【知识库对话】</b>中，令AI查询您的私有知识库，如<b>【未安装】</b>此插件，您将<b>【无法使用知识库对话】</b></p>`;
+    showConfirmationModal("知识库检索插件说明", content);
 }

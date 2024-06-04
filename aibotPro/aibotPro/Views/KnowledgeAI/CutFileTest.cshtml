@@ -30,6 +30,35 @@
             </h4>
             <span>您可以在这里上传待处理知识库使用正则表达式预览效果🧑‍💻👩‍💻</span>
             <p></p>
+            <b>
+                常用表达式
+            </b>
+            <table border="1">
+                <tr>
+                    <td>表达式</td>
+                    <td>描述</td>
+                </tr>
+                <tr>
+                    <td><b>([^。！？]+[。！？])</b></td>
+                    <td>按结束标点符号切片（如句号、问号、感叹号）</td>
+                </tr>
+                <tr>
+                    <td><b>((?:\r?\n){2,}.+?)</b></td>
+                    <td>按段落切片（以双换行符为分隔）</td>
+                </tr>
+                <tr>
+                    <td><b>([^。！？.!?]+[。！？.!?])</b></td>
+                    <td>按句子切片（包括英文标点符号，如句号、问号和感叹号）</td>
+                </tr>
+                <tr>
+                    <td><b>([^，,]+[，,])</b></td>
+                    <td>按逗号切片（适用于需要根据逗号分割长文本的情况）</td>
+                </tr>
+                <tr>
+                    <td><b>第\\s*(?:[一二三四五六七八九十]\\s*)*章\\s+.*?(?=第\\s*(?:[一二三四五六七八九十]\\s*)*章\\s+|$)</b></td>
+                    <td>按章节（例如第*章分割，兼容空格阿拉伯数字和汉字）</td>
+                </tr>
+            </table>
         </div>
     </div>
     <div>
@@ -42,7 +71,6 @@
         <textarea class="form-control" id="reviewTxt" style="height:600px;" readonly="readonly"></textarea>
     </div>
     <div id="reviewCutResult">
-
     </div>
 </div>
 <script src="~/system/js/cuttest.js"></script>

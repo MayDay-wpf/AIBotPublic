@@ -80,7 +80,7 @@ namespace aibotPro.Controllers
             string[] imageData = { };
             if (!string.IsNullOrEmpty(referenceImgPath))
             {
-                string base64Image = _systemService.ImgConvertToBase64(referenceImgPath);
+                string base64Image = await _systemService.ImgConvertToBase64(referenceImgPath);
                 string dataHeader = "data:image/jpeg;base64,";
                 imageData = new string[] { dataHeader + base64Image };
             }

@@ -77,7 +77,7 @@ function getAIdrawResList(type) {
                     html += `<div class="col-lg-3 col-md-6 col-sm-12 mb-4 grid-item">
                                 <div class="card h-100">
                                     <a href="${item.imgSavePath}" class="image-popup">
-                                        <img class="card-img-top img-fluid" src="${item.imgSavePath}" style="aspect-ratio: 1 / 1; object-fit: cover;">
+                                        <img class="card-img-top img-fluid lazy" src="${item.imgSavePath}" style="aspect-ratio: 1 / 1; object-fit: cover;">
                                     </a>
                                     <div class="card-body">
                                         <p class="card-text" style="max-height: 100px; overflow: auto;">${item.prompt}</p>
@@ -103,7 +103,7 @@ function getAIdrawResList(type) {
                 $('.image-popup').magnificPopup({
                     type: 'image'
                 });
-
+                var lazyLoadInstance = new LazyLoad();
             }
         }
     });

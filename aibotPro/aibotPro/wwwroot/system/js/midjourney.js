@@ -49,8 +49,24 @@ $(document).ready(function () {
         // 根据 Tab 的文本来设置 botType 的值
         if (tabText === 'Mid-Journey') {
             botType = 'MID_JOURNEY';
+            //获取提示词
+            var prompt = $('#inputText').val().trim();
+            //查询关键字 niji 是否存在
+            if (prompt.indexOf('--niji 5') != -1) {
+                //去除 niji
+                prompt = prompt.replace('--niji 5', '');
+                $('#inputText').val(prompt).trigger('input');
+            }
         } else if (tabText === 'Niji-Journey') {
-            botType = 'MID_JOURNEY';//暂时没有Niji-Journey渠道，先用MID代替
+            botType = 'MID_JOURNEY';
+            //获取提示词
+            var prompt = $('#inputText').val().trim();
+            //查询关键字 niji 是否存在
+            if (prompt.indexOf('niji') == -1) {
+                //不存在则添加
+                prompt += ' --niji 5';
+                $('#inputText').val(prompt).trigger('input');
+            }
         }
     });
 
@@ -270,7 +286,42 @@ function MJinfo() {
                    <p>2、图片创建完成后可以进行放大和变化</p>
                    <p>3、Midjourney 是创作绘画，不能P图</p>
                    <p>4、图片绘制完成前，请【切勿刷新页面】</p>
-                   <p>5、图片绘制完成前如果刷新页面，图片将无法存入图库，费用依旧会扣除，请【切勿刷新页面】</p>`;
+                   <p>5、图片绘制完成前如果刷新页面，图片将无法存入图库，费用依旧会扣除，请【切勿刷新页面】</p>
+                   <p><b>以下是一些常用参数，直接加在提示词后即可生效，例：一只可爱的猫 --ar 16:4</b></p>
+                   <table border="1">
+                      <tr>
+                        <td>参数</td>
+                        <td>功能</td>
+                      </tr>
+                      <tr>
+                        <td><b>--ar n:m</b></td>
+                        <td>控制图片尺寸比例，n是宽，m是高，例：--ar 16:4</td>
+                      </tr>
+                      <tr>
+                        <td><b>--q</b></td>
+                        <td>+数字 范围值：1-5，默认1，更高质量，耗时翻倍2，更强更久3、4、5</td>
+                      </tr>
+                      <tr>
+                        <td><b>--v</b></td>
+                        <td>+数字 范围值：1-6，算法选择，最新v6，图像的细节、构图上有了极大的提升</td>
+                      </tr>
+                      <tr>
+                        <td><b>--chaos</b></td>
+                        <td>+数字 范围值：0-100，生成四张风格迥异的图，数字越大，风格越不一致</td>
+                      </tr>
+                      <tr>
+                        <td><b>--no</b></td>
+                        <td>＋物品 后加具体物品，出图将不包含该物品，类似反向词</td>
+                      </tr>
+                      <tr>
+                        <td><b>--iw</b></td>
+                        <td>+数字 范围值：0.25-2，设置图片与参考图和描述文字的相似程度 （不支持V4版本）（V5,V6可以在喂图的时候改变图片比重）</td>
+                      </tr>
+                      <tr>
+                        <td><b>::</b></td>
+                        <td>+数字 权重数值0-5，可以有小数点；关键字数值越高越大</td>
+                      </tr>
+                    </table>`;
     showConfirmationModal("Midjourney说明", content);
 }
 

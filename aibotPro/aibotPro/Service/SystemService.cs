@@ -26,6 +26,7 @@ using static OpenAI.ObjectModels.SharedModels.IOpenAiModels;
 using System.Numerics;
 using aibotPro.Dtos;
 using System.Collections;
+using RestSharp;
 
 namespace aibotPro.Service
 {
@@ -245,9 +246,65 @@ namespace aibotPro.Service
             //返回文件相对路径
             return savePath;
         }
-        public string ImgConvertToBase64(string imagePath)
+        public async Task<string> UploadFileToImageHosting(IFormFile file, string Account = "")
         {
-            byte[] imageBytes = File.ReadAllBytes(imagePath);
+            Account = string.IsNullOrEmpty(Account) ? "system" : Account;
+            List<SystemCfg> systemConfig = GetSystemCfgs();
+            var imgHost = systemConfig.Where(s => s.CfgKey == "ImageHosting").FirstOrDefault();
+            if (imgHost == null)
+                throw new Exception("未配置“只是图床”服务");
+            string imgHostUrl = imgHost.CfgValue;
+            var client = new RestClient(imgHostUrl);
+            var request = new RestRequest("", Method.Post);
+            request.AddHeader("Accept", "*/*");
+            request.AddHeader("Connection", "keep-alive");
+            // Content-Type will be set by AddFile automatically
+            using (var memoryStream = new System.IO.MemoryStream())
+            {
+                await file.CopyToAsync(memoryStream);
+                request.AddFile("file", memoryStream.ToArray(), file.FileName, file.ContentType);
+            }
+            RestResponse response = await client.ExecuteAsync(request);
+            if (response.IsSuccessful)
+            {
+                await WriteLog($"文件{file.FileName}上传成功--图床", Dtos.LogLevel.Info, Account);
+                var responseContent = response.Content;
+                var json = System.Text.Json.JsonDocument.Parse(responseContent);
+
+                if (json.RootElement.TryGetProperty("code", out var codeElement) && codeElement.GetInt32() == 200)
+                {
+                    if (json.RootElement.TryGetProperty("url", out var fileUrlElement))
+                    {
+                        return fileUrlElement.GetString();
+                    }
+                }
+                else if (json.RootElement.TryGetProperty("msg", out var msgElement))
+                {
+                    var errorMsg = msgElement.GetString();
+                    System.Diagnostics.Debug.WriteLine($"File upload failed: {errorMsg}");
+                }
+            }
+
+            return null;
+        }
+        public async Task<string> ImgConvertToBase64(string imagePath)
+        {
+            byte[] imageBytes;
+
+            if (Uri.IsWellFormedUriString(imagePath, UriKind.Absolute))
+            {
+                // 处理图片链接
+                using (HttpClient client = new HttpClient())
+                {
+                    imageBytes = await client.GetByteArrayAsync(imagePath);
+                }
+            }
+            else
+            {
+                // 处理本地文件路径
+                imageBytes = File.ReadAllBytes(imagePath);
+            }
+
             string base64String = Convert.ToBase64String(imageBytes);
             return base64String;
         }
@@ -754,6 +811,13 @@ namespace aibotPro.Service
                 CfgCode = "WorkFlow_Limit",
                 CfgValue = "20"
             };
+            SystemCfg ImageHosting = new SystemCfg()
+            {
+                CfgName = "“只是图床”API地址",
+                CfgKey = "ImageHosting",
+                CfgCode = "ImageHosting",
+                CfgValue = "After"
+            };
             _context.SystemCfgs.Add(Mail);
             _context.SystemCfgs.Add(MailPwd);
             _context.SystemCfgs.Add(RegiestMcoin);
@@ -779,6 +843,7 @@ namespace aibotPro.Service
             _context.SystemCfgs.Add(WorkShop_FreeModel_Count_VIP);
             _context.SystemCfgs.Add(WorkShop_FreeModel_UpdateHour);
             _context.SystemCfgs.Add(WorkFlow_Limit);
+            _context.SystemCfgs.Add(ImageHosting);
 
 
             if (_context.SaveChanges() > 0)

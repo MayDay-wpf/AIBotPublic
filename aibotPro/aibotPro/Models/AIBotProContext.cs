@@ -56,6 +56,7 @@ namespace aibotPro.Models
         public virtual DbSet<SystemCfg> SystemCfgs { get; set; }
         public virtual DbSet<SystemLog> SystemLogs { get; set; }
         public virtual DbSet<SystemPlugin> SystemPlugins { get; set; }
+        public virtual DbSet<SystemPluginsInstall> SystemPluginsInstalls { get; set; }
         public virtual DbSet<TxOrder> TxOrders { get; set; }
         public virtual DbSet<UISetting> UISettings { get; set; }
         public virtual DbSet<UseUpLog> UseUpLogs { get; set; }

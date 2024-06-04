@@ -37,13 +37,13 @@ var languageSelect = $("#languageSelect").val();
 var max_textarea = false;
 var textarea = document.getElementById("Q");
 var $Q = $("#Q");
-var $stopBtn = $("#stopBtn");
 var chatBody = $(".chat-body-content");
 var thisAiModel = "gpt-3.5-turbo-0125"; //当前AI模型
 var processOver = true; //是否处理完毕
 var image_path = "";
 var file_list = [];
 var chatid = "";
+var chatgroupid = "";
 var assistansBoxId = "";
 var pageIndex = 1;
 var pageSize = 20;
@@ -154,15 +154,6 @@ $(document).ready(function () {
     $("#Q").blur(function () {
         if (max_textarea) {
             max_textarea_Q();
-        }
-    });
-    $('#Q').on('paste', function (event) {
-        for (var i = 0; i < event.originalEvent.clipboardData.items.length; i++) {
-            var item = event.originalEvent.clipboardData.items[i];
-            if (item.kind === 'file') {
-                var blob = item.getAsFile();
-                handleFileUpload(blob);
-            }
         }
     });
 
@@ -317,7 +308,6 @@ connection.on('ReceiveMessage', function (message) {
     if (!message.isfinish) {
         if (jishuqi == 0) {
             chatid = message.chatid;
-            $stopBtn.show();
             //fileTXT = "";
         } else {
             if (message.message != null) {
@@ -329,6 +319,7 @@ connection.on('ReceiveMessage', function (message) {
                     hljs.highlightElement(block);
                 });
                 addLanguageLabels(true, assistansBoxId);
+                addCopyBtn(assistansBoxId);
                 if (Scrolling == 1)
                     chatBody.scrollTop(chatBody[0].scrollHeight);
             }
@@ -340,7 +331,7 @@ connection.on('ReceiveMessage', function (message) {
         $("#sendBtn").html(`<i data-feather="send"></i>`);
         feather.replace();
         $("#sendBtn").css("color", "rgb(54,55,86)");
-        $("#" + assistansBoxId).html(marked(sysmsg));
+        $("#" + assistansBoxId).html(marked(completeMarkdown(sysmsg)));
         MathJax.typeset();
         //hljs.highlightAll();
         $("#" + assistansBoxId + " pre code").each(function (i, block) {
@@ -350,8 +341,7 @@ connection.on('ReceiveMessage', function (message) {
         sysmsg = "";
         jishuqi = 0;
         $('.LDI').remove();
-        $stopBtn.hide();
-        addCopyBtn();
+        addCopyBtn(assistansBoxId);
         getHistoryList(1, 20, true, false, "");
         addExportButtonToTables();
     }
@@ -373,7 +363,7 @@ function sendMsg() {
     $("#sendBtn").html(`<i data-feather="stop-circle"></i>`);
     feather.replace();
     $("#sendBtn").css("color", "red")
-    var chatgroupid = generateGUID();
+    chatgroupid = generateGUID();
     var msgid_u = generateGUID();
     var msgid_g = generateGUID();
     assistansBoxId = msgid_g;
@@ -442,7 +432,9 @@ function sendMsg() {
                 </div>`;
     $(".chat-body-content").append(gpthtml);
     adjustTextareaHeight();
-    chatBody.scrollTop(chatBody[0].scrollHeight);
+    chatBody.animate({
+        scrollTop: chatBody.prop("scrollHeight")
+    }, 500);
     connection.invoke("SendMessage", data)
         .then(function () {
         })
@@ -497,6 +489,7 @@ function getHistoryList(pageIndex, pageSize, reload, loading, searchKey) {
                     chat += "...";
                 }
                 //转译尖括号
+                chat = chat.replace(/&lt;/g, "&amp;lt;").replace(/&gt;/g, "&amp;gt;");
                 chat = chat.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                 html += `<li class="chat-item" id="` + res.data[i].chatId + `" onclick="showHistoryDetail('` + res.data[i].chatId + `')">
                             <div class="chat-item-body">
@@ -646,6 +639,7 @@ function showHistoryDetail(id) {
                 var content = res.data[i].chat;
                 if (res.data[i].role == "user") {
                     if (content.indexOf('aee887ee6d5a79fdcmay451ai8042botf1443c04') == -1) {
+                        content = content.replace(/&lt;/g, "&amp;lt;").replace(/&gt;/g, "&amp;gt;");
                         content = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                         html += `<div class="chat-message" data-group="` + res.data[i].chatGroupId + `">
                                     <div style="display: flex; align-items: center;">
@@ -679,7 +673,7 @@ function showHistoryDetail(id) {
 
                 }
                 else {
-                    var markedcontent = marked(content);//md.render(content)//marked.parse(content);
+                    var markedcontent = marked(completeMarkdown(content));//md.render(content)//marked.parse(content);
                     var encoder = new TextEncoder();
                     html += `<div class="chat-message" data-group="` + res.data[i].chatGroupId + `">
                                 <div style="display: flex; align-items: center;">
@@ -736,18 +730,28 @@ function loadMoreHistory() {
 }
 //停止生成
 function stopGenerate() {
+    processOver = true;
+    $("#sendBtn").html(`<i data-feather="send"></i>`);
+    feather.replace();
+    $("#sendBtn").css("color", "rgb(54,55,86)");
+    $('.LDI').remove();
+    if (sysmsg != '')
+        $("#" + assistansBoxId).html(marked(completeMarkdown(sysmsg)));
+    MathJax.typeset();
+    $("#" + assistansBoxId + " pre code").each(function (i, block) {
+        hljs.highlightElement(block);
+    });
+    addLanguageLabels(true, assistansBoxId);
+    addCopyBtn(assistansBoxId);
     $.ajax({
         type: "Post",
         url: "/Home/StopGenerate",
         dataType: "json",
         data: {
-            chatId: chatid
+            chatId: chatgroupid
         },
         success: function (res) {
-            $("#sendBtn").html(`<i data-feather="send"></i>`);
-            feather.replace();
-            $("#sendBtn").css("color", "rgb(54,55,86)")
-            processOver = true;
+            console.log(`file停止生成，Id：${chatgroupid} --${getCurrentDateTime()}`);
         },
         error: function (err) {
             //window.location.href = "/Users/Login";
@@ -984,9 +988,14 @@ async function uploadFiles() {
 }
 
 //遍历添加复制按钮
-function addCopyBtn() {
+function addCopyBtn(id = '') {
     // 遍历所有含有 'hljs' 类的 code 标签
-    $('pre code.hljs').each(function () {
+    var codebox;
+    if (id != '')
+        codebox = $('#' + id + ' pre code.hljs');
+    else
+        codebox = $('pre code.hljs');
+    codebox.each(function () {
         var codeBlock = $(this); // 当前的 code 标签
 
         // 为复制按钮创建一个容器
@@ -1041,7 +1050,7 @@ function tryAgain(id) {
         $elem.find("img").each(function () {
             // 为每个<img>标签提取src属性
             var imgSrc = $(this).attr("src");
-            image_path = "wwwroot" + imgSrc;
+            image_path = imgSrc;
             $Q.val($elem.text());
         });
     } else {
@@ -1059,7 +1068,7 @@ function editChat(id) {
         $elem.find("img").each(function () {
             // 为每个<img>标签提取src属性
             var imgSrc = $(this).attr("src");
-            image_path = "wwwroot" + imgSrc;
+            image_path = imgSrc;
             $("#openCamera").css("color", "red");
             $Q.val($elem.text());
         });
@@ -1077,7 +1086,7 @@ function quote(id) {
         $elem.find("img").each(function () {
             // 为每个<img>标签提取src属性
             var imgSrc = $(this).attr("src");
-            image_path = "wwwroot" + imgSrc;
+            image_path = imgSrc;
             $("#openCamera").css("color", "red");
             $Q.val("回复：" + $elem.text());
         });

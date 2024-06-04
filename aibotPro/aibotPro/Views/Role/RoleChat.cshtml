@@ -4,7 +4,14 @@
 }
 <script>
     MathJax = {
-        tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }
+        tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)'], ['[', ']'], ['(', ')']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]'], ['[', ']']]
+        },
+        processHtmlClass: "chat-body-content",
+        options: {
+            skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code", "a", "b"]
+        }
     };
 </script>
 <link href="~/system/css/chat.css?v1" rel="stylesheet" />
@@ -222,7 +229,7 @@
     </div>
 </div>
 <script src="~/system/js/signalr.min.js"></script>
-<script src="~/system/js/rolechat.js?v1"></script>
+<script src="~/system/js/rolechat.js?v3"></script>
 <script src="~/system/js/marked.min.js"></script>
 <link href="~/system/css/atom-one-dark.min.css" rel="stylesheet" />
 <script src="~/system/js/highlight.min.js"></script>
