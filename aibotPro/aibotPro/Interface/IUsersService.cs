@@ -26,5 +26,7 @@ namespace aibotPro.Interface
         List<ShareLog> GetShareLog(string account, int page, int size, out int total);
 
         bool SaveModelSeq(string account, List<ChatModelSeq> chatModelSeq, out string errormsg);
+        Task<bool> ChatHubBeforeCheck(ChatDto chatDto, string account, string senMethod, string chatId);
+
     }
 }

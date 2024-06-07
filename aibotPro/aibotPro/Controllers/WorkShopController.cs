@@ -464,7 +464,7 @@ namespace aibotPro.Controllers
         [Authorize]
         [HttpPost]
         //作者下架插件
-        public IActionResult CloseRelease(int id)
+        public IActionResult ControlRelease(int id, string type)
         {
             string username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
             var plugin = _context.Plugins.Where(x => x.Id == id && x.Account == username).FirstOrDefault();
@@ -476,9 +476,9 @@ namespace aibotPro.Controllers
             {
                 return Json(new { success = false, msg = "非法操作" });
             }
-            plugin.IsPublic = "no";
+            plugin.IsPublic = type;
             _context.SaveChanges();
-            return Json(new { success = true, msg = "下架成功" });
+            return Json(new { success = true, msg = "操作成功" });
         }
 
 

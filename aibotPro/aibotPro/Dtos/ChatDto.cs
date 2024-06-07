@@ -16,10 +16,11 @@ namespace aibotPro.Dtos
         public string? system_prompt { get; set; }
         public bool isbot { get; set; } = false;
         public string threadid { get; set; }
-        public float temperature { get; set; } = 0.5f;
-        public float top_p { get; set; } = 1;
-        public float presence_penalty { get; set; } = 0.5f;
-        public float frequency_penalty { get; set; } = 0.5f;
+        //public float temperature { get; set; } = 0.5f;
+        //public float top_p { get; set; } = 1;
+        //public float presence_penalty { get; set; } = 0.5f;
+        //public float frequency_penalty { get; set; } = 0.5f;
+        public bool useMemory { get; set; } = false;
     }
     public class ChatRes
     {
@@ -37,14 +38,14 @@ namespace aibotPro.Dtos
 
         [JsonProperty("messages")]
         public List<Message> Messages { get; set; }
-        [JsonProperty("temperature")]
-        public float Temperature { get; set; } = 0.5f;
-        [JsonProperty("top_p")]
-        public float TopP { get; set; } = 1;
-        [JsonProperty("presence_penalty")]
-        public float PresencePenalty { get; set; } = 0.5f;
-        [JsonProperty("frequency_penalty")]
-        public float FrequencyPenalty { get; set; } = 0.5f;
+        //[JsonProperty("temperature")]
+        //public float Temperature { get; set; } = 0.5f;
+        //[JsonProperty("top_p")]
+        //public float TopP { get; set; } = 1;
+        //[JsonProperty("presence_penalty")]
+        //public float PresencePenalty { get; set; } = 0.5f;
+        //[JsonProperty("frequency_penalty")]
+        //public float FrequencyPenalty { get; set; } = 0.5f;
 
         [JsonProperty("stream")]
         public bool Stream { get; set; }

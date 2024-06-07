@@ -14,6 +14,12 @@ function addStLine() {
                  <td><input type="text" class="form-control" maxlength="50" placeholder="模型名称(实际请求时使用)" /></td>
                  <td><input type="text" class="form-control" maxlength="500" placeholder="Base URL"  /></td>
                  <td><input type="text" class="form-control" maxlength="500" placeholder="API KEY"  /></td>
+                 <td>
+                    <select class="form-control">
+                       <option checked="checked">OpenAI</option>
+                       <option>ERNIE</option>
+                     </select>
+                 </td>
                  <td><input type="checkbox" class="form-control"></td>
                  <td><input type="number" class="form-control seq-input" placeholder="排序"  /></td>
                  <td><input type="number" class="form-control" placeholder="流延时(ms)"  /></td>
@@ -43,8 +49,9 @@ function saveChatSetting() {
         var visionModel = $(row).find("input").eq(4).prop('checked');
         var seq = $(row).find("input").eq(5).val();
         var delay = $(row).find("input").eq(6).val() < 0 ? 0 : $(row).find("input").eq(6).val();
+        var channel = $(row).find("select").eq(0).val();
         if (!removeSpaces(nickname) || !removeSpaces(name) || !removeSpaces(baseUrl) || !removeSpaces(apiKey)) {
-            balert('请将空的【自定义对话模型】输入行删除，或填写完整', 'danger', false, 1500, 'top');
+            balert('请将空的输入行删除，或填写完整', 'danger', false, 1500, 'top');
             issave = false;
             return;
         } else {
@@ -55,6 +62,7 @@ function saveChatSetting() {
             formData.append(`WorkShopAIModel[${index}].VisionModel`, visionModel);
             formData.append(`WorkShopAIModel[${index}].Seq`, seq);
             formData.append(`WorkShopAIModel[${index}].Delay`, delay);
+            formData.append(`WorkShopAIModel[${index}].Channel`, channel);
         }
     });
     if (issave) {
@@ -100,6 +108,12 @@ function getChatSetting() {
                                 <td><input type="text" class="form-control" maxlength="50" placeholder="模型名称(实际请求时使用)" value="${data[i].modelName}" /></td>
                                 <td><input type="text" class="form-control" maxlength="500" placeholder="Base URL" value="${data[i].baseUrl}" /></td>
                                 <td><input type="text" class="form-control" maxlength="500" placeholder="API KEY" value="${data[i].apiKey}" /></td>
+                                <td>
+                                     <select class="form-control">
+                                        <option value="OpenAI" ${data[i].channel === 'OpenAI' ? 'selected' : ''}>OpenAI</option>
+                                        <option value="ERNIE" ${data[i].channel === 'ERNIE' ? 'selected' : ''}>ERNIE</option>
+                                      </select>
+                                </td>
                                 <td><input type="checkbox" class="form-control" ${checkedAttr}></td>
                                 <td><input type="number" class="form-control seq-input" placeholder="排序" value="${data[i].seq}" /></td>
                                 <td><input type="number" class="form-control" placeholder="流延时(ms)" value="${data[i].delay}" /></td>

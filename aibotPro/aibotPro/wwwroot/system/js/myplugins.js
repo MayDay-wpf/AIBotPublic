@@ -116,18 +116,22 @@ function getPlugins() {
                 var html = '';
                 for (var i = 0; i < res.data.length; i++) {
                     var item = res.data[i];
+                    var controlButton = `<button class="btn btn-sm btn-warning" style="margin-right:10px" onclick="controlRelease(${item.id},'no','下架')">下架</button>`;
+                    if (item.isPublic == "no") {
+                        controlButton = `<button class="btn btn-sm btn-info" style="margin-right:10px" onclick="controlRelease(${item.id},'yes','上架')">上架</button>`;
+                    }
                     html += `<div class="col-lg-3 col-md-6 col-sm-12 mb-4 grid-item">
                                 <div class="card h-100">
                                     <img class="card-img-top" style="width: 50px;height: 50px;margin:10px auto;"
-                                        src="`+ item.pavatar + `">
+                                        src="${item.pavatar}">
                                     <div class="card-body">
-                                        <h5 class="card-title">`+ item.pnickname + `</h5>
-                                        <p class="card-text" style="max-height: 100px; overflow: auto;">`+ item.pfunctioninfo + `</p>
+                                        <h5 class="card-title">${item.pnickname}</h5>
+                                        <p class="card-text" style="max-height: 100px; overflow: auto;">${item.pfunctioninfo}</p>
                                         <div class="d-flex justify-content-center flex-wrap">
-                                            <button class="btn btn-sm btn-primary" style="margin-right:10px" onclick="editPlugin('`+ item.pcode + `',` + item.id + `)">编辑</button>
-                                            <button class="btn btn-sm btn-success" style="margin-right:10px" onclick="insertMyPlugin(` + item.id + `)">安装</button>
-                                            <button class="btn btn-sm btn-warning" style="margin-right:10px" onclick="closeRelease(`+ item.id + `)">下架</button>
-                                            <button class="btn btn-sm btn-secondary" onclick="deletePlugin(`+ item.id + `)">删除</button>
+                                            <button class="btn btn-sm btn-primary" style="margin-right:10px" onclick="editPlugin('${item.pcode}',${item.id})">编辑</button>
+                                            <button class="btn btn-sm btn-success" style="margin-right:10px" onclick="insertMyPlugin(${item.id})">安装</button>
+                                            ${controlButton}
+                                            <button class="btn btn-sm btn-secondary" onclick="deletePlugin(${item.id})">删除</button>
                                         </div>
                                     </div>
                                 </div>
@@ -205,16 +209,19 @@ function deletePlugin(id) {
     });
 }
 
-function closeRelease(id) {
+function controlRelease(id, type, typetxt) {
     //询问框
-    showConfirmationModal("下架插件", "确定要下架该插件吗？", function () {
+    showConfirmationModal(`${typetxt}插件`, `确定要${typetxt}该插件吗？`, function () {
         $.ajax({
             type: 'Post',
-            url: '/WorkShop/CloseRelease',
-            data: { id: id },
+            url: '/WorkShop/ControlRelease',
+            data: {
+                id: id,
+                type: type
+            },
             success: function (res) {
                 if (res.success) {
-                    balert('插件下架成功', 'success', false, 1500, 'top');
+                    balert(res.msg, 'success', false, 1500, 'top');
                     getPlugins();
                 }
                 else

@@ -243,10 +243,10 @@ function get_weather_forecast(res) {
 }
 function addPrLine(index) {
     var str = `<tr>
-                 <td><input type="text" class="form-control" maxlength="50" placeholder="参数名(只允许字母、字符)，例：number" /></td>
+                 <td><input type="text" class="form-control" placeholder="参数名(只允许字母、字符)，例：number" /></td>
                  <td><select class="form-control"><option checked="checked">String</option><option>Integer</option><option>Boolean</option><option>Number</option></select></td>
-                 <td><input type="text" class="form-control" maxlength="200" placeholder="参数描述，重要！例：手机号码" /></td>
-                 <td><input type="text" class="form-control" maxlength="50" placeholder="常量,可输入固定值,不用AI填写参数"  /></td>
+                 <td><input type="text" class="form-control" placeholder="参数描述，重要！例：手机号码" /></td>
+                 <td><input type="text" class="form-control" placeholder="常量,可输入固定值,不用AI填写参数"  /></td>
                  <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`;
     if (index == 1)
         $("#AddPr1").append(str);
@@ -258,8 +258,8 @@ function addPrLine(index) {
 }
 function addHdLine(index) {
     var str = `<tr>
-                 <td><input type="text" class="form-control" maxlength="100" placeholder="Header参数名" /></td>
-                 <td><input type="text" class="form-control" maxlength="300" placeholder="Header参数值" /></td>
+                 <td><input type="text" class="form-control" placeholder="Header参数名" /></td>
+                 <td><input type="text" class="form-control" placeholder="Header参数值" /></td>
                  <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`;
     if (index == 2)
         $("#AddHd2").append(str);
@@ -269,8 +269,8 @@ function addHdLine(index) {
 }
 function addCkLine(index) {
     var str = `<tr>
-                 <td><input type="text" class="form-control" maxlength="100" placeholder="Cookie-Key" /></td>
-                 <td><input type="text" class="form-control" maxlength="300" placeholder="Cookie-Value" /></td>
+                 <td><input type="text" class="form-control" placeholder="Cookie-Key" /></td>
+                 <td><input type="text" class="form-control" placeholder="Cookie-Value" /></td>
                  <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`
     if (index == 2)
         $("#AddCk2").append(str);

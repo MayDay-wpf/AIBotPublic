@@ -16,7 +16,6 @@ namespace aibotPro.Models
         public string CkCode { get; set; }
         [StringLength(500)]
         public string CkName { get; set; }
-        [StringLength(500)]
         public string CkValue { get; set; }
     }
 }

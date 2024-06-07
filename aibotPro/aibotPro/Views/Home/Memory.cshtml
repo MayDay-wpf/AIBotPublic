@@ -1,0 +1,55 @@
+﻿@{
+    ViewData["Title"] = "记忆体（Memory）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px;">
+    <div class="content-header">
+        <div>
+            <h4 class="content-title content-title-sm">
+                <b style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105));
+    -webkit-background-clip: text;
+    color: transparent;">记忆体（Memory）</b>
+            </h4>
+            <span>这里记录了您保存的AI记忆数据💾💾💾</span>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <h5>记忆数据</h5>
+        </div>
+        <div class="card-body">
+            <input type="text" class="form-control" placeholder="输入内容关键词" id="searchkey" style="width: 50%;">
+            <label>显示条数：</label> <input type="number" class="form-control" value="50" id="limit" style="width:200px;margin-bottom:10px;" />
+            <button class="btn btn-success" style="margin-bottom:10px;" onclick="queryMemory()"><i data-feather="search"></i> 查询</button>
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            <th>记忆内容</th>
+                            <th>删除</th>
+                        </tr>
+                    </thead>
+                    <tbody id="MemoryList">
+                        <tr>
+                            <td>--</td>
+                            <td>--</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/system/js/memory.js?v1"></script>

@@ -53,9 +53,14 @@ function balert(message, type, dismissible, autoCloseTime, position, callback) {
 
     // Create alert element
     var $alert = $('<div>')
-        .addClass('alert alert-' + type + (dismissible ? ' alert-dismissible' : '') + ' fade show')
-        .attr('role', 'alert')
-        .html(message);
+        .addClass('alert alert-' + type + (dismissible ? ' alert-dismissible' : '') + ' fade show slide-in d-flex align-items-center')
+        .attr('role', 'alert');
+    if (type == "warning")
+        $alert.html('<i data-feather="info" class="mr-2"></i> ' + message);
+    if (type == "success")
+        $alert.html('<i data-feather="check-circle" class="mr-2"></i> ' + message);
+    if (type == "danger")
+        $alert.html('<i data-feather="x-circle" class="mr-2"></i> ' + message);
 
     // If dismissible, add dismiss button
     if (dismissible) {
@@ -71,7 +76,10 @@ function balert(message, type, dismissible, autoCloseTime, position, callback) {
     }
 
     // Append alert to container
-    $("#alertContainer").prepend($alert); 
+    $("#alertContainer").prepend($alert);
+
+    // Initialize feather icons
+    feather.replace();
 
     // If autoCloseTime is set, then set a timeout to close the alert
     if (typeof autoCloseTime === 'number' && autoCloseTime > 0) {
@@ -80,18 +88,15 @@ function balert(message, type, dismissible, autoCloseTime, position, callback) {
                 $(this).alert('close'); // 关闭提醒框
             });
         }, autoCloseTime);
-    }
-    else if (autoCloseTime == 0) {
+    } else if (autoCloseTime == 0) {
         //需要手动关闭
-    }
-    else {
+    } else {
         setTimeout(function () {
             $alert.fadeOut(function () {
                 $(this).alert('close'); // 关闭提醒框
             });
         }, 2000);
     }
-
 
     // Attach callback when alert is closed
     if (typeof callback === 'function') {
@@ -108,6 +113,7 @@ function balert(message, type, dismissible, autoCloseTime, position, callback) {
     // Return the function to allow manual closure of the alert
     return destroyAlert;
 }
+
 
 // 创建二次确认框的函数
 function createConfirmationModal(title, content) {

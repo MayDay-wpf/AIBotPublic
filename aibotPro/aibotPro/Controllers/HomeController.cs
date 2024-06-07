@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
 using System.Security.Principal;
 using System.Text;
+using System.Collections.Concurrent;
 
 namespace aibotPro.Controllers
 {
@@ -24,7 +25,9 @@ namespace aibotPro.Controllers
         private readonly JwtTokenManager _jwtTokenManager;
         private readonly IUsersService _usersService;
         private readonly IAiServer _ai;
-        public HomeController(ILogger<HomeController> logger, IRedisService redisService, AIBotProContext context, ISystemService systemService, JwtTokenManager jwtTokenManager, IUsersService usersService, IAiServer ai)
+        private readonly IMilvusService _milvusService;
+        private readonly ChatCancellationManager _chatCancellationManager;
+        public HomeController(ILogger<HomeController> logger, IRedisService redisService, AIBotProContext context, ISystemService systemService, JwtTokenManager jwtTokenManager, IUsersService usersService, IAiServer ai, IMilvusService milvusService, ChatCancellationManager chatCancellationManager)
         {
             _logger = logger;
             _redis = redisService;
@@ -33,6 +36,8 @@ namespace aibotPro.Controllers
             _jwtTokenManager = jwtTokenManager;
             _usersService = usersService;
             _ai = ai;
+            _milvusService = milvusService;
+            _chatCancellationManager = chatCancellationManager;
         }
         [Route("install.html")]
         public IActionResult Install()
@@ -65,8 +70,9 @@ namespace aibotPro.Controllers
             }
             return View();
         }
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
+            await RecordIpAddressAsync();
             return View();
         }
         public IActionResult Midjourney()
@@ -89,11 +95,26 @@ namespace aibotPro.Controllers
         {
             return View();
         }
+        public IActionResult Memory()
+        {
+            return View();
+        }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+        private async Task RecordIpAddressAsync()
+        {
+            var ip = HttpContext.Connection.RemoteIpAddress;
+            var settings = new ChunZhenSetting
+            {
+                DatPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "system", "doc", "qqwry.dat")
+            };
+            var ipSearch = new IPSearchHelper(settings);
+            var iPLocation = ipSearch.GetIPLocation(ip?.ToString() ?? "127.0.0.1");
+            _systemService.SaveIP(ip.ToString(), (iPLocation.country + iPLocation.area).Replace("CZ88.NET", ""));
         }
         //从Redis中获取AI模型信息
         //不允许匿名访问
@@ -217,9 +238,7 @@ namespace aibotPro.Controllers
         [HttpPost]
         public async Task<IActionResult> StopGenerate(string chatId)
         {
-            //修改缓存中的状态
-            string key = chatId + "_process";
-            await _redis.DeleteAsync(key);
+            _chatCancellationManager.TryCancelChat(chatId);
             return Json(new
             {
                 success = true,
@@ -479,6 +498,45 @@ namespace aibotPro.Controllers
             {
                 success = true,
                 data = _systemService.GetSystemUI(username)
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> SaveMemory(string chatgroupId, string chatId)
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var result = await _ai.SaveMemory("text-embedding-3-small", username, chatgroupId, chatId);
+            return Json(new
+            {
+                success = result
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> QueryData(int limit, string filter)
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            List<string> typeCode = new List<string>();
+            typeCode.Add($"{username}_memory");
+            var result = await _milvusService.QueryData(username, typeCode, limit, filter);
+            return Json(new
+            {
+                success = true,
+                data = result
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> DeleteMemory(string id)
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            List<string> typeCode = new List<string>();
+            typeCode.Add($"{username}_memory");
+            var result = await _milvusService.DeleteMemory(username, id);
+            return Json(new
+            {
+                success = true,
+                data = result
             });
         }
     }

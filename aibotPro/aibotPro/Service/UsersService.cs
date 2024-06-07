@@ -1,6 +1,7 @@
 ﻿using aibotPro.Dtos;
 using aibotPro.Interface;
 using aibotPro.Models;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System.Security.Principal;
@@ -14,12 +15,17 @@ namespace aibotPro.Service
         private readonly ISystemService _systemService;
         private readonly IRedisService _redis;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        public UsersService(AIBotProContext context, ISystemService systemService, IRedisService redis, IHttpContextAccessor httpContextAccessor)
+        private readonly IFinanceService _financeService;
+        private readonly IHubContext<ChatHub> _hubContext;
+
+        public UsersService(AIBotProContext context, ISystemService systemService, IRedisService redis, IHttpContextAccessor httpContextAccessor, IFinanceService financeService, IHubContext<ChatHub> hubContext)
         {
             _context = context;
             _systemService = systemService;
             _redis = redis;
             _httpContextAccessor = httpContextAccessor;
+            _financeService = financeService;
+            _hubContext = hubContext;
         }
         public bool Regiest(User users, string checkCode, string shareCode, out string errormsg)
         {
@@ -418,5 +424,49 @@ namespace aibotPro.Service
             _redis.SetAsync(account + "_modelSeq", JsonConvert.SerializeObject(chatModelSeq));
             return _context.SaveChanges() > 0;
         }
+        public async Task<bool> ChatHubBeforeCheck(ChatDto chatDto, string account, string senMethod, string chatId)
+        {
+            bool result = true;
+            ChatRes chatRes = new ChatRes();
+            var user = GetUserData(account);
+            var modelPrice = await _financeService.ModelPrice(chatDto.aiModel);
+            bool isVip = await _financeService.IsVip(account);
+            bool shouldCharge = modelPrice != null && (
+                        (!isVip && modelPrice.ModelPriceOutput > 0) || // 非VIP用户，且模型有非VIP价格
+                        (isVip && modelPrice.VipModelPriceInput > 0)); // VIP用户，且模型对VIP也有价格
+
+            //不是会员且余额为0时不提供服务
+            if (!isVip && user.Mcoin <= 0)
+            {
+                chatRes.message = "本站已停止向【非会员且余额为0】的用户提供服务，您可以<a href='/Pay/Balance'>点击这里</a>前往充值1元及以上，长期使用本站的免费服务";
+                await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                chatRes.message = "";
+                chatRes.isfinish = true;
+                await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                result = false;
+            }
+            // 检查用户余额是否不足，只有在需要收费时检查
+            if (shouldCharge && user.Mcoin <= 0)
+            {
+                chatRes.message = "余额不足，请充值后再使用，您可以<a href='/Pay/Balance'>点击这里</a>前往充值";
+                await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                chatRes.message = "";
+                chatRes.isfinish = true;
+                await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                result = false;
+            }
+            if (chatDto.isbot && !chatDto.aiModel.Contains("gpt-3.5"))
+            {
+                chatRes.message = "您正在使用非正当手段修改我的基底模型，我们允许且欢迎您寻找本站的BUG，但很明显，这个漏洞已经被开发团队修复，请您不要再继续尝试，本站不会记录任何用户的正常行为，但是对于异常行为有着详细的日志信息和风控手段，感谢您的合作与支持，如果您还有其他问题，请询问我。";
+                await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                chatRes.message = "";
+                chatRes.isfinish = true;
+                await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                await _systemService.WriteLog("异常行为：用户尝试修改Robot的基底模型", Dtos.LogLevel.Fatal, account);
+                result = false;
+            }
+            return result;
+        }
+
     }
 }

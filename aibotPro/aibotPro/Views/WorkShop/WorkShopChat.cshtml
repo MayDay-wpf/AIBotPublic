@@ -123,63 +123,6 @@
                     <i data-feather="plus">
                     </i>
                 </a>
-                &nbsp;&nbsp;
-                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#settingsModal">
-                    <i data-feather="settings"></i> 设置
-                </button>
-                <div class="modal fade" id="settingsModal" tabindex="-1" role="dialog" aria-labelledby="settingsModalLabel" aria-hidden="true">
-                    <div class="modal-dialog" role="document">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="settingsModalLabel">设置</h5>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="form-group">
-                                    <label>温度(temperature)</label>：<b class="temperature">0.5</b><br />
-                                    <span style="font-size:12px;color:gray">值越大，回复越随机</span>
-                                    <input type="range" class="custom-range" id="slidertemperature" min="0.0" max="1" value="0.5" step="0.1">
-                                </div>
-                                <div class="form-group">
-                                    <label>采样(top_p)</label>：<b class="top_p">1</b><br />
-                                    <span style="font-size:12px;color:gray">值越大，回复越随机不要和温度一起修改</span>
-                                    <input type="range" class="custom-range" id="slidertopp" min="0.0" max="1" value="1" step="0.1">
-                                </div>
-                                <div class="form-group">
-                                    <label>惩罚(presence_penalty)</label>：<b class="presence_penalty">1</b><br />
-                                    <span style="font-size:12px;color:gray">值越大，越有可能扩展到新话题</span>
-                                    <input type="range" class="custom-range" id="sliderpresence" min="-2" max="2" value="1" step="0.1">
-                                </div>
-                                <div class="form-group">
-                                    <label>惩罚频率(frequency_penalty)</label>：<b class="frequency_penalty">1</b><br />
-                                    <span style="font-size:12px;color:gray">值越大，越有可能降低重复字词</span>
-                                    <input type="range" class="custom-range" id="sliderfrequency" min="-2" max="2" value="1" step="0.1">
-                                </div>
-                                <div class="form-group">
-                                    <label for="languageSelect">选择AI语言</label>
-                                    <select class="custom-select" id="languageSelect">
-                                        <option value="zh-simple">简体中文</option>
-                                        <option value="zh-traditional">繁體中文</option>
-                                        <option value="en">English</option>
-                                        <option value="es">Español</option>
-                                        <option value="fr">Français</option>
-                                        <option value="th">แบบไทย</option>
-                                        <option value="ja">日本語</option>
-                                        <option value="ko">한국어</option>
-                                        <option value="de">Deutsch</option>
-                                        <option value="ru">русский</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="shortcutSystemPrompt">快捷系统提示词</label>
-                                    <textarea type="text" class="form-control" id="shortcutSystemPrompt" placeholder="系统提示词"></textarea>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             @* <li class="divider-text">
@@ -229,7 +172,7 @@
     </div>
 </div>
 <script src="~/system/js/signalr.min.js"></script>
-<script src="~/system/js/workshopchat.js?v4"></script>
+<script src="~/system/js/workshopchat.js?v5"></script>
 <script src="~/system/js/marked.min.js"></script>
 <link href="~/system/css/atom-one-dark.min.css" rel="stylesheet" />
 <script src="~/system/js/highlight.min.js"></script>

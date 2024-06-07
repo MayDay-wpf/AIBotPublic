@@ -20,6 +20,11 @@ using Microsoft.Build.Evaluation;
 using Org.BouncyCastle.Bcpg;
 using static OpenAI.ObjectModels.SharedModels.IOpenAiModels;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Hosting.Server;
+using System;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using static OpenAI.ObjectModels.Models;
 
 namespace aibotPro.Controllers
 {
@@ -31,7 +36,10 @@ namespace aibotPro.Controllers
         private readonly JwtTokenManager _jwtTokenManager;
         private readonly AIBotProContext _context;
         private readonly IFinanceService _financeService;
-        public OpenAPIController(ISystemService systemService, IRedisService redisService, IWorkShop workShop, JwtTokenManager jwtTokenManager, AIBotProContext context, IFinanceService financeService)
+        private readonly IBaiduService _baiduService;
+        private readonly IAiServer _aiServer;
+        private readonly IOpenAPIService _openAPIService;
+        public OpenAPIController(ISystemService systemService, IRedisService redisService, IWorkShop workShop, JwtTokenManager jwtTokenManager, AIBotProContext context, IFinanceService financeService, IBaiduService baiduService, IAiServer aiServer, IOpenAPIService openAPIService)
         {
             _systemService = systemService;
             _redisService = redisService;
@@ -39,6 +47,9 @@ namespace aibotPro.Controllers
             _jwtTokenManager = jwtTokenManager;
             _context = context;
             _financeService = financeService;
+            _baiduService = baiduService;
+            _aiServer = aiServer;
+            _openAPIService = openAPIService;
         }
         [Authorize]
         [HttpPost]
@@ -173,6 +184,7 @@ namespace aibotPro.Controllers
             {
                 return Ok("模型不存在");
             }
+            WorkShopAIModel useModel = aImodels.Where(x => x.ModelName == chatSession.Model).FirstOrDefault();
             OpenAiOptions openAiOptions = new OpenAiOptions();
             openAiOptions.BaseDomain = aImodels.Where(x => x.ModelName == chatSession.Model).FirstOrDefault().BaseUrl;
             openAiOptions.ApiKey = aImodels.Where(x => x.ModelName == chatSession.Model).FirstOrDefault().ApiKey;
@@ -274,11 +286,11 @@ namespace aibotPro.Controllers
             if (mytools.Count > 0)
                 chatCompletionCreate.Tools = mytools;
             chatCompletionCreate.Model = chatSession.Model;
+            string channel = useModel.Channel;
             try
             {
                 if (chatSession.Stream)
                 {
-                    var completionResult = openAiService.ChatCompletion.CreateCompletionAsStream(chatCompletionCreate);
                     chatCompletionCreate.Stream = true;
                     PluginResDto pluginResDto = new PluginResDto();
                     TikToken tikToken = TikToken.GetEncoding("cl100k_base");
@@ -287,176 +299,17 @@ namespace aibotPro.Controllers
                     response.Headers.Add("Content-Type", "text/event-stream;charset=utf-8");
                     response.Headers.Add("Cache-Control", "no-cache");
                     response.Headers.Add("Connection", "keep-alive");
-                    await foreach (var responseContent in completionResult)
+                    if (channel == "ERNIE")
                     {
-                        if (responseContent.Successful)
-                        {
-                            var choice = responseContent.Choices.FirstOrDefault();
-                            if (choice != null)
-                            {
-                                ChatCompletionResponse chatCompletionResponse = new ChatCompletionResponse();
-                                chatCompletionResponse.Id = responseContent.Id;
-                                chatCompletionResponse.Object = responseContent.ObjectTypeName;
-                                chatCompletionResponse.Created = responseContent.CreatedAt;
-                                chatCompletionResponse.Model = responseContent.Model;
-                                chatCompletionResponse.system_fingerprint = responseContent.SystemFingerPrint;
-                                List<Choices> chatChoices = new List<Choices>();
-                                foreach (var item in responseContent.Choices)
-                                {
-                                    Choices chatChoiceResponse = new Choices();
-                                    chatChoiceResponse.index = item.Index.Value;
-                                    DeltaContent delta = new DeltaContent();
-                                    if (item.Delta != null)
-                                    {
-                                        delta.Content = item.Delta.Content;
-                                        chatChoiceResponse.delta = delta;
-                                    }
-                                    chatChoices.Add(chatChoiceResponse);
-                                }
-                                chatCompletionResponse.Choices = chatChoices;
-                                JsonSerializerSettings settings = new JsonSerializerSettings
-                                {
-                                    ContractResolver = new DefaultContractResolver
-                                    {
-                                        NamingStrategy = new CamelCaseNamingStrategy()
-                                    }
-                                };
-                                string jsonContent = JsonConvert.SerializeObject(chatCompletionResponse, settings);
-                                string msg = $"data: {jsonContent}\n\n";
-                                var msgBytes = System.Text.Encoding.UTF8.GetBytes(msg);
-                                await response.Body.WriteAsync(msgBytes,
-                                            0,
-                                            msgBytes.Length);
-                                await response.Body.FlushAsync();// 确保立即发送消息
-                                output += chatCompletionResponse.Choices[0].delta.Content;
-                            }
-                            else
-                            {
-                                return Ok("模型未回复，请重试");
-                            }
-                            var tools = choice.Message.ToolCalls;
-                            if (tools != null)
-                            {
-                                var toolCall = tools[0];
-                                var fn = toolCall.FunctionCall;
-                                if (fn != null)
-                                {
-                                    if (!string.IsNullOrEmpty(fn.Name))
-                                    {
-                                        pluginResDto = await _workShop.RunPlugin(Account, fn);
-                                        if (!pluginResDto.doubletreating)
-                                        {
-                                            string res = string.Empty;
-                                            switch (pluginResDto.doubletype)
-                                            {
-                                                case "dalle3":
-                                                    if (!string.IsNullOrEmpty(pluginResDto.errormsg) || string.IsNullOrEmpty(pluginResDto.result))
-                                                    {
-                                                        return Ok("Draw Fail");
-                                                    }
-                                                    res = $"绘制完成 图片地址：{pluginResDto.result}";
-                                                    break;
-                                                case "html":
-                                                    res = pluginResDto.result;
-                                                    break;
-                                                case "js":
-                                                    res = pluginResDto.result;
-                                                    break;
-                                                default:
-                                                    res = pluginResDto.result;
-                                                    break;
-                                            }
-                                            ChatCompletionResponse chatCompletionResponse = new ChatCompletionResponse();
-                                            chatCompletionResponse.Id = responseContent.Id;
-                                            chatCompletionResponse.Object = responseContent.ObjectTypeName;
-                                            chatCompletionResponse.Created = responseContent.CreatedAt;
-                                            chatCompletionResponse.Model = responseContent.Model;
-                                            chatCompletionResponse.system_fingerprint = responseContent.SystemFingerPrint;
-                                            List<Choices> chatChoices = new List<Choices>();
-                                            Choices chatChoiceResponse = new Choices();
-                                            chatChoiceResponse.index = int.Parse(DateTime.Now.ToString("HHmmssfff"));
-                                            DeltaContent delta = new DeltaContent();
-                                            delta.Content = res;
-                                            chatChoiceResponse.delta = delta;
-                                            chatChoices.Add(chatChoiceResponse);
-                                            chatCompletionResponse.Choices = chatChoices;
-                                            JsonSerializerSettings settings = new JsonSerializerSettings
-                                            {
-                                                ContractResolver = new DefaultContractResolver
-                                                {
-                                                    NamingStrategy = new CamelCaseNamingStrategy()
-                                                }
-                                            };
-                                            string jsonContent = JsonConvert.SerializeObject(chatCompletionResponse, settings);
-                                            string msg = $"data: {jsonContent}\n\n";
-                                            var msgBytes = System.Text.Encoding.UTF8.GetBytes(msg);
-                                            await response.Body.WriteAsync(msgBytes,
-                                                        0,
-                                                        msgBytes.Length);
-                                            await response.Body.FlushAsync();// 确保立即发送消息
-                                        }
-                                        //反馈GPT函数执行结果
-                                        else
-                                        {
-                                            //生成对话参数
-                                            chatMessages.Add(ChatMessage.FromUser(pluginResDto.result));
-                                            input += pluginResDto.result;
-                                            chatCompletionCreate.Messages = chatMessages;
-                                            chatCompletionCreate.Tools = null;
-                                            chatCompletionCreate.Stream = true;
-                                            chatCompletionCreate.Model = chatSession.Model;
-                                            completionResult = openAiService.ChatCompletion.CreateCompletionAsStream(chatCompletionCreate);
-                                            await foreach (var responseContent_sec in completionResult)
-                                            {
-                                                if (responseContent_sec.Successful)
-                                                {
-                                                    var choice_sec = responseContent_sec.Choices.FirstOrDefault();
-                                                    if (choice_sec != null)
-                                                    {
-                                                        ChatCompletionResponse chatCompletionResponse = new ChatCompletionResponse();
-                                                        chatCompletionResponse.Id = responseContent_sec.Id;
-                                                        chatCompletionResponse.Object = responseContent_sec.ObjectTypeName;
-                                                        chatCompletionResponse.Created = responseContent_sec.CreatedAt;
-                                                        chatCompletionResponse.Model = responseContent_sec.Model;
-                                                        chatCompletionResponse.system_fingerprint = responseContent_sec.SystemFingerPrint;
-                                                        List<Choices> chatChoices = new List<Choices>();
-                                                        foreach (var item in responseContent_sec.Choices)
-                                                        {
-                                                            Choices chatChoiceResponse = new Choices();
-                                                            chatChoiceResponse.index = item.Index.Value;
-                                                            DeltaContent delta = new DeltaContent();
-                                                            if (item.Delta != null)
-                                                            {
-                                                                delta.Content = item.Delta.Content;
-                                                                chatChoiceResponse.delta = delta;
-                                                            }
-                                                            chatChoices.Add(chatChoiceResponse);
-                                                            output += item.Delta.Content;
-                                                        }
-                                                        chatCompletionResponse.Choices = chatChoices;
-                                                        JsonSerializerSettings settings = new JsonSerializerSettings
-                                                        {
-                                                            ContractResolver = new DefaultContractResolver
-                                                            {
-                                                                NamingStrategy = new CamelCaseNamingStrategy()
-                                                            }
-                                                        };
-                                                        string jsonContent = JsonConvert.SerializeObject(chatCompletionResponse, settings);
-                                                        string msg = $"data: {jsonContent}\n\n";
-                                                        var msgBytes = System.Text.Encoding.UTF8.GetBytes(msg);
-                                                        await response.Body.WriteAsync(msgBytes,
-                                                                    0,
-                                                                    msgBytes.Length);
-                                                        await response.Body.FlushAsync();// 确保立即发送消息
-                                                    }
-
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        Dictionary<string, string> pairs = await _openAPIService.CallERNIEAsStream(response, chatCompletionCreate, openAiOptions, useModel, Account);
+                        input += string.Join(", ", pairs.Keys);
+                        output += string.Join(", ", pairs.Values);
+                    }
+                    else
+                    {
+                        Dictionary<string, string> pairs = await _openAPIService.CallOpenAIAsStream(response, chatCompletionCreate, openAiService, Account);
+                        input += string.Join(", ", pairs.Keys);
+                        output += string.Join(", ", pairs.Values);
                     }
                     await _financeService.CreateUseLogAndUpadteMoney(Account, chatSession.Model, tikToken.Encode(input).Count, tikToken.Encode(output).Count);
                 }
@@ -465,124 +318,15 @@ namespace aibotPro.Controllers
                     chatCompletionCreate.Stream = false;
                     PluginResDto pluginResDto = new PluginResDto();
                     TikToken tikToken = TikToken.GetEncoding("cl100k_base");
-                    var completionResult = await openAiService.ChatCompletion.CreateCompletion(chatCompletionCreate);
-                    if (completionResult.Successful)
+                    if (channel == "ERNIE")
                     {
-                        var choice = completionResult.Choices.First();
-                        if (choice == null || choice.Message == null)
-                            return Ok("模型未回复，请重试");
-                        if (choice.Message.ToolCalls != null && choice.Message.ToolCalls[0].FunctionCall != null)
-                        {
-                            var fn = choice.Message.ToolCalls[0].FunctionCall;
-                            if (!string.IsNullOrEmpty(fn.Name))
-                            {
-                                pluginResDto = await _workShop.RunPlugin(Account, fn);
-                                if (!pluginResDto.doubletreating)
-                                {
-                                    string res = string.Empty;
-                                    switch (pluginResDto.doubletype)
-                                    {
-                                        case "dalle3":
-                                            if (!string.IsNullOrEmpty(pluginResDto.errormsg) || string.IsNullOrEmpty(pluginResDto.result))
-                                            {
-                                                return Ok("Draw Fail");
-                                            }
-                                            res = $"绘制完成 图片地址：{pluginResDto.result}";
-                                            break;
-                                        case "html":
-                                            res = pluginResDto.result;
-                                            break;
-                                        case "js":
-                                            res = pluginResDto.result;
-                                            break;
-                                        default:
-                                            res = pluginResDto.result;
-                                            break;
-                                    }
-                                    ChatCompletionResponse chatCompletionResponse = new ChatCompletionResponse();
-                                    chatCompletionResponse.Id = completionResult.Id;
-                                    chatCompletionResponse.Object = completionResult.ObjectTypeName;
-                                    chatCompletionResponse.Model = completionResult.Model;
-                                    chatCompletionResponse.system_fingerprint = completionResult.SystemFingerPrint;
-                                    List<Choices> chatChoices = new List<Choices>();
-                                    Choices chatChoiceResponse = new Choices();
-                                    chatChoiceResponse.index = int.Parse(DateTime.Now.ToString("yyyyHHmmss"));
-                                    DeltaContent delta = new DeltaContent();
-                                    delta.Content = res;
-                                    chatChoiceResponse.delta = delta;
-                                    chatChoices.Add(chatChoiceResponse);
-                                    chatCompletionResponse.Choices = chatChoices;
-                                    await _financeService.CreateUseLogAndUpadteMoney(Account, chatSession.Model, tikToken.Encode(input).Count, tikToken.Encode(output).Count);
-                                    return Ok(chatCompletionResponse);
-                                }
-                                //反馈GPT函数执行结果
-                                else
-                                {
-                                    //生成对话参数
-                                    chatMessages.Add(ChatMessage.FromUser(pluginResDto.result));
-                                    input += pluginResDto.result;
-                                    chatCompletionCreate.Messages = chatMessages;
-                                    chatCompletionCreate.Tools = null;
-                                    chatCompletionCreate.Stream = false;
-                                    chatCompletionCreate.Model = chatSession.Model;
-                                    completionResult = await openAiService.ChatCompletion.CreateCompletion(chatCompletionCreate);
-                                    if (completionResult.Successful)
-                                    {
-                                        var choice_sec = completionResult.Choices.FirstOrDefault();
-                                        if (choice_sec != null)
-                                        {
-                                            ChatCompletionResponse chatCompletionResponse = new ChatCompletionResponse();
-                                            chatCompletionResponse.Id = completionResult.Id;
-                                            chatCompletionResponse.Object = completionResult.ObjectTypeName;
-                                            chatCompletionResponse.Model = completionResult.Model;
-                                            chatCompletionResponse.system_fingerprint = completionResult.SystemFingerPrint;
-                                            List<Choices> chatChoices = new List<Choices>();
-                                            foreach (var item in completionResult.Choices)
-                                            {
-                                                Choices chatChoiceResponse = new Choices();
-                                                chatChoiceResponse.index = item.Index.Value;
-                                                DeltaContent delta = new DeltaContent();
-                                                if (item.Delta != null)
-                                                {
-                                                    delta.Content = item.Delta.Content;
-                                                    chatChoiceResponse.delta = delta;
-                                                    output += item.Delta.Content;
-                                                }
-                                                chatChoices.Add(chatChoiceResponse);
-                                            }
-                                            chatCompletionResponse.Choices = chatChoices;
-                                            await _financeService.CreateUseLogAndUpadteMoney(Account, chatSession.Model, tikToken.Encode(input).Count, tikToken.Encode(output).Count);
-                                            return Ok(chatCompletionResponse);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            ChatCompletionResponse chatCompletionResponse = new ChatCompletionResponse();
-                            chatCompletionResponse.Id = completionResult.Id;
-                            chatCompletionResponse.Object = completionResult.ObjectTypeName;
-                            chatCompletionResponse.Model = completionResult.Model;
-                            chatCompletionResponse.system_fingerprint = completionResult.SystemFingerPrint;
-                            List<Choices> chatChoices = new List<Choices>();
-                            foreach (var item in completionResult.Choices)
-                            {
-                                Choices chatChoiceResponse = new Choices();
-                                chatChoiceResponse.index = item.Index.Value;
-                                DeltaContent delta = new DeltaContent();
-                                if (item.Delta != null)
-                                {
-                                    delta.Content = item.Delta.Content;
-                                    chatChoiceResponse.delta = delta;
-                                    output += item.Delta.Content;
-                                }
-                                chatChoices.Add(chatChoiceResponse);
-                            }
-                            chatCompletionResponse.Choices = chatChoices;
-                            await _financeService.CreateUseLogAndUpadteMoney(Account, chatSession.Model, tikToken.Encode(input).Count, tikToken.Encode(output).Count);
-                            return Ok(chatCompletionResponse);
-                        }
+                        var completionResult = await _openAPIService.CallERNIE(chatCompletionCreate, openAiOptions, useModel, Account);
+                        return Ok(completionResult);
+                    }
+                    else
+                    {
+                        var completionResult = await _openAPIService.CallOpenAI(chatCompletionCreate, openAiService, Account);
+                        return Ok(completionResult);
                     }
                 }
                 return Ok("error");

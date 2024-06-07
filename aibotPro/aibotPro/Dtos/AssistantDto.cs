@@ -101,7 +101,7 @@ namespace aibotPro.Dtos
         public Usage usage { get; set; }
     }
 
-    class Usage
+    public class Usage
     {
         public int prompt_tokens { get; set; }
         public int completion_tokens { get; set; }

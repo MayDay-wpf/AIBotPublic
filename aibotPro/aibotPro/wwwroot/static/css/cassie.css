@@ -82,6 +82,25 @@ body {
     background-size: cover; /* 背景图片铺满整个容器，不变形 */
 }
 
+@keyframes slide-in {
+    0% {
+        transform: translateY(-150%);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
+
+.slide-in {
+    animation: slide-in 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+.bounce {
+    animation: bounce 2s;
+}
+
 [tabindex="-1"]:focus {
     outline: 0 !important
 }
@@ -2513,7 +2532,7 @@ textarea.form-control.is-invalid {
     padding: .437rem 1rem;
     font-size: .875rem;
     line-height: 1.5;
-    border-radius: 0;
+    border-radius: 5px;
     transition: color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out
 }
 
@@ -4912,7 +4931,7 @@ input[type="button"].btn-block {
     background-color: #fff;
     background-clip: border-box;
     border: 1px solid rgba(230, 231, 239, 0.85);
-    border-radius: 0
+    border-radius: 10px
 }
 
     .card > hr {
@@ -6170,7 +6189,7 @@ a.close.disabled {
     background-color: #fff;
     background-clip: padding-box;
     border: 1px solid rgba(0, 0, 0, 0.2);
-    border-radius: 0;
+    border-radius: 10px;
     outline: 0
 }
 
@@ -11129,7 +11148,8 @@ a.badge-danger-light {
 .sp-container .btn-group-sm > button,
 .ui-datepicker-buttonpane button {
     font-size: .8125rem;
-    padding: 6px 15px
+    padding: 6px 15px;
+    border-radius: 5px;
 }
 
 .btn-xs {
@@ -11392,7 +11412,7 @@ a.badge-danger-light {
     }
 
 .card {
-    border-radius: 0;
+    border-radius: 10px;
     border-color: rgba(230, 231, 239, 0.85);
     box-shadow: 2px 2px 5px 0 rgba(60, 70, 83, 0.04);
     transition: all .25s
@@ -11422,7 +11442,8 @@ a.badge-danger-light {
         }
 
 .card-header {
-    padding: 12px 15px
+    padding: 12px 15px;
+    border-radius: 10px 10px 0 0;
 }
 
 @media(min-width:576px) {
@@ -11554,7 +11575,8 @@ a.badge-danger-light {
 .dropdown-menu {
     border-color: rgba(131, 146, 165, 0.27);
     box-shadow: 0 0 8px 2px rgba(33, 43, 53, 0.04);
-    padding: 5px
+    padding: 5px;
+    border-radius: 10px;
 }
 
 .dropdown-item {
@@ -17096,6 +17118,7 @@ body {
 .sidebar-body .nav-sidebar:last-of-type {
     margin-bottom: 25px
 }
+
 .sidebar-body::-webkit-scrollbar {
     width: 3px;
     height: 10px;
@@ -17172,7 +17195,8 @@ body {
         display: flex;
         align-items: center;
         font-size: .875rem;
-        transition: all .25s
+        transition: all .25s;
+        border-radius: 10px;
     }
 
 @media(prefers-reduced-motion:reduce) {
@@ -17203,17 +17227,23 @@ body {
     border-right: 1px solid rgba(55, 56, 87, 0.6);
     width: 6px;
     height: 6px;
-    transform: rotate(45deg)
+    transform: rotate(45deg);
+    transition: transform 0.1s;
+}
+
+.nav-sidebar .nav-item.show .nav-link.with-sub::after {
+    transform: rotate(135deg); /* 展开时箭头向下 */
 }
 
 .nav-sidebar .nav-link.active {
     background-color: #5556fd;
-    color: rgba(255, 255, 255, 0.9)
+    color: rgba(255, 255, 255, 0.9);
 }
 
     .nav-sidebar .nav-link.active.with-sub::after {
-        border-color: rgba(255, 255, 255, 0.7)
+        border-color: rgba(255, 255, 255, 0.7);
     }
+
 
 .nav-sidebar .nav-sub {
     flex-direction: column;
@@ -17281,7 +17311,7 @@ body {
 .content.content-page .content-header .sp-container button,
 .sp-container .content.content-page .content-header button {
     padding-left: 12px;
-    padding-right: 12px
+    padding-right: 12px;
 }
 
 .content.content-page .content-header svg {
@@ -18914,6 +18944,7 @@ body {
     height: calc(100% - 100px);
     overflow-y: scroll;
 }
+
     .chat-sidebar-body::-webkit-scrollbar {
         width: 3px;
         height: 10px;

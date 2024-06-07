@@ -148,6 +148,62 @@ namespace aibotPro.Service
             }
         }
 
+        public async Task<List<MilvusDataDto>> QueryData(string account, List<string> typeCode, int limit, string filter)
+        {
+            QueryResultByMilvus milvusDataDtos = new QueryResultByMilvus();
+            try
+            {
+                string typeCodeStr = string.Join(",", typeCode.Select(code => $"'{code}'"));
+
+                if (!string.IsNullOrEmpty(filter))
+                {
+                    filter = @$"account=='{account}' and type in [{typeCodeStr}] and {filter}";
+                }
+                else
+                {
+                    filter = @$"account=='{account}' and type in [{typeCodeStr}]";
+                }
+                var body = new
+                {
+                    dbName = _options.Database,
+                    collectionName = _options.Collection,
+                    filter = filter,
+                    limit = limit,
+                    outputFields = new List<string>() { "id", "vectorcontent" }
+                };
+
+                var json = JsonConvert.SerializeObject(body);
+                var uri = $"http://{_options.Host}:{_options.Port}/v2/vectordb/entities/query";
+                string res = await PostAsync(json, uri, $"{_options.UserName}:{_options.Password}");
+                if (!string.IsNullOrEmpty(res))
+                {
+                    milvusDataDtos = JsonConvert.DeserializeObject<QueryResultByMilvus>(res);
+                }
+                return milvusDataDtos.Data;
+
+            }
+            catch (Exception e)
+            {
+                await _systemService.WriteLog($"Error while query vector: {e.Message}", Dtos.LogLevel.Error, "system");
+                return milvusDataDtos.Data;
+            }
+        }
+        public async Task<bool> DeleteMemory(string username, string id)
+        {
+            List<string> ids = new List<string> { id };
+            bool res = await DeleteVector(ids);
+            //删除KnowledgeList
+            if (res)
+            {
+                var knowledgeList = _context.KnowledgeLists.Where(k => k.Account == username && k.VectorId == id).FirstOrDefault();
+                if (knowledgeList != null)
+                {
+                    _context.KnowledgeLists.Remove(knowledgeList);
+                    await _context.SaveChangesAsync();
+                }
+            }
+            return res;
+        }
         private async Task<bool> InsertMilvus(string body, string uri, string authorization)
         {
             string result = await PostAsync(body, uri, authorization);

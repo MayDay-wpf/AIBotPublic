@@ -23,7 +23,8 @@ using SixLabors.ImageSharp.PixelFormats;
 using OpenAI;
 using OpenAI.ObjectModels.RequestModels;
 using OpenAI.Managers;
-using System.Runtime.CompilerServices; // 像素格式
+using System.Runtime.CompilerServices;
+using Microsoft.AspNetCore.SignalR; // 像素格式
 
 namespace aibotPro.Service
 {
@@ -32,67 +33,68 @@ namespace aibotPro.Service
         private readonly ISystemService _systemService;
         private readonly AIBotProContext _context;
         private readonly IRedisService _redis;
-        public AiServer(ISystemService systemService, AIBotProContext context, IRedisService redis)
+        private readonly IHubContext<ChatHub> _hubContext;
+        private readonly IMilvusService _milvusService;
+        private readonly ChatCancellationManager _chatCancellationManager;
+
+        public AiServer(ISystemService systemService, AIBotProContext context, IRedisService redis, IHubContext<ChatHub> hubContext, IMilvusService milvusService, ChatCancellationManager chatCancellationManager)
         {
             _systemService = systemService;
             _context = context;
             _redis = redis;
+            _hubContext = hubContext;
+            _milvusService = milvusService;
+            _chatCancellationManager = chatCancellationManager;
         }
         //实现接口
-        public async IAsyncEnumerable<AiRes> CallingAI(AiChat aiChat, APISetting apiSetting, string chatId, VisionBody visionBody = null)
+        public async IAsyncEnumerable<AiRes> CallingAI(
+            AiChat aiChat,
+            APISetting apiSetting,
+            string chatId,
+             VisionBody visionBody = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            //标准化baseurl
             string baseUrl = apiSetting.BaseUrl;
-            try
+            if (baseUrl.EndsWith("/"))
             {
-                if (baseUrl.EndsWith("/"))
-                {
-                    baseUrl = baseUrl.TrimEnd('/');
-                }
-            }
-            catch (Exception e)
-            {
-                throw e;
+                baseUrl = baseUrl.TrimEnd('/');
             }
 
             var url = baseUrl + "/v1/chat/completions";
-            // 创建HTTP客户端
             using (var httpClient = new HttpClient())
             {
-                // 创建请求内容
                 var requestBody = visionBody == null ? JsonConvert.SerializeObject(aiChat) : JsonConvert.SerializeObject(visionBody);
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
                 request.Headers.Add("Authorization", $"Bearer {apiSetting.ApiKey}");
                 var requestContent = new StringContent(requestBody, Encoding.UTF8, "application/json");
                 request.Content = requestContent;
-                using (var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead))
+
+                // 发送请求时，也传递取消令牌以便在请求级别处理取消
+                using (var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
                 {
-                    using (var responseStream = await response.Content.ReadAsStreamAsync())
+                    cancellationToken.ThrowIfCancellationRequested(); // 测试取消令牌，早期中断
+
+                    using (var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken))
                     {
+                        cancellationToken.ThrowIfCancellationRequested(); // 测试取消令牌，中断读取响应流
+
                         using (var reader = new StreamReader(responseStream, Encoding.UTF8))
                         {
-                            string line;
                             while (!reader.EndOfStream)
                             {
-                                string thisTask = await _redis.GetAsync($"{chatId}_process");
-                                if (string.IsNullOrEmpty(thisTask) || !bool.Parse(thisTask))
-                                {
-                                    yield break;
-                                }
-                                line = await reader.ReadLineAsync();
+                                cancellationToken.ThrowIfCancellationRequested(); // 检查取消令牌，中断读取
+
+                                var line = await reader.ReadLineAsync();
                                 if (line.StartsWith("data:"))
                                 {
                                     var jsonDataStartIndex = line.IndexOf("data:") + "data:".Length;
                                     var jsonData = line.Substring(jsonDataStartIndex).Trim();
-
-                                    // 检查是否有 "content":
                                     var resultIndex = jsonData.IndexOf("\"content\":");
                                     if (resultIndex >= 0)
                                     {
                                         AiRes res = new AiRes();
                                         try
                                         {
-                                            // 直接使用 jsonData，它是 "data:" 之后的字符串
                                             res = JsonConvert.DeserializeObject<AiRes>(jsonData);
                                         }
                                         catch (Exception e)
@@ -116,6 +118,8 @@ namespace aibotPro.Service
                 }
             }
         }
+
+
 
         public async Task<string> CallingAINotStream(string prompt, string model, bool jsonModel = false)
         {
@@ -224,7 +228,7 @@ namespace aibotPro.Service
             }
             chatHistories = chatHistories.OrderBy(x => x.CreateTime).ToList();
             //使用historyCount截取chatHistories,因为chatHistories是双行的所以要乘以2
-            if (chatHistories.Count > historyCount * 2)
+            if (historyCount >= 0 && chatHistories.Count > historyCount * 2)
                 chatHistories = chatHistories.Skip(chatHistories.Count - historyCount * 2).Take(historyCount * 2).ToList();
             chatHistories.ForEach(x =>
             {
@@ -847,6 +851,189 @@ namespace aibotPro.Service
             }
         }
 
+        public async Task ExecuteFunctionWithLoadingIndicators(string fnName, string chatId, string senMethod, CancellationToken cancellationToken)
+        {
+            var chatRes = new ChatRes();
+
+            async Task StartLoadingIndicator(List<string> emojiList)
+            {
+                var random = new Random();
+                try
+                {
+                    while (!cancellationToken.IsCancellationRequested)
+                    {
+                        var randomEmoji = emojiList[random.Next(emojiList.Count)];
+                        chatRes.message = $"{randomEmoji}";
+                        await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                        await Task.Delay(1000, cancellationToken);
+                    }
+                }
+                catch (TaskCanceledException)
+                {
+                    // Handle the task cancellation if needed
+                }
+            }
+
+            if (fnName == "use_dalle3_withpr")
+            {
+                chatRes.message = "使用【DALL·E3】组件执行绘制,这需要大约1-2分钟";
+                await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                var emojiList = new List<string> { "🖌", "🎨", "🔧", "🖊", "🖍", "🖼", "🤯" };
+                await StartLoadingIndicator(emojiList);
+            }
+            else if (fnName == "search_google_when_gpt_cannot_answer")
+            {
+                chatRes.message = "请稍候，让我Google一下";
+                await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                var emojiList = new List<string> { "🌐" };
+                await StartLoadingIndicator(emojiList);
+            }
+            else if (fnName == "search_knowledge_base")
+            {
+                chatRes.message = "请稍候，让我尝试检索知识库";
+                await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                var emojiList = new List<string> { "🔎📄" };
+                await StartLoadingIndicator(emojiList);
+            }
+        }
+        public async Task<string> UnDoubletreating(PluginResDto pluginResDto, string chatId, string senMethod)
+        {
+            ChatRes chatRes = new ChatRes();
+            string res = string.Empty;
+            switch (pluginResDto.doubletype)
+            {
+                case "dalle3":
+                    if (!string.IsNullOrEmpty(pluginResDto.errormsg) || string.IsNullOrEmpty(pluginResDto.result))
+                    {
+                        chatRes.message = $"绘制失败，请重试！({pluginResDto.errormsg})";
+                        await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                        break;
+                    }
+                    string res1 = "<p>已为您绘制完成</p>";
+                    chatRes.message = res1;
+                    await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                    Thread.Sleep(200);
+                    string res2 = "<p>绘制结果如下,请您查阅：</p><br />";
+                    chatRes.message = res2;
+                    await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                    Thread.Sleep(200);
+                    string res3 = $"<img src='{pluginResDto.result}' style='width:300px;'/>";
+                    chatRes.message = res3;
+                    await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                    Thread.Sleep(200);
+                    string res4 = @$"<br>提示词：<b>{pluginResDto.dallprompt}</b>";
+                    chatRes.message = res4;
+                    await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                    Thread.Sleep(200);
+                    string res5 = @$"<br><b>如有需要，您可以前往【个人中心】->【图库】下载此图片，或者</b><a href=""{pluginResDto.result}"" target=""_blank"">【点击这里下载此图片】</a>";
+                    chatRes.message = res5;
+                    await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                    res = res1 + res2 + res3 + res4 + res5;
+                    break;
+                case "html":
+                    res = pluginResDto.result;
+                    chatRes.message = res;
+                    await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                    break;
+                case "js":
+                    chatRes.message = "";
+                    chatRes.jscode = pluginResDto.result;
+                    await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                    chatRes.jscode = "";
+                    break;
+                default:
+                    res = pluginResDto.result;
+                    chatRes.message = res;
+                    await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                    break;
+            }
+            return res;
+        }
+        public async Task<bool> SaveMemory(string aimodel, string account, string chatgroupId, string chatId)
+        {
+            bool result = false;
+            //获取历史记录
+            var chatList = GetChatHistories(account, chatId, -1).Where(c => c.ChatGroupId == chatgroupId).ToList();
+            string memoryStr = string.Empty;
+            foreach (var item in chatList)
+            {
+                if (item.Role == "user")
+                    memoryStr += $"【提问：{item.Chat}】";
+                else
+                    memoryStr += $"【回答：{item.Chat}】";
+            }
+            memoryStr = memoryStr.Replace("\r", "").Replace("\n", "");
+            if (!string.IsNullOrEmpty(memoryStr))
+            {
+                List<SystemCfg> systemCfgs = _systemService.GetSystemCfgs();
+                var embeddingsUrl = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsUrl")?.CfgValue;
+                var embeddingsApiKey = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsApiKey")?.CfgValue;
+                //文本转向量
+                var client = new RestClient(embeddingsUrl);
+                var request = CreateRequest(aimodel, memoryStr, embeddingsApiKey);
+                var response = await client.ExecuteAsync(request);
+                List<float> vector = new List<float>();
+                if (response.IsSuccessful)
+                {
+                    EmbeddingApiResponseByMilvus embeddingApiResponseByMilvus = JsonConvert.DeserializeObject<EmbeddingApiResponseByMilvus>(response.Content);
+                    if (embeddingApiResponseByMilvus != null && embeddingApiResponseByMilvus.Data != null && embeddingApiResponseByMilvus.Data.Count > 0)
+                    {
+                        vector = embeddingApiResponseByMilvus.Data[0].Embedding;
+                    }
+                    List<MilvusDataDto> milvusDataDtos = new List<MilvusDataDto> {
+                       new MilvusDataDto
+                       {
+                           Id=Guid.NewGuid().ToString("N"),
+                           Account=account,
+                           Vector=vector,
+                           VectorContent=memoryStr,
+                           Type=$"{account}_memory"
+                       }
+                    };
+                    result = await _milvusService.InsertVector(milvusDataDtos, $"{account}_memory", account);
+                }
+            }
+            return result;
+        }
+
+        public async Task<Dtos.SearchVectorResultByMilvus> GetMemory(string aimodel, string account, string prompt)
+        {
+            Dtos.SearchVectorResultByMilvus searchVectorResultByMilvus = new SearchVectorResultByMilvus();
+            List<SystemCfg> systemCfgs = _systemService.GetSystemCfgs();
+            var embeddingsUrl = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsUrl")?.CfgValue;
+            var embeddingsApiKey = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsApiKey")?.CfgValue;
+            //文本转向量
+            var client = new RestClient(embeddingsUrl);
+            var request = CreateRequest(aimodel, prompt, embeddingsApiKey);
+            var response = await client.ExecuteAsync(request);
+            List<float> vector = new List<float>();
+            if (response.IsSuccessful)
+            {
+                EmbeddingApiResponseByMilvus embeddingApiResponseByMilvus = JsonConvert.DeserializeObject<EmbeddingApiResponseByMilvus>(response.Content);
+                if (embeddingApiResponseByMilvus != null && embeddingApiResponseByMilvus.Data != null && embeddingApiResponseByMilvus.Data.Count > 0)
+                {
+                    vector = embeddingApiResponseByMilvus.Data[0].Embedding;
+                }
+                List<string> typeCodes = new List<string>() { $"{account}_memory" };
+                searchVectorResultByMilvus = await _milvusService.SearchVector(vector, account, typeCodes, 5);
+            }
+            return searchVectorResultByMilvus;
+        }
+        public RestRequest CreateRequest(string model, string input, string embeddingsapikey)
+        {
+            var request = new RestRequest("", Method.Post);
+            request.AddHeader("Authorization", $"Bearer {embeddingsapikey}");
+            request.AddHeader("Content-Type", "application/json");
+            request.AddHeader("Accept", "*/*");
+            EmbeddingsBody embeddingsBody = new EmbeddingsBody
+            {
+                Model = model,
+                Input = input
+            };
+            var body = JsonConvert.SerializeObject(embeddingsBody);
+            request.AddParameter("application/json", body, ParameterType.RequestBody);
+            return request;
+        }
         private async Task<bool> CreateUseLogAndUpadteMoney(string account, string modelName, int inputCount, int outputCount, bool isdraw = false)
         {
             var user = _context.Users.Where(x => x.Account == account).FirstOrDefault();

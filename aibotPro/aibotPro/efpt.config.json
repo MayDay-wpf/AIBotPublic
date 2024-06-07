@@ -2,7 +2,6 @@
    "CodeGenerationMode": 2,
    "ContextClassName": "AIBotProContext",
    "ContextNamespace": null,
-   "DefaultDacpacSchema": null,
    "FilterSchemas": false,
    "IncludeConnectionString": true,
    "ModelNamespace": null,
@@ -204,8 +203,9 @@
          "ObjectType": 3
       }
    ],
-   "UiHint": "win-l2mf25l7av2.AIBotPro.dbo",
+   "UiHint": null,
    "UncountableWords": null,
+   "UseAsyncStoredProcedureCalls": true,
    "UseBoolPropertiesWithoutDefaultSql": false,
    "UseDatabaseNames": true,
    "UseDateOnlyTimeOnly": false,

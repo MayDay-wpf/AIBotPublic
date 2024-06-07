@@ -201,3 +201,7 @@ function saveOpenAPISetting() {
         });
     }
 }
+function openapisettinginfo() {
+    var content = `由于AIBot的模型名称加入了特殊后缀，在一些无法自定义模型名的客户端将无法使用，自定义模型名允许您将自定义的模型名映射到Aibot模型名，增加使用灵活性`;
+    showConfirmationModal("自定义模型名说明", content);
+}

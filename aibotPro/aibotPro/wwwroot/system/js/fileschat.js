@@ -8,32 +8,7 @@
     getAIModelList();
     getHistoryList(pageIndex, pageSize, true, true, "");
     $('[data-toggle="tooltip"]').tooltip();
-    $("#slidertemperature").val("0.5");
-    $("#slidertopp").val("1");
-    $("#sliderpresence").val("1");
-    $("#sliderfrequency").val("1");
 })
-var slidertemperature = document.getElementById("slidertemperature");
-slidertemperature.oninput = function () {
-    $(".temperature").html(this.value);
-}
-
-var slidertopp = document.getElementById("slidertopp");
-slidertopp.oninput = function () {
-    $(".top_p").html(this.value);
-}
-
-var sliderpresence = document.getElementById("sliderpresence");
-sliderpresence.oninput = function () {
-    $(".presence_penalty").html(this.value);
-}
-
-var sliderfrequency = document.getElementById("sliderfrequency");
-sliderfrequency.oninput = function () {
-    $(".frequency_penalty").html(this.value);
-}
-
-var languageSelect = $("#languageSelect").val();
 var max_textarea = false;
 var textarea = document.getElementById("Q");
 var $Q = $("#Q");
@@ -367,10 +342,6 @@ function sendMsg() {
     var msgid_u = generateGUID();
     var msgid_g = generateGUID();
     assistansBoxId = msgid_g;
-    var temperature = $("#slidertemperature").val();
-    var topp = $("#slidertopp").val();
-    var presence = $("#sliderpresence").val();
-    var frequency = $("#sliderfrequency").val();
     var data = {
         "msg": msg,
         "chatid": chatid,
@@ -380,11 +351,7 @@ function sendMsg() {
         "chatgroupid": chatgroupid,
         "ip": IP,
         "image_path": image_path,
-        "file_list": [],
-        "temperature": parseFloat(temperature),
-        "top_p": parseFloat(topp),
-        "presence_penalty": parseFloat(presence),
-        "frequency_penalty": parseFloat(frequency)
+        "file_list": []
     };
     // 遍历 onfilearr 数组，在每次迭代中将文件名添加到 file_list
     if (onfilearr.length > 0) {
@@ -718,6 +685,7 @@ function newChat() {
     }
     mobileChat(true);
     chatid = "";
+    chatgroupid = "";
     chatBody.html("");
     $(".chat-item").css("border", "none");
     $(".chat-item").css("background-color", "white");

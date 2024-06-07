@@ -64,31 +64,8 @@ $(function () {
     getAIModelList();
     getHistoryList(pageIndex, pageSize, true, true, "");
     $('[data-toggle="tooltip"]').tooltip();
-    $("#slidertemperature").val("0.5");
-    $("#slidertopp").val("1");
-    $("#sliderpresence").val("1");
-    $("#sliderfrequency").val("1");
     getFreePlan();
 })
-var slidertemperature = document.getElementById("slidertemperature");
-slidertemperature.oninput = function () {
-    $(".temperature").html(this.value);
-}
-
-var slidertopp = document.getElementById("slidertopp");
-slidertopp.oninput = function () {
-    $(".top_p").html(this.value);
-}
-
-var sliderpresence = document.getElementById("sliderpresence");
-sliderpresence.oninput = function () {
-    $(".presence_penalty").html(this.value);
-}
-
-var sliderfrequency = document.getElementById("sliderfrequency");
-sliderfrequency.oninput = function () {
-    $(".frequency_penalty").html(this.value);
-}
 //监听键盘事件
 $(document).keypress(function (e) {
     if ($("#Q").is(":focus")) {
@@ -380,11 +357,7 @@ function sendMsg() {
         "msgid_g": msgid_g,
         "chatgroupid": chatgroupid,
         "ip": IP,
-        "image_path": image_path,
-        "temperature": parseFloat(temperature),
-        "top_p": parseFloat(topp),
-        "presence_penalty": parseFloat(presence),
-        "frequency_penalty": parseFloat(frequency)
+        "image_path": image_path
     };
     max_textarea = true;
     max_textarea_Q();
@@ -712,6 +685,7 @@ function newChat() {
     }
     mobileChat(true);
     chatid = "";
+    chatgroupid = "";
     chatBody.html("");
     $(".chat-item").css("border", "none");
     $(".chat-item").css("background-color", "white");

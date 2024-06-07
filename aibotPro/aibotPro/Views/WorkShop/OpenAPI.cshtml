@@ -81,6 +81,10 @@
         <div class="card-header">
             <h5>
                 自定义模型名
+                <a style="cursor:pointer;color:rgb(68,69,253)" class="header-help-link" onclick="openapisettinginfo()">
+                    <i data-feather="help-circle">
+                    </i>
+                </a>
             </h5>
             <button type="button" class="btn btn-primary save" onclick="saveOpenAPISetting()">
                 <i data-feather="save"></i>保存定义
@@ -137,4 +141,4 @@ curl --location --request POST 'https://aibotpro.cn/v1/chat/completions' \
         </div>
     </div>
 </div>
-<script src="~/system/js/openapi.js"></script>
+<script src="~/system/js/openapi.js?v1"></script>

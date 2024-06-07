@@ -24,5 +24,7 @@ namespace aibotPro.Models
         public bool? VisionModel { get; set; }
         public int? Seq { get; set; }
         public int? Delay { get; set; }
+        [StringLength(50)]
+        public string Channel { get; set; }
     }
 }

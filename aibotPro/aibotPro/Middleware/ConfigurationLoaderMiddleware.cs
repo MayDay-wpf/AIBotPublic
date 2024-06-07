@@ -14,7 +14,8 @@ public class ConfigurationLoaderMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly IMemoryCache _cache;
-    public bool IsInitialized { get; private set; } = false;
+    private static bool IsInitialized = false;
+    private static readonly object InitLock = new object();
     public ConfigurationLoaderMiddleware(RequestDelegate next, IMemoryCache cache)
     {
         _next = next;
@@ -56,13 +57,6 @@ public class ConfigurationLoaderMiddleware
                 iPLocation = ipSearch.GetIPLocation("127.0.0.1");
             context.Items["IP"] = iPLocation.ip;
             context.Items["IPAddress"] = (iPLocation.country + iPLocation.area).Replace("CZ88.NET", "");
-            var ipinfo = scopedContext.IPlooks.Where(x => x.IPv4 == ip.ToString() && (x.LookTime == null || x.LookTime.Value.Date == DateTime.Now.Date)).FirstOrDefault();
-            if (ipinfo == null)
-            {
-                //SaveIP
-                await scopedContext.AddAsync(new IPlook() { IPv4 = ip.ToString(), Address = (iPLocation.country + iPLocation.area).Replace("CZ88.NET", ""), LookTime = DateTime.Now });
-                await scopedContext.SaveChangesAsync();
-            }
         }
 
         // 调用管道中的下一个中间件

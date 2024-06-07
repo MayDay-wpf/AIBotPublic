@@ -537,29 +537,16 @@ function isAdmin() {
                 var $subMenu = $parentLi.find('.nav-sub');
                 var wasVisible = $subMenu.is(':visible');
 
-                // 首先折叠所有其他已经展开的兄弟子菜单
-                //$parentLi.siblings('.show').removeClass('show').children('.nav-sub').slideUp(300, function () {
-                //    if (psSidebarBody && typeof psSidebarBody.update === 'function') {
-                //        psSidebarBody.update();
-                //    }
-                //});
-
                 // 处理当前点击的子菜单
                 if (!wasVisible) {
                     // 如果子菜单之前不可见（收起状态），则把它展开
-                    $subMenu.slideDown(300, function () {
+                    $subMenu.stop(true, true).slideDown(300, function () {
                         $parentLi.addClass('show');
-                        //if (psSidebarBody && typeof psSidebarBody.update === 'function') {
-                        //    psSidebarBody.update();
-                        //}
                     });
                 } else {
                     // 如果子菜单之前可见（展开状态），则把它收起
-                    $subMenu.slideUp(300, function () {
+                    $subMenu.stop(true, true).slideUp(300, function () {
                         $parentLi.removeClass('show');
-                        //if (psSidebarBody && typeof psSidebarBody.update === 'function') {
-                        //    psSidebarBody.update();
-                        //}
                     });
                 }
             });
