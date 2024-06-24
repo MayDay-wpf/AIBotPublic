@@ -3,6 +3,7 @@ var referenceImgPath = '';
 var showlog = false;
 var intervalId;
 let thisAiModel = 'gpt-3.5-turbo-0125';
+let drawmodel = 'fast';
 $(function () {
     $('.nav-sub-link').removeClass('active');
     $('#dpSidebarBody .nav-link').removeClass('active');
@@ -16,6 +17,8 @@ $(function () {
     $("#log").val('');
     $('#p1').css('width', '0%').attr('aria-valuenow', 0).text('0%');
     $('#p2').css('width', '0%').attr('aria-valuenow', 0).text('0%');
+    hasMJtask();
+    $('#fast').prop('checked', true);
 })
 $(document).ready(function () {
     // 更新字符计数的函数
@@ -48,7 +51,7 @@ $(document).ready(function () {
 
         // 根据 Tab 的文本来设置 botType 的值
         if (tabText === 'Mid-Journey') {
-            botType = 'MID_JOURNEY';
+            botType = 'Midjourney';
             //获取提示词
             var prompt = $('#inputText').val().trim();
             //查询关键字 niji 是否存在
@@ -58,7 +61,7 @@ $(document).ready(function () {
                 $('#inputText').val(prompt).trigger('input');
             }
         } else if (tabText === 'Niji-Journey') {
-            botType = 'MID_JOURNEY';
+            botType = 'Midjourney';
             //获取提示词
             var prompt = $('#inputText').val().trim();
             //查询关键字 niji 是否存在
@@ -87,12 +90,14 @@ $(document).ready(function () {
         var prompt = $('#inputText').val().trim();
         if (prompt != "") {
             //禁用按钮
-            $("#createTaskBtn").prop('disabled', true).addClass('btn-secondary').removeClass('btn-success');
+            loadingBtn('.createTask');
+            //$("#createTaskBtn").prop('disabled', true).addClass('btn-secondary').removeClass('btn-success');
             //创建任务
             var formData = new FormData();
             formData.append('prompt', prompt);
             formData.append('botType', botType);
             formData.append('referenceImgPath', referenceImgPath);
+            formData.append('drawmodel', drawmodel);
             $.ajax({
                 type: "Post",
                 url: "/AIdraw/CreateMJTask",
@@ -102,6 +107,8 @@ $(document).ready(function () {
                 success: function (res) {
                     if (res.success) {
                         balert('任务创建成功,详情请查看日志', 'success', false, 2000, "center");
+                        $('.cancelTask').show();
+                        $('html, body').animate({ scrollTop: $('.content-body').height() }, 1000);
                         writeDrawLog('信息：任务创建成功，TaskId：' + res.taskId + '——' + getCurrentDateTime());
                         // 开始查询任务状态
                         queryTaskStatus(res.taskId, "CREATE");
@@ -110,10 +117,18 @@ $(document).ready(function () {
                         balert(res.msg, 'danger', false, 2000, "center");
                         writeDrawLog('失败：' + res.msg + '——' + getCurrentDateTime());
                         //恢复按钮
-                        $("#createTaskBtn").prop('disabled', false).addClass('btn-success').removeClass('btn-secondary');
+                        unloadingBtn('.createTask');
+                        //$("#createTaskBtn").prop('disabled', false).addClass('btn-success').removeClass('btn-secondary');
                         //进度条恢复0
                         $('#p2').css('width', '0%').attr('aria-valuenow', 0).text('0%');
                     }
+                    $("#log").show();
+                    $("#TaskLogTitle").html(`<b>任务日志</b> <i data-feather="chevron-down"></i>`);
+                    feather.replace();
+                    showlog = true;
+                    $('html, body').animate({ scrollTop: $('.content-body').height() }, 1000);
+                }, error: function (e) {
+                    unloadingBtn('.createTask');
                 }
             });
         }
@@ -140,6 +155,9 @@ $(document).ready(function () {
             showlog = false;
         }
     });
+    $('input[type=radio][name=customRadio]').change(function () {
+        drawmodel = $(this).val();
+    });
 });
 function writeDrawLog(str) {
     $("#log").val($("#log").val() + str + `\n`);
@@ -157,10 +175,6 @@ function queryTaskStatus(taskId, tasktype) {
             success: function (res) {
                 if (res.success) {
                     //balert('任务状态查询成功', 'success', false, 1000, "center");
-                    $("#log").show();
-                    $("#log").html(`<b>任务日志</b> <i data-feather="chevron-down"></i>`);
-                    feather.replace();
-                    showlog = true;
                     writeDrawLog('信息：[' + tasktype + ']任务状态查询成功，进度：' + res.taskResponse.progress + '——' + getCurrentDateTime());
                     //更新进度条#p2
                     var progress = res.taskResponse.progress.replace("%", "");
@@ -169,7 +183,10 @@ function queryTaskStatus(taskId, tasktype) {
                         clearInterval(intervalId); // 关闭定时器
                         writeDrawLog('图片绘制完成——' + getCurrentDateTime());
                         //恢复按钮
-                        $("#createTaskBtn").prop('disabled', false).addClass('btn-success').removeClass('btn-secondary');
+                        unloadingBtn('.createTask');
+                        unloadingBtn('.cancelTask');
+                        $('.cancelTask').hide();//隐藏停止按钮
+                        //$("#createTaskBtn").prop('disabled', false).addClass('btn-success').removeClass('btn-secondary');
                         //进度条恢复0
                         $('#p2').css('width', '0%').attr('aria-valuenow', 0).text('0%');
                         //显示绘制结果
@@ -229,6 +246,7 @@ function queryTaskStatus(taskId, tasktype) {
                             $('.image-popup').magnificPopup({ type: 'image' });
                         }
                         $('html, body').animate({ scrollTop: $('.content-body').height() }, 1000);
+                        feather.replace();
                         return;
                     }
                     intervalId = setTimeout(function () {
@@ -244,6 +262,9 @@ function queryTaskStatus(taskId, tasktype) {
     }
     else {
         balert('请输入任务ID', 'danger', false, 1000, "center");
+        //恢复按钮
+        unloadingBtn('.createTask');
+        $('.cancelTask').hide();
     }
 }
 
@@ -255,7 +276,8 @@ function createActionTask(taskId, changetype, changeindex) {
         element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
     //禁用按钮
-    $("#createTaskBtn").prop('disabled', true).addClass('btn-secondary').removeClass('btn-success');
+    loadingBtn('.createTask');
+    //$("#createTaskBtn").prop('disabled', true).addClass('btn-secondary').removeClass('btn-success');
     //发起请求
     $.ajax({
         type: "Post",
@@ -263,20 +285,29 @@ function createActionTask(taskId, changetype, changeindex) {
         data: {
             action: changetype,
             index: changeindex,
-            taskId: taskId
+            taskId: taskId,
+            drawmodel: drawmodel
 
         },
         success: function (res) {
             if (res.success) {
                 balert('任务创建成功,详情请查看日志', 'success', false, 2000, "center");
                 writeDrawLog('信息：' + changetype + '任务创建成功，TaskId：' + res.taskId + '——' + getCurrentDateTime());
+                $('.cancelTask').show();
                 // 开始查询任务状态
                 queryTaskStatus(res.taskId, changetype);
             }
             else {
+                unloadingBtn('.createTask');
                 balert(res.msg, 'danger', false, 2000, "center");
                 writeDrawLog('失败：' + res.msg + '——' + getCurrentDateTime());
             }
+            $("#log").show();
+            $("#TaskLogTitle").html(`<b>任务日志</b> <i data-feather="chevron-down"></i>`);
+            feather.replace();
+            showlog = true;
+        }, error: function (e) {
+            unloadingBtn('.createTask');
         }
     });
 }
@@ -323,6 +354,50 @@ function MJinfo() {
                       </tr>
                     </table>`;
     showConfirmationModal("Midjourney说明", content);
+}
+
+function hasMJtask() {
+    $.ajax({
+        type: "Post",
+        url: "/AIdraw/HasMJTask",
+        async: false,
+        success: function (res) {
+            if (res.success) {
+                balert('有正在运行中的任务,详情请查看日志', 'success', false, 2000, "center");
+                loadingBtn('.createTask');
+                $('.cancelTask').show();
+                //$("#createTaskBtn").prop('disabled', true).addClass('btn-secondary').removeClass('btn-success');
+                var value = JSON.parse(res.data);
+                $("#log").show();
+                $("#TaskLogTitle").html(`<b>任务日志</b> <i data-feather="chevron-down"></i>`);
+                feather.replace();
+                showlog = true;
+                $('html, body').animate({ scrollTop: $('.content-body').height() }, 1000);
+                // 开始查询任务状态
+                queryTaskStatus(value.taskId, value.type);
+            }
+        }
+    });
+}
+
+function cancelMJtask() {
+    showConfirmationModal('提醒', '停止任务<b style="color:red">依旧会对本次绘画计费</b>，确认停止？', function () {
+        loadingBtn('.cancelTask');
+        $.ajax({
+            type: "Post",
+            url: "/AIdraw/CancelMJTask",
+            success: function (res) {
+                if (res.success) {
+                    unloadingBtn('.cancelTask');
+                    $('.cancelTask').hide();//隐藏停止按钮
+                    clearInterval(intervalId); // 关闭定时器
+                    unloadingBtn('.createTask');//恢复创建任务按钮
+                    $('#p2').css('width', '0%').attr('aria-valuenow', 0).text('0%');//进度条复位
+                    writeDrawLog('信息：任务已被终止，如果是程序问题导致的必须终止，请前往【个人中心->统计】撤销此笔计费' + '——' + getCurrentDateTime());
+                }
+            }
+        });
+    });
 }
 
 // websocket连接设置

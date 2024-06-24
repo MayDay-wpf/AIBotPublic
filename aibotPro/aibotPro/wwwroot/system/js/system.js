@@ -430,6 +430,9 @@ function isAdmin() {
                             <a href="/OpenAll/OrderList" class="nav-sub-link" id="orderlist_ordermanager_nav">
                                 订单列表（Order List）
                             </a>
+                            <a href="/OpenAll/ErrBillingList" class="nav-sub-link" id="errbillinglist_ordermanager_nav">
+                                撤销列表（Cancel List）
+                            </a>
                             <a href="/OpenAll/Payment" class="nav-sub-link" id="payment_ordermanager_nav">
                                 支付配置 (Payment)
                             </a>
@@ -596,9 +599,20 @@ function price() {
         success: function (res) {
             if (res.success) {
                 res = res.data;
-                var str = '<div style="max-height:500px;overflow-y: scroll;"><p>我们的原则是：<b>不限期无理由退款,用户体验第一</b></p><p>退款方式：加左下角QQ群找<b>群主</b></p><p>退款金额=充值-使用-所有赠送金额</p><p>1k token≈600汉字，下方的输入输出价格皆以1k token 为标准<p><p>计费算法=(输入+输出)*倍率，倍率小于1则是有折扣<p><p style="color:orangered"><b>各模型价格受OpenAI等官方影响存在不稳定性，以及特殊活动，模型价格也会有差异，本站保留在合理范围内，随时涨价或降价或上架或下架各模型的权力</b></p><table><tr><td>模型</td><td>输入价格</td><td>输出价格</td><td>VIP输入价格</td><td>VIP输出价格</td><td>普通用户倍率</td><td>VIP倍率</td></tr>';
+                var str = '<div style="max-height:500px;overflow-y: scroll;"><p>我们的原则是：<b>不限期无理由退款,用户体验第一</b></p><p>退款方式：加左下角QQ群找<b>群主</b></p><p>退款金额=充值-使用-所有赠送金额</p><p>1k token≈600汉字，下方的输入输出价格皆以1k token 为标准<p><p>计费算法=(输入+输出)*倍率，倍率小于1则是有折扣<p><p style="color:orangered"><b>各模型价格受OpenAI等官方影响存在不稳定性，以及特殊活动，模型价格也会有差异，本站保留在合理范围内，随时涨价或降价或上架或下架各模型的权力</b></p><table><tr><td>模型昵称</td><td>模型名</td><td>输入价格</td><td>输出价格</td><td>VIP输入价格</td><td>VIP输出价格</td><td>普通用户倍率</td><td>VIP倍率</td><td>普通用户按次计费</td><td>VIP按次计费</td></tr>';
                 for (var i = 0; i < res.length; i++) {
-                    str += `<tr><td>${res[i].modelName}</td><td>${res[i].modelPriceInput}</td><td>${res[i].modelPriceOutput}</td><td>${res[i].vipModelPriceInput}</td><td>${res[i].vipModelPriceOutput}</td><td>${res[i].rebate}</td><td>${res[i].vipRebate}</td></tr>`;
+                    if (res[i].modelNick == null || res[i].modelNick == "")
+                        res[i].modelNick = res[i].modelPrice.modelName;
+                    str += `<tr><td>${res[i].modelNick}</td>
+                            <td>${res[i].modelPrice.modelName}</td>
+                            <td>${res[i].modelPrice.modelPriceInput}</td>
+                            <td>${res[i].modelPrice.modelPriceOutput}</td>
+                            <td>${res[i].modelPrice.vipModelPriceInput}</td>
+                            <td>${res[i].modelPrice.vipModelPriceOutput}</td>
+                            <td>${res[i].modelPrice.rebate}</td>
+                            <td>${res[i].modelPrice.vipRebate}</td>
+                            <td>${res[i].modelPrice.onceFee}</td>
+                            <td>${res[i].modelPrice.vipOnceFee}</td></tr>`;
                 }
                 str += '</table></div>';
                 showConfirmationModal('价格信息', str);
@@ -717,7 +731,7 @@ function customMenu() {
         return;
     }
     var html = `<li class="nav-item" id="ImgHost">
-                    <a href="https://img.maymay5.com/" style="color:rgb(112,188,255)" class="nav-link" target="_blank">
+                    <a href="https://img2anywhere.maymay5.com/" style="color:rgb(112,188,255)" class="nav-link" target="_blank">
                         <i data-feather="image">
                         </i>
                         只是图床

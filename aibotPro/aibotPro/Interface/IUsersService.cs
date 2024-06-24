@@ -1,5 +1,6 @@
 ﻿using aibotPro.Dtos;
 using aibotPro.Models;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace aibotPro.Interface
 {
@@ -27,6 +28,7 @@ namespace aibotPro.Interface
 
         bool SaveModelSeq(string account, List<ChatModelSeq> chatModelSeq, out string errormsg);
         Task<bool> ChatHubBeforeCheck(ChatDto chatDto, string account, string senMethod, string chatId);
+        List<ErrorBilling> GetErrorBilling(string username, int page, int page_size, out int total);
 
     }
 }

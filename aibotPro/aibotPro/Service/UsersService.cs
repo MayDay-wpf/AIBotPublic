@@ -467,6 +467,26 @@ namespace aibotPro.Service
             }
             return result;
         }
+        public List<ErrorBilling> GetErrorBilling(string username, int page, int page_size, out int total)
+        {
+
+            IQueryable<ErrorBilling> query = null;
+            // 利用IQueryable延迟执行，直到真正需要数据的时候才去数据库查询
+            if (string.IsNullOrEmpty(username))
+            {
+                query = _context.ErrorBillings;
+            }
+            else
+            {
+                query = _context.ErrorBillings.Where(p => p.Account.Contains(username));
+            }
+            total = query.Count();
+            var bills = query.OrderByDescending(x => x.Id)
+                                .Skip((page - 1) * page_size)
+                                .Take(page_size)
+                                .ToList();
+            return bills;
+        }
 
     }
 }

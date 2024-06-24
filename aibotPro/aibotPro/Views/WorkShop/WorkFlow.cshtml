@@ -2,10 +2,10 @@
     ViewData["Title"] = "工作流（WorkFlow）";
 }
 <title>工作流（WorkFlow）</title>
-<link href="~/system/js/workflow/drawflow.min.css" rel="stylesheet" />
-<link href="~/system/js/workflow/beautiful.css" rel="stylesheet" />
+<link href="~/system/js/workflow/drawflow.min.css?v1" rel="stylesheet" />
+<link href="~/system/js/workflow/beautiful.css?v1" rel="stylesheet" />
 <link href="~/system/js/workflow/all.min.css" rel="stylesheet" />
-<link href="~/system/js/workflow/worknode.css" rel="stylesheet" />
+<link href="~/system/js/workflow/worknode.css?v2" rel="stylesheet" />
 <link href="~/system/css/codemirror.min.css" rel="stylesheet">
 <link href="~/system/css/3024-night.min.css" rel="stylesheet">
 <script src="~/system/js/codemirror.min.js"></script>
@@ -17,6 +17,20 @@
 <script src="~/static/js/js.cookie.js"></script>
 <script src="~/system/js/system.js"></script>
 <script src="~/system/js/workflow/layer.js"></script>
+<script>
+    MathJax = {
+        tex: {
+            inlineMath: [['$', '$'], ['[', ']']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]'], ['[', ']']]
+        },
+        processHtmlClass: "bottom-panel-content",
+        options: {
+            skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code", "a", "b"]
+        }
+    };
+</script>
+<script src="~/system/js/markdown-it.min.js"></script>
+<script src="~/system/js/tex-chtml.js"></script>
 <div class="content-body">
     <div class="side-panel-container">
         <div id="sidePanel" class="side-panel">
@@ -36,6 +50,25 @@
             </div>
         </div>
     </div>
+    <div id="overlay" class="overlay"></div>
+    <div id="bottomPanel" class="bottom-panel">
+        <div class="bottom-panel-header">
+            <span class="bottom-panel-title"><i class="fas fa-terminal"></i> 测试聊天窗口</span>
+            <select id="modelSelect" class="model-select aimodelCYGF">
+            </select>
+            <button class="btn btn-info" onclick="newChat()"><i class="fas fa-plus"></i> 新建会话</button>
+            <a href="javascript:void(0)" class="close-btn" id="debugerclosePanelBtn">&times;</a>
+        </div>
+        <div class="bottom-panel-content">
+            @* <div class="chat-message user">用户: 你好</div>
+            <div class="chat-message system">系统: 你好，有什么可以帮你的吗？</div> *@
+        </div>
+        <div class="bottom-panel-footer">
+            <input type="text" class="bottom-input-box" id="Q" placeholder="输入消息，Enter发送..." />
+            <button class="bottom-send-btn" id="sendBtn">发送</button>
+        </div>
+    </div>
+
     <div class="wrapper">
         <div class="col">
             <div class="tools-title">
@@ -56,9 +89,9 @@
             <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="DALL">
                 <i class="fas fa-paint-brush"></i><span> DALL·E3（DALL）</span>
             </div>
-            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="DALLsm">
-                <i class="fas fa-pen"></i><span> DALL·E2（DALLsm）</span>
-            </div>
+            @* <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="DALLsm">
+            <i class="fas fa-pen"></i><span> DALL·E2（DALLsm）</span>
+            </div> *@
             <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="web">
                 <i class="fas fa-globe"></i><span> 联网搜索（web）</span>
             </div>
@@ -75,14 +108,21 @@
         <div class="col-right">
             <div class="menu">
                 <ul>
-                    <li onclick="editor.changeModule('Home'); changeModule(event);" class="selected"></li>
+                    @* <li onclick="editor.changeModule('Home'); changeModule(event);" class="selected"></li> *@
                     @* <li onclick="editor.changeModule('Other'); changeModule(event);">Other Module</li> *@
-                    <li onclick="hideTools()"><i class="fas fa-bars" style="font-size:20px;"></i></li>
+                    @* <li onclick="hideTools()"><i class="fas fa-bars" style="font-size:20px;"></i></li>
                     <li><button class="btn btn-danger" onclick="editor.clearModuleSelected()">清空</button></li>
                     <li><button class="btn btn-info" onclick="window.location.href='/WorkShop/MyPlugins'">返回插件列表</button></li>
                     <li><button class="btn btn-info" onclick="exportDrawFlow()">预览Json</button></li>
                     <li><button class="btn btn-info" onclick="saveNodeDataToCache()">保存</button></li>
-                    <li><button class="btn btn-info" onclick="pushtoPlugin()">发布至插件</button></li>
+                    <li><button class="btn btn-info" onclick="pushtoPlugin()">发布至插件</button></li> *@
+                    <li onclick="hideTools()"><i class="fas fa-bars" style="font-size:20px;"></i></li>
+                    <li onclick="window.location.href='/WorkShop/MyPlugins'"><i class="fas fa-chevron-left"></i> 返回插件列表</li>
+                    <li onclick="editor.clearModuleSelected()"><i class="fas fa-trash-alt"></i> 清空</li>
+                    <li onclick="exportDrawFlow()"><i class="fas fa-eye"></i> 预览Json</li>
+                    <li onclick="debugWorkFlow()"><i class="fas fa-terminal"></i> 测试</li>
+                    <li onclick="saveNodeDataToCache()"><i class="fas fa-save"></i> 保存</li>
+                    <li onclick="pushtoPlugin()"><i class="fas fa-upload"></i> 发布至插件</li>
                 </ul>
             </div>
             <div id="drawflow" ondrop="drop(event)" ondragover="allowDrop(event)">
@@ -99,5 +139,9 @@
         </div>
     </div>
 </div>
-<script src="~/system/js/workflow/workflow.js?v1"></script>
-<script src="~/system/js/workflow/workflowaction.js?v1"></script>
+<script src="~/system/js/signalr.min.js"></script>
+<script src="~/system/js/workflow/workflow.js?v2"></script>
+<script src="~/system/js/workflow/workflowaction.js?v3"></script>
+<script src="~/system/js/marked.min.js"></script>
+<link href="~/system/css/atom-one-dark.min.css" rel="stylesheet" />
+<script src="~/system/js/highlight.min.js"></script>

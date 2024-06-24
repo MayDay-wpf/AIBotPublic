@@ -349,14 +349,37 @@ namespace aibotPro.Controllers
         }
         [Authorize]
         [HttpPost]
-        public IActionResult GetModelPrice()
+        public IActionResult GetModelPrice(string modelName)
         {
-            var modelPrice = _context.ModelPrices.AsNoTracking().ToList();
+            // 将 AImodels 和 WorkShopAIModel 表合并
+            var aiModelsQuery = _context.AImodels.AsNoTracking()
+                                 .Select(ai => new { ai.ModelNick, ai.ModelName })
+                                 .Union(_context.WorkShopAIModels.AsNoTracking()
+                                 .Select(w => new { w.ModelNick, w.ModelName }));
+
+            // 连接 ModelPrices 和合并后的 AI models 表，并选择所需字段
+            var modelPriceQuery = from mp in _context.ModelPrices.AsNoTracking()
+                                  join ai in aiModelsQuery
+                                  on mp.ModelName equals ai.ModelName into joined
+                                  from ai in joined.DefaultIfEmpty()
+                                  select new
+                                  {
+                                      ModelPrice = mp,
+                                      ModelNick = ai != null ? ai.ModelNick : "默认值"  // 确保 ModelNick 不为空
+                                  };
+
+            // 根据传入的 modelName 进行筛选
+            if (!string.IsNullOrEmpty(modelName))
+                modelPriceQuery = modelPriceQuery.Where(m => m.ModelPrice.ModelName == modelName);
+
+            // 将查询结果转换为列表
+            var modelPriceList = modelPriceQuery.ToList();
+
             return Json(new
             {
                 success = true,
                 msg = "获取成功",
-                data = modelPrice
+                data = modelPriceList
             });
         }
         [Authorize]

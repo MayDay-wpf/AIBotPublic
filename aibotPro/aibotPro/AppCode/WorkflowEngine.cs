@@ -44,9 +44,10 @@ namespace aibotPro.AppCode
         private readonly IHubContext<ChatHub> _hubContext;
         private readonly IRedisService _redisService;
         private readonly IMilvusService _milvusService;
+        private readonly ICOSService _cossService;
         private static int _checkCount;
         private Dictionary<string, int> _nodeCheckCounts = new Dictionary<string, int>();
-        public WorkflowEngine(WorkFlowNodeData workflowData, IAiServer aiServer, ISystemService systemService, IFinanceService financeService, AIBotProContext context, string account, IServiceProvider serviceProvider, IHubContext<ChatHub> hubContext, string chatId, string senMethod, IRedisService redisService, IMilvusService milvusService, int checkCount)
+        public WorkflowEngine(WorkFlowNodeData workflowData, IAiServer aiServer, ISystemService systemService, IFinanceService financeService, AIBotProContext context, string account, IServiceProvider serviceProvider, IHubContext<ChatHub> hubContext, string chatId, string senMethod, IRedisService redisService, IMilvusService milvusService, int checkCount, ICOSService cossService)
         {
             _workflowData = workflowData;
             _aiServer = aiServer;
@@ -61,6 +62,7 @@ namespace aibotPro.AppCode
             _redisService = redisService;
             _milvusService = milvusService;
             _checkCount = checkCount;
+            _cossService = cossService;
         }
         public async Task<List<NodeOutput>> Execute(string startNodeOutput)
         {
@@ -259,9 +261,9 @@ namespace aibotPro.AppCode
                 case "DALL":
                     nodeOutput = await ProcessDALLNode(node, result);
                     break;
-                case "DALLsm":
+                /*case "DALLsm":
                     nodeOutput = await ProcessDALLsmNode(node, result);
-                    break;
+                    break;*/
                 case "web":
                     nodeOutput = await ProcessWebNode(node, result);
                     break;
@@ -699,6 +701,8 @@ namespace aibotPro.AppCode
             // 在后台启动一个任务下载图片
             string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "");
             string imgResPath = Path.Combine("/files/dallres", _account, newFileName + ".png");
+            string referenceImgPath = prompt;
+            string thumbKey = string.Empty;
             Task.Run(async () =>
             {
                 using (var scope = _serviceProvider.CreateScope()) // _serviceProvider 是 IServiceProvider 的一个实例。
@@ -707,7 +711,26 @@ namespace aibotPro.AppCode
                     string savePath = Path.Combine("wwwroot", "files/dallres", _account);
                     await _aiServer.DownloadImageAsync(airesult, savePath, newFileName);
                     var aiSaveService = scope.ServiceProvider.GetRequiredService<IAiServer>(); // 假设保存记录方法在IAiSaveService中。
-                    await aiSaveService.SaveAiDrawResult(_account, "DALLE3", imgResPath, prompt, "workflow_Engine");
+                    var cosService = scope.ServiceProvider.GetRequiredService<ICOSService>();
+                    var systemService = scope.ServiceProvider.GetRequiredService<ISystemService>();
+                    string thumbSavePath = systemService.CompressImage(Path.Combine(savePath, newFileName + ".png"), 75);
+                    //查询是否启用了COS
+                    var systemCfg = systemService.GetSystemCfgs();
+                    var cos_switch = systemCfg.FirstOrDefault(x => x.CfgKey == "COS_Switch");
+                    if (cos_switch != null)
+                    {
+                        string cos_switch_val = cos_switch.CfgValue;
+                        if (!string.IsNullOrEmpty(cos_switch_val) && cos_switch_val == "1")
+                        {
+                            string coskey = $"dallres/{DateTime.Now.ToString("yyyyMMdd")}/{newFileName}.png";
+                            string thumbFileName =System.IO.Path.GetFileName(thumbSavePath); 
+                            thumbKey = coskey.Replace(System.IO.Path.GetFileName(imgResPath), thumbFileName);
+                            imgResPath = cosService.PutObject(coskey, Path.Combine(savePath, newFileName + ".png"), newFileName + ".png");
+                            thumbSavePath= cosService.PutObject(thumbKey, thumbSavePath, thumbFileName);
+                            referenceImgPath = coskey;
+                        }
+                    }
+                    await aiSaveService.SaveAiDrawResult(_account, "DALLE3", imgResPath, prompt, referenceImgPath,thumbSavePath,thumbKey);
                 }
             });
             nodeOutput.NodeName = nodeKey;
@@ -717,7 +740,7 @@ namespace aibotPro.AppCode
             return nodeOutput;
         }
 
-        private async Task<NodeOutput> ProcessDALLsmNode(NodeData node, List<NodeOutput> result)
+        /*private async Task<NodeOutput> ProcessDALLsmNode(NodeData node, List<NodeOutput> result)
         {
             var nodeKey = node.Name + node.Id;
             if (!_nodeCheckCounts.ContainsKey(nodeKey))
@@ -798,7 +821,7 @@ namespace aibotPro.AppCode
             nodeOutput.NextNodes = FindNextNode(node.Outputs);
             _nodeCheckCounts[nodeKey]--;
             return nodeOutput;
-        }
+        }*/
 
         private async Task<NodeOutput> ProcessWebNode(NodeData node, List<NodeOutput> result)
         {

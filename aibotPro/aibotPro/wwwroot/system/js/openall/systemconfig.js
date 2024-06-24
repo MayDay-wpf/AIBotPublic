@@ -9,9 +9,9 @@
 });
 function addStLine() {
     var str = `<tr>
-                 <td><input type="text" class="form-control" maxlength="50" placeholder="名称" /></td>
-                 <td><input type="text" class="form-control" maxlength="50" placeholder="键" /></td>
-                 <td><input type="text" class="form-control" maxlength="50" placeholder="值" /></td>
+                 <td><input type="text" class="form-control" placeholder="名称" /></td>
+                 <td><input type="text" class="form-control" placeholder="键" /></td>
+                 <td><input type="text" class="form-control" placeholder="值" /></td>
                  <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`
     $("#AddSt").append(str);
     feather.replace();
@@ -80,9 +80,9 @@ function getSystemConfig() {
                     return;
                 for (var i = 0; i < data.length; i++) {
                     var str = `<tr>
-                                <td><input type="text" class="form-control" maxlength="50" placeholder="名称" value="${data[i].cfgName}" /></td>
-                                <td><input type="text" class="form-control" maxlength="50" placeholder="键" value="${data[i].cfgKey}" /></td>
-                                <td><input type="text" class="form-control" maxlength="500" placeholder="值" value="${data[i].cfgValue}" /></td>
+                                <td><input type="text" class="form-control" placeholder="名称" value="${data[i].cfgName}" /></td>
+                                <td><input type="text" class="form-control" placeholder="键" value="${data[i].cfgKey}" /></td>
+                                <td><input type="text" class="form-control" placeholder="值" value="${data[i].cfgValue}" /></td>
                                 <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`
                     $("#AddSt").append(str);
                     feather.replace();

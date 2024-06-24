@@ -21,6 +21,7 @@ namespace aibotPro.Dtos
         //public float presence_penalty { get; set; } = 0.5f;
         //public float frequency_penalty { get; set; } = 0.5f;
         public bool useMemory { get; set; } = false;
+        public string chatfrom { get; set; } = "";
     }
     public class ChatRes
     {

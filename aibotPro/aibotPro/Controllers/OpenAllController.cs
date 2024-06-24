@@ -20,7 +20,8 @@ namespace aibotPro.Controllers
         private readonly IFinanceService _financeService;
         private readonly ISystemService _systemService;
         private readonly IRedisService _redisService;
-        public OpenAllController(IAdminsService adminsService, JwtTokenManager jwtTokenManager, AIBotProContext context, IFinanceService financeService, ISystemService systemService, IRedisService redisService)
+        private readonly IUsersService _usersService;
+        public OpenAllController(IAdminsService adminsService, JwtTokenManager jwtTokenManager, AIBotProContext context, IFinanceService financeService, ISystemService systemService, IRedisService redisService, IUsersService usersService)
         {
             _adminsService = adminsService;
             _jwtTokenManager = jwtTokenManager;
@@ -28,6 +29,7 @@ namespace aibotPro.Controllers
             _financeService = financeService;
             _systemService = systemService;
             _redisService = redisService;
+            _usersService = usersService;
         }
         private string GetUserFromToken()
         {
@@ -43,7 +45,7 @@ namespace aibotPro.Controllers
             var username = GetUserFromToken();
             if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
             {
-                return RedirectToAction("Users", "Login");
+                return RedirectToAction("Login", "Users");
             }
             return View();
         }
@@ -52,7 +54,7 @@ namespace aibotPro.Controllers
             var username = GetUserFromToken();
             if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
             {
-                return RedirectToAction("Users", "Login");
+                return RedirectToAction("Login", "Users");
             }
             return View();
         }
@@ -61,7 +63,7 @@ namespace aibotPro.Controllers
             var username = GetUserFromToken();
             if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
             {
-                return RedirectToAction("Users", "Login");
+                return RedirectToAction("Login", "Users");
             }
             return View();
         }
@@ -70,7 +72,7 @@ namespace aibotPro.Controllers
             var username = GetUserFromToken();
             if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
             {
-                return RedirectToAction("Users", "Login");
+                return RedirectToAction("Login", "Users");
             }
             return View();
         }
@@ -79,7 +81,7 @@ namespace aibotPro.Controllers
             var username = GetUserFromToken();
             if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
             {
-                return RedirectToAction("Users", "Login");
+                return RedirectToAction("Login", "Users");
             }
             return View();
         }
@@ -88,7 +90,16 @@ namespace aibotPro.Controllers
             var username = GetUserFromToken();
             if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
             {
-                return RedirectToAction("Users", "Login");
+                return RedirectToAction("Login", "Users");
+            }
+            return View();
+        }
+        public IActionResult ErrBillingList()
+        {
+            var username = GetUserFromToken();
+            if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
+            {
+                return RedirectToAction("Login", "Users");
             }
             return View();
         }
@@ -97,7 +108,7 @@ namespace aibotPro.Controllers
             var username = GetUserFromToken();
             if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
             {
-                return RedirectToAction("Users", "Login");
+                return RedirectToAction("Login", "Users");
             }
             return View();
         }
@@ -106,7 +117,7 @@ namespace aibotPro.Controllers
             var username = GetUserFromToken();
             if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
             {
-                return RedirectToAction("Users", "Login");
+                return RedirectToAction("Login", "Users");
             }
             return View();
         }
@@ -115,7 +126,7 @@ namespace aibotPro.Controllers
             var username = GetUserFromToken();
             if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
             {
-                return RedirectToAction("Users", "Login");
+                return RedirectToAction("Login", "Users");
             }
             return View();
         }
@@ -124,7 +135,7 @@ namespace aibotPro.Controllers
             var username = GetUserFromToken();
             if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
             {
-                return RedirectToAction("Users", "Login");
+                return RedirectToAction("Login", "Users");
             }
             return View();
         }
@@ -133,7 +144,7 @@ namespace aibotPro.Controllers
             var username = GetUserFromToken();
             if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
             {
-                return RedirectToAction("Users", "Login");
+                return RedirectToAction("Login", "Users");
             }
             return View();
         }
@@ -142,7 +153,7 @@ namespace aibotPro.Controllers
             var username = GetUserFromToken();
             if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
             {
-                return RedirectToAction("Users", "Login");
+                return RedirectToAction("Login", "Users");
             }
             return View();
         }
@@ -151,7 +162,7 @@ namespace aibotPro.Controllers
             var username = GetUserFromToken();
             if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
             {
-                return RedirectToAction("Users", "Login");
+                return RedirectToAction("Login", "Users");
             }
             return View();
         }
@@ -160,7 +171,7 @@ namespace aibotPro.Controllers
             var username = GetUserFromToken();
             if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
             {
-                return RedirectToAction("Users", "Login");
+                return RedirectToAction("Login", "Users");
             }
             return View();
         }
@@ -169,7 +180,7 @@ namespace aibotPro.Controllers
             var username = GetUserFromToken();
             if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
             {
-                return RedirectToAction("Users", "Login");
+                return RedirectToAction("Login", "Users");
             }
             return View();
         }
@@ -178,7 +189,7 @@ namespace aibotPro.Controllers
             var username = GetUserFromToken();
             if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
             {
-                return RedirectToAction("Users", "Login");
+                return RedirectToAction("Login", "Users");
             }
             return View();
         }
@@ -187,7 +198,7 @@ namespace aibotPro.Controllers
             var username = GetUserFromToken();
             if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
             {
-                return RedirectToAction("Users", "Login");
+                return RedirectToAction("Login", "Users");
             }
             return View();
         }
@@ -196,7 +207,7 @@ namespace aibotPro.Controllers
             var username = GetUserFromToken();
             if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
             {
-                return RedirectToAction("Users", "Login");
+                return RedirectToAction("Login", "Users");
             }
             return View();
         }
@@ -205,7 +216,7 @@ namespace aibotPro.Controllers
             var username = GetUserFromToken();
             if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
             {
-                return RedirectToAction("Users", "Login");
+                return RedirectToAction("Login", "Users");
             }
             return View();
         }
@@ -458,6 +469,42 @@ namespace aibotPro.Controllers
                 msg = "获取成功",
                 data = orders,
                 total = total
+            });
+        }
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public async Task<IActionResult> GetErrorBilling(int page, int page_size, string account)
+        {
+            int total = 0;
+            var errorBillings = _usersService.GetErrorBilling(account, page, page_size, out total);
+            return Json(new
+            {
+                success = true,
+                msg = "获取成功",
+                data = errorBillings,
+                total = total
+            });
+        }
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public IActionResult HandleErrorBilling(int id, int type, string reply)
+        {
+            bool result = _financeService.UpdateErrorBilling(id, type, reply, out string errMsg);
+            return Json(new
+            {
+                success = result,
+                msg = errMsg
+            });
+        }
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public IActionResult GetLogInfo(int logId)
+        {
+            var data = _context.UseUpLogs.FirstOrDefault(x => x.Id == logId);
+            return Json(new
+            {
+                success = true,
+                data = data
             });
         }
         [Authorize(Policy = "AdminOnly")]

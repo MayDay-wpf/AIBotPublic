@@ -2,7 +2,7 @@
 var textarea = document.getElementById("Q");
 var $Q = $("#Q");
 var chatBody = $(".chat-body-content");
-var thisAiModel = "gpt-3.5-turbo-0125"; //当前AI模型
+var thisAiModel = "gpt-3.5-turbo-0125-CYGF"; //当前AI模型
 var processOver = true; //是否处理完毕
 var image_path = "";
 var file_list = [];
@@ -11,6 +11,7 @@ var chatgroupid = "";
 var assistansBoxId = "";
 let pageIndex = 1;
 let pageSize = 20;
+var markdownHis = [];
 // websocket连接设置
 var connection = new signalR.HubConnectionBuilder()
     .withUrl('/chatHub', {
@@ -308,6 +309,11 @@ connection.on('ReceiveWorkShopMessage', function (message) {
             hljs.highlightElement(block);
         });
         addLanguageLabels(true, assistansBoxId);
+        var item = {
+            id: assistansBoxId,
+            markdown: sysmsg
+        };
+        markdownHis.push(item);
         sysmsg = "";
         jishuqi = 0;
         $('.LDI').remove();
@@ -345,10 +351,6 @@ function sendMsg() {
     var msgid_u = generateGUID();
     var msgid_g = generateGUID();
     assistansBoxId = msgid_g;
-    var temperature = $("#slidertemperature").val();
-    var topp = $("#slidertopp").val();
-    var presence = $("#sliderpresence").val();
-    var frequency = $("#sliderfrequency").val();
     var data = {
         "msg": msg,
         "chatid": chatid,
@@ -394,6 +396,7 @@ function sendMsg() {
                         <i data-feather="copy" class="chatbtns" onclick="copyAll('`+ msgid_g + `')"></i>
                         <i data-feather="anchor" class="chatbtns" onclick="quote('`+ msgid_g + `')"></i>
                         <i data-feather="trash-2" class="chatbtns" onclick="deleteChatGroup('`+ chatgroupid + `')"></i>
+                        <i data-feather="codepen" class="chatbtns" data-toggle="tooltip" title="复制Markdown" onclick="toMarkdown('${msgid_g}')"></i>
                     </div>
                 </div>`;
     $(".chat-body-content").append(gpthtml);
@@ -640,6 +643,11 @@ function showHistoryDetail(id) {
 
                 }
                 else {
+                    var item = {
+                        "id": res.data[i].chatCode,
+                        "markdown": content
+                    }
+                    markdownHis.push(item);
                     var markedcontent = marked(completeMarkdown(content));//md.render(content)//marked.parse(content);
                     var encoder = new TextEncoder();
                     html += `<div class="chat-message" data-group="` + res.data[i].chatGroupId + `">
@@ -655,6 +663,7 @@ function showHistoryDetail(id) {
                                   <i data-feather="copy" class="chatbtns" onclick="copyAll('`+ res.data[i].chatCode + `')"></i>
                                   <i data-feather="anchor" class="chatbtns" onclick="quote('`+ res.data[i].chatCode + `')"></i>
                                   <i data-feather="trash-2" class="chatbtns" onclick="deleteChatGroup('`+ res.data[i].chatGroupId + `')"></i>
+                                  <i data-feather="codepen" class="chatbtns" data-toggle="tooltip" title="复制Markdown" onclick="toMarkdown('${res.data[i].chatCode}')"></i>
                                 </div>
                             </div>`;
                 }
@@ -1006,8 +1015,13 @@ function freePlanInfo() {
         success: function (res) {
             var content = '';
             if (res.success) {
+                var freeModelArr = res.freeModel.split(',');
+                var freeModelStr = ``;
+                for (var i = 0; i < freeModelArr.length; i++) {
+                    freeModelStr += `<a href="javascript:void(0);" class="badge badge-pill badge-success" onclick="copyText('${freeModelArr[i]}')">${freeModelArr[i]}</a> `;
+                }
                 content = `<p>1、免费模型只可在<b>创意工坊</b>中使用，免费模型名后带有‘🕔’标识</p>
-                   <p>2、免费模型有：<b>${res.freeModel}</b></p>
+                   <p>2、免费模型有：<b>${freeModelStr}</b></p>
                    <p>3、普通用户免费次数：<b>${res.freeCount}</b></p>
                    <p>4、会员用户免费次数：<b>${res.freeCountVIP}</b></p>
                    <p>5、免费次数刷新频率：上线后<b>${res.freePlanUpdate}小时</b>一次，剩余不累加</p>
@@ -1022,4 +1036,66 @@ function freePlanInfo() {
             balert("系统必要参数加载失败", "danger", false, 2000, "center");
         }
     });
+}
+function toMarkdown(id) {
+    var item = markdownHis.find(function (element) {
+        return element.id === id;
+    });
+    var markd = item ? item.markdown : null;
+    copyText(markd);
+    // 确保获取目标元素的唯一性
+    var $targetElement = $('#' + id);
+
+    if ($targetElement.length > 0) {
+        // 检查是否已经存在 .markdown-content
+        var $existingMarkdownDiv = $targetElement.find('.markdown-content');
+
+        if ($existingMarkdownDiv.length > 0) {
+            // 如果存在，直接执行关闭操作
+            $existingMarkdownDiv.slideUp(function () {
+                $existingMarkdownDiv.remove();
+            });
+            return; // 提前返回
+        }
+        if (markd) {
+            // 确保获取目标元素的唯一性
+            var $targetElement = $('#' + id);
+            if ($targetElement.length > 0 && markd) {
+                // 创建一个新的div来显示markdown内容
+                var $markdownDiv = $('<div class="markdown-content"></div>').hide();
+
+                // 插入markdown内容和关闭按钮到div
+                $closeButton = $('<p class="close-button">&times</p>');
+                var $contentDiv = $('<span class="badge badge-info">下方可编辑Markdown</span><textarea class="markdown-txt"></textarea>').val(markd);
+                $markdownDiv.append($closeButton);
+                $markdownDiv.append($contentDiv);
+
+                // 将该div插入目标元素中
+                $targetElement.append($markdownDiv);
+
+                // 展开动画效果
+                $markdownDiv.slideDown(300);
+                if (chatBody.length > 0) {
+                    var markdownDivOffsetTop = $markdownDiv.offset().top;
+                    var markdownDivHeight = $markdownDiv.outerHeight(true);
+                    var chatBodyHeight = chatBody.height();
+
+                    // 计算滚动位置，使$markdownDiv的中部在父容器的中部显示
+                    var scrollTop = markdownDivOffsetTop - chatBodyHeight / 2 + markdownDivHeight / 2 - chatBody.offset().top;
+
+                    // 滚动 chatBody
+                    chatBody.animate({
+                        scrollTop: chatBody.scrollTop() + scrollTop
+                    }, 'slow');   // 使用平滑滚动
+                }
+
+                // 关闭按钮功能，点击后收起div
+                $closeButton.on('click', function () {
+                    $markdownDiv.slideUp(function () {
+                        $markdownDiv.remove(); // 在动画结束后移除div
+                    });
+                });
+            }
+        }
+    }
 }

@@ -27,6 +27,11 @@ using System.Numerics;
 using aibotPro.Dtos;
 using System.Collections;
 using RestSharp;
+using System.Drawing.Imaging;
+using System.Drawing;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.Formats;
 
 namespace aibotPro.Service
 {
@@ -148,7 +153,9 @@ namespace aibotPro.Service
                 Address = address,
                 LookTime = DateTime.Now
             };
-            return _context.IPlooks.Add(iplook) != null;
+            _context.IPlooks.Add(iplook);
+            _context.SaveChanges();
+            return true;
         }
         public List<AImodel> GetAImodel()
         {
@@ -634,6 +641,25 @@ namespace aibotPro.Service
                 return false;
             }
         }
+        public string CompressImage(string inputFile, int quality)
+        {
+            string directory = System.IO.Path.GetDirectoryName(inputFile);
+            string fileName = System.IO.Path.GetFileNameWithoutExtension(inputFile);
+            string thumbFileName = $"thumbnails_{fileName}.jpg"; // 强制输出为 JPEG
+            string thumbPath = System.IO.Path.Combine(directory, thumbFileName);
+
+            using (SixLabors.ImageSharp.Image image = SixLabors.ImageSharp.Image.Load(inputFile))
+            {
+                var encoder = new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder
+                {
+                    Quality = quality
+                };
+
+                image.Save(thumbPath, encoder); // 强制保存为 JPEG 格式
+            }
+
+            return thumbPath;
+        }
         public bool CreateSystemCfg()
         {
             SystemCfg Mail = new SystemCfg()
@@ -816,7 +842,7 @@ namespace aibotPro.Service
                 CfgName = "“只是图床”API地址",
                 CfgKey = "ImageHosting",
                 CfgCode = "ImageHosting",
-                CfgValue = "After"
+                CfgValue = "https://img.maymay5.com/api/upload"
             };
             _context.SystemCfgs.Add(Mail);
             _context.SystemCfgs.Add(MailPwd);

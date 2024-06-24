@@ -12,6 +12,8 @@ var assistansBoxId = "";
 let pageIndex = 1;
 let pageSize = 20;
 let useMemory = false;
+let pure = false;
+var markdownHis = [];
 
 // websocket连接设置
 var connection = new signalR.HubConnectionBuilder()
@@ -121,6 +123,9 @@ $(document).on({
 //页面加载完成后执行
 $(document).ready(function () {
     //当#Q失去焦点时，关闭最大化
+    if (!isMobile()) {
+        $("#pureBox").show();
+    }
     $("#Q").blur(function () {
         if (max_textarea) {
             max_textarea_Q();
@@ -172,8 +177,74 @@ $(document).ready(function () {
             time: Date.now()
         };
         localStorage.setItem('useMemory', JSON.stringify(cacheData));
-        useMemory = cachedData.value;
+        useMemory = cacheData.value;
     });
+
+    // 检查localStorage中的缓存
+    var cache_pure = localStorage.getItem('pure');
+    if (cache_pure) {
+        var cachedData = JSON.parse(cache_pure);
+        if (Date.now() - cachedData.time < 24 * 60 * 60 * 1000) { // 检查是否在24小时内
+            $('.pure').prop('checked', cachedData.value);
+            pure = cachedData.value;
+        } else {
+            $('.pure').prop('checked', false);
+            localStorage.removeItem('pure');
+            pure = false;
+        }
+    } else {
+        $('.pure').prop('checked', false);
+        pure = false;
+    }
+    // 监听复选框状态改变
+    $('.pure').change(function () {
+        var isChecked = $(this).is(':checked');
+        // 存入缓存
+        var cacheData = {
+            value: isChecked,
+            time: Date.now()
+        };
+        localStorage.setItem('pure', JSON.stringify(cacheData));
+        pure = cacheData.value;
+        if (pure) {
+            $('.sidebar').hide();
+            $('.header').hide();
+            $('.content-body').css("height", "100vh");
+            $('.content-body').css("padding", "0");
+            $('.chat-body-content').css("padding", "10px 15% 10px 15%");
+            $('body').toggleClass('toggle-sidebar');
+        } else {
+            $('.sidebar').show();
+            $('.header').show();
+            $('.content-body').css("height", "calc(100vh - 80px)");
+            $('.content-body').css("padding", "15px");
+            $('.chat-body-content').css("padding", "10px");
+            $('body').toggleClass('toggle-sidebar');
+        }
+    });
+    $('#searchIcon').on('click', function (event) {
+        event.stopPropagation();
+        $('#searchIcon').hide();
+        $('#modelSearch').addClass('expand').fadeIn().focus();
+    });
+
+    // 搜索框失去焦点时恢复成放大镜图标
+    $('#modelSearch').on('blur', function () {
+        $(this).removeClass('expand').fadeOut(function () {
+            $('#searchIcon').fadeIn();
+        });
+        $(this).val('');
+        filterModels();
+    });
+
+    if (pure) {
+        $('.sidebar').hide();
+        $('.header').hide();
+        $('.content-body').css("height", "100vh");
+        $('.content-body').css("padding", "0");
+        $('.chat-body-content').css("padding", "10px 15% 10px 15%");
+        $('body').toggleClass('toggle-sidebar');
+    }
 });
 function handleDroppedFiles(files) {
     for (var i = 0; i < files.length; i++) {
@@ -243,29 +314,30 @@ function getAIModelList() {
                 $("#firstModel").html(res.data[0].modelNick);
                 thisAiModel = res.data[0].modelName;
                 for (var i = 0; i < res.data.length; i++) {
-                    html += `<a class="dropdown-item font-14" href="#" data-model-name="${res.data[i].modelName}" data-model-nick="${res.data[i].modelNick}" data-seq="${res.data[i].seq}">` + res.data[i].modelNick + `</a>`;
+                    var modelNick = stripHTML(res.data[i].modelNick);
+                    html += `<a class="dropdown-item font-14" href="#" data-model-name="${res.data[i].modelName}" data-model-nick="${modelNick}" data-seq="${res.data[i].seq}">${res.data[i].modelNick}</a>`;
                 }
-                $('#AIModel').html(html);
-                $('#AIModel a').on('click', function (e) {
+                $('#modelList').html(html);
+                $('#modelList a').on('click', function (e) {
                     e.preventDefault();
                     var modelName = $(this).data('model-name');
-                    var modelNick = $(this).data('model-nick');
+                    var modelNick = $(this).html();
                     changeModel(modelName, modelNick);
                 });
                 if (!isMobile()) {
                     // 初始化拖动排序
-                    $("#AIModel").sortable({
+                    $("#modelList").sortable({
                         revert: 100,
                         start: function (event, ui) {
                             // 在拖动开始时禁用点击事件
-                            $('#AIModel a').off('click');
+                            $('#modelList a').off('click');
                         },
                         stop: function (event, ui) {
                             saveModelSeq();
-                            $('#AIModel a').on('click', function (e) {
+                            $('#modelList a').on('click', function (e) {
                                 e.preventDefault();
                                 var modelName = $(this).data('model-name');
-                                var modelNick = $(this).data('model-nick');
+                                var modelNick = $(this).html();
                                 changeModel(modelName, modelNick);
                             });
                         }
@@ -274,12 +346,33 @@ function getAIModelList() {
             }
         },
         error: function (err) {
-            //balert("系统未配置AI模型", "info", false, 2000, "center");
+            // balert("系统未配置AI模型", "info", false, 2000, "center");
+        }
+    });
+}
+
+function stripHTML(html) {
+    var tmp = document.createElement("DIV");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
+}
+
+function filterModels() {
+    var input = document.getElementById("modelSearch");
+    var filter = input.value.toLowerCase();
+    var nodes = document.querySelectorAll('#modelList a');
+
+    nodes.forEach(function (node) {
+        var modelNick = node.getAttribute('data-model-nick').toLowerCase();
+        if (modelNick.includes(filter)) {
+            node.style.display = "block";
+        } else {
+            node.style.display = "none";
         }
     });
 }
 function saveModelSeq() {
-    var items = $("#AIModel").find("a");
+    var items = $("#modelList").find("a");
     var formData = new FormData();
     items.each(function (index, item) {
         var modelName = $(item).data("model-name");
@@ -426,7 +519,7 @@ connection.on('ReceiveMessage', function (message) {
         jishuqi++;
     } else {
         processOver = true;
-        $("#sendBtn").html(`<i data-feather="send"></i>`);0416
+        $("#sendBtn").html(`<i data-feather="send"></i>`);
         feather.replace();
         $('[data-toggle="tooltip"]').tooltip();
         $(`.chat-message[data-group="${chatgroupid}"] .memory`).attr('onclick', function () {
@@ -440,6 +533,11 @@ connection.on('ReceiveMessage', function (message) {
             hljs.highlightElement(block);
         });
         addLanguageLabels(true, assistansBoxId);
+        var item = {
+            id: assistansBoxId,
+            markdown: sysmsg
+        };
+        markdownHis.push(item);
         sysmsg = "";
         jishuqi = 0;
         $('.LDI').remove();
@@ -501,7 +599,7 @@ function sendMsg() {
                      </div>
                      <div>
                       <i data-feather="refresh-cw" class="chatbtns" onclick="tryAgain('${msgid_u}')"></i>
-                      <i data-feather="edit-3" class="chatbtns" onclick="editChat('${ msgid_u}')"></i>
+                      <i data-feather="edit-3" class="chatbtns" onclick="editChat('${msgid_u}')"></i>
                      </div>
                 </div>`;
     $(".chat-body-content").append(html);
@@ -523,6 +621,7 @@ function sendMsg() {
                         <i data-feather="anchor" class="chatbtns" data-toggle="tooltip" title="锚" onclick="quote('${msgid_g}')"></i>
                         <i data-feather="trash-2" class="chatbtns" data-toggle="tooltip" title="删除" onclick="deleteChatGroup('${chatgroupid}')"></i>
                         <i data-feather="cpu" class="chatbtns memory" data-toggle="tooltip" title="存入记忆" onclick="saveMemory('${chatgroupid}','${chatid}')"></i>
+                        <i data-feather="codepen" class="chatbtns" data-toggle="tooltip" title="复制Markdown" onclick="toMarkdown('${msgid_g}')"></i>
                     </div>
                 </div>`;
     $(".chat-body-content").append(gpthtml);
@@ -769,6 +868,11 @@ function showHistoryDetail(id) {
 
                 }
                 else {
+                    var item = {
+                        "id": res.data[i].chatCode,
+                        "markdown": content
+                    }
+                    markdownHis.push(item);
                     var markedcontent = marked(completeMarkdown(content));//md.render(content)//marked.parse(content);
                     var encoder = new TextEncoder();
                     html += `<div class="chat-message" data-group="` + res.data[i].chatGroupId + `">
@@ -785,6 +889,7 @@ function showHistoryDetail(id) {
                                   <i data-feather="anchor" class="chatbtns" data-toggle="tooltip" title="锚" onclick="quote('`+ res.data[i].chatCode + `')"></i>
                                   <i data-feather="trash-2" class="chatbtns" data-toggle="tooltip" title="删除" onclick="deleteChatGroup('`+ res.data[i].chatGroupId + `')"></i>
                                   <i data-feather="cpu" class="chatbtns" data-toggle="tooltip" title="存入记忆" onclick="saveMemory('${res.data[i].chatGroupId}','${chatid}')"></i>
+                                  <i data-feather="codepen" class="chatbtns" data-toggle="tooltip" title="复制Markdown" onclick="toMarkdown('${res.data[i].chatCode}')"></i>
                                 </div>
                             </div>`;
                 }
@@ -811,6 +916,67 @@ function showHistoryDetail(id) {
             balert("删除失败，错误请联系管理员：err", "danger", false, 2000, "center");
         }
     });
+}
+function toMarkdown(id) {
+    var item = markdownHis.find(function (element) {
+        return element.id === id;
+    });
+    var markd = item ? item.markdown : null;
+    copyText(markd);
+    // 确保获取目标元素的唯一性
+    var $targetElement = $('#' + id);
+
+    if ($targetElement.length > 0) {
+        // 检查是否已经存在 .markdown-content
+        var $existingMarkdownDiv = $targetElement.find('.markdown-content');
+
+        if ($existingMarkdownDiv.length > 0) {
+            // 如果存在，直接执行关闭操作
+            $existingMarkdownDiv.slideUp(function () {
+                $existingMarkdownDiv.remove();
+            });
+            return; // 提前返回
+        }
+        if (markd) {
+            // 确保获取目标元素的唯一性
+            var $targetElement = $('#' + id);
+            if ($targetElement.length > 0 && markd) {
+                // 创建一个新的div来显示markdown内容
+                var $markdownDiv = $('<div class="markdown-content"></div>').hide();
+
+                // 插入markdown内容和关闭按钮到div
+                $closeButton = $('<p class="close-button">&times</p>');
+                var $contentDiv = $('<span class="badge badge-info">下方可编辑Markdown</span><textarea class="markdown-txt"></textarea>').val(markd);
+                $markdownDiv.append($closeButton);
+                $markdownDiv.append($contentDiv);
+
+                // 将该div插入目标元素中
+                $targetElement.append($markdownDiv);
+
+                // 展开动画效果
+                $markdownDiv.slideDown(300);
+                if (chatBody.length > 0) {
+                    var markdownDivOffsetTop = $markdownDiv.offset().top;
+                    var markdownDivHeight = $markdownDiv.outerHeight(true);
+                    var chatBodyHeight = chatBody.height();
+
+                    // 计算滚动位置，使$markdownDiv的中部在父容器的中部显示
+                    var scrollTop = markdownDivOffsetTop - chatBodyHeight / 2 + markdownDivHeight / 2 - chatBody.offset().top;
+
+                    // 滚动 chatBody
+                    chatBody.animate({
+                        scrollTop: chatBody.scrollTop() + scrollTop
+                    }, 'slow');   // 使用平滑滚动
+                }
+                // 关闭按钮功能，点击后收起div
+                $closeButton.on('click', function () {
+                    $markdownDiv.slideUp(function () {
+                        $markdownDiv.remove(); // 在动画结束后移除div
+                    });
+                });
+            }
+        }
+    }
 }
 //新建会话
 function newChat() {

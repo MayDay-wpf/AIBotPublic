@@ -28,12 +28,12 @@ function getGoods() {
                     for (var i = 0; i < data.length; i++) {
                         var payTypes = data[i].goodPayType.split(','); // 将支付方式字符串分割成数组
                         var payBtns = ``;
-                        var wechatPay = payTypes.includes('wxpay') ? ` <a href="#" onclick="payTo('wxpay','${data[i].goodCode}',${data[i].goodPrice})" class="btn btn-success">微信支付</a>` : '';
-                        var alipay = payTypes.includes('alipay') ? ` <a href="#" onclick="payTo('alipay','${data[i].goodCode}',${data[i].goodPrice})" class="btn btn-primary">支付宝支付</a>` : '';
-                        var balancePay = payTypes.includes('balancepay') ? ` <a href="#" onclick="payTo('balancepay','${data[i].goodCode}',${data[i].goodPrice})" class="btn btn-info">余额支付</a>` : '';
+                        var wechatPay = payTypes.includes('wxpay') ? ` <a href="#" onclick="payTo('wxpay','${data[i].goodCode}',${data[i].goodPrice})" class="btn btn-success"><img src="/system/images/wechatpay.png" class="payimg" /> 微信支付</a>` : '';
+                        var alipay = payTypes.includes('alipay') ? ` <a href="#" onclick="payTo('alipay','${data[i].goodCode}',${data[i].goodPrice})" class="btn btn-primary"><img src="/system/images/alipay.png" class="payimg" /> 支付宝支付</a>` : '';
+                        var balancePay = payTypes.includes('balancepay') ? ` <a href="#" onclick="payTo('balancepay','${data[i].goodCode}',${data[i].goodPrice})" class="btn btn-info"><i data-feather="dollar-sign"></i> 余额支付</a>` : '';
                         //商品已售罄
                         if (data[i].goodStock == 0) {
-                            payBtns = `<a href="#" class="btn btn-secondary disabled">已售罄</a>`;
+                            payBtns = `<a href="#" class="btn btn-secondary disabled"><i data-feather="slash"></i> 已售罄</a>`;
                         } else {
                             payBtns = wechatPay + alipay + balancePay;
                         }
@@ -51,6 +51,7 @@ function getGoods() {
                                 </div > `;
                     }
                     $("#goods").html(html);
+                    feather.replace();
                 } else
                     $("#goods").html(`<h4 style="margin:10% auto;background-color:rgb(14,179,227);color:white;padding:10px;border-radius:15px 5px 15px 5px;"> 暂无商品🫨</h4> `);
             }

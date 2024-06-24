@@ -209,7 +209,6 @@ namespace aibotPro.Service
             }
             chatCompletionResponse = CreateERNIEUnStreamResult(completionResult);
             chatCompletionResponse.Model = useModel.ModelName;
-            await _financeService.CreateUseLogAndUpadteMoney(account, chatCompletionCreate.Model, chatCompletionResponse.Usage.prompt_tokens, chatCompletionResponse.Usage.completion_tokens);
             return chatCompletionResponse;
         }
         public async Task<ChatCompletionResponseUnStream> CallOpenAI(ChatCompletionCreateRequest chatCompletionCreate, OpenAIService openAiService, string account)
@@ -264,7 +263,6 @@ namespace aibotPro.Service
                     chatCompletionResponse = CreateOpenAIUnStreamResult(completionResult);
                 }
             }
-            await _financeService.CreateUseLogAndUpadteMoney(account, chatCompletionCreate.Model, chatCompletionResponse.Usage.prompt_tokens, chatCompletionResponse.Usage.completion_tokens);
             return chatCompletionResponse;
         }
 

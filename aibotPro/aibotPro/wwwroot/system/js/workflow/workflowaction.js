@@ -90,7 +90,10 @@ function saveNodeData() {
                 var PRconstant = columns.eq(3).find('input').val();
                 if (PRname.trim() === '' || PRvalue.trim() === '' || regex.test(PRname) || regex.test(PRvalue)) {
                     isEmpty = true;
-                    layer.msg('存在空的参数值，请填写完整！', { icon: 2, time: 2500 });
+                    layer.msg('存在空的参数值，请填写完整！', { icon: 2, time: 2500 }, function () {
+                        layer.closeAll();
+                        bottomPanel.classList.remove('show'); $('#overlay').hide();
+                    });
                     return false;
                 }
                 var item = {
@@ -147,7 +150,10 @@ function saveNodeData() {
                 var ParamValue = columns.eq(1).find('input').val();
                 if (ParamKey.trim() === '' || ParamValue.trim() === '' || regex.test(ParamKey) || regex.test(ParamValue)) {
                     isEmpty = true;
-                    layer.msg('存在空的参数值，请填写完整！', { icon: 2, time: 2500 });
+                    layer.msg('存在空的参数值，请填写完整！', { icon: 2, time: 2500 }, function () {
+                        layer.closeAll();
+                        bottomPanel.classList.remove('show'); $('#overlay').hide();
+                    });
                     return false;
                 }
                 var item = {
@@ -163,7 +169,10 @@ function saveNodeData() {
                 var HdValue = columns.eq(1).find('input').val();
                 if (HdKey.trim() === '' || HdValue.trim() === '' || regex.test(HdKey) || regex.test(HdValue)) {
                     isEmpty = true;
-                    layer.msg('存在空的Header值，请填写完整！', { icon: 2, time: 2500 });
+                    layer.msg('存在空的Header值，请填写完整！', { icon: 2, time: 2500 }, function () {
+                        layer.closeAll();
+                        bottomPanel.classList.remove('show'); $('#overlay').hide();
+                    });
                     return false;
                 }
                 var item = {
@@ -179,7 +188,10 @@ function saveNodeData() {
                 var CkValue = columns.eq(1).find('input').val();
                 if (CkKey.trim() === '' || CkValue.trim() === '' || regex.test(CkKey) || regex.test(CkValue)) {
                     isEmpty = true;
-                    layer.msg('存在空的Cookie值，请填写完整！', { icon: 2, time: 2500 });
+                    layer.msg('存在空的Cookie值，请填写完整！', { icon: 2, time: 2500 }, function () {
+                        layer.closeAll();
+                        bottomPanel.classList.remove('show'); $('#overlay').hide();
+                    });
                     return false;
                 }
                 var item = {
@@ -192,7 +204,10 @@ function saveNodeData() {
                 return false; // 如果检测到空值，立即退出函数
             }
             if ($('.requestUrl').val() == "") {
-                layer.msg('请填写请求地址', { icon: 2, time: 2500 });
+                layer.msg('请填写请求地址', { icon: 2, time: 2500 }, function () {
+                    layer.closeAll();
+                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                });
                 return false;
             }
             var js = httpCodeeditor.getValue();
@@ -231,11 +246,17 @@ function saveNodeData() {
             var JsonModel = $('.jsonmodel').val();
             LLMdata.output.aimodel = AImodel;
             if (Prompt == "") {
-                layer.msg('请填写提示词', { icon: 2, time: 2500 });
+                layer.msg('请填写提示词', { icon: 2, time: 2500 }, function () {
+                    layer.closeAll();
+                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                });
                 return false;
             }
             if (Retry == "") {
-                layer.msg('重试次数填写错误', { icon: 2, time: 2500 });
+                layer.msg('重试次数填写错误', { icon: 2, time: 2500 }, function () {
+                    layer.closeAll();
+                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                });
                 return false;
             }
             var js = llmCodeeditor.getValue();
@@ -258,21 +279,33 @@ function saveNodeData() {
             var Prompt = $('.prompt').val();
             var Retry = $('.retry').val();
             if (Prompt == "") {
-                layer.msg('请填写提示词', { icon: 2, time: 2500 });
+                layer.msg('请填写提示词', { icon: 2, time: 2500 }, function () {
+                    layer.closeAll();
+                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                });
                 return false;
             }
             if (Retry == "") {
-                layer.msg('重试次数填写错误', { icon: 2, time: 2500 });
+                layer.msg('重试次数填写错误', { icon: 2, time: 2500 }, function () {
+                    layer.closeAll();
+                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                });
                 return false;
             }
             var Size = $(".dallsize").val();
             if (Size == null) {
-                layer.msg('请选择绘制尺寸', { icon: 2, time: 2500 });
+                layer.msg('请选择绘制尺寸', { icon: 2, time: 2500 }, function () {
+                    layer.closeAll();
+                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                });
                 return false;
             }
             var Quality = $(".dallquality").val();
             if (Quality == "") {
-                layer.msg('请选择绘制质量', { icon: 2, time: 2500 });
+                layer.msg('请选择绘制质量', { icon: 2, time: 2500 }, function () {
+                    layer.closeAll();
+                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                });
                 return false;
             }
             DALLdata.output.prompt = Prompt;
@@ -293,7 +326,10 @@ function saveNodeData() {
             var Prompt = $('.prompt').val();
             var Retry = $('.retry').val();
             if (Prompt == "") {
-                layer.msg('请填写提示词', { icon: 2, time: 2500 });
+                layer.msg('请填写提示词', { icon: 2, time: 2500 }, function () {
+                    layer.closeAll();
+                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                });
                 return false;
             }
             DALLsmdata.output.prompt = Prompt;
@@ -310,11 +346,17 @@ function saveNodeData() {
             }
             var Prompt = $('.prompt').val();
             if (Prompt == "") {
-                layer.msg('请填写搜索关键词', { icon: 2, time: 2500 });
+                layer.msg('请填写搜索关键词', { icon: 2, time: 2500 }, function () {
+                    layer.closeAll();
+                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                });
                 return false;
             }
             if (Retry == "") {
-                layer.msg('重试次数填写错误', { icon: 2, time: 2500 });
+                layer.msg('重试次数填写错误', { icon: 2, time: 2500 }, function () {
+                    layer.closeAll();
+                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                });
                 return false;
             }
             DALLdata.output.prompt = Prompt;
@@ -347,15 +389,24 @@ function saveNodeData() {
             var Retry = $('.retry').val();
             var TopK = $('.topk').val();
             if (Prompt == "") {
-                layer.msg('请填写提示词', { icon: 2, time: 2500 });
+                layer.msg('请填写提示词', { icon: 2, time: 2500 }, function () {
+                    layer.closeAll();
+                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                });
                 return false;
             }
             if (Retry == "" || Retry > 5) {
-                layer.msg('重试次数填写错误', { icon: 2, time: 2500 });
+                layer.msg('重试次数填写错误', { icon: 2, time: 2500 }, function () {
+                    layer.closeAll();
+                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                });
                 return false;
             }
             if (TopK == "" || TopK > 10 || TopK < 3) {
-                layer.msg('TopK填写错误', { icon: 2, time: 2500 });
+                layer.msg('TopK填写错误', { icon: 2, time: 2500 }, function () {
+                    layer.closeAll();
+                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                });
                 return false;
             }
             $('#onknowledgeitem input[type="checkbox"]:checked').each(function () {
@@ -366,7 +417,10 @@ function saveNodeData() {
                 }
             });
             if (knowledgedata.output.typecode.length == 0) {
-                layer.msg('请选用知识库', { icon: 2, time: 2500 });
+                layer.msg('请选用知识库', { icon: 2, time: 2500 }, function () {
+                    layer.closeAll();
+                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                });
                 return false;
             }
             knowledgedata.output.prompt = Prompt;
@@ -397,6 +451,13 @@ function saveNodeData() {
 
 function saveNodeDataToCache(callback) {
     var nodeData = JSON.stringify(editor.export(), null, 4);
+    if (!checkStartAndEndNodesExist(nodeData)) {
+        layer.msg('流程中必须含有【start】和【end】节点，请添加后再保存', { icon: 2, time: 3500 }, function () {
+            layer.closeAll();
+            bottomPanel.classList.remove('show'); $('#overlay').hide();
+        });
+        return;
+    }
     $.ajax({
         type: "POST",
         url: "/WorkShop/SaveNodeDataToCache",
@@ -407,7 +468,9 @@ function saveNodeDataToCache(callback) {
         success: function (data) {
             if (data.success) {
                 layer.msg('保存完成', { icon: 1, offset: 't', time: 2000 });
-                callback();
+                if (typeof callback === "function") {
+                    callback();
+                }
             }
             else {
                 layer.msg(data.msg, { icon: 2, offset: 't', time: 2000 });
@@ -416,7 +479,37 @@ function saveNodeDataToCache(callback) {
     });
 }
 
+function checkStartAndEndNodesExist(nodesData) {
+    // 解析 JSON 数据
+    const nodesObj = JSON.parse(nodesData);
 
+    // 获取所有节点
+    const nodes = nodesObj.drawflow.Home.data;
+
+    // 初始化标记
+    let startExists = false;
+    let endExists = false;
+
+    // 遍历所有节点
+    for (const nodeId in nodes) {
+        const node = nodes[nodeId];
+        if (node.name === 'start') {
+            startExists = true;
+        }
+        if (node.name === 'end') {
+            endExists = true;
+        }
+    }
+
+    // 检查是否同时存在
+    if (startExists && endExists) {
+        console.log('Both "start" and "end" nodes exist.');
+        return true;
+    } else {
+        console.log('Either "start" or "end" node is missing.');
+        return false;
+    }
+}
 function getWorkFlowNodeData(workflowcode) {
     $.ajax({
         type: "POST",

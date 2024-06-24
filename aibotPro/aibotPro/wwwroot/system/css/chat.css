@@ -291,3 +291,40 @@
     background-color: rgb(255, 248, 220);
     color: rgb(255, 165, 0);
 }
+
+.searchModel {
+    border-radius: 5px;
+}
+
+#modelSearch {
+    width: 0;
+    transition: width 0.3s;
+}
+
+    #modelSearch.expand {
+        width: 100%;
+    }
+
+.markdown-content {
+    position: relative;
+    border: 1px solid #ccc;
+    padding: 10px;
+    background-color: #f9f9f9;
+    margin-top: 10px;
+}
+
+.markdown-txt {
+    width: 100%;
+    height: 450px;
+    outline: none;
+}
+
+.close-button {
+    width: 25px;
+    cursor: pointer;
+    background-color: #f00;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    font-size: 25px !important;
+}

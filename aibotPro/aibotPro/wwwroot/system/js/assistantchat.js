@@ -15,7 +15,7 @@ var processOver = true; //是否处理完毕
 var chatid = "";
 var assistansBoxId = "";
 var threadId = "";
-
+var markdownHis = [];
 // websocket连接设置
 var connection = new signalR.HubConnectionBuilder()
     .withUrl('/chatHub', {
@@ -293,6 +293,11 @@ connection.on('ReceiveAssistantMessage', function (message) {
         $("#" + assistansBoxId + " pre code").each(function (i, block) {
             hljs.highlightElement(block);
         });
+        var item = {
+            id: assistansBoxId,
+            markdown: sysmsg
+        };
+        markdownHis.push(item);
         sysmsg = "";
         jishuqi = 0;
         $('.LDI').remove();
@@ -365,6 +370,7 @@ function sendMsg() {
                     <div>
                         <i data-feather="copy" class="chatbtns" onclick="copyAll('`+ msgid_g + `')"></i>
                         <i data-feather="anchor" class="chatbtns" onclick="quote('`+ msgid_g + `')"></i>
+                        <i data-feather="codepen" class="chatbtns" data-toggle="tooltip" title="复制Markdown" onclick="toMarkdown('${msgid_g}')"></i>
                     </div>
                 </div>`;
     $(".chat-body-content").append(gpthtml);
@@ -407,7 +413,68 @@ function max_textarea_Q() {
         max_textarea = false;
     }
 }
+function toMarkdown(id) {
+    var item = markdownHis.find(function (element) {
+        return element.id === id;
+    });
+    var markd = item ? item.markdown : null;
+    copyText(markd);
+    // 确保获取目标元素的唯一性
+    var $targetElement = $('#' + id);
 
+    if ($targetElement.length > 0) {
+        // 检查是否已经存在 .markdown-content
+        var $existingMarkdownDiv = $targetElement.find('.markdown-content');
+
+        if ($existingMarkdownDiv.length > 0) {
+            // 如果存在，直接执行关闭操作
+            $existingMarkdownDiv.slideUp(function () {
+                $existingMarkdownDiv.remove();
+            });
+            return; // 提前返回
+        }
+        if (markd) {
+            // 确保获取目标元素的唯一性
+            var $targetElement = $('#' + id);
+            if ($targetElement.length > 0 && markd) {
+                // 创建一个新的div来显示markdown内容
+                var $markdownDiv = $('<div class="markdown-content"></div>').hide();
+
+                // 插入markdown内容和关闭按钮到div
+                $closeButton = $('<p class="close-button">&times</p>');
+                var $contentDiv = $('<span class="badge badge-info">下方可编辑Markdown</span><textarea class="markdown-txt"></textarea>').val(markd);
+                $markdownDiv.append($closeButton);
+                $markdownDiv.append($contentDiv);
+
+                // 将该div插入目标元素中
+                $targetElement.append($markdownDiv);
+
+                // 展开动画效果
+                $markdownDiv.slideDown(300);
+                if (chatBody.length > 0) {
+                    var markdownDivOffsetTop = $markdownDiv.offset().top;
+                    var markdownDivHeight = $markdownDiv.outerHeight(true);
+                    var chatBodyHeight = chatBody.height();
+
+                    // 计算滚动位置，使$markdownDiv的中部在父容器的中部显示
+                    var scrollTop = markdownDivOffsetTop - chatBodyHeight / 2 + markdownDivHeight / 2 - chatBody.offset().top;
+
+                    // 滚动 chatBody
+                    chatBody.animate({
+                        scrollTop: chatBody.scrollTop() + scrollTop
+                    }, 'slow');   // 使用平滑滚动
+                }
+
+                // 关闭按钮功能，点击后收起div
+                $closeButton.on('click', function () {
+                    $markdownDiv.slideUp(function () {
+                        $markdownDiv.remove(); // 在动画结束后移除div
+                    });
+                });
+            }
+        }
+    }
+}
 
 
 

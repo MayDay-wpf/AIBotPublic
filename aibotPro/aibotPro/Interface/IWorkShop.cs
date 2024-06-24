@@ -30,6 +30,7 @@ namespace aibotPro.Interface
 
         //获取插件安装列表
         List<PluginDto> GetPluginInstall(string account);
+        List<PluginDto> GetPluginByTest(string pcode);
 
         //获取插件的参数列表
         List<PluginParamDto> GetPluginParams(int pluginId);

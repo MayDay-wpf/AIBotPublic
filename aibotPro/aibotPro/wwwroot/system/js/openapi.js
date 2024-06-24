@@ -31,7 +31,7 @@ function getAIModelList() {
             var html = "";
             if (res.success) {
                 for (var i = 0; i < res.data.length; i++) {
-                    html += `${res.data[i].modelName}、`;
+                    html += `<a href="javascript:void(0);" class="badge badge-pill badge-success" onclick="copyText('${res.data[i].modelName}')">${res.data[i].modelName}</a> `;
                     if (i == 0)
                         options += `<option checked="checked">${res.data[i].modelName}</option>`;
                     else

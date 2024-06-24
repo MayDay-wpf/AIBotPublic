@@ -71,7 +71,23 @@ $(document).ready(function () {
             $(this).val(10000);
         }
     });
+
+    // 监听'EndAction'下拉选择改变事件
+    $('.configure').on('change', '.endAction', function () {
+        toggleCodeEditor();
+    });
+
+    // 默认情况下隐藏代码编辑器
+    toggleCodeEditor();
 });
+function toggleCodeEditor() {
+    const selectedValue = $('.endAction').val();
+    if (selectedValue === 'ai') {
+        $('#codeBox').hide();
+    } else {
+        $('#codeBox').show();
+    }
+}
 var myTextarea;
 var codeeditor;
 var functionName = '';
@@ -727,6 +743,7 @@ editor.on('nodeSelected', function (id) {
                     code = data.output.endscript;
                 }
                 initEndCodeEditor(code);
+                toggleCodeEditor();
             }
             break;
     }
@@ -1047,146 +1064,6 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
             }, end);
             break;
     }
-
-    //switch (name) {
-    //    case 'facebook':
-    //        var facebook = `
-    //    <div>
-    //      <div class="title-box"><i class="fab fa-facebook"></i> Facebook Message</div>
-    //    </div>
-    //    `;
-    //        editor.addNode('facebook', 0, 1, pos_x, pos_y, 'facebook', {}, facebook);
-    //        break;
-    //    case 'slack':
-    //        var slackchat = `
-    //      <div>
-    //        <div class="title-box"><i class="fab fa-slack"></i> Slack chat message</div>
-    //      </div>
-    //      `
-    //        editor.addNode('slack', 1, 0, pos_x, pos_y, 'slack', {}, slackchat);
-    //        break;
-    //    case 'github':
-    //        var githubtemplate = `
-    //      <div>
-    //        <div class="title-box"><i class="fab fa-github "></i> Github Stars</div>
-    //        <div class="box">
-    //          <p>Enter repository url</p>
-    //        <input type="text" df-name>
-    //        </div>
-    //      </div>
-    //      `;
-    //        editor.addNode('github', 0, 1, pos_x, pos_y, 'github', { "name": '' }, githubtemplate);
-    //        break;
-    //    case 'telegram':
-    //        var telegrambot = `
-    //      <div>
-    //        <div class="title-box"><i class="fab fa-telegram-plane"></i> Telegram bot</div>
-    //        <div class="box">
-    //          <p>Send to telegram</p>
-    //          <p>select channel</p>
-    //          <select df-channel>
-    //            <option value="channel_1">Channel 1</option>
-    //            <option value="channel_2">Channel 2</option>
-    //            <option value="channel_3">Channel 3</option>
-    //            <option value="channel_4">Channel 4</option>
-    //          </select>
-    //        </div>
-    //      </div>
-    //      `;
-    //        editor.addNode('telegram', 1, 0, pos_x, pos_y, 'telegram', { "channel": 'channel_3' }, telegrambot);
-    //        break;
-    //    case 'aws':
-    //        var aws = `
-    //      <div>
-    //        <div class="title-box"><i class="fab fa-aws"></i> Aws Save </div>
-    //        <div class="box">
-    //          <p>Save in aws</p>
-    //          <input type="text" df-db-dbname placeholder="DB name"><br><br>
-    //          <input type="text" df-db-key placeholder="DB key">
-    //          <p>Output Log</p>
-    //        </div>
-    //      </div>
-    //      `;
-    //        editor.addNode('aws', 1, 1, pos_x, pos_y, 'aws', { "db": { "dbname": '', "key": '' } }, aws);
-    //        break;
-    //    case 'log':
-    //        var log = `
-    //        <div>
-    //          <div class="title-box"><i class="fas fa-file-signature"></i> Save log file </div>
-    //        </div>
-    //        `;
-    //        editor.addNode('log', 1, 0, pos_x, pos_y, 'log', {}, log);
-    //        break;
-    //    case 'google':
-    //        var google = `
-    //        <div>
-    //          <div class="title-box"><i class="fab fa-google-drive"></i> Google Drive save </div>
-    //        </div>
-    //        `;
-    //        editor.addNode('google', 1, 0, pos_x, pos_y, 'google', {}, google);
-    //        break;
-    //    case 'email':
-    //        var email = `
-    //        <div>
-    //          <div class="title-box"><i class="fas fa-at"></i> Send Email </div>
-    //        </div>
-    //        `;
-    //        editor.addNode('email', 1, 0, pos_x, pos_y, 'email', {}, email);
-    //        break;
-
-    //    case 'template':
-    //        var template = `
-    //        <div>
-    //          <div class="title-box"><i class="fas fa-code"></i> Template</div>
-    //          <div class="box">
-    //            Ger Vars
-    //            <textarea df-template></textarea>
-    //            Output template with vars
-    //          </div>
-    //        </div>
-    //        `;
-    //        editor.addNode('template', 1, 1, pos_x, pos_y, 'template', { "template": 'Write your template' }, template);
-    //        break;
-    //    case 'multiple':
-    //        var multiple = `
-    //        <div>
-    //          <div class="box">
-    //            Multiple!
-    //          </div>
-    //        </div>
-    //        `;
-    //        editor.addNode('multiple', 3, 4, pos_x, pos_y, 'multiple', {}, multiple);
-    //        break;
-    //    case 'personalized':
-    //        var personalized = `
-    //        <div>
-    //          Personalized
-    //        </div>
-    //        `;
-    //        editor.addNode('personalized', 1, 1, pos_x, pos_y, 'personalized', {}, personalized);
-    //        break;
-    //    case 'dbclick':
-    //        var dbclick = `
-    //        <div>
-    //        <div class="title-box"><i class="fas fa-mouse"></i> Db Click</div>
-    //          <div class="box dbclickbox" ondblclick="showpopup(event)">
-    //            Db Click here
-    //            <div class="modal" style="display:none">
-    //              <div class="modal-content">
-    //                <span class="close" onclick="closemodal(event)">&times;</span>
-    //                Change your variable {name} !
-    //                <input type="text" df-name>
-    //              </div>
-
-    //            </div>
-    //          </div>
-    //        </div>
-    //        `;
-    //        editor.addNode('dbclick', 1, 1, pos_x, pos_y, 'dbclick', { name: '' }, dbclick);
-    //        break;
-
-    //    default:
-    //}
 }
 
 var transform = '';
@@ -1271,7 +1148,10 @@ function optionMax() {
     }
 }
 
-function pushtoPlugin() {
+function pushtoPlugin(showlayer = true) {
+    layer.load(1, {
+        shade: [0.5, '#000'] //0.3透明度的白色背景
+    });
     saveNodeDataToCache(function () {
         $.ajax({
             type: "POST",
@@ -1282,12 +1162,28 @@ function pushtoPlugin() {
                 workflowcode: workflowcode
             },
             success: function (data) {
-                if (data.success) {
-                    layer.msg('发布成功', { icon: 1, offset: 't', time: 2000 });
+                layer.closeAll('loading'); //关闭加载中的弹窗
+                if (showlayer) {
+                    if (data.success) {
+                        layer.confirm('<i class="fas fa-check-circle" style="color:rgb(40,232,139)"></i> 发布成功！您想要留在此页还是返回插件列表？', {
+                            btn: ['留在此页', '返回插件列表'] //按钮
+                        }, function () {
+                            // 点击“留在此页”后的回调
+                            layer.closeAll();
+                        }, function () {
+                            // 点击“返回插件列表”后的回调
+                            window.location.href = '/WorkShop/MyPlugins';
+                        });
+                    }
+                    else {
+                        layer.msg(data.msg, { icon: 2, time: 2000 });
+                    }
                 }
-                else {
-                    layer.msg(data.msg, { icon: 2, offset: 't', time: 2000 });
-                }
+            },
+            error: function () {
+                // 关闭加载中的弹窗
+                layer.closeAll('loading');
+                layer.msg('请求失败，请重试', { icon: 2, time: 2000 });
             }
         });
     });
@@ -1337,4 +1233,271 @@ editor.createCurvature = function (start_pos_x, start_pos_y, end_pos_x, end_pos_
             return xx;
             break;
     }
+}
+//workflow测试区代码
+// websocket连接设置
+var connection = new signalR.HubConnectionBuilder()
+    .withUrl('/chatHub', {
+        accessTokenFactory: () => localStorage.getItem('aibotpro_userToken')
+    })
+    .withAutomaticReconnect()
+    .build();
+
+// 启动连接
+connection.start()
+    .then(function () {
+        console.log('与工坊服务器握手成功 :-)'); // 与服务器握手成功
+    })
+    .catch(function (error) {
+        console.log('与工坊服务器握手失败 :-( 原因: ' + error); // 与服务器握手失败
+        sendExceptionMsg('与工坊服务器握手失败 :-( 原因: ' + error);
+        // 检查令牌是否过期，如果是，则跳转到登录页面
+        if (isTokenExpiredError(error)) {
+            window.location.href = "/Users/Login";
+        }
+    });
+
+// 检查错误是否表示令牌过期的函数
+// 注意：您需要根据实际的错误响应格式来调整此函数
+function isTokenExpiredError(error) {
+    // 这里的判断逻辑依赖于服务器返回的错误格式
+    // 例如，如果服务器在令牌过期时返回特定的状态码或错误信息，您可以在这里检查
+    var expiredTokenStatus = 401; // 假设401表示令牌过期
+    return error.statusCode === expiredTokenStatus || error.message.includes("令牌过期");
+}
+
+// You can also handle the reconnection events if needed:
+connection.onreconnecting((error) => {
+    console.assert(connection.state === signalR.HubConnectionState.Reconnecting);
+    console.log(`由于错误"${error}"失去连接。正在尝试重新连接工坊。`);
+    // Here you might want to inform the user that the connection is being reattempted.
+});
+
+connection.onreconnected((connectionId) => {
+    console.assert(connection.state === signalR.HubConnectionState.Connected);
+    console.log(`工坊连接已重新建立。已连接到connectionId为"${connectionId}"。`);
+    // Here you might want to inform the user that the connection has been successfully reestablished.
+});
+var chatid = "";
+var chatgroupid = "";
+var assistansBoxId = "";
+var thisAiModel = "gpt-3.5-turbo-0125-CYGF"; //当前AI模型
+var processOver = true;
+var bottomPanel = document.getElementById('bottomPanel');
+var closePanelBtn = document.getElementById('debugerclosePanelBtn');
+var chatBody = $(".bottom-panel-content");
+
+var md = window.markdownit();
+var sysmsg = "";
+var jishuqi = 0;
+// 添加显示代码语言的 Labels
+function addLanguageLabels(useSpecificId = false, assistansBoxId = '') {
+    // 根据 useSpecificId 决定选择器的范围
+    var selector = useSpecificId && assistansBoxId ? $("#" + assistansBoxId + " pre code") : $("pre code");
+
+    selector.each(function () {
+        // 仅对尚未添加过语言标签的 code 元素进行处理
+        if ($(this).parent().find('.code-lang-label-container').length === 0) {
+            var lang = $(this).attr('class').match(/language-(\w+)/);
+            if (lang) {
+                // 创建语言标签容器
+                var langLabelContainer = $('<div class="code-lang-label-container" style="background-color: rgb(80, 80, 90);"></div>');
+                // 创建语言标签
+                var langLabel = $('<span class="code-lang-label" style="color: white;">' + lang[1] + '</span>');
+                // 将语言标签添加到容器中
+                langLabelContainer.append(langLabel);
+                // 将语言标签容器插入到代码块的顶部
+                $(this).before(langLabelContainer);
+            }
+        }
+    });
+}
+connection.on('ReceiveWorkShopMessage', function (message) {
+    //console.log(message);
+    if (!message.isfinish) {
+        if (jishuqi == 0) {
+            chatid = message.chatid;
+        } else {
+            if (message.message != null) {
+                sysmsg += message.message;
+                $("#" + assistansBoxId).html(md.render(sysmsg));
+                MathJax.typeset();
+                //hljs.highlightAll();
+                $("#" + assistansBoxId + " pre code").each(function (i, block) {
+                    hljs.highlightElement(block);
+                });
+                addLanguageLabels(true, assistansBoxId);
+            }
+
+        }
+        jishuqi++;
+    } else {
+        processOver = true;
+        $("#sendBtn").css('background-color', 'rgb(0,123,255)');
+        $("#sendBtn").text('发送');
+        $("#" + assistansBoxId).html(marked(completeMarkdown(sysmsg)));
+        MathJax.typeset();
+        //hljs.highlightAll();
+        $("#" + assistansBoxId + " pre code").each(function (i, block) {
+            hljs.highlightElement(block);
+        });
+        addLanguageLabels(true, assistansBoxId);
+        sysmsg = "";
+        jishuqi = 0;
+        $('.LDI').remove();
+    }
+    if (message.jscode != null && message.jscode != "") {
+        (function () {
+            eval(message.jscode);
+        })();
+    }
+});
+
+
+//发送消息
+function sendMsg() {
+    var msg = $("#Q").val().trim();
+    if (msg == "") {
+        layer.msg('请输入问题', { icon: 3, time: 2000 });
+        return;
+    }
+    if (!processOver) {
+        layer.msg('对话进行中,请结束后再试', { icon: 3, time: 2000 });
+        return;
+    }
+    processOver = false;
+    $("#sendBtn").css('background-color', 'red');
+    $("#sendBtn").text('停止');
+    chatgroupid = generateGUID();
+    var msgid_u = generateGUID();
+    var msgid_g = generateGUID();
+    assistansBoxId = msgid_g;
+    var data = {
+        "msg": msg,
+        "chatid": chatid,
+        "aiModel": thisAiModel,
+        "msgid_u": msgid_u,
+        "msgid_g": msgid_g,
+        "chatgroupid": chatgroupid,
+        "ip": IP,
+        "image_path": "",
+        "chatfrom": plugincode
+    };
+    $("#Q").val("");
+    $("#Q").focus();
+    var html = `<div class="chat-message user"><pre id="` + msgid_u + `"></pre></div>`;
+    $(".bottom-panel-content").append(html);
+    $("#" + msgid_u).text(msg);
+    var gpthtml = `<div class="chat-message system"><div id="` + msgid_g + `"></div><svg width="30" height="30" class="LDI"><circle cx="15" cy="15" r="7.5" fill="black" class="blinking-dot" /></svg></div>`;
+    $(".bottom-panel-content").append(gpthtml);
+    chatBody.animate({
+        scrollTop: chatBody.prop("scrollHeight")
+    }, 500);
+    connection.invoke("SendWorkShopMessage", data, false, [])
+        .then(function () {
+        })
+        .catch(function (err) {
+            processOver = true;
+            sendExceptionMsg(err.toString());
+            //balert("您的登录令牌似乎已失效，我们将启动账号保护，请稍候，正在前往重新登录...", "danger", false, 3000, "center", function () {
+            //    window.location.href = "/Users/Login";
+            //});
+        });
+}
+//新建会话
+function newChat() {
+    if (!processOver) {
+        layer.msg('对话进行中,请结束后再试', { icon: 3, time: 2000 });
+        return;
+    }
+    chatid = "";
+    chatgroupid = "";
+    chatBody.html("");
+    $("#Q").focus();
+}
+function stopGenerate() {
+    processOver = true;
+    $("#sendBtn").css('background-color', 'rgb(0,123,255)');
+    $("#sendBtn").text('发送');
+    $('.LDI').remove();
+    if (sysmsg != '')
+        $("#" + assistansBoxId).html(marked(completeMarkdown(sysmsg)));
+    MathJax.typeset();
+    $("#" + assistansBoxId + " pre code").each(function (i, block) {
+        hljs.highlightElement(block);
+    });
+    addLanguageLabels(true, assistansBoxId);
+    $.ajax({
+        type: "Post",
+        url: "/Home/StopGenerate",
+        dataType: "json",
+        data: {
+            chatId: chatgroupid
+        },
+        success: function (res) {
+            console.log(`workshop停止生成，Id：${chatgroupid} --${getCurrentDateTime()}`);
+        },
+        error: function (err) {
+            layer.msg('出现了一些未经处理的异常，请联系管理员', { icon: 2, time: 2000 }, function () {
+                sendExceptionMsg(err.toString());
+            });
+        }
+    });
+}
+
+function debugWorkFlow() {
+    saveNodeDataToCache();
+    pushtoPlugin(false);
+    $('#overlay').show();
+    bottomPanel.classList.add('show');
+    getWorkShopAIModelList();
+}
+closePanelBtn.addEventListener('click', () => {
+    bottomPanel.classList.remove('show');
+    $('#overlay').hide();
+});
+$(document).keypress(function (e) {
+    if ($("#Q").is(":focus")) {
+        if (e.which == 13) {
+            // 避免回车键换行
+            e.preventDefault();
+            sendMsg();
+        }
+    }
+});
+$(document).ready(function () {
+    // 监听模型选择下拉框的变化
+    $('#modelSelect').change(function () {
+        var selectedModel = $(this).val();
+        thisAiModel = selectedModel;
+        layer.msg('切换成功', { icon: 1, time: 2000 });
+    });
+    $("#sendBtn").on("click", function () {
+        if (!processOver) {
+            stopGenerate();
+        }
+        else
+            sendMsg();
+    });
+});
+function getWorkShopAIModelList(callback) {
+    $.ajax({
+        type: "Post",
+        url: "/WorkShop/GetWorkShopAImodel",
+        dataType: "json",
+        success: function (res) {
+            var html = "";
+            if (res.success) {
+                for (var i = 0; i < res.data.length; i++) {
+                    html += `<option value="${res.data[i].modelName}">${res.data[i].modelNick}</option>`;
+                }
+                $('.aimodelCYGF').html(html);
+                callback && callback();
+            }
+        },
+        error: function (err) {
+            layer.msg('系统未配置AI模型', { icon: 2, time: 2000 });
+
+        }
+    });
 }

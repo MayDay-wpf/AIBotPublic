@@ -37,5 +37,6 @@ namespace aibotPro.Interface
         bool SaveSystemUI(UISettingDto uISettingDto, string account);//保存系统UI配置
         UISettingDto GetSystemUI(string account);//获取系统UI配置
         void CopyPropertiesTo<T, TU>(T source, TU dest);//反射赋值
+        string CompressImage(string inputFile, int quality);//压缩图片质量，不改变尺寸
     }
 }

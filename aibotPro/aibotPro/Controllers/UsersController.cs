@@ -1053,5 +1053,32 @@ namespace aibotPro.Controllers
                 });
             }
         }
+        [Authorize]
+        [HttpPost]
+        public IActionResult ErrorBilling(int id, decimal useMoney, string cause)
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            bool result = _financeService.CreateErrorBilling(id, useMoney, cause, username, out string errMsg);
+            return Json(new
+            {
+                success = result,
+                msg = errMsg
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public IActionResult GetErrorBilling(int page, int page_size)
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            int total = 0;
+            var billLog = _usersService.GetErrorBilling(username, page, page_size, out total);
+            return Json(new
+            {
+                success = true,
+                msg = "获取成功",
+                data = billLog,
+                total = total
+            });
+        }
     }
 }

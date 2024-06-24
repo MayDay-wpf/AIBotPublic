@@ -31,6 +31,7 @@ namespace aibotPro.Models
         public virtual DbSet<ChatHistory> ChatHistories { get; set; }
         public virtual DbSet<ChatSetting> ChatSettings { get; set; }
         public virtual DbSet<EasyPaySetting> EasyPaySettings { get; set; }
+        public virtual DbSet<ErrorBilling> ErrorBillings { get; set; }
         public virtual DbSet<FilesLib> FilesLibs { get; set; }
         public virtual DbSet<Good> Goods { get; set; }
         public virtual DbSet<IPlook> IPlooks { get; set; }

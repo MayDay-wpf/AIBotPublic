@@ -14,7 +14,7 @@
         }
     };
 </script>
-<link href="~/system/css/chat.css?v1" rel="stylesheet" />
+<link href="~/system/css/chat.css?v2" rel="stylesheet" />
 <script src="~/system/js/markdown-it.min.js"></script>
 <script src="~/system/js/tex-chtml.js"></script>
 
@@ -99,8 +99,12 @@
                         <i data-feather="chevron-down" style="width:20px;"></i>
                     </a>
                     <div class="dropdown-menu dropdown-menu-left" aria-labelledby="chatDropdown" style="max-height: 505px;overflow-y:scroll" id="AIModel">
-                        @*<a class="dropdown-item font-14" href="#" onclick="changeModel('chat','ChatGPT3.5')">ChatGPT3.5</a>
-                        <a class="dropdown-item font-14" href="#" onclick="changeModel('chat16K','ChatGPT3.5-16K')">ChatGPT3.5-16K</a> *@
+                        <div id="searchIcon" style="cursor:pointer;margin:5px;color:gray;">
+                            <i data-feather="search" style="width: 20px;"></i>
+                            <span>点击搜索</span>
+                        </div>
+                        <input type="text" id="modelSearch" class="form-control searchModel" placeholder="搜索模型..." onkeyup="filterModels()" style="display:none;">
+                        <div id="modelList"></div>
                     </div>
                 </div>
                 &nbsp;&nbsp;
@@ -124,6 +128,9 @@
                             <div class="modal-body">
                                 <div class="form-group">
                                     <label><input type="checkbox" name="options" class="useMemory" value="useMemory" checked=""> 启用记忆体<span style="color:orangered">（如果没有历史记忆查询需求，请不要轻易使用此功能！）</span></label>
+                                </div>
+                                <div class="form-group" id="pureBox" style="display:none">
+                                    <label><input type="checkbox" name="options" class="pure" value="pure" checked=""> 纯净模式<span style="color:orangered">（开启后只保留对话窗口）</span></label>
                                 </div>
                                 <div class="form-group">
                                     <label for="shortcutSystemPrompt">快捷系统提示词</label>
@@ -201,7 +208,7 @@
     </div>
 </div>
 <script src="~/system/js/signalr.min.js"></script>
-<script src="~/system/js/chat.js?v6"></script>
+<script src="~/system/js/chat.js?v11"></script>
 <script src="~/system/js/marked.min.js"></script>
 <link href="~/system/css/atom-one-dark.min.css" rel="stylesheet" />
 <script src="~/system/js/highlight.min.js"></script>

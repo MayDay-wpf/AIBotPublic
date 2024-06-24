@@ -78,6 +78,7 @@ builder.Services.AddScoped<IAuthorizationHandler, AdminRequirementHandler>();
 builder.Services.AddScoped<IAuthorizationHandler, APIRequirementHandler>();
 builder.Services.AddScoped<IMilvusService, MilvusService>();
 builder.Services.AddScoped<IOpenAPIService, OpenAPIService>();
+builder.Services.AddScoped<ICOSService, COSService>();
 builder.Services.AddSingleton<ChatCancellationManager>();
 builder.Services.AddMemoryCache();
 builder.Services.AddSignalR();

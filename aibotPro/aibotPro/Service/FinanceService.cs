@@ -768,7 +768,73 @@ namespace aibotPro.Service
             _context.Entry(good).State = EntityState.Modified;
             return Task.FromResult(_context.SaveChanges() > 0);
         }
+        public bool CreateErrorBilling(int logId, decimal useMoney, string cause, string account, out string errMsg)
+        {
+            errMsg = string.Empty;
+            bool result = false;
+            //查询该笔申请是否已存在
+            var bill = _context.ErrorBillings.Where(b => b.LogId == logId).FirstOrDefault();
+            if (bill != null)
+            {
+                errMsg = "申请已存在，请勿重复提交";
+            }
+            else
+            {
+                ErrorBilling errorBilling = new ErrorBilling()
+                {
+                    LogId = logId,
+                    Account = account,
+                    Cause = cause,
+                    UseMoney = useMoney,
+                    Status = 0,
+                    Reply = string.Empty,
+                    CreateTime = DateTime.Now
+                };
+                _context.ErrorBillings.Add(errorBilling);
+                _context.SaveChanges();
+                result = true;
+            }
 
+            return result;
+        }
+        public bool UpdateErrorBilling(int id, int type, string reply, out string errMsg)
+        {
+            errMsg = string.Empty;
+            var bill = _context.ErrorBillings.Where(b => b.Id == id).FirstOrDefault();
+            if (bill != null)
+            {
+                if (type == 3)
+                {
+                    _context.ErrorBillings.Remove(bill);
+                    return _context.SaveChanges() > 0;
+                }
+                bill.Status = type;
+                bill.Reply = reply;
+                bill.HandlingTime = DateTime.Now;
+                //标记实体状态为已修改
+                _context.Entry(bill).State = EntityState.Modified;
+                if (bill.Status == 1)//恢复用户余额
+                {
+                    var user = _context.Users.Where(x => x.Account == bill.Account).FirstOrDefault();
+                    if (user == null)
+                    {
+                        errMsg = "用户不存在";
+                        return false;
+                    }
+                    user.Mcoin += bill.UseMoney;
+                    //删除日志
+                    var log = _context.UseUpLogs.Where(l => l.Id == bill.LogId).FirstOrDefault();
+                    _context.UseUpLogs.Remove(log);
+                    _context.Entry(user).State = EntityState.Modified;
+                }
+                return _context.SaveChanges() > 0;
+            }
+            else
+            {
+                errMsg = "记录不存在";
+                return false;
+            }
+        }
         private static string GenerateSign(IDictionary<string, string> parameters, string key)
         {
             // 第一步：按照参数名ASCII码从小到大排序

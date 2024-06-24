@@ -48,15 +48,17 @@
                 <table class="table table-striped table-bordered">
                     <thead>
                         <tr>
-                            <th>模型名称</th>
+                            <th>模型名称(点击查看详情)</th>
                             <th>消耗金额</th>
                             <th>输入Token</th>
                             <th>输出Token</th>
                             <th>时间</th>
+                            <th>错误计费</th>
                         </tr>
                     </thead>
                     <tbody id="logList">
                         <tr>
+                            <td>--</td>
                             <td>--</td>
                             <td>--</td>
                             <td>--</td>
@@ -77,8 +79,51 @@
             </div>
         </div>
     </div>
+    <p></p>
+    <div class="card">
+        <div class="card-header">
+            <h5>撤销记录</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            <th>消耗记录ID</th>
+                            <th>消耗金额</th>
+                            <th>原因</th>
+                            <th>提交时间</th>
+                            <th>处理进度</th>
+                            <th>管理员回复</th>
+                            <th>处理时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="errList">
+                        <tr>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <nav aria-label="Page navigation example">
+                    <ul class="pagination  errpagination">
+                        <li class="page-item" id="first-page-err"><a class="page-link" href="#">首页</a></li>
+                        <li class="page-item" id="previous-page-err"><a class="page-link" href="#">上一页</a></li>
+                        <!-- 页码链接将在这里动态插入 -->
+                        <li class="page-item" id="next-page-err"><a class="page-link" href="#">下一页</a></li>
+                        <li class="page-item" id="last-page-err"><a class="page-link" href="#">尾页</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
 </div>
 <script src="~/system/chart/moment.min.js"></script>
 <script src="~/system/chart/daterangepicker.min.js"></script>
-<script src="~/system/js/statistics.js"></script>
+<script src="~/system/js/statistics.js?v1"></script>
 

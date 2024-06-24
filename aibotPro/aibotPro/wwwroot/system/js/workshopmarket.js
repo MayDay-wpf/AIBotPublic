@@ -86,7 +86,7 @@ function getWorkShopPlugins(type) {
     }
     if (type == 'loadmore' && noMoreData) { // 加载更多但标志已表示没有更多数据
         loadingOverlay.hide();
-        balert('没有更多了', "info", false, 1500, "center");
+        balert("没有更多了", "info", false, 1500, "center");
         return; // 直接返回，不再进行请求
     }
     if (type == 'loadmore') {
@@ -115,8 +115,9 @@ function getWorkShopPlugins(type) {
                     html += '<p class="card-text" style="max-height: 100px; overflow: auto;">' + item.pfunctioninfo + '</p>';
                     html += '<p class="card-text"><span>价格：</span><span style="color:#f2c044" class="plugin_price">' + item.pluginprice + '</span></p>';
                     html += '<div class="d-flex justify-content-center">';
-                    html += `<button class="btn btn-primary" style="margin-right:10px;" onclick="insertPlugin(` + item.id + `,'` + item.pluginprice + `')">安装</button>`;
-                    html += '<button class="btn btn-secondary" onclick="seePlugin(' + item.id + ')">查看</button>';
+                    html += `<button class="btn btn-primary" style="margin-right:10px;" onclick="insertPlugin(` + item.id + `,'` + item.pluginprice + `')"><i data-feather="download"></i> 安装</button>`;
+                    if (item.popensource == 'yes')
+                        html += '<button class="btn btn-success" onclick="seePlugin(' + item.id + ')"><i data-feather="eye"></i> 查看</button>';
                     html += '</div>';
                     html += '</div>';
                     html += '</div>';
@@ -133,6 +134,7 @@ function getWorkShopPlugins(type) {
                         noMoreData = true;
                     }
                 }
+                feather.replace();
             }
         },
         error: function (res) {

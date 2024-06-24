@@ -674,8 +674,8 @@ function saveDefaultWorkflow(workflowcode) {
         "drawflow": {
             "Home": {
                 "data": {
-                    "5": {
-                        "id": 5,
+                    "1": {
+                        "id": 1,
                         "name": "start",
                         "data": {
                             "output": {
@@ -688,11 +688,42 @@ function saveDefaultWorkflow(workflowcode) {
                         "inputs": {},
                         "outputs": {
                             "output_1": {
-                                "connections": []
+                                "connections": [
+                                    {
+                                        "node": "2",
+                                        "output": "input_1"
+                                    }
+                                ]
                             }
                         },
-                        "pos_x": 311,
-                        "pos_y": 180
+                        "pos_x": 209.20001220703125,
+                        "pos_y": 226
+                    },
+                    "2": {
+                        "id": 2,
+                        "name": "end",
+                        "data": {
+                            "output": {
+                                "endaction": "",
+                                "endscript": ""
+                            }
+                        },
+                        "class": "end",
+                        "html": "\n            <div>\n              <div class=\"title-box\"><i class=\"fas fa-stop-circle\"></i> <span class=\"nodeText\">结束(end)</span></div>\n            </div>\n            ",
+                        "typenode": false,
+                        "inputs": {
+                            "input_1": {
+                                "connections": [
+                                    {
+                                        "node": "1",
+                                        "input": "output_1"
+                                    }
+                                ]
+                            }
+                        },
+                        "outputs": {},
+                        "pos_x": 649.2000122070312,
+                        "pos_y": 246
                     }
                 }
             }

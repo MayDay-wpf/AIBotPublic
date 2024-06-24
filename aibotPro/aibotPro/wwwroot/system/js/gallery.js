@@ -47,6 +47,7 @@ $(function () {
 //}, 500)); // limit to run every 250 milliseconds
 let $grid = $('#masonry-layout');
 let noMoreData = false;
+
 function getAIdrawResList(type) {
     if (type == 'init') {
         page = 1;
@@ -58,6 +59,10 @@ function getAIdrawResList(type) {
     }
     if (type == 'loadmore') {
         page++;
+    }
+    if (type == 'reload') {
+        page = page;
+        pageSize = pageSize;
     }
     var data = {
         page: page,
@@ -74,11 +79,18 @@ function getAIdrawResList(type) {
                 var html = '';
                 for (var i = 0; i < res.data.length; i++) {
                     var item = res.data[i];
+                    var image = `<a href="${item.imgSavePath}" class="image-popup">
+                                          <img class="card-img-top img-fluid lazy" src="${item.imgSavePath}" style="aspect-ratio: 1 / 1; object-fit: cover;">
+                                        </a>`
+                    if (item.thumbSavePath != null && item.thumbSavePath !== '') {
+                        item.thumbSavePath=item.thumbSavePath.replace('wwwroot', '');
+                        image = `<a href="${item.imgSavePath}" class="image-popup">
+                                   <img class="card-img-top img-fluid lazy" src="${item.thumbSavePath}" style="aspect-ratio: 1 / 1; object-fit: cover;">
+                                 </a>`
+                    }
                     html += `<div class="col-lg-3 col-md-6 col-sm-12 mb-4 grid-item">
                                 <div class="card h-100">
-                                    <a href="${item.imgSavePath}" class="image-popup">
-                                        <img class="card-img-top img-fluid lazy" src="${item.imgSavePath}" style="aspect-ratio: 1 / 1; object-fit: cover;">
-                                    </a>
+                                    ${image}
                                     <div class="card-body">
                                         <p class="card-text" style="max-height: 100px; overflow: auto;">${item.prompt}</p>
                                         <div class="d-flex justify-content-center">
@@ -108,6 +120,7 @@ function getAIdrawResList(type) {
         }
     });
 }
+
 function deleteImg(id) {
     //询问框
     showConfirmationModal('提醒', '图片删除后无法恢复，确认删除？', function () {
@@ -115,13 +128,13 @@ function deleteImg(id) {
         $.ajax({
             type: 'Post',
             url: '/AIdraw/DeleteAIdrawRes',
-            data: { id: id },
+            data: {id: id},
             success: function (res) {
                 loadingOverlay.hide();
                 if (res.success) {
                     balert('删除成功', "success", false, 1500);
                     //浏览器刷新
-                    location.reload();
+                    getAIdrawResList('reload');
                 } else {
                     balert(res.msg, "danger", false, 1500);
                 }

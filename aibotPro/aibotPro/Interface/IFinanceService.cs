@@ -31,6 +31,8 @@ namespace aibotPro.Interface
         Good GetGood(string goodCode);//查询商品
         List<Good> GetGoods(string gname, int pageIndex, int pageSize, bool? onShelves, out int total);//查询商品列表
         Task<bool> UpdateGoodsStock(string goodCode, int stock);//更新商品库存
+        bool CreateErrorBilling(int logId, decimal useMoney, string cause, string account, out string errMsg);
+        bool UpdateErrorBilling(int id, int type, string reply, out string errMsg);
     }
 }
 

@@ -91,11 +91,34 @@
         <p></p>
         <div class="card">
             <div class="card-header">
-                <h5>第三步（选填）：参考图上传</h5>
+                <h5>第三步：选择生成模式</h5>
+            </div>
+            <div class="card-body">
+                <div class="container">
+                    <h6 class="tx-danger">请仔细阅读每种模式的特点</h6>
+                    <div class="custom-control custom-radio mb-3">
+                        <input type="radio" id="relax" name="customRadio" class="custom-control-input" value="relax">
+                        <label class="custom-control-label" for="relax"><b class="tx-danger">Relax</b>(生成速度<b class="tx-danger">慢</b>,成功率较<b class="tx-danger">低</b>,价格<b class="tx-success">便宜</b>)</label>
+                    </div>
+                    <div class="custom-control custom-radio mb-3">
+                        <input type="radio" id="fast" name="customRadio" class="custom-control-input" value="fast" checked="checked">
+                        <label class="custom-control-label" for="fast"><b class="tx-info">Fast</b>(生成速度<b class="tx-info">快</b>,成功率<b class="tx-info">高</b>,价格<b class="tx-info">适中</b>)</label>
+                    </div>
+                    <div class="custom-control custom-radio mb-3">
+                        <input type="radio" id="turbo" name="customRadio" value="turbo" class="custom-control-input">
+                        <label class="custom-control-label" for="turbo"><b class="tx-success">Turbo</b>(生成速度<b class="tx-success">极快</b>,成功率<b class="tx-success">极高</b>,价格<b class="tx-danger">较贵</b>)</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p></p>
+        <div class="card">
+            <div class="card-header">
+                <h5>第四步（选填）：参考图上传</h5>
             </div>
             <div class="card-body">
                 <div class="container mt-5">
-                    <h6 id="section1" class="tx-semibold">注意这里不是PS，参考图只参考图片的风格</h6>
+                    <h6 id="section1" class="tx-danger">注意这里不是PS，参考图只参考图片的风格</h6>
                     <div class="input-group mb-3">
                         <div class="custom-file">
                             <input type="file" class="custom-file-input" id="fileInput">
@@ -115,11 +138,12 @@
         <p></p>
         <div class="card">
             <div class="card-header">
-                <h5>第四步：创建任务</h5>
+                <h5>第五步：创建任务</h5>
             </div>
             <div class="card-body">
                 <div class="text-center">
-                    <button type="button" class="btn btn-success" id="createTaskBtn"><i data-feather="feather"></i>点击创建绘画任务</button>
+                    <button type="button" class="btn btn-success createTask" id="createTaskBtn"><i data-feather="feather"></i>点击创建绘画任务</button>
+                    <button type="button" class="btn btn-danger cancelTask" id="cancelTaskBtn" style="display:none" onclick="cancelMJtask()"><i data-feather="stop-circle"></i>终止绘画任务</button>
                 </div>
                 <p></p>
                 <div class="progress mb-3">
@@ -138,5 +162,5 @@
 <link rel="stylesheet" href="/system/css/magnific-popup.min.css">
 <script src="~/system/js/signalr.min.js"></script>
 <script src="~/system/js/jquery.magnific-popup.min.js"></script>
-<script src="~/system/js/midjourney.js"></script>
+<script src="~/system/js/midjourney.js?v4"></script>
 <script src="~/system/js/uploadlogic.js"></script>

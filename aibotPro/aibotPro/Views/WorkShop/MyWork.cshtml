@@ -61,10 +61,12 @@
             <div class="card-body">
                 <form>
                     <div class="form-group">
-                        <label for="avatar">头像上传 <span class="tx-danger">*</span></label>
+                        <label for="avatar">
+                            头像上传 <span class="tx-danger">*</span>
+                        </label>
                         <div class="avatar-upload" onclick="document.getElementById('avatar').click()">
                             <input type="file" id="avatar" style="display: none;" onchange="loadImage(event)">
-                            <img id="avatar-image" src="" alt="+">
+                            <img id="avatar-image" src="/system/images/addavatar.png" alt="+">
                         </div>
                     </div>
                     <div class="form-group">
@@ -114,10 +116,10 @@
             </div>
             <div class="card-body">
                 <div class="btn-group" role="group" aria-label="Plugin Development Modes">
-                    <button type="button" class="btn btn-primary" onclick="selectMode('plugin-online')">线上API</button>
-                    <button type="button" class="btn btn-secondary" onclick="selectMode('plugin-offline')">离线JavaScript</button>
-                    <button type="button" class="btn btn-info" onclick="selectMode('plugin-mixed')">脚本回调</button>
-                    <button type="button" class="btn btn-danger" onclick="selectMode('plugin-workflow')">工作流</button>
+                    <button type="button" class="btn btn-primary" onclick="selectMode('plugin-online')"><i data-feather="link"></i> 线上API</button>
+                    <button type="button" class="btn btn-secondary" onclick="selectMode('plugin-offline')"><i data-feather="code"></i> 离线JavaScript</button>
+                    <button type="button" class="btn btn-info" onclick="selectMode('plugin-mixed')"><i data-feather="codesandbox"></i> 脚本回调</button>
+                    <button type="button" class="btn btn-danger" onclick="selectMode('plugin-workflow')"><i data-feather="share-2"></i> 工作流</button>
                 </div>
             </div>
         </div>

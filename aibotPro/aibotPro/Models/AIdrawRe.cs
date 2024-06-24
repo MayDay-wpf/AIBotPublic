@@ -19,6 +19,8 @@ namespace aibotPro.Models
         public string ImgSavePath { get; set; }
         public string Prompt { get; set; }
         public string ReferenceImgPath { get; set; }
+        public string ThumbSavePath { get; set; }
+        public string ThumbKey { get; set; }
         [Column(TypeName = "datetime")]
         public DateTime? CreateTime { get; set; }
         public int? IsDel { get; set; }

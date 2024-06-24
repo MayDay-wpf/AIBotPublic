@@ -47,6 +47,7 @@
     <PackageReference Include="Spire.Doc" Version="12.2.1" />
     <PackageReference Include="Spire.Presentation" Version="9.2.0" />
     <PackageReference Include="StackExchange.Redis" Version="2.7.17" />
+    <PackageReference Include="Tencent.QCloud.Cos.Sdk" Version="5.4.37" />
     <PackageReference Include="TiktokenSharp" Version="1.0.8" />
     <PackageReference Include="Xabe.FFmpeg" Version="5.2.6" />
   </ItemGroup>

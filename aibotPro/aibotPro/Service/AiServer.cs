@@ -321,9 +321,21 @@ namespace aibotPro.Service
                 _redis.DeleteAsync(chatHistories[0].ChatId);
             return _context.SaveChanges() > 0;
         }
-        public async Task<string> CreateMJdraw(string prompt, string botType, string[] referenceImgPath, string baseUrl, string apiKey)
+        public async Task<string> CreateMJdraw(string prompt, string botType, string[] referenceImgPath, string baseUrl, string apiKey, string drawmodel)
         {
-            var client = new RestClient(baseUrl + "/mj/submit/imagine");
+            try
+            {
+                if (baseUrl.EndsWith("/"))
+                {
+                    baseUrl = baseUrl.TrimEnd('/');
+                }
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+            baseUrl += $"/mj-{drawmodel}/mj/submit/imagine";
+            var client = new RestClient(baseUrl);
             var request = new RestRequest("", Method.Post);
             request.AddHeader("mj-api-secret", apiKey);
             request.AddHeader("Content-Type", "application/json");
@@ -500,7 +512,7 @@ namespace aibotPro.Service
             }
         }
 
-        public async Task<bool> SaveAiDrawResult(string account, string model, string savePath, string prompt, string referenceImgPath)
+        public async Task<bool> SaveAiDrawResult(string account, string model, string savePath, string prompt, string referenceImgPath, string thumbSavePath, string thumbKey)
         {
             try
             {
@@ -511,6 +523,8 @@ namespace aibotPro.Service
                     AImodel = model,
                     Prompt = prompt,
                     ReferenceImgPath = referenceImgPath,
+                    ThumbSavePath = thumbSavePath,
+                    ThumbKey = thumbKey,
                     ImgSavePath = savePath,
                     CreateTime = DateTime.Now,
                     IsDel = 0
@@ -525,7 +539,7 @@ namespace aibotPro.Service
 
         }
 
-        public async Task<string> CreateMJchange(string changeType, int changeIndex, string taskId, string baseUrl, string apiKey)
+        public async Task<string> CreateMJchange(string changeType, int changeIndex, string taskId, string baseUrl, string apiKey, string drawmodel)
         {
             try
             {
@@ -538,7 +552,8 @@ namespace aibotPro.Service
             {
                 throw e;
             }
-            var client = new RestClient(baseUrl + "/mj/submit/change");
+            baseUrl += $"/mj-{drawmodel}/mj/submit/change";
+            var client = new RestClient(baseUrl);
             var request = new RestRequest("", Method.Post);
             request.AddHeader("mj-api-secret", apiKey);
             request.AddHeader("Content-Type", "application/json");

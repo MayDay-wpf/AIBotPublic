@@ -32,7 +32,8 @@ namespace aibotPro.Service
         private readonly IServiceProvider _serviceProvider;
         private readonly IHubContext<ChatHub> _hubContext;
         private readonly IMilvusService _milvusService;
-        public WorkShopService(AIBotProContext context, ISystemService systemService, IAiServer aiServer, IUsersService usersService, IRedisService redisService, IFinanceService financeService, IServiceProvider serviceProvider, IHubContext<ChatHub> hubContext, IMilvusService milvusService)
+        private readonly ICOSService _cossService;
+        public WorkShopService(AIBotProContext context, ISystemService systemService, IAiServer aiServer, IUsersService usersService, IRedisService redisService, IFinanceService financeService, IServiceProvider serviceProvider, IHubContext<ChatHub> hubContext, IMilvusService milvusService, ICOSService cossService)
         {
             _context = context;
             _systemService = systemService;
@@ -43,6 +44,7 @@ namespace aibotPro.Service
             _serviceProvider = serviceProvider;
             _hubContext = hubContext;
             _milvusService = milvusService;
+            _cossService = cossService;
         }
         public bool InstallPlugin(string account, int pluginId, out string errormsg)
         {
@@ -269,6 +271,20 @@ namespace aibotPro.Service
             }
             return plugins;
         }
+        public List<PluginDto> GetPluginByTest(string pcode)
+        {
+            //遍历插件安装记录，获取插件信息
+            List<PluginDto> plugins = new List<PluginDto>();
+            var plugin = _context.Plugins.Where(x => x.Pcode == pcode).FirstOrDefault();
+            if (plugin != null)
+            {
+                PluginDto pluginDto = new PluginDto();
+                _systemService.CopyPropertiesTo(plugin, pluginDto);
+                pluginDto.MustHit = true;
+                plugins.Add(pluginDto);
+            }
+            return plugins;
+        }
         public List<PluginParamDto> GetPluginParams(int pluginId)
         {
             //获取插件参数
@@ -390,18 +406,38 @@ namespace aibotPro.Service
                 if (shouldPay)
                     await _financeService.CreateUseLogAndUpadteMoney(account, "DALLE3", 0, 0, true);
                 // 在后台启动一个任务下载图片
+                string referenceImgPath = prompt;
+                string imgResPath = string.Empty;
+                string thumbKey = string.Empty;
+                string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "");
                 Task.Run(async () =>
-                {
+                 {
                     using (var scope = _serviceProvider.CreateScope()) // _serviceProvider 是 IServiceProvider 的一个实例。
                     {
-                        string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "");
+                        // 这里做一些后续处理，比如更新数据库记录等
                         string savePath = Path.Combine("wwwroot", "files/dallres", account);
                         await _aiServer.DownloadImageAsync(pluginResDto.result, savePath, newFileName);
-                        string imgResPath = Path.Combine("/files/dallres", account, newFileName + ".png");
-
-                        // 这里做一些后续处理，比如更新数据库记录等
                         var aiSaveService = scope.ServiceProvider.GetRequiredService<IAiServer>(); // 假设保存记录方法在IAiSaveService中。
-                        await aiSaveService.SaveAiDrawResult(account, "DALLE3", imgResPath, prompt, prompt);
+                        var cosService = scope.ServiceProvider.GetRequiredService<ICOSService>();
+                        var systemService = scope.ServiceProvider.GetRequiredService<ISystemService>();
+                        string thumbSavePath = systemService.CompressImage(Path.Combine(savePath, newFileName + ".png"), 75);
+                        //查询是否启用了COS
+                        var systemCfg = systemService.GetSystemCfgs();
+                        var cos_switch = systemCfg.FirstOrDefault(x => x.CfgKey == "COS_Switch");
+                        if (cos_switch != null)
+                        {
+                            string cos_switch_val = cos_switch.CfgValue;
+                            if (!string.IsNullOrEmpty(cos_switch_val) && cos_switch_val == "1")
+                            {
+                                string coskey = $"dallres/{DateTime.Now.ToString("yyyyMMdd")}/{newFileName}.png";
+                                string thumbFileName =System.IO.Path.GetFileName(thumbSavePath); 
+                                thumbKey = coskey.Replace(System.IO.Path.GetFileName(imgResPath), thumbFileName);
+                                imgResPath = cosService.PutObject(coskey, Path.Combine(savePath, newFileName + ".png"), newFileName + ".png");
+                                thumbSavePath= cosService.PutObject(thumbKey, thumbSavePath, thumbFileName);
+                                referenceImgPath = coskey;
+                            }
+                        }
+                        await aiSaveService.SaveAiDrawResult(account, "DALLE3", imgResPath, prompt, referenceImgPath,thumbSavePath,thumbKey);
                     }
                 });
 
@@ -810,7 +846,7 @@ namespace aibotPro.Service
                                 int workflowLimit = 20;
                                 if (_systemService.GetSystemCfgs().Where(s => s.CfgCode == "WorkFlow_Limit").FirstOrDefault() != null)
                                     workflowLimit = int.Parse(_systemService.GetSystemCfgs().Where(s => s.CfgCode == "WorkFlow_Limit").FirstOrDefault().CfgValue);
-                                WorkflowEngine workflowEngine = new WorkflowEngine(workFlowNodeData, _aiServer, _systemService, _financeService, _context, account, _serviceProvider, _hubContext, chatId, senMethod, _redisService, _milvusService, workflowLimit);
+                                WorkflowEngine workflowEngine = new WorkflowEngine(workFlowNodeData, _aiServer, _systemService, _financeService, _context, account, _serviceProvider, _hubContext, chatId, senMethod, _redisService, _milvusService, workflowLimit, _cossService);
                                 List<NodeOutput> workflowResult = await workflowEngine.Execute(startOutputJson);
                                 //查询工作流结束模式
                                 var endNodeData = (EndData)workFlowNodeData.Drawflow.Home.Data.Values.FirstOrDefault(x => x.Name == "end").Data;

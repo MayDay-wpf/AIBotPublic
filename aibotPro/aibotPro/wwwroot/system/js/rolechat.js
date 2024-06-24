@@ -38,6 +38,7 @@ let pageIndex = 1;
 let pageSize = 20;
 var systemPrompt = "";
 var roleName = "AIBot";
+var markdownHis = [];
 
 // websocket连接设置
 var connection = new signalR.HubConnectionBuilder()
@@ -161,7 +162,21 @@ $(document).ready(function () {
         }
         else
             sendMsg();
-    })
+    });
+    $('#searchIcon').on('click', function (event) {
+        event.stopPropagation();
+        $('#searchIcon').hide();
+        $('#modelSearch').addClass('expand').fadeIn().focus();
+    });
+
+    // 搜索框失去焦点时恢复成放大镜图标
+    $('#modelSearch').on('blur', function () {
+        $(this).removeClass('expand').fadeOut(function () {
+            $('#searchIcon').fadeIn();
+        });
+        $(this).val('');
+        filterModels();
+    });
 });
 function handleDroppedFiles(files) {
     for (var i = 0; i < files.length; i++) {
@@ -219,15 +234,42 @@ function getAIModelList() {
                 $("#firstModel").html(res.data[0].modelNick);
                 thisAiModel = res.data[0].modelName;
                 for (var i = 0; i < res.data.length; i++) {
-                    html += `<a class="dropdown-item font-14" href="#" onclick="changeModel('${escapeQuotes(res.data[i].modelName)}','${escapeQuotes(res.data[i].modelNick)}')">` + res.data[i].modelNick + `</a>`;
+                    var modelNick = stripHTML(res.data[i].modelNick);
+                    html += `<a class="dropdown-item font-14" href="#" data-model-name="${res.data[i].modelName}" data-model-nick="${modelNick}" data-seq="${res.data[i].seq}">${res.data[i].modelNick}</a>`;
                 }
-                $('#AIModel').html(html);
+                $('#modelList').html(html);
+                $('#modelList a').on('click', function (e) {
+                    e.preventDefault();
+                    var modelName = $(this).data('model-name');
+                    var modelNick = $(this).html();
+                    changeModel(modelName, modelNick);
+                });
             }
         },
         error: function (err) {
             //window.location.href = "/Users/Login";
             balert("系统未配置AI模型", "info", false, 2000, "center");
 
+        }
+    });
+}
+function stripHTML(html) {
+    var tmp = document.createElement("DIV");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
+}
+
+function filterModels() {
+    var input = document.getElementById("modelSearch");
+    var filter = input.value.toLowerCase();
+    var nodes = document.querySelectorAll('#modelList a');
+
+    nodes.forEach(function (node) {
+        var modelNick = node.getAttribute('data-model-nick').toLowerCase();
+        if (modelNick.includes(filter)) {
+            node.style.display = "block";
+        } else {
+            node.style.display = "none";
         }
     });
 }
@@ -357,6 +399,11 @@ connection.on('ReceiveMessage', function (message) {
             hljs.highlightElement(block);
         });
         addLanguageLabels(true, assistansBoxId);
+        var item = {
+            id: assistansBoxId,
+            markdown: sysmsg
+        };
+        markdownHis.push(item);
         sysmsg = "";
         jishuqi = 0;
         $('.LDI').remove();
@@ -438,6 +485,7 @@ function sendMsg() {
                         <i data-feather="copy" class="chatbtns" onclick="copyAll('`+ msgid_g + `')"></i>
                         <i data-feather="anchor" class="chatbtns" onclick="quote('`+ msgid_g + `')"></i>
                         <i data-feather="trash-2" class="chatbtns" onclick="deleteChatGroup('`+ chatgroupid + `')"></i>
+                        <i data-feather="codepen" class="chatbtns" data-toggle="tooltip" title="复制Markdown" onclick="toMarkdown('${msgid_g}')"></i>
                     </div>
                 </div>`;
     $(".chat-body-content").append(gpthtml);
@@ -684,6 +732,11 @@ function showHistoryDetail(id) {
 
                 }
                 else {
+                    var item = {
+                        "id": res.data[i].chatCode,
+                        "markdown": content
+                    }
+                    markdownHis.push(item);
                     var markedcontent = marked(completeMarkdown(content));//md.render(content)//marked.parse(content);
                     var encoder = new TextEncoder();
                     html += `<div class="chat-message" data-group="` + res.data[i].chatGroupId + `">
@@ -699,6 +752,7 @@ function showHistoryDetail(id) {
                                   <i data-feather="copy" class="chatbtns" onclick="copyAll('`+ res.data[i].chatCode + `')"></i>
                                   <i data-feather="anchor" class="chatbtns" onclick="quote('`+ res.data[i].chatCode + `')"></i>
                                   <i data-feather="trash-2" class="chatbtns" onclick="deleteChatGroup('`+ res.data[i].chatGroupId + `')"></i>
+                                  <i data-feather="codepen" class="chatbtns" data-toggle="tooltip" title="复制Markdown" onclick="toMarkdown('${res.data[i].chatCode}')"></i>
                                 </div>
                             </div>`;
                 }
@@ -1065,3 +1119,66 @@ textarea.addEventListener("input", adjustTextareaHeight);
 textarea.addEventListener("keyup", adjustTextareaHeight);
 //绑定change事件
 textarea.addEventListener("change", adjustTextareaHeight);
+
+function toMarkdown(id) {
+    var item = markdownHis.find(function (element) {
+        return element.id === id;
+    });
+    var markd = item ? item.markdown : null;
+    copyText(markd);
+    // 确保获取目标元素的唯一性
+    var $targetElement = $('#' + id);
+
+    if ($targetElement.length > 0) {
+        // 检查是否已经存在 .markdown-content
+        var $existingMarkdownDiv = $targetElement.find('.markdown-content');
+
+        if ($existingMarkdownDiv.length > 0) {
+            // 如果存在，直接执行关闭操作
+            $existingMarkdownDiv.slideUp(function () {
+                $existingMarkdownDiv.remove();
+            });
+            return; // 提前返回
+        }
+        if (markd) {
+            // 确保获取目标元素的唯一性
+            var $targetElement = $('#' + id);
+            if ($targetElement.length > 0 && markd) {
+                // 创建一个新的div来显示markdown内容
+                var $markdownDiv = $('<div class="markdown-content"></div>').hide();
+
+                // 插入markdown内容和关闭按钮到div
+                $closeButton = $('<p class="close-button">&times</p>');
+                var $contentDiv = $('<span class="badge badge-info">下方可编辑Markdown</span><textarea class="markdown-txt"></textarea>').val(markd);
+                $markdownDiv.append($closeButton);
+                $markdownDiv.append($contentDiv);
+
+                // 将该div插入目标元素中
+                $targetElement.append($markdownDiv);
+
+                // 展开动画效果
+                $markdownDiv.slideDown(300);
+                if (chatBody.length > 0) {
+                    var markdownDivOffsetTop = $markdownDiv.offset().top;
+                    var markdownDivHeight = $markdownDiv.outerHeight(true);
+                    var chatBodyHeight = chatBody.height();
+
+                    // 计算滚动位置，使$markdownDiv的中部在父容器的中部显示
+                    var scrollTop = markdownDivOffsetTop - chatBodyHeight / 2 + markdownDivHeight / 2 - chatBody.offset().top;
+
+                    // 滚动 chatBody
+                    chatBody.animate({
+                        scrollTop: chatBody.scrollTop() + scrollTop
+                    }, 'slow');   // 使用平滑滚动
+                }
+
+                // 关闭按钮功能，点击后收起div
+                $closeButton.on('click', function () {
+                    $markdownDiv.slideUp(function () {
+                        $markdownDiv.remove(); // 在动画结束后移除div
+                    });
+                });
+            }
+        }
+    }
+}

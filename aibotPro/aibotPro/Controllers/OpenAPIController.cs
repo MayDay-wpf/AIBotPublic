@@ -39,7 +39,10 @@ namespace aibotPro.Controllers
         private readonly IBaiduService _baiduService;
         private readonly IAiServer _aiServer;
         private readonly IOpenAPIService _openAPIService;
-        public OpenAPIController(ISystemService systemService, IRedisService redisService, IWorkShop workShop, JwtTokenManager jwtTokenManager, AIBotProContext context, IFinanceService financeService, IBaiduService baiduService, IAiServer aiServer, IOpenAPIService openAPIService)
+
+        public OpenAPIController(ISystemService systemService, IRedisService redisService, IWorkShop workShop,
+            JwtTokenManager jwtTokenManager, AIBotProContext context, IFinanceService financeService,
+            IBaiduService baiduService, IAiServer aiServer, IOpenAPIService openAPIService)
         {
             _systemService = systemService;
             _redisService = redisService;
@@ -51,13 +54,16 @@ namespace aibotPro.Controllers
             _aiServer = aiServer;
             _openAPIService = openAPIService;
         }
+
         [Authorize]
         [HttpPost]
         public IActionResult CreateApiKey()
         {
             //创建一个以sk-开头的随机字符串
-            string username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
-            string apiKey = "sk-" + _systemService.ConvertToMD5(username + DateTime.Now.ToString("yyyyMMddHHmmss"), 32, true);
+            string username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            string apiKey = "sk-" +
+                            _systemService.ConvertToMD5(username + DateTime.Now.ToString("yyyyMMddHHmmss"), 32, true);
             //将API Key存入数据库,已存在则更新
             var result = _context.APIKEYs.Where(x => x.Account == username).FirstOrDefault();
             if (result == null)
@@ -68,20 +74,24 @@ namespace aibotPro.Controllers
             {
                 result.ApiKey1 = apiKey;
             }
+
             //更新SystemPlugins表
             var systemPlugins = _context.SystemPlugins.Where(x => x.Account == username).ToList();
             foreach (var item in systemPlugins)
             {
                 item.ApiKey = apiKey;
             }
+
             _context.SaveChanges();
             return Ok(new { success = true, msg = "Success", data = apiKey });
         }
+
         [Authorize]
         [HttpPost]
         public IActionResult GetApiKey()
         {
-            string username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            string username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
             var result = _context.APIKEYs.Where(x => x.Account == username).FirstOrDefault();
             if (result == null)
             {
@@ -92,41 +102,51 @@ namespace aibotPro.Controllers
                 return Ok(new { success = true, msg = "Success", data = result.ApiKey1 });
             }
         }
+
         [Authorize]
         [HttpPost]
         public IActionResult UpdateSystemPlugin(string Pfunctionname, string type)
         {
-            string username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            string username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
             var apikeys = _context.APIKEYs.Where(x => x.Account == username).FirstOrDefault();
             if (apikeys == null)
             {
                 return Ok(new { success = false, msg = "请先创建APIKEY" });
             }
+
             string apikey = apikeys.ApiKey1;
             if (type == "add")
             {
                 //判断这个插件是否已经存在
-                var result = _context.SystemPlugins.Where(x => x.Account == username && x.Pfunctionname == Pfunctionname).FirstOrDefault();
+                var result = _context.SystemPlugins
+                    .Where(x => x.Account == username && x.Pfunctionname == Pfunctionname).FirstOrDefault();
                 if (result == null)
-                    _context.SystemPlugins.Add(new SystemPlugin { Account = username, ApiKey = apikey, Pfunctionname = Pfunctionname });
+                    _context.SystemPlugins.Add(new SystemPlugin
+                        { Account = username, ApiKey = apikey, Pfunctionname = Pfunctionname });
             }
             else if (type == "remove")
             {
-                var result = _context.SystemPlugins.Where(x => x.Account == username && x.Pfunctionname == Pfunctionname).FirstOrDefault();
+                var result = _context.SystemPlugins
+                    .Where(x => x.Account == username && x.Pfunctionname == Pfunctionname).FirstOrDefault();
                 if (result != null)
                     _context.SystemPlugins.Remove(result);
             }
+
             _context.SaveChanges();
             return Ok(new { success = true, msg = "Success" });
         }
+
         [Authorize]
         [HttpPost]
         public IActionResult GetSystemPlugin()
         {
-            string username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            string username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
             var result = _context.SystemPlugins.Where(x => x.Account == username).ToList();
             return Ok(new { success = true, msg = "Success", data = result });
         }
+
         [Authorize(Policy = "APIOnly")]
         [HttpPost]
         [Route("/v1/chat/completions")]
@@ -145,6 +165,7 @@ namespace aibotPro.Controllers
             {
                 jsonBody = await reader.ReadToEndAsync();
             }
+
             ChatSession chatSession = JsonConvert.DeserializeObject<ChatSession>(jsonBody);
             //获取模型关系映射并切换
             var openapiSetting = await _workShop.GetOpenAPIModelSetting(Account);
@@ -172,6 +193,7 @@ namespace aibotPro.Controllers
             {
                 return Ok("余额不足，请充值后再使用，您可以前往充值");
             }
+
             //记录系统使用日志
             await _systemService.WriteLog($"用户调用API：{chatSession.Model}", Dtos.LogLevel.Info, Account);
             List<WorkShopAIModel> aImodels = new List<WorkShopAIModel>();
@@ -180,10 +202,12 @@ namespace aibotPro.Controllers
             {
                 return Ok("模型不存在");
             }
+
             if (aImodels.Where(x => x.ModelName == chatSession.Model).FirstOrDefault() == null)
             {
                 return Ok("模型不存在");
             }
+
             WorkShopAIModel useModel = aImodels.Where(x => x.ModelName == chatSession.Model).FirstOrDefault();
             OpenAiOptions openAiOptions = new OpenAiOptions();
             openAiOptions.BaseDomain = aImodels.Where(x => x.ModelName == chatSession.Model).FirstOrDefault().BaseUrl;
@@ -203,23 +227,29 @@ namespace aibotPro.Controllers
                     chatMessages.Add(ChatMessage.FromAssistant(item.Content));
                 input += item.Content;
             }
+
             ChatCompletionCreateRequest chatCompletionCreate = new ChatCompletionCreateRequest();
             chatCompletionCreate.Messages = chatMessages;
             //初始化系统函数
             var fnDall = new FunctionDefinitionBuilder("use_dalle3_withpr", "结合上下文生成DALL-E3提示词并绘制")
-                            .AddParameter("drawprompt", PropertyDefinition.DefineString("根据绘画要求，结合上下文优化后的DALL-E3绘画提示词"))
-                            .AddParameter("drawsize", PropertyDefinition.DefineEnum(new List<string> { "1024x1024", "1792x1024", "1024x1792" }, "需要绘制的图片尺寸,默认1024x1024"))
-                            .AddParameter("quality", PropertyDefinition.DefineEnum(new List<string> { "standard", "hd" }, "绘制图片的质量，默认standard标准质量，当许要更高清晰度和更多细节时，使用hd质量"))
-                            .Validate()
-                            .Build();
-            var fnGoogleSearch = new FunctionDefinitionBuilder("search_google_when_gpt_cannot_answer", "当 gpt 遇到无法回答的或者需要搜索引擎协助回答时从 google 搜索")
-                                    .AddParameter("message", PropertyDefinition.DefineString("搜索句，支持中文或者英文"))
-                                    .Validate()
-                                    .Build();
+                .AddParameter("drawprompt", PropertyDefinition.DefineString("根据绘画要求，结合上下文优化后的DALL-E3绘画提示词"))
+                .AddParameter("drawsize",
+                    PropertyDefinition.DefineEnum(new List<string> { "1024x1024", "1792x1024", "1024x1792" },
+                        "需要绘制的图片尺寸,默认1024x1024"))
+                .AddParameter("quality",
+                    PropertyDefinition.DefineEnum(new List<string> { "standard", "hd" },
+                        "绘制图片的质量，默认standard标准质量，当许要更高清晰度和更多细节时，使用hd质量"))
+                .Validate()
+                .Build();
+            var fnGoogleSearch = new FunctionDefinitionBuilder("search_google_when_gpt_cannot_answer",
+                    "当 gpt 遇到无法回答的或者需要搜索引擎协助回答时从 google 搜索")
+                .AddParameter("message", PropertyDefinition.DefineString("搜索句，支持中文或者英文"))
+                .Validate()
+                .Build();
             var sysKnowledgeSearch = new FunctionDefinitionBuilder("search_knowledge_base", "从知识库中查询或搜索GPT无法得知的内容")
-                                        .AddParameter("message", PropertyDefinition.DefineString("搜索用的关键词，支持中文或者英文"))
-                                        .Validate()
-                                        .Build();
+                .AddParameter("message", PropertyDefinition.DefineString("搜索用的关键词，支持中文或者英文"))
+                .Validate()
+                .Build();
             var mytools = new List<ToolDefinition>();
             //查询系统插件
             var systemPlugins = _context.SystemPlugins.Where(x => x.ApiKey == apiKey).ToList();
@@ -232,6 +262,7 @@ namespace aibotPro.Controllers
                 else if (plugin.Pfunctionname == "search_knowledge_base")
                     mytools.Add(ToolDefinition.DefineFunction(sysKnowledgeSearch));
             }
+
             //获取用户插件列表
             var myplugins = _workShop.GetPluginInstall(Account);
             if (myplugins != null && myplugins.Count > 0)
@@ -244,7 +275,8 @@ namespace aibotPro.Controllers
                     if (pluginitem.Pcodemodel == "plugin-workflow")
                     {
                         //获取工作流节点数据
-                        var nodeData = _context.WorkFlows.Where(x => x.Pcode == pluginitem.Pcode).FirstOrDefault().FlowJson;
+                        var nodeData = _context.WorkFlows.Where(x => x.Pcode == pluginitem.Pcode).FirstOrDefault()
+                            .FlowJson;
                         //nodeData为空则跳过
                         if (string.IsNullOrEmpty(nodeData))
                             continue;
@@ -275,14 +307,17 @@ namespace aibotPro.Controllers
                         {
                             foreach (var paramitem in myparams)
                             {
-                                myfn.AddParameter(paramitem.ParamName, PropertyDefinition.DefineString(paramitem.ParamInfo));
+                                myfn.AddParameter(paramitem.ParamName,
+                                    PropertyDefinition.DefineString(paramitem.ParamInfo));
                             }
                         }
                     }
+
                     functionDefinition = myfn.Validate().Build();
                     mytools.Add(ToolDefinition.DefineFunction(functionDefinition));
                 }
             }
+
             if (mytools.Count > 0)
                 chatCompletionCreate.Tools = mytools;
             chatCompletionCreate.Model = chatSession.Model;
@@ -301,34 +336,46 @@ namespace aibotPro.Controllers
                     response.Headers.Add("Connection", "keep-alive");
                     if (channel == "ERNIE")
                     {
-                        Dictionary<string, string> pairs = await _openAPIService.CallERNIEAsStream(response, chatCompletionCreate, openAiOptions, useModel, Account);
+                        Dictionary<string, string> pairs = await _openAPIService.CallERNIEAsStream(response,
+                            chatCompletionCreate, openAiOptions, useModel, Account);
                         input += string.Join(", ", pairs.Keys);
                         output += string.Join(", ", pairs.Values);
                     }
                     else
                     {
-                        Dictionary<string, string> pairs = await _openAPIService.CallOpenAIAsStream(response, chatCompletionCreate, openAiService, Account);
+                        Dictionary<string, string> pairs =
+                            await _openAPIService.CallOpenAIAsStream(response, chatCompletionCreate, openAiService,
+                                Account);
                         input += string.Join(", ", pairs.Keys);
                         output += string.Join(", ", pairs.Values);
                     }
-                    await _financeService.CreateUseLogAndUpadteMoney(Account, chatSession.Model, tikToken.Encode(input).Count, tikToken.Encode(output).Count);
+
+                    await _financeService.CreateUseLogAndUpadteMoney(Account, chatSession.Model,
+                        tikToken.Encode(input).Count, tikToken.Encode(output).Count);
                 }
                 else
                 {
                     chatCompletionCreate.Stream = false;
                     PluginResDto pluginResDto = new PluginResDto();
                     TikToken tikToken = TikToken.GetEncoding("cl100k_base");
+                    ChatCompletionResponseUnStream completionResult = new ChatCompletionResponseUnStream();
                     if (channel == "ERNIE")
                     {
-                        var completionResult = await _openAPIService.CallERNIE(chatCompletionCreate, openAiOptions, useModel, Account);
-                        return Ok(completionResult);
+                        completionResult =
+                            await _openAPIService.CallERNIE(chatCompletionCreate, openAiOptions, useModel, Account);
+                        output += completionResult.Choices[0].delta.Content;
                     }
                     else
                     {
-                        var completionResult = await _openAPIService.CallOpenAI(chatCompletionCreate, openAiService, Account);
-                        return Ok(completionResult);
+                        completionResult =
+                            await _openAPIService.CallOpenAI(chatCompletionCreate, openAiService, Account);
+                        output += completionResult.Choices[0].delta.Content;
                     }
+                    await _financeService.CreateUseLogAndUpadteMoney(Account, chatSession.Model,
+                        tikToken.Encode(input).Count, tikToken.Encode(output).Count);
+                    return Ok(completionResult);
                 }
+
                 return Ok("error");
             }
             catch (Exception e)
@@ -336,21 +383,24 @@ namespace aibotPro.Controllers
                 await _systemService.WriteLog(e.Message, Dtos.LogLevel.Error, "system");
                 return Ok(e.Message);
             }
-
         }
+
         [Authorize]
         [HttpPost]
         public async Task<IActionResult> GetOpenAPISetting()
         {
-            string username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            string username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
             var result = await _workShop.GetOpenAPIModelSetting(username);
             return Ok(new { success = true, msg = "Success", data = result });
         }
+
         [Authorize]
         [HttpPost]
         public async Task<IActionResult> SaveOpenAPISetting([FromForm] List<OpenAPIModelSetting> openAPIModelSettings)
         {
-            string username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            string username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
             bool result = await _workShop.SaveOpenAPIModelSetting(username, openAPIModelSettings);
             return Ok(new { success = result });
         }

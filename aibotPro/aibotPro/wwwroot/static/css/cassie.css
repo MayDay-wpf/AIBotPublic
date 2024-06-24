@@ -72638,3 +72638,7 @@ code {
     display: none;
     /* 默认不显示 */
 }
+
+.payimg {
+    width: 20px;
+}

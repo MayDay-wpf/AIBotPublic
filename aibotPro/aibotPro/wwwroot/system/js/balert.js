@@ -55,8 +55,10 @@ function balert(message, type, dismissible, autoCloseTime, position, callback) {
     var $alert = $('<div>')
         .addClass('alert alert-' + type + (dismissible ? ' alert-dismissible' : '') + ' fade show slide-in d-flex align-items-center')
         .attr('role', 'alert');
+    if (type == "info")
+        $alert.html('<i data-feather="alert-circle" class="mr-2"></i> ' + message);
     if (type == "warning")
-        $alert.html('<i data-feather="info" class="mr-2"></i> ' + message);
+        $alert.html('<i data-feather="alert-triangle" class="mr-2"></i> ' + message);
     if (type == "success")
         $alert.html('<i data-feather="check-circle" class="mr-2"></i> ' + message);
     if (type == "danger")

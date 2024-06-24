@@ -343,13 +343,34 @@ namespace aibotPro.Service
                             if (item.Chat.Contains("aee887ee6d5a79fdcmay451ai8042botf1443c04"))
                             {
                                 hisvisionContent = new VisionContent();
-                                hisvisionContent.type = "image_url";
-                                const string pattern = @"<img.+?src=[""'](.*?)[""'].*?>";
-                                Regex regex = new Regex(pattern, RegexOptions.IgnoreCase);
-                                Match match = regex.Match(item.Chat);
-                                VisionImg visionImg1 = new VisionImg();
-                                visionImg1.url = match.Groups[1].Value;
-                                hisvisionContent.image_url = visionImg1;
+                                // 分割文本和图片
+                                string[] parts = item.Chat.Split(new string[] { "aee887ee6d5a79fdcmay451ai8042botf1443c04" }, StringSplitOptions.None);
+
+                                // 提取并填充文本内容
+                                if (parts.Length > 0)
+                                {
+                                    VisionContent textContent = new VisionContent();
+                                    textContent.type = "text";
+                                    textContent.text = parts[0];
+                                    hiscontent.Add(textContent);
+                                }
+
+                                // 提取并填充图片内容
+                                if (parts.Length > 1)
+                                {
+                                    const string pattern = @"<img.+?src=[""'](.*?)[""'].*?>";
+                                    Regex regex = new Regex(pattern, RegexOptions.IgnoreCase);
+                                    Match match = regex.Match(parts[1]);
+
+                                    if (match.Success)
+                                    {
+                                        VisionImg visionImg1 = new VisionImg();
+                                        visionImg1.url = match.Groups[1].Value;
+                                        hisvisionContent.image_url = visionImg1;
+                                        hisvisionContent.type = "image_url";
+                                        hiscontent.Add(hisvisionContent);
+                                    }
+                                }
                             }
                             else
                             {
@@ -579,7 +600,12 @@ namespace aibotPro.Service
                     if (systemPluginsInstallList.Where(p => p.PluginName == "search_google_when_gpt_cannot_answer").FirstOrDefault() != null)
                         mytools.Add(ToolDefinition.DefineFunction(SystemPlugins.FnGoogleSearch));
                     //获取用户插件列表
-                    myplugins = _workShop.GetPluginInstall(Account);
+                    if (string.IsNullOrEmpty(chatDto.chatfrom))
+                        myplugins = _workShop.GetPluginInstall(Account);
+                    else
+                    {
+                        myplugins = _workShop.GetPluginByTest(chatDto.chatfrom);
+                    }
                     if (myplugins != null && myplugins.Count > 0)
                     {
                         foreach (var pluginitem in myplugins)
@@ -709,27 +735,68 @@ namespace aibotPro.Service
                 else
                 {
                     //否则查询历史记录
-                    int historyCount = 5;//默认5
-                    if (chatSetting.SystemSetting.HistoryCount != 5)
-                        historyCount = chatSetting.SystemSetting.HistoryCount;
+                    int historyCount = 5;
                     List<ChatHistory> chatHistories = _aiServer.GetChatHistories(Account, chatId, historyCount);
+
                     //遍历填充历史记录
                     foreach (var item in chatHistories)
                     {
-                        if (item.Role == "user")
-                            chatMessages.Add(ChatMessage.FromUser(item.Chat));
+                        if (item.Chat.Contains("aee887ee6d5a79fdcmay451ai8042botf1443c04") && visionModel.HasValue && visionModel.Value)
+                        {
+                            string[] parts = item.Chat.Split(new string[] { "aee887ee6d5a79fdcmay451ai8042botf1443c04" }, StringSplitOptions.None);
+                            // 提取并填充图片内容
+                            if (parts.Length > 1)
+                            {
+                                const string pattern = @"<img.+?src=[""'](.*?)[""'].*?>";
+                                Regex regex = new Regex(pattern, RegexOptions.IgnoreCase);
+                                Match match = regex.Match(parts[1]);
+
+                                if (match.Success)
+                                {
+                                    string imageUrl = match.Groups[1].Value;
+                                    string urlPattern = @"^(http|https)://";
+                                    // 检查输入字符串是否匹配正则表达式
+                                    bool isUrl = Regex.IsMatch(imageUrl, urlPattern, RegexOptions.IgnoreCase);
+                                    string imageData = isUrl ? imageUrl : await _systemService.ImgConvertToBase64(imageUrl);
+                                    if (!isUrl) imageData = "data:image/jpeg;base64," + imageData;
+                                    var hisvision = new List<MessageContent>();
+                                    if (item.Role == "user")
+                                    {
+                                        var hisvisionMessageContent = new List<MessageContent>
+                                        {
+                                            MessageContent.TextContent(parts[0]),
+                                            MessageContent.ImageUrlContent(
+                                                imageData,
+                                                ImageStatics.ImageDetailTypes.High
+                                            )
+                                        };
+                                        // 添加图片内容
+                                        chatMessages.Add(ChatMessage.FromUser(hisvisionMessageContent));
+                                    }
+                                }
+                            }
+                        }
                         else
-                            chatMessages.Add(ChatMessage.FromAssistant(item.Chat));
+                        {
+                            if (item.Role == "user")
+                                chatMessages.Add(ChatMessage.FromUser(item.Chat));
+                            else
+                                chatMessages.Add(ChatMessage.FromAssistant(item.Chat));
+                        }
+
                         input += item.Chat;
                     }
+
                     if (visionMessageContent.Count > 0)
                         chatMessages.Add(ChatMessage.FromUser(visionMessageContent));
                     else
                         chatMessages.Add(ChatMessage.FromUser(promptHeadle));
+
                 }
                 ChatCompletionCreateRequest chatCompletionCreate = new ChatCompletionCreateRequest();
                 chatCompletionCreate.Messages = chatMessages;
-                chatCompletionCreate.Tools = mytools;
+                if (mytools.Count > 0)
+                    chatCompletionCreate.Tools = mytools;
                 //插件选择
                 var tool_choice = myplugins.Where(x => x.MustHit == true).FirstOrDefault();
                 if (tool_choice != null)
