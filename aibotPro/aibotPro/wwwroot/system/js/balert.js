@@ -239,6 +239,74 @@ function showPromptModal(title, content, confirmCallback, cancelCallback) {
     // 显示模态框
     $('#confirmationModal').modal('show');
 }
+
+// 创建多行输入提示框的函数
+function createMultilinePromptModal(title, content) {
+    // 如果已经存在，则删除
+    $('#multilinePromptModal').remove();
+
+    // 创建模态框结构
+    var modalHtml = `
+      <div class="modal fade" id="multilinePromptModal" tabindex="-1" role="dialog" aria-labelledby="multilinePromptModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="multilinePromptModalLabel">${title}</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              ${content}
+              <br/>
+              <textarea class="form-control" id="multilinePromptInput" rows="3" placeholder="请输入内容"></textarea>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal" id="multilineCancelBtn">取消</button>
+              <button type="button" class="btn btn-primary" id="multilineConfirmBtn">确认</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // 将模态框添加到body中
+    $('body').append(modalHtml);
+}
+
+// 显示多行输入提示框并设置确认和取消按钮的回调函数
+function showMultilinePromptModal(title, content, confirmCallback, cancelCallback, defaultValue = '') {
+    createMultilinePromptModal(title, content); // 确保创建了模态框
+
+    // 设置默认值
+    $('#multilinePromptInput').val(defaultValue);
+
+    // 在点击确认按钮时执行的操作并获取输入的内容
+    $('#multilinePromptModal').find('#multilineConfirmBtn').off('click').on('click', function () {
+        if (typeof confirmCallback === 'function') {
+            confirmCallback($('#multilinePromptInput').val());
+        }
+        $('#multilinePromptModal').modal('hide');
+    });
+
+    // 在点击取消按钮或关闭模态框时执行的操作
+    $('#multilinePromptModal').find('#multilineCancelBtn, .close').off('click').on('click', function () {
+        if (typeof cancelCallback === 'function') {
+            cancelCallback();
+        }
+        $('#multilinePromptModal').modal('hide');
+    });
+
+    $('#multilinePromptModal').off('hide.bs.modal').on('hide.bs.modal', function () {
+        if (typeof cancelCallback === 'function') {
+            cancelCallback();
+        }
+    });
+
+    // 显示模态框
+    $('#multilinePromptModal').modal('show');
+}
+
 function openModal(title, html) {
     if ($("#customModal").length > 0) {
         $("#customModal").remove(); //确保只有一个弹窗实例

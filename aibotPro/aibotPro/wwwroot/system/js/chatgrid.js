@@ -112,7 +112,7 @@ function sendMsg() {
         })
         .catch(function (err) {
             processOver = true;
-            sendExceptionMsg(err.toString());
+            sendExceptionMsg("【图表绘制】发送消息时出现了一些未经处理的异常 :-( 原因：" + err);
             //balert("您的登录令牌似乎已失效，我们将启动账号保护，请稍候，正在前往重新登录...", "danger", false, 3000, "center", function () {
             //    window.location.href = "/Users/Login";
             //});

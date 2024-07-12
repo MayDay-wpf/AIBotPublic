@@ -6,7 +6,7 @@
     $("#usercenter-main-menu").parent().siblings().removeClass('show');
     $("#user_usercenter_nav").addClass('active');
     getUserInfo();
-    isVIP();
+    isVIPbyUserInfo();
 });
 let avatar = '';
 let page = 1;
@@ -104,7 +104,7 @@ function saveUserInfo() {
     });
 }
 
-function isVIP() {
+function isVIPbyUserInfo() {
     //发起请求
     $.ajax({
         url: "/Users/IsVIP",

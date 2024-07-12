@@ -11,6 +11,7 @@ namespace aibotPro.Interface
         Task WriteLog(string log, string logLevel, string CreateAccount);//写入日志
         void WriteLogUnAsync(string log, string logLevel, string CreateAccount);//写入日志
         string GenerateCode(int length);//生成验证码
+        Dictionary<string, string> GenerateCodeByImage();//生成图形验证码
         string ConvertToMD5(string str, int length = 16, bool lower = false);//MD5加密
         string EncodeBase64(string source); //字符串编码base64
         string DecodeBase64(string result); //字符串解码base64
@@ -38,5 +39,6 @@ namespace aibotPro.Interface
         UISettingDto GetSystemUI(string account);//获取系统UI配置
         void CopyPropertiesTo<T, TU>(T source, TU dest);//反射赋值
         string CompressImage(string inputFile, int quality);//压缩图片质量，不改变尺寸
+        double CalculateTimeDifference(DateTime startTime, DateTime endTime);
     }
 }

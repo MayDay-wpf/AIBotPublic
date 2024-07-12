@@ -10,11 +10,11 @@
         },
         processHtmlClass: "chat-body-content",
         options: {
-            skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code", "a", "b"]
+            skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code", "a", "b", "txt"]
         }
     };
 </script>
-<link href="~/system/css/chat.css?v2" rel="stylesheet" />
+<link href="~/system/css/chat.css?v2.2" rel="stylesheet" />
 <script src="~/system/js/markdown-it.min.js"></script>
 <script src="~/system/js/tex-chtml.js"></script>
 
@@ -118,7 +118,7 @@
                         <span id="firstModel">---</span>
                         <i data-feather="chevron-down" style="width:20px;"></i>
                     </a>
-                    <div class="dropdown-menu dropdown-menu-left" aria-labelledby="chatDropdown" style="max-height: 505px;overflow-y:scroll" id="AIModel">
+                    <div class="dropdown-menu dropdown-menu-left" aria-labelledby="chatDropdown" style="max-height: 505px;overflow-y:scroll;overflow-x:hidden;" id="AIModel">
                         @*<a class="dropdown-item font-14" href="#" onclick="changeModel('chat','ChatGPT3.5')">ChatGPT3.5</a>
                         <a class="dropdown-item font-14" href="#" onclick="changeModel('chat16K','ChatGPT3.5-16K')">ChatGPT3.5-16K</a> *@
                     </div>
@@ -177,7 +177,7 @@
     </div>
 </div>
 <script src="~/system/js/signalr.min.js"></script>
-<script src="~/system/js/knowledgechat.js?v5"></script>
+<script src="~/system/js/knowledgechat.js?v9.3"></script>
 <script src="~/system/js/marked.min.js"></script>
 <link href="~/system/css/atom-one-dark.min.css" rel="stylesheet" />
 <script src="~/system/js/highlight.min.js"></script>

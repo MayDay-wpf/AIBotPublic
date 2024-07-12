@@ -12,6 +12,7 @@ using System;
 using System.Security.Principal;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using static OpenAI.ObjectModels.StaticValues.ImageStatics;
 using static System.Formats.Asn1.AsnWriter;
 
 namespace aibotPro.Controllers
@@ -386,6 +387,83 @@ namespace aibotPro.Controllers
             }
         }
 
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> CreateSDTask(string prompt, string model, string imageSize, int numberImages, int seed, int inferenceSteps, float guidanceScale, string negativePrompt)
+        {
+            // 获取用户名
+            var username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var user = _usersService.GetUserData(username);
+            if (user.Mcoin <= 0)
+            {
+                return Ok(new
+                {
+                    success = false,
+                    msg = "余额不足，请充值后再使用"
+                });
+            }
+            //从数据库获取AIdraw模型
+            var aiModel = _context.AIdraws.AsNoTracking().Where(x => x.ModelName == "SD").FirstOrDefault();
+            if (aiModel == null)
+                return Ok(new { success = false, msg = "AI模型不存在" });
+            //发起请求
+            SDResponse sdResponse = new SDResponse();
+            try
+            {
+                sdResponse = await _ai.CreateSDdraw(prompt, model, imageSize, numberImages, seed, inferenceSteps, guidanceScale, negativePrompt, aiModel.ApiKey, aiModel.BaseUrl, aiModel.Channel);
+                if (sdResponse == null || sdResponse.Images.Count == 0)
+                    return Ok(new { success = false, msg = "AI任务创建失败" });
+            }
+            catch (Exception)
+            {
+                return Ok(new { success = false, msg = "AI任务创建失败" });
+            }
+
+
+            List<string> imgurls = new List<string>();
+            for (var i = 0; i < sdResponse.Images.Count; i++)
+            {
+                await _financeService.CreateUseLogAndUpadteMoney(username, model, 0, 0, true);
+
+                string newFileName = $"{Guid.NewGuid()}";
+                string savePath = Path.Combine("wwwroot", "files/sdres", username);
+                await _ai.DownloadImageAsync(sdResponse.Images[i].Url, savePath, newFileName);
+                string imgResPath = $"wwwroot/files/sdres/{username}/{newFileName}.png";
+                string thumbKey = string.Empty;
+                string referenceImgPath = prompt;
+                imgurls.Add(sdResponse.Images[i].Url);
+
+                _ = Task.Run(async () =>
+                 {
+                     using (var scope = _serviceProvider.CreateScope())
+                     {
+                         var aiSaveService = scope.ServiceProvider.GetRequiredService<IAiServer>();
+                         var cosService = scope.ServiceProvider.GetRequiredService<ICOSService>();
+                         var systemService = scope.ServiceProvider.GetRequiredService<ISystemService>();
+                         string thumbSavePath = systemService.CompressImage(imgResPath, 75);
+
+                         //查询是否启用了COS
+                         var systemCfg = systemService.GetSystemCfgs();
+                         var cos_switch = systemCfg.FirstOrDefault(x => x.CfgKey == "COS_Switch");
+                         if (cos_switch != null && cos_switch.CfgValue == "1")
+                         {
+                             string coskey = $"sdres/{DateTime.Now.ToString("yyyyMMdd")}/{newFileName}.png";
+                             string thumbFileName = Path.GetFileName(thumbSavePath);
+                             thumbKey = coskey.Replace(Path.GetFileName(imgResPath), thumbFileName);
+                             imgResPath = cosService.PutObject(coskey, imgResPath, $"{newFileName}.png");
+                             thumbSavePath = cosService.PutObject(thumbKey, thumbSavePath, thumbFileName);
+                             referenceImgPath = coskey;
+                         }
+
+                         await aiSaveService.SaveAiDrawResult(username, model, imgResPath, prompt, referenceImgPath, thumbSavePath, thumbKey ?? string.Empty);
+                     }
+                 });
+            }
+
+            var response = new { success = true, msg = "AI任务创建成功", imgurls = imgurls };
+            return Ok(response);
+        }
         [Authorize]
         [HttpPost]
         public async Task<IActionResult> GetAIdrawResList(int page, int pageSize)

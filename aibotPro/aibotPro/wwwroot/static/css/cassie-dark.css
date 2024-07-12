@@ -1,0 +1,577 @@
+﻿html.dark {
+    background-color: black;
+    transition: all .5s;
+}
+
+    html.dark #modelSearch {
+        background-color: #16161a;
+        color: white;
+    }
+
+    html.dark .chat-sidebar {
+        background-color: #16161a;
+        border: 1px solid #1e1e1e;
+        transition: all .5s;
+    }
+
+    html.dark .chat-sidebar-header {
+        color: aliceblue !important;
+        border-bottom: 1px solid #1e1e1e;
+        transition: all .5s;
+    }
+
+        html.dark .chat-sidebar-header h6 {
+            color: #8230ff !important;
+        }
+
+    html.dark .chat-item {
+        color: aliceblue !important;
+        transition: all .5s;
+    }
+
+        html.dark .chat-item p {
+            color: #a3a3a5 !important;
+        }
+
+        html.dark .chat-item:hover {
+            background-color: #363d47 !important;
+        }
+
+    html.dark .chat-sidebar-footer {
+        border-top: 1px solid #1e1e1e;
+        transition: all .5s;
+    }
+
+    html.dark .reset-chat-item {
+        background-color: #16161a;
+    }
+
+    html.dark .highlight-chat-item {
+        background-color: #1e1e1e;
+    }
+
+        html.dark .highlight-chat-item txt {
+            color: #4b9e5f;
+        }
+
+
+    html.dark .chat-body-header {
+        background-color: #16161a;
+        border-bottom: 1px solid #1e1e1e;
+        transition: all .5s;
+    }
+
+    html.dark .dropdown a {
+        color: white !important;
+    }
+
+    html.dark .dropdown .dropdown-item:hover {
+        background-color: lightslategrey;
+    }
+
+    html.dark .dropdown h5 {
+        color: white !important;
+    }
+
+    html.dark .dropdown-menu {
+        background-color: #324350;
+    }
+
+    html.dark .chat-body {
+        background-color: #16161a;
+        transition: all .5s;
+    }
+
+.chat-body-content {
+    transition: background-color .5s;
+}
+
+html.dark .chat-body-content {
+    background-color: #1e1e1e;
+    transition: background-color .5s;
+}
+
+html.dark .chat-body-footer {
+    background-color: #16161a;
+    border-top: 1px solid #1e1e1e;
+    transition: all .5s;
+}
+
+    html.dark .chat-body-footer #Q {
+        background-color: #16161a;
+        color: white;
+        transition: all .5s;
+    }
+
+        html.dark .chat-body-footer #Q::-webkit-input-placeholder { /* Chrome/Opera/Safari */
+            color: #a3a3a5;
+        }
+
+        html.dark .chat-body-footer #Q::-moz-placeholder { /* Firefox 19+ */
+            color: #a3a3a5;
+        }
+
+        html.dark .chat-body-footer #Q:-ms-input-placeholder { /* IE 10+ */
+            color: #a3a3a5;
+        }
+
+        html.dark .chat-body-footer #Q:-moz-placeholder { /* Firefox 18- */
+            color: #a3a3a5;
+        }
+
+html.dark #sendBtn {
+    color: aqua;
+}
+
+html.dark .maximize-2 {
+    color: aqua;
+}
+
+html.dark .chat-message-box p {
+    color: #f9f9f9;
+}
+
+html.dark .chat-message-box ol li {
+    color: lightslategray;
+}
+
+html.dark .chat-message-box ul li {
+    color: lightslategray;
+}
+
+
+html.dark .chat-message-box pre {
+    color: #f9f9f9;
+}
+
+html.dark .chat-message .nickname {
+    color: white !important;
+}
+
+html.dark .modal-dialog .modal-content {
+    background-color: #222226;
+}
+
+    html.dark .modal-dialog .modal-content .list-group .list-group-item {
+        background-color: #222226;
+        border: none;
+        color: lightseagreen
+    }
+
+    html.dark .modal-dialog .modal-content .modal-header {
+        border-bottom: 1px solid aqua;
+    }
+
+        html.dark .modal-dialog .modal-content .modal-header .modal-title {
+            color: aquamarine;
+        }
+
+        html.dark .modal-dialog .modal-content .modal-header button {
+            color: white;
+        }
+
+    html.dark .modal-dialog .modal-content .modal-body {
+        color: white;
+    }
+
+    html.dark .modal-dialog .modal-content #shortcutSystemPrompt {
+        background-color: #16161a;
+        border-color: lightgray;
+        color: white;
+    }
+
+html.dark .spinner-grow {
+    background-color: aliceblue;
+}
+
+html.dark .header {
+    background-color: black;
+    border-bottom: 1px solid #1e1e1e;
+}
+
+html.dark .burger-menu {
+    color: aliceblue;
+}
+
+    html.dark .burger-menu:hover {
+        color: lightgray;
+    }
+
+    html.dark .burger-menu:focus {
+        color: lightgray;
+    }
+
+html.dark .header-search {
+    background-color: #222226;
+}
+
+    html.dark .header-search svg {
+        color: #5556fd;
+    }
+
+    html.dark .header-search .form-control {
+        color: aliceblue;
+    }
+
+        html.dark .header-search .form-control::-webkit-input-placeholder { /* Chrome/Opera/Safari */
+            color: #a3a3a5;
+        }
+
+        html.dark .header-search .form-control::-moz-placeholder { /* Firefox 19+ */
+            color: #a3a3a5;
+        }
+
+        html.dark .header-search .form-control:-ms-input-placeholder { /* IE 10+ */
+            color: #a3a3a5;
+        }
+
+        html.dark .header-search .form-control:-moz-placeholder { /* Firefox 18- */
+            color: #a3a3a5;
+        }
+
+html.dark #notice-box {
+    color: aliceblue;
+}
+
+html.dark .sidebar {
+    background-color: #16161a;
+    border-right: 1px solid #1e1e1e;
+}
+
+    html.dark .sidebar .sidebar-header {
+        border-bottom: 1px solid #1e1e1e;
+    }
+
+    html.dark .sidebar .sidebar-body .nav-link {
+        color: azure;
+    }
+
+html.dark .sidebar-body hr {
+    border-color: dimgrey;
+}
+
+html.dark .nav-sidebar .nav-item.show .nav-link svg {
+    color: #28a745;
+}
+
+html.dark .sidebar .sidebar-body .nav-sub-link {
+    color: deepskyblue;
+}
+
+html.dark .nav-sidebar .nav-sub-link.active {
+    color: blueviolet;
+}
+
+html.dark .sidebar .sidebar-body .nav-sub-link:hover {
+    color: blueviolet;
+}
+
+html.dark .card {
+    border: none;
+    background-color: #1e1e1e;
+}
+
+html.dark .card-title {
+    color: blueviolet;
+}
+
+html.dark .card-text {
+    color: aliceblue;
+}
+
+html.dark .card-header {
+    background-color: #1e1e1e;
+    border: none;
+    color: blueviolet;
+}
+
+html.dark .card-body {
+    background-color: #16161a;
+    border-radius: 0 0 10px 10px;
+}
+
+    html.dark .card-body h6 {
+        color: greenyellow;
+    }
+
+html.dark #inputText {
+    background-color: #2b2b2f;
+    color: aliceblue;
+}
+
+    html.dark #inputText::-webkit-input-placeholder { /* Chrome/Opera/Safari */
+        color: #a3a3a5;
+    }
+
+    html.dark #inputText::-moz-placeholder { /* Firefox 19+ */
+        color: #a3a3a5;
+    }
+
+    html.dark #inputText:-ms-input-placeholder { /* IE 10+ */
+        color: #a3a3a5;
+    }
+
+    html.dark #inputText:-moz-placeholder { /* Firefox 18- */
+        color: #a3a3a5;
+    }
+
+html.dark .char-count {
+    color: aliceblue;
+}
+
+    html.dark .char-count .char-limit {
+        color: aliceblue;
+    }
+
+html.dark #myTabContent {
+    background-color: #16161a;
+}
+
+html.dark label {
+    color: greenyellow;
+}
+
+html.dark table {
+    border-collapse: collapse;
+    width: 100%;
+    color: aliceblue;
+}
+
+html.dark td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid gray;
+}
+
+html.dark th {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid gray;
+    background-color: #2c2c2c;
+    color: aliceblue;
+}
+
+html.dark tr:nth-child(even) {
+    background-color: #262626;
+}
+
+html.dark tr:nth-child(odd) {
+    background-color: #1e1e1e;
+}
+
+html.dark tr:hover {
+    background-color: #333;
+}
+
+html.dark .loading-overlay {
+    background-color: black;
+    opacity: .7;
+}
+
+html.dark .sidebar-logo {
+    color: aqua;
+}
+
+html.dark .sidebar-logo-headline {
+    color: darkgoldenrod;
+}
+
+html.dark .divider-text {
+    color: aquamarine;
+}
+
+html.dark input[type="text"],
+html.dark input[type="number"],
+html.dark input[type="password"],
+html.dark textarea {
+    background-color: #2b2b2f;
+    color: aliceblue;
+}
+
+    html.dark input[type="text"]::-webkit-input-placeholder,
+    html.dark input[type="number"]::-webkit-input-placeholder,
+    html.dark input[type="password"]::-webkit-input-placeholder,
+    html.dark textarea::-webkit-input-placeholder { /* Chrome/Opera/Safari */
+        color: #a3a3a5;
+    }
+
+    html.dark input[type="text"]::-moz-placeholder,
+    html.dark input[type="number"]::-moz-placeholder,
+    html.dark input[type="password"]::-moz-placeholder,
+    html.dark textarea::-moz-placeholder { /* Firefox 19+ */
+        color: #a3a3a5;
+    }
+
+    html.dark input[type="text"]:-ms-input-placeholder,
+    html.dark input[type="number"]:-ms-input-placeholder,
+    html.dark input[type="password"]:-ms-input-placeholder,
+    html.dark textarea:-ms-input-placeholder { /* IE 10+ */
+        color: #a3a3a5;
+    }
+
+    html.dark input[type="text"]:-moz-placeholder,
+    html.dark input[type="number"]:-moz-placeholder,
+    html.dark input[type="password"]:-moz-placeholder,
+    html.dark textarea:-moz-placeholder { /* Firefox 18- */
+        color: #a3a3a5;
+    }
+
+
+html.dark .payBox {
+    color: aliceblue;
+}
+
+html.dark #totalCount {
+    color: #ffbc28;
+}
+
+html.dark #todayCount {
+    color: #ffbc28;
+}
+
+html.dark .page-item.disabled .page-link {
+    background-color: gray;
+    color: aliceblue;
+}
+
+html.dark .page-link {
+    background-color: #333333;
+    color: aliceblue;
+}
+
+    html.dark .page-link:hover, .page-link:focus {
+        background-color: #333333;
+    }
+
+html.dark select {
+    background-color: #2b2b2f;
+    color: aliceblue;
+}
+
+    html.dark select option {
+        background-color: #2b2b2f;
+        color: aliceblue;
+    }
+
+    html.dark select:focus {
+        background-color: #2b2b2f;
+        color: aliceblue;
+    }
+
+html.dark .drag-handle {
+    color: aliceblue;
+}
+
+html.dark .sidebar-body::-webkit-scrollbar-track {
+    background: #1e1e1e;
+    border-radius: 2px;
+}
+
+html.dark .sidebar-body::-webkit-scrollbar-thumb {
+    background-color: dimgrey;
+    border-radius: 10px;
+}
+
+    html.dark .sidebar-body::-webkit-scrollbar-thumb:hover {
+        background: lightgray;
+    }
+
+
+
+html.dark .chat-sidebar-body::-webkit-scrollbar-track {
+    background: #1e1e1e;
+    border-radius: 2px;
+}
+
+html.dark .chat-sidebar-body::-webkit-scrollbar-thumb {
+    background-color: dimgrey;
+    border-radius: 10px;
+}
+
+    html.dark .chat-sidebar-body::-webkit-scrollbar-thumb:hover {
+        background: lightgray;
+    }
+
+
+
+html.dark .chat-body-content::-webkit-scrollbar-track {
+    background: #1e1e1e;
+    border-radius: 2px;
+}
+
+html.dark .chat-body-content::-webkit-scrollbar-thumb {
+    background: dimgrey;
+    border-radius: 10px;
+}
+
+    html.dark .chat-body-content::-webkit-scrollbar-thumb:hover {
+        background: lightgray;
+    }
+
+html.dark .chat-body-content::-webkit-scrollbar-corner {
+    background: black;
+}
+
+
+html.dark .chat-message-box code::-webkit-scrollbar-thumb {
+    background: dimgrey;
+    border-radius: 10px;
+}
+
+    html.dark .chat-message-box code::-webkit-scrollbar-thumb:hover {
+        background: lightgray;
+    }
+
+html.dark .ui-tooltip {
+    background-color: black;
+    color: aqua;
+}
+
+html.dark .little-tips {
+    background-color: #292345;
+    color: antiquewhite;
+}
+
+html.dark .nav-tabs .nav-link {
+    border: 1px solid transparent;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0
+}
+
+    html.dark .nav-tabs .nav-link:hover {
+        border-color: #e9ecf1 #e9ecf1 #d9dfe7
+    }
+
+    html.dark .nav-tabs .nav-link:focus {
+        border-color: #e9ecf1 #e9ecf1 #d9dfe7
+    }
+
+    html.dark .nav-tabs .nav-link.disabled {
+        color: #637382;
+        background-color: transparent;
+        border-color: transparent
+    }
+
+    html.dark .nav-tabs .nav-link.active {
+        color: #454f5b;
+        background-color: #fff;
+        border-color: #d9dfe7 #d9dfe7 #fff
+    }
+
+html.dark .nav-tabs .nav-item.show .nav-link {
+    color: #454f5b;
+    background-color: #fff;
+    border-color: #d9dfe7 #d9dfe7 #fff
+}
+
+html.dark .image-size-selector {
+    background-color: #2b2b2f;
+}
+
+html.dark #TaskLogTitle {
+    color: aliceblue;
+}
+
+html.dark .card #log {
+    background-color: #1e1e1e;
+}

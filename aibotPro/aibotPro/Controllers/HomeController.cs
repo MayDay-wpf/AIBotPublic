@@ -83,7 +83,7 @@ namespace aibotPro.Controllers
         {
             return View();
         }
-        public IActionResult FromSton()
+        public IActionResult StableDiffusion()
         {
             return View();
         }

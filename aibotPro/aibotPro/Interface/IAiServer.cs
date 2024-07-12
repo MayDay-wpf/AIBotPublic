@@ -10,7 +10,7 @@ namespace aibotPro.Interface
     {
         IAsyncEnumerable<AiRes> CallingAI(AiChat aiChat, APISetting apiSetting, string chatId, VisionBody visionBody = null, [EnumeratorCancellation] CancellationToken cancellationToken = default);//调用AI接口（流式）
         Task<string> CallingAINotStream(string prompt, string model, bool jsonModel = false);//调用AI接口（非流式）
-        Task<bool> SaveChatHistory(string account, string chatId, string content, string chatCode, string chatGroupId, string role, string model);//AI对话记录入库
+        Task<bool> SaveChatHistory(string account, string chatId, string content, string chatCode, string chatGroupId, string role, string model, string firstTime = "", string allTime = "");//AI对话记录入库
         List<ChatHistory> GetChatHistories(string account, string chatId, int historyCount);//获取ai聊天记录
         Task<List<ChatHistory>> GetChatHistoriesList(string account, int pageIndex, int pageSize, string searchKey);//获取历史记录列表
         bool DelChatHistory(string account, string chatId);//删除聊天记录
@@ -20,6 +20,7 @@ namespace aibotPro.Interface
         Task<string> CreateMJchange(string changeType, int changeIndex, string taskId, string baseUrl, string apiKey, string drawmodel);//创建Midjourney动作任务
         Task<string> CreateDALLdraw(string prompt, string imgSize, string quality, string baseUrl, string apiKey);//创建DALL-E画图任务
         Task<string> CreateDALLE2draw(string prompt, string imgSize, string baseUrl, string apiKey, int n = 1);//创建DALL-E画图任务
+        Task<SDResponse> CreateSDdraw(string prompt, string model, string imageSize, int numberImages, int seed, int inferenceSteps, float guidanceScale, string negativePrompt, string apiKey, string baseUrl, string Channel);//创建SD画图任务
         Task<TaskResponse> GetMJTaskResponse(string taskId, string baseUrl, string apiKey);//获取任务状态
 
         Task DownloadImageAsync(string imageUrl, string savePath, string fileNameWithoutExtension);//下载图片

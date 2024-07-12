@@ -13,6 +13,7 @@ let pageIndex = 1;
 let pageSize = 20;
 let useMemory = false;
 let pure = false;
+let grouping = false;
 var markdownHis = [];
 
 // websocket连接设置
@@ -123,9 +124,6 @@ $(document).on({
 //页面加载完成后执行
 $(document).ready(function () {
     //当#Q失去焦点时，关闭最大化
-    if (!isMobile()) {
-        $("#pureBox").show();
-    }
     $("#Q").blur(function () {
         if (max_textarea) {
             max_textarea_Q();
@@ -181,47 +179,33 @@ $(document).ready(function () {
     });
 
     // 检查localStorage中的缓存
-    var cache_pure = localStorage.getItem('pure');
-    if (cache_pure) {
-        var cachedData = JSON.parse(cache_pure);
-        if (Date.now() - cachedData.time < 24 * 60 * 60 * 1000) { // 检查是否在24小时内
-            $('.pure').prop('checked', cachedData.value);
-            pure = cachedData.value;
-        } else {
-            $('.pure').prop('checked', false);
-            localStorage.removeItem('pure');
-            pure = false;
-        }
+    var grouping_cache = localStorage.getItem('modelGrouping');
+    if (grouping_cache) {
+        var cachedData = JSON.parse(grouping_cache);
+        $('.modelGrouping').prop('checked', cachedData.value);
+        grouping = cachedData.value;
     } else {
-        $('.pure').prop('checked', false);
-        pure = false;
+        $('.modelGrouping').prop('checked', false);
+        grouping = false;
     }
+
     // 监听复选框状态改变
-    $('.pure').change(function () {
+    $('.modelGrouping').change(function () {
         var isChecked = $(this).is(':checked');
+        if (isChecked) {
+            getAIModelListByGroup();
+        } else {
+            getAIModelList();
+        }
         // 存入缓存
         var cacheData = {
             value: isChecked,
             time: Date.now()
         };
-        localStorage.setItem('pure', JSON.stringify(cacheData));
-        pure = cacheData.value;
-        if (pure) {
-            $('.sidebar').hide();
-            $('.header').hide();
-            $('.content-body').css("height", "100vh");
-            $('.content-body').css("padding", "0");
-            $('.chat-body-content').css("padding", "10px 15% 10px 15%");
-            $('body').toggleClass('toggle-sidebar');
-        } else {
-            $('.sidebar').show();
-            $('.header').show();
-            $('.content-body').css("height", "calc(100vh - 80px)");
-            $('.content-body').css("padding", "15px");
-            $('.chat-body-content').css("padding", "10px");
-            $('body').toggleClass('toggle-sidebar');
-        }
+        localStorage.setItem('modelGrouping', JSON.stringify(cacheData));
+        grouping = cacheData.value;
     });
+
     $('#searchIcon').on('click', function (event) {
         event.stopPropagation();
         $('#searchIcon').hide();
@@ -245,6 +229,8 @@ $(document).ready(function () {
         $('.chat-body-content').css("padding", "10px 15% 10px 15%");
         $('body').toggleClass('toggle-sidebar');
     }
+
+    $('body').append('<div id="modelDetails">加载中...</div>');
 });
 function handleDroppedFiles(files) {
     for (var i = 0; i < files.length; i++) {
@@ -264,7 +250,7 @@ function handleFileUpload(file) {
         };
         reader.readAsDataURL(file);
     } else {
-        UploadPWT2(file);
+        //UploadPWT2(file);
     }
 }
 $(function () {
@@ -274,7 +260,10 @@ $(function () {
     $("#ai-main-menu").parent().toggleClass('show');
     $("#ai-main-menu").parent().siblings().removeClass('show');
     $("#aichat-nav").addClass('active');
-    getAIModelList();
+    if (grouping)
+        getAIModelListByGroup();
+    else
+        getAIModelList();
     getHistoryList(pageIndex, pageSize, true, true, "");
     getNotice();
     $('[data-toggle="tooltip"]').tooltip();
@@ -294,7 +283,7 @@ function max_textarea_Q() {
     else {
         $Q.css("height", "auto");
         $Q.css("max-height", "200px");
-        chatBody.css("height", "calc(100% - 120px)");
+        chatBody.css("height", "calc(100% - 140px)");
         $(".maximize-2").attr("data-feather", "maximize-2");
         feather.replace();
         max_textarea = false;
@@ -311,6 +300,7 @@ function getAIModelList() {
         success: function (res) {
             var html = "";
             if (res.success) {
+                modelPriceInfo(res.data[0].modelName);
                 $("#firstModel").html(res.data[0].modelNick);
                 thisAiModel = res.data[0].modelName;
                 for (var i = 0; i < res.data.length; i++) {
@@ -325,15 +315,26 @@ function getAIModelList() {
                     changeModel(modelName, modelNick);
                 });
                 if (!isMobile()) {
+                    var originalOrder;
+                    // 首先销毁之前的sortable实例
+                    if ($("#modelList").data('uiSortable')) {
+                        $("#modelList").sortable("destroy");
+                    }
                     // 初始化拖动排序
                     $("#modelList").sortable({
                         revert: 100,
                         start: function (event, ui) {
+                            // 记录原始顺序
+                            originalOrder = $("#modelList").sortable("toArray", { attribute: "data-model-name" });
                             // 在拖动开始时禁用点击事件
                             $('#modelList a').off('click');
                         },
                         stop: function (event, ui) {
-                            saveModelSeq();
+                            var newOrder = $("#modelList").sortable("toArray", { attribute: "data-model-name" });
+                            // 比较新旧顺序
+                            if (!arraysEqual(originalOrder, newOrder)) {
+                                saveModelSeq();
+                            }
                             $('#modelList a').on('click', function (e) {
                                 e.preventDefault();
                                 var modelName = $(this).data('model-name');
@@ -343,12 +344,195 @@ function getAIModelList() {
                         }
                     }).disableSelection();
                 }
+                $(".dropdown-item").css("margin-left", 0);
             }
         },
         error: function (err) {
             // balert("系统未配置AI模型", "info", false, 2000, "center");
         }
     });
+}
+function getAIModelListByGroup() {
+    $.ajax({
+        type: "Post",
+        url: "/Home/GetAImodel",
+        dataType: "json",
+        success: function (res) {
+            var html = "";
+            if (res.success) {
+                modelPriceInfo(res.data[0].modelName);
+                $("#firstModel").html(res.data[0].modelNick);
+                thisAiModel = res.data[0].modelName;
+                // 使用 Map 对返回的数据根据 modelGroup 分组
+                const groupedByModelGroup = res.data.reduce((acc, model) => {
+                    const key = model.modelGroup || "未分组";
+                    if (!acc[key]) acc[key] = [];
+                    acc[key].push(model);
+                    return acc;
+                }, {});
+
+                // 按照每组内部模型的最小 seq 对每个组进行排序
+                let groups = Object.keys(groupedByModelGroup)
+                    .map(group => ({
+                        groupName: group,
+                        models: groupedByModelGroup[group],
+                        minSeq: Math.min(...groupedByModelGroup[group].map(m => m.seq))
+                    }))
+                    .sort((a, b) => a.minSeq - b.minSeq);
+
+                groups.forEach((group, index) => {
+                    html += `<div class='model-group'>
+                                <h5 class='dropdown-header' data-toggle="collapse" data-target="#group-content-${index}" aria-expanded="${index === 0 ? 'true' : 'false'}">${group.groupName} <i data-feather="chevron-down"></i></h5>
+                                <div id="group-content-${index}" class="collapse ${index === 0 ? 'show' : ''}">`;
+                    group.models.forEach((item, itemIndex) => {
+                        var modelNick = stripHTML(item.modelNick);
+                        html += `<a class="dropdown-item font-14 ${itemIndex === 0 && index === 0 ? 'firstModel' : ''}" href="#" data-model-name="${item.modelName}" data-model-nick="${modelNick}" data-seq="${item.seq}">${item.modelNick}</a>`;
+                    });
+                    html += `  </div></div>`;
+                });
+
+                $('#modelList').html(html);
+
+                // 重新绑定点击事件
+                $('#modelList a').on('click', function (e) {
+                    e.preventDefault();
+                    var modelName = $(this).data('model-name');
+                    var modelNick = $(this).html();
+                    changeModel(modelName, modelNick);
+                });
+
+                if (!isMobile()) {
+                    var originalOrder;
+                    // 对每个组内的模型进行排序初始化
+                    $("#modelList .collapse").sortable({
+                        items: "a",
+                        revert: 100,
+                        start: function (event, ui) {
+                            // 记录原始顺序
+                            originalOrder = $("#modelList .collapse").sortable("toArray", { attribute: "data-model-name" });
+                            // 在拖动开始时禁用点击事件
+                            $('#modelList a').off('click');
+                        },
+                        stop: function (event, ui) {
+                            var newOrder = $("#modelList .collapse").sortable("toArray", { attribute: "data-model-name" });
+                            // 比较新旧顺序
+                            if (!arraysEqual(originalOrder, newOrder)) {
+                                saveModelSeq();
+                            }
+                            $('#modelList a').on('click', function (e) {
+                                e.preventDefault();
+                                var modelName = $(this).data('model-name');
+                                var modelNick = $(this).html();
+                                changeModel(modelName, modelNick);
+                            });
+                        }
+                    }).disableSelection();
+                    // 防止下拉框与分组展开点击事件冲突
+                    $('.dropdown-header').on('click', function (e) {
+                        e.stopPropagation();
+                        var target = $(this).data('target');
+                        $('.collapse').not(target).collapse('hide');
+                        $(target).collapse('toggle');
+                    });
+                    // 允许拖动分组进行排序
+                    $("#modelList").sortable({
+                        items: ".model-group",
+                        revert: 100,
+                        start: function (event, ui) {
+                            $('.collapse').collapse('hide');
+                            // 记录原始顺序
+                            originalOrder = $("#modelList .collapse").sortable("toArray", { attribute: "data-model-name" });
+                            $('.dropdown-header').off('click');
+                        },
+                        stop: function (event, ui) {
+                            var newOrder = $("#modelList .collapse").sortable("toArray", { attribute: "data-model-name" });
+                            // 比较新旧顺序
+                            if (!arraysEqual(originalOrder, newOrder)) {
+                                saveModelSeq();
+                            }
+                            $('.dropdown-header').on('click', function (e) {
+                                e.stopPropagation();
+                                var target = $(this).data('target');
+                                $('.collapse').not(target).collapse('hide');
+                                $(target).collapse('toggle');
+                            });
+                        }
+                    }).disableSelection();
+                }
+                // 防止下拉框与分组展开点击事件冲突
+                $('.dropdown-header').on('click', function (e) {
+                    e.stopPropagation();
+                    var target = $(this).data('target');
+                    $('.collapse').not(target).collapse('hide');
+                    $(target).collapse('toggle');
+                });
+                feather.replace();
+            }
+        },
+        error: function (err) {
+            console.error("Error fetching AI models: ", err);
+        }
+    });
+}
+function modelPriceInfo(modelName) {
+    $.ajax({
+        url: "/Home/GetModelPrice",
+        type: "post",
+        dataType: "json",//返回对象
+        data: {
+            modelName: modelName
+        },
+        success: function (res) {
+            if (res.success) {
+                res = res.data;
+                var str = ``;
+                if (res.length > 0) {
+                    var data = res[0];
+                    var isvip = false;
+                    isVIP(function (status) {
+                        isvip = status;
+                    });
+                    if (data.modelPrice.onceFee > 0) {
+                        if (!isvip) {
+                            str = `<span class="badge badge-pill badge-success">输出：${data.modelPrice.onceFee}/次</span>`;
+                        } else {
+                            str = `<span class="badge badge-pill badge-success">输出：${data.modelPrice.vipOnceFee}/次</span>`;
+                        }
+                    }
+                    else {
+                        if (!isvip) {
+                            if (data.modelPrice.modelPriceInput > 0 && data.modelPrice.modelPriceOutput > 0) {
+                                str = `<span class="badge badge-pill badge-info">输入：${data.modelPrice.modelPriceInput}/1k token</span>
+                                   <span class="badge badge-pill badge-success">输出：${data.modelPrice.modelPriceOutput}/1k token</span>`;
+                            } else {
+                                str = '<span class="badge badge-pill badge-success">免费</span>';
+                            }
+                        } else {
+                            if (data.modelPrice.vipModelPriceInput > 0 && data.modelPrice.vipModelPriceOutput > 0) {
+                                str = `<span class="badge badge-pill badge-info">输入：${data.modelPrice.vipModelPriceInput}/1k token</span>
+                                   <span class="badge badge-pill badge-success">输出：${data.modelPrice.vipModelPriceOutput}/1k token</span>`;
+                            }
+                            else {
+                                str = '<span class="badge badge-pill badge-success">免费</span>';
+                            }
+                        }
+                    }
+                } else {
+                    str = '<span class="badge badge-pill badge-success">免费</span>';
+                }
+                $('#priceInfo').html(str);
+            }
+        }
+    });
+}
+
+// 辅助函数：比较两个数组是否相等
+function arraysEqual(arr1, arr2) {
+    if (arr1.length !== arr2.length) return false;
+    for (var i = 0; i < arr1.length; i++) {
+        if (arr1[i] !== arr2[i]) return false;
+    }
+    return true;
 }
 
 function stripHTML(html) {
@@ -360,16 +544,63 @@ function stripHTML(html) {
 function filterModels() {
     var input = document.getElementById("modelSearch");
     var filter = input.value.toLowerCase();
-    var nodes = document.querySelectorAll('#modelList a');
+    var groups = document.querySelectorAll('.model-group');
+    // 当输入框为空时，展开第一个分组，折叠其他所有分组，所有项可见
+    if (groups.length > 0) {
+        if (filter === '') {
+            groups.forEach(function (group, index) {
+                var nodes = group.querySelectorAll('a');
 
-    nodes.forEach(function (node) {
-        var modelNick = node.getAttribute('data-model-nick').toLowerCase();
-        if (modelNick.includes(filter)) {
-            node.style.display = "block";
-        } else {
-            node.style.display = "none";
+                nodes.forEach(function (node) {
+                    node.style.display = "block";  // 显示所有模型
+                });
+
+                var collapse = group.querySelector('.collapse');
+                if (index === 0) {
+                    $(collapse).collapse('show');  // 展开第一个分组
+                } else {
+                    $(collapse).collapse('hide');  // 折叠其他分组
+                }
+                group.style.display = "block";  // 显示所有分组
+            });
+            return;
         }
-    });
+        groups.forEach(function (group) {
+            var nodes = group.querySelectorAll('a');
+            var groupVisible = false;  // 用于判断当前组是否应当展示
+
+            nodes.forEach(function (node) {
+                var modelNick = node.getAttribute('data-model-nick').toLowerCase();
+                if (modelNick.includes(filter)) {
+                    node.style.display = "block";  // 显示匹配的模型
+                    groupVisible = true;  // 标记分组为可见
+                } else {
+                    node.style.display = "none";
+                }
+            });
+
+            // 如果组内有匹配的模型，则展开该组并显示，否则隐藏
+            if (groupVisible) {
+                var collapse = group.querySelector('.collapse');
+                $(collapse).collapse('show');  // 使用jQuery来控制展开
+                group.style.display = "block";  // 显示此分组
+            } else {
+                var collapse = group.querySelector('.collapse');
+                $(collapse).collapse('hide');  // 如果没有匹配项则折叠该组
+                group.style.display = "none";  // 隐藏此分组
+            }
+        });
+    } else {
+        var nodes = document.querySelectorAll('#modelList a');
+        nodes.forEach(function (node) {
+            var modelNick = node.getAttribute('data-model-nick').toLowerCase();
+            if (modelNick.includes(filter)) {
+                node.style.display = "block";
+            } else {
+                node.style.display = "none";
+            }
+        });
+    }
 }
 function saveModelSeq() {
     var items = $("#modelList").find("a");
@@ -411,6 +642,7 @@ function changeModel(modelName, modelNick) {
     $("#chatDropdown").attr("data-modelName", modelName);
     $("#chatDropdown").attr("data-modelNick", modelNick);
     thisAiModel = modelName;
+    modelPriceInfo(modelName);
     balert("切换模型【" + modelNick + "】成功", "success", false, 1000);
 }
 
@@ -502,6 +734,7 @@ connection.on('ReceiveMessage', function (message) {
             //fileTXT = "";
         } else {
             if (message.message != null) {
+                stopTimer(`#${assistansBoxId}_timer_first`);
                 sysmsg += message.message;
                 $("#" + assistansBoxId).html(md.render(sysmsg));
                 MathJax.typeset();
@@ -518,6 +751,8 @@ connection.on('ReceiveMessage', function (message) {
         }
         jishuqi++;
     } else {
+        stopTimer(`#${assistansBoxId}_timer_first`);
+        stopTimer(`#${assistansBoxId}_timer_alltime`);
         processOver = true;
         $("#sendBtn").html(`<i data-feather="send"></i>`);
         feather.replace();
@@ -525,7 +760,7 @@ connection.on('ReceiveMessage', function (message) {
         $(`.chat-message[data-group="${chatgroupid}"] .memory`).attr('onclick', function () {
             return `saveMemory('${chatgroupid}','${chatid}')`;
         });
-        $("#sendBtn").css("color", "rgb(54,55,86)");
+        $("#sendBtn").removeClass("text-danger");
         $("#" + assistansBoxId).html(marked(completeMarkdown(sysmsg)));
         MathJax.typeset();
         //hljs.highlightAll();
@@ -563,7 +798,7 @@ function sendMsg() {
     processOver = false;
     $("#sendBtn").html(`<i data-feather="stop-circle"></i>`);
     feather.replace();
-    $("#sendBtn").css("color", "red")
+    $("#sendBtn").addClass("text-danger");
     chatgroupid = generateGUID();
     var msgid_u = generateGUID();
     var msgid_g = generateGUID();
@@ -589,10 +824,23 @@ function sendMsg() {
     max_textarea_Q();
     $("#Q").val("");
     $("#Q").focus();
+    var isvip = false;
+    isVIP(function (status) {
+        isvip = status;
+    });
+    var vipHead = isvip ?
+        `<div class="avatar" style="border:2px solid #FFD43B">
+             <img src='${HeadImgPath}'/>
+             <i class="fas fa-crown vipicon"></i>
+         </div>
+         <div class="nicknamevip">${UserNickText}</div>` :
+        `<div class="avatar">
+             <img src='${HeadImgPath}'/>
+         </div>
+         <div class="nickname">${UserNickText}</div>`;
     var html = `<div class="chat-message" data-group="${chatgroupid}">
                      <div style="display: flex; align-items: center;">
-                        <div class="avatar"><img src='${HeadImgPath}'/></div>
-                        <div class="nickname" style="font-weight: bold; color: black;">${UserNickText}</div>
+                        ${vipHead}
                      </div>
                      <div class="chat-message-box">
                        <pre id="${msgid_u}"></pre>
@@ -612,9 +860,11 @@ function sendMsg() {
                        <div class="avatar gpt-avatar">A</div>
                        <div class="nickname" style="font-weight: bold; color: black;">AIBot</div>
                        <span class="badge badge-info ${thisAiModel.replace('.', '')}">${thisAiModel}</span>
+                       <span class="badge badge-pill badge-success" id="${msgid_g}_timer_first"></span>
+                       <span class="badge badge-pill badge-dark" id="${msgid_g}_timer_alltime"></span>
                     </div>
                     <div class="chat-message-box">
-                        <div id="${msgid_g}"></div><svg width="30" height="30" class="LDI"><circle cx="15" cy="15" r="7.5" fill="black" class="blinking-dot" /></svg>
+                        <div id="${msgid_g}"></div><div class="spinner-grow spinner-grow-sm LDI"></div>
                     </div>
                     <div>
                         <i data-feather="copy" data-toggle="tooltip" title="复制" class="chatbtns" onclick="copyAll('${msgid_g}')"></i>
@@ -625,6 +875,8 @@ function sendMsg() {
                     </div>
                 </div>`;
     $(".chat-body-content").append(gpthtml);
+    startTimer(`#${msgid_g}_timer_first`, true);
+    startTimer(`#${msgid_g}_timer_alltime`);
     adjustTextareaHeight();
     chatBody.animate({
         scrollTop: chatBody.prop("scrollHeight")
@@ -634,10 +886,7 @@ function sendMsg() {
         })
         .catch(function (err) {
             processOver = true;
-            sendExceptionMsg("发送消息时出现了一些未经处理的异常 :-( 原因：", err.toString());
-            //balert("您的登录令牌似乎已失效，我们将启动账号保护，请稍候，正在前往重新登录...", "danger", false, 3000, "center", function () {
-            //    window.location.href = "/Users/Login";
-            //});
+            sendExceptionMsg("发送消息时出现了一些未经处理的异常 :-( 原因：" + err);
         });
 }
 
@@ -689,12 +938,12 @@ function getHistoryList(pageIndex, pageSize, reload, loading, searchKey) {
                 html += `<li class="chat-item" id="` + res.data[i].chatId + `" onclick="showHistoryDetail('` + res.data[i].chatId + `')">
                             <div class="chat-item-body">
                                 <div>
-                                    <b>
-                                        `+ chat + `
-                                    </b>
+                                    <txt>
+                                        ${chat}
+                                    </txt>
                                 </div>
                                 <p>
-                                    `+ res.data[i].createTime + `
+                                    ${isoStringToDateTime(res.data[i].createTime)}
                                 </p>
                             </div>
                         <span class="delete-chat">
@@ -814,10 +1063,8 @@ function showHistoryDetail(id) {
     chatBody.html(`<li class="divider-text">
                         加载中...
                     </li>`);
-    $(".chat-item").css("border", "none");
-    $(".chat-item").css("background-color", "white");
-    $('[id*="' + id + '"]').css("background-color", "#f5f5fc");
-    $('[id*="' + id + '"]').css("border-right", "2px solid rgb(46,161,77)");
+    $(".chat-item").removeClass("highlight-chat-item").addClass("reset-chat-item");
+    $('[id*="' + id + '"]').addClass("highlight-chat-item");
     mobileChat(true);
     $.ajax({
         type: "Post",
@@ -830,16 +1077,29 @@ function showHistoryDetail(id) {
             //console.log(res);
             chatid = id;
             var html = "";
+            var isvip = false;
+            isVIP(function (status) {
+                isvip = status;
+            });
             for (var i = 0; i < res.data.length; i++) {
                 var content = res.data[i].chat;
                 if (res.data[i].role == "user") {
                     if (content.indexOf('aee887ee6d5a79fdcmay451ai8042botf1443c04') == -1) {
                         content = content.replace(/&lt;/g, "&amp;lt;").replace(/&gt;/g, "&amp;gt;");
                         content = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                        var vipHead = isvip ?
+                            `<div class="avatar" style="border:2px solid #FFD43B">
+                                 <img src='${HeadImgPath}'/>
+                                 <i class="fas fa-crown vipicon"></i>
+                             </div>
+                             <div class="nicknamevip">${UserNickText}</div>` :
+                            `<div class="avatar">
+                                 <img src='${HeadImgPath}'/>
+                             </div>
+                             <div class="nickname">${UserNickText}</div>`;
                         html += `<div class="chat-message" data-group="` + res.data[i].chatGroupId + `">
                                      <div style="display: flex; align-items: center;">
-                                       <div class="avatar"><img src='${HeadImgPath}'/></div>
-                                       <div class="nickname" style="font-weight: bold; color: black;">${UserNickText}</div>
+                                       ${vipHead}
                                      </div>
                                      <div class="chat-message-box">
                                        <pre id="`+ res.data[i].chatCode + `">${content}</pre>
@@ -875,11 +1135,26 @@ function showHistoryDetail(id) {
                     markdownHis.push(item);
                     var markedcontent = marked(completeMarkdown(content));//md.render(content)//marked.parse(content);
                     var encoder = new TextEncoder();
+                    //<span class="badge badge-pill badge-success" id="${msgid_g}_timer_first"></span>
+                    //   <span class="badge badge-pill badge-dark" id="${msgid_g}_timer_alltime"></span>
+                    var firstTime = '';
+                    var allTime = '';
+                    if (res.data[i].firstTime != "null" && res.data[i].allTime != "null" && res.data[i].firstTime != null && res.data[i].allTime != null) {
+                        firstTime = `<span class="badge badge-pill badge-success">${res.data[i].firstTime}s</span>`
+                        allTime = `<span class="badge badge-pill badge-dark">${res.data[i].allTime}s</span>`
+                        if (res.data[i].firstTime > 10) {
+                            firstTime = `<span class="badge badge-pill badge-danger">${res.data[i].firstTime}s</span>`
+                        } else if (res.data[i].firstTime > 5) {
+                            firstTime = `<span class="badge badge-pill badge-warning">${res.data[i].firstTime}s</span>`
+                        }
+                    }
+
                     html += `<div class="chat-message" data-group="` + res.data[i].chatGroupId + `">
                                  <div style="display: flex; align-items: center;">
                                     <div class="avatar gpt-avatar">A</div>
                                     <div class="nickname" style="font-weight: bold; color: black;">AIBot</div>
                                     <span class="badge badge-info ${res.data[i].model.replace('.', '')}">${res.data[i].model}</span>
+                                    ${firstTime}${allTime}
                                  </div>
                                 <div class="chat-message-box">
                                     <div id="`+ res.data[i].chatCode + `">` + markedcontent + `</div>
@@ -988,8 +1263,7 @@ function newChat() {
     chatid = "";
     chatgroupid = "";
     chatBody.html("");
-    $(".chat-item").css("border", "none");
-    $(".chat-item").css("background-color", "white");
+    $(".chat-item").removeClass("highlight-chat-item");
     $("#Q").focus();
 }
 //加载更多历史记录
@@ -1000,9 +1274,11 @@ function loadMoreHistory() {
 //停止生成
 function stopGenerate() {
     processOver = true;
+    stopTimer(`#${assistansBoxId}_timer_first`);
+    stopTimer(`#${assistansBoxId}_timer_alltime`);
     $("#sendBtn").html(`<i data-feather="send"></i>`);
     feather.replace();
-    $("#sendBtn").css("color", "rgb(54,55,86)");
+    $("#sendBtn").removeClass("text-danger");
     $('.LDI').remove();
     if (sysmsg != '')
         $("#" + assistansBoxId).html(marked(completeMarkdown(sysmsg)));
@@ -1100,54 +1376,49 @@ function uploadIMGFile(file, destroyAlert) {
 function reviewImg(path) {
     $('#imgPreview').attr('src', path);
     $('.imgViewBox').show();
-    $("#openCamera").css("color", "red");
+    $("#openCamera").addClass("cameraColor");
 }
 //清除图片
 function ClearImg() {
     image_path = "";
     $('#imgPreview').attr('src', "");
     $('.imgViewBox').hide();
-    $("#openCamera").css("color", "rgb(135,136,154)");
+    $("#openCamera").removeClass("cameraColor");
 }
 //遍历添加复制按钮
 function addCopyBtn(id = '') {
-    // 遍历所有含有 'hljs' 类的 code 标签
     var codebox;
-    if (id != '')
-        codebox = $('#' + id + ' pre code.hljs');
-    else
-        codebox = $('pre code.hljs');
-    codebox.each(function () {
-        var codeBlock = $(this); // 当前的 code 标签
+    if (id != '') {
+        codebox = $('#' + id + ' pre code.hljs, #' + id + ' pre code[class^="language-"]');
+    } else {
+        codebox = $('pre code.hljs, pre code[class^="language-"]');
+    }
 
-        // 为复制按钮创建一个容器
+    codebox.each(function () {
+        var codeBlock = $(this);
+
         var copyContainer = $('<div>').addClass('copy-container').css({
-            'text-align': 'right', // 复制按钮靠右显示
-            'background-color': 'rgb(40,44,52)', // 容器的背景颜色
-            'padding': '4px', // 容器的内边距
-            //'margin-top': '4px', // 与 code 标签之间的间距
+            'text-align': 'right',
+            'background-color': 'rgb(40,44,52)',
+            'padding': '4px',
             'display': 'block',
             'color': 'rgb(135,136,154)',
             'cursor': 'pointer'
         });
 
-        // 创建复制按钮
         var copyBtn = $('<span>').addClass('copy-btn').attr('title', 'Copy to clipboard');
         copyBtn.html(feather.icons.clipboard.toSvg());
 
-        //如果没有复制按钮，则添加
         if ($(this).parent().find('.copy-btn').length === 0) {
             copyContainer.append(copyBtn);
-            // 把按钮容器添加到 code 标签的外层容器中（假设是 pre 标签）
             codeBlock.parent().append(copyContainer);
         }
 
-        // 实现复制功能
         copyBtn.click(function () {
-            var codeToCopy = codeBlock.text(); // 获取 code 标签中的文本
-            var tempTextArea = $('<textarea>').appendTo('body').val(codeToCopy).select(); // 创建临时的 textarea 并选中文本
-            document.execCommand('copy'); // 执行复制操作
-            tempTextArea.remove(); // 移除临时创建的 textarea
+            var codeToCopy = codeBlock.text();
+            var tempTextArea = $('<textarea>').appendTo('body').val(codeToCopy).select();
+            document.execCommand('copy');
+            tempTextArea.remove();
             balert("复制成功", "success", false, 1000, "top");
         });
     });
@@ -1189,7 +1460,7 @@ function editChat(id) {
             // 为每个<img>标签提取src属性
             var imgSrc = $(this).attr("src");
             image_path = imgSrc;
-            $("#openCamera").css("color", "red");
+            $("#openCamera").addClass("cameraColor");
             $Q.val($elem.text());
         });
     } else {
@@ -1207,7 +1478,7 @@ function quote(id) {
             // 为每个<img>标签提取src属性
             var imgSrc = $(this).attr("src");
             image_path = imgSrc;
-            $("#openCamera").css("color", "red");
+            $("#openCamera").addClass("cameraColor");
             $Q.val("回复：" + $elem.text());
         });
     } else {
@@ -1250,13 +1521,13 @@ function adjustTextareaHeight() {
     let scrollHeight = textarea.scrollHeight;
     if (scrollHeight > 200) {
         textarea.style.height = "200px";
-        chatBody.css("height", "calc(100% - " + (120 + 200) + "px)");
+        chatBody.css("height", "calc(100% - " + (140 + 200) + "px)");
     } else {
         textarea.style.height = scrollHeight + "px"; // Set height to scrollHeight directly.
-        chatBody.css("height", "calc(100% - " + (120 + scrollHeight) + "px)");
+        chatBody.css("height", "calc(100% - " + (140 + scrollHeight) + "px)");
     }
     if (scrollHeight == 39)
-        chatBody.css("height", "calc(100% - 120px)");
+        chatBody.css("height", "calc(100% - 140px)");
 }
 // 绑定input事件
 textarea.addEventListener("input", adjustTextareaHeight);

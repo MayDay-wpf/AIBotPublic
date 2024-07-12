@@ -7,6 +7,9 @@ var UserNickText;
 let backgroundImg = '';
 let fontColor = '#000000';
 var menuShow = true;
+var savedDarkMode = localStorage.getItem('darkMode');
+var timerIds = {};
+
 
 $(document).ready(function () {
     let savedScrollPosition = localStorage.getItem('sidebarScrollPosition');
@@ -37,8 +40,8 @@ $(document).ready(function () {
         customMenu();
         // 创建应用按钮
         var applyBtn = $('<button/>', {
-            class: 'btn btn-primary apply-btn',
-            html: feather.icons['check-circle'].toSvg() + ' 引用',
+            class: 'btn btn-info apply-btn',
+            html: '<i class="icon ion-quote"></i> 引用',
             css: {
                 'display': 'none'
             },
@@ -46,7 +49,7 @@ $(document).ready(function () {
                 $(this).hide();
                 copyBtn.hide();
                 window.getSelection().removeAllRanges();
-                $Q.val("# 引用对话片段： " + selectedText + "\n\n");
+                $Q.val("# 引用对话片段： " + selectedText + "\n\n ---------------------------------------------------------------------- \n\n");
                 adjustTextareaHeight();
                 //$Q获得焦点
                 $Q.focus();
@@ -127,20 +130,6 @@ $(document).ready(function () {
     }
     IsBlackUser();
     getUserInfo();
-    if (isMobile()) {
-        $('.chat-body-footer').css({
-            'position': 'fixed',
-            'bottom': '0',
-            'left': '0',
-            'right': '0'
-        });
-        $('.content-body-chat').css({
-            'padding': 0
-        });
-        $('.content-body').css({
-            'padding': 0
-        });
-    }
 });
 
 //判断是否为移动端
@@ -730,14 +719,7 @@ function customMenu() {
     if ($("#custommenu #QQ").length > 0 || $("#custommenu #ABOUTUS").length > 0 || $("#custommenu #GITHUB").length > 0) {
         return;
     }
-    var html = `<li class="nav-item" id="ImgHost">
-                    <a href="https://img2anywhere.maymay5.com/" style="color:rgb(112,188,255)" class="nav-link" target="_blank">
-                        <i data-feather="image">
-                        </i>
-                        只是图床
-                    </a>
-                </li>
-                <li class="nav-item" id="QQ">
+    var html = `<li class="nav-item" id="QQ">
                     <a href="https://qm.qq.com/q/gNwQHVDhkc" style="color:rgb(23,223,135)" class="nav-link" target="_blank">
                         <i data-feather="message-circle">
                         </i>
@@ -751,11 +733,60 @@ function customMenu() {
                         关于我们 (About Us)
                     </a>
                 </li>
-                <li class="nav-item" id="GITHUB">
+                <li class="nav-item" id="IaskU">
+                    <a href="https://55555.wiki/doc/10/" class="nav-link" target="_blank">
+                        <i data-feather="book-open">
+                        </i>
+                        使用方法（Instructions）
+                    </a>
+                </li>
+                <li>
+                    <hr class="mg-t-30 mg-b-25">
+                    <label class="content-label">
+                           友情链接
+                    </label>
+                  <li class="nav-item" id="ImgHost">
+                    <a href="https://img2anywhere.maymay5.com/" class="nav-link" target="_blank">
+                        <i data-feather="image">
+                        </i>
+                        只是图床
+                    </a>
+                  </li>
+                  <li>
+                    <a href="https://55555.wiki/" class="nav-link" target="_blank">
+                        <i data-feather="file-text">
+                        </i>
+                        在线文档
+                    </a>
+                  </li>
+                  <li class="nav-item" id="GITHUB">
                     <a href="https://github.com/MayDay-wpf/AIBotPublic" class="nav-link" target="_blank">
                         <i data-feather="github">
                         </i>
                         GitHub
+                    </a>
+                  </li>
+                  <li class="nav-item" id="GITHUB">
+                    <a href="https://vscode.dev/?vscode-lang=zh-cn" class="nav-link" target="_blank">
+                        <i data-feather="code">
+                        </i>
+                        VS Code for the Web
+                    </a>
+                  </li>
+                </li>
+                <li class="nav-item" id="UserUseSpecifications">
+                    <hr class="mg-t-30 mg-b-25">
+                    <a href="/system/doc/UserUseSpecifications.html" style="color:gray" class="nav-link" target="_blank">
+                        <i data-feather="bookmark">
+                        </i>
+                        用户使用规范
+                    </a>
+                </li>
+                <li class="nav-item" id="UserPrivacyRegulations">
+                    <a href="/system/doc/UserPrivacyRegulations.html" style="color:gray" class="nav-link" target="_blank">
+                        <i data-feather="bookmark">
+                        </i>
+                        用户隐私条例
                     </a>
                 </li>`;
     $("#custommenu").append(html);
@@ -817,4 +848,156 @@ function completeMarkdown(markdown) {
     });
 
     return completedMarkdown;
+}
+function isVIP(callback) {
+    if (typeof callback !== 'function') {
+        return;
+    }
+    const now = new Date().getTime();
+    const cachedData = localStorage.getItem('vipStatus');
+
+    if (cachedData) {
+        const { status, expiry } = JSON.parse(cachedData);
+        if (now < expiry) {
+            // 缓存有效，直接返回结果
+            callback(status);
+            return;
+        } else {
+            // 缓存过期，清除缓存
+            localStorage.removeItem('vipStatus');
+        }
+    }
+
+    // 缓存不存在或已过期，发起请求
+    $.ajax({
+        url: "/Users/IsVIP",
+        type: "post",
+        dataType: "json",
+        async: false,
+        success: function (res) {
+            const currentTimestamp = new Date().getTime();
+            const status = res.success;
+            const vipStatus = {
+                status: status,
+                expiry: currentTimestamp + 3600000 // 1小时后过期
+            };
+            localStorage.setItem('vipStatus', JSON.stringify(vipStatus));
+            callback(status);
+        },
+        error: function (err) {
+            console.error("查询VIP状态时出错:", err);
+            callback(false); // 出错时默认为非VIP
+        }
+    });
+}
+
+function getBalanceToDom(dom) {
+    var $domElement = $(dom);
+    if ($domElement.length === 0) {
+        console.error("未找到目标元素:", dom);
+        return;
+    }
+
+    $.ajax({
+        url: "/Users/GetBalance",
+        type: "post",
+        dataType: "json",
+        success: function (res) {
+            if (res && res.data !== undefined) {
+                var oldBalance = parseFloat($domElement.text()) || 0;
+                var newBalance = parseFloat(res.data);
+
+                // 更新DOM中的余额，显示4位小数
+                $domElement.html(newBalance.toFixed(4));
+
+                var difference = oldBalance - newBalance;
+
+                if (difference > 0.5) {
+                    // 创建动画元素
+                    var $animation = $('<div>')
+                        .text('-' + difference.toFixed(4))
+                        .css({
+                            position: 'absolute',
+                            left: $domElement.offset().left + 'px',
+                            top: $domElement.offset().top + 'px',
+                            color: 'red',
+                            fontSize: '15px',
+                            fontWeight: 'bold',
+                            opacity: 1,
+                            zIndex: 9999
+                        });
+
+                    $('body').append($animation);
+
+                    $animation.animate({
+                        top: '-=50px',
+                        opacity: 0
+                    }, 1500, function () {
+                        $(this).remove();
+                    });
+                } else {
+                    console.log("余额没有减少，不显示动画");
+                }
+            } else {
+                console.error("响应数据格式不正确:", res);
+            }
+        },
+        error: function (err) {
+            console.error("查询余额时出错:", err);
+        }
+    });
+}
+function darkModel() {
+    const isDarkMode = $('html').hasClass('dark');
+    const newMode = !isDarkMode;
+    const dkmodelBtn = $('.dkmodel');
+    if (newMode) {
+        $('html').addClass('dark');
+        dkmodelBtn.html(`<i data-feather="sun" style="color:#ffcd42"></i>`);
+    } else {
+        $('html').removeClass('dark');
+        dkmodelBtn.html(`<i data-feather="moon"></i>`);
+    }
+    feather.replace();
+    // 保存状态到 localStorage
+    localStorage.setItem('darkMode', newMode);
+}
+
+function initDarkMode() {
+    if (savedDarkMode === 'true') {
+        $('html').addClass('dark');
+    } else if (savedDarkMode === null) {
+        // 如果没有保存的状态,并且不是移动设备,默认关闭夜间模式
+        localStorage.setItem('darkMode', 'false');
+    }
+}
+
+// 开始计时函数
+// 开始计时函数
+function startTimer(selector, color = false) {
+    var startTime = Date.now(); // 获取当前时间
+    var $element = $(selector); // 获取选择器对应的DOM元素
+    var timerId = setInterval(function () {
+        var elapsedTime = Date.now() - startTime; // 计算经过的时间
+        var seconds = (elapsedTime / 1000).toFixed(1); // 计算秒数并保留一位小数
+        $element.text(seconds + "s"); // 更新DOM的文字
+        // 根据时间更新颜色
+        if (color) {
+            if (seconds > 10) {
+                $element.removeClass('badge-success badge-warning').addClass('badge-danger');
+            } else if (seconds > 5) {
+                $element.removeClass('badge-success badge-danger').addClass('badge-warning');
+            }
+        }
+    }, 100); // 每100毫秒更新一次，以允许固定一位小数
+    timerIds[selector] = timerId; // 将timerId存储到全局对象中
+}
+
+// 停止计时函数
+function stopTimer(selector) {
+    var timerId = timerIds[selector]; // 从全局对象中获取timerId
+    if (timerId) {
+        clearInterval(timerId); // 使用timerId清除计时器
+        delete timerIds[selector]; // 移除全局对象中的timerId，保持数据清洁
+    }
 }

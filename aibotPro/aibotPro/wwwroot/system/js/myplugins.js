@@ -5,7 +5,12 @@ $(function () {
     $("#cygf-main-menu").parent().addClass('show');
     $("#cygf-main-menu").parent().siblings().removeClass('show');
     $("#myplugins-cygf-nav").addClass('active');
-    getMyInstall();
+    var tab = getUrlParam('tab');
+    if (tab != '' && tab =='mycreate') {
+        $('#MyCreated').tab('show');
+        getPlugins();
+    } else
+        getMyInstall();
 });
 $(document).ready(function () {
     $(document).on('change', '.plugin-checkbox', function () {

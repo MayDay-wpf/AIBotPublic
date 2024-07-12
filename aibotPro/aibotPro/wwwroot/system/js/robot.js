@@ -376,7 +376,7 @@ function sendMsg_bot() {
     $(".bot-chat-body").append(html);
     $("#" + msgid_u).text(msg);
     var gpthtml = `<div class="bot-message">
-                        <div id="`+ msgid_g + `"></div><svg width="30" height="30" class="LDI"><circle cx="15" cy="15" r="7.5" fill="black" class="blinking-dot" /></svg>
+                        <div id="`+ msgid_g + `"></div><div class="spinner-grow spinner-grow-sm LDI"></div>
                    </div>`;
     $(".bot-chat-body").append(gpthtml);
     $(".bot-chat-body").scrollTop($(".bot-chat-body")[0].scrollHeight);

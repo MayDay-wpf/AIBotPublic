@@ -201,25 +201,31 @@ table select {
         box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
     }
 
-@keyframes blink {
+@keyframes spinner-grow {
     0% {
-        opacity: 1;
+        transform: scale(0)
     }
 
     50% {
-        opacity: 0;
-    }
-
-    100% {
-        opacity: 1;
+        opacity: 1
     }
 }
 
-.blinking-dot {
-    animation: blink 1s linear infinite;
-    /* 动画持续时间为1秒，匀速播放，无限循环 */
+.spinner-grow {
+    display: inline-block;
+    width: 2rem;
+    height: 2rem;
+    vertical-align: text-bottom;
+    background-color: currentColor;
+    border-radius: 50%;
+    opacity: 0;
+    animation: spinner-grow .75s linear infinite
 }
 
+.spinner-grow-sm {
+    width: 1rem;
+    height: 1rem
+}
 .overlay {
     position: fixed;
     top: 0;

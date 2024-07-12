@@ -19,5 +19,7 @@ namespace aibotPro.Models
         public string BaseUrl { get; set; }
         [StringLength(100)]
         public string ApiKey { get; set; }
+        [StringLength(50)]
+        public string Channel { get; set; }
     }
 }

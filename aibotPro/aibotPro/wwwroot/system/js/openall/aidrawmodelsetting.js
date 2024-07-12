@@ -24,6 +24,10 @@ function getDrawSetting() {
                         $('#dall-baseurl').val(data[i].baseUrl);
                         $('#dall-apikey').val(data[i].apiKey);
                     }
+                    if (data[i].modelName == 'SD') {
+                        $('#sd-baseurl').val(data[i].baseUrl);
+                        $('#sd-apikey').val(data[i].apiKey);
+                    }
                 }
             }
         }
@@ -33,6 +37,7 @@ function getDrawSetting() {
 function saveDrawSetting(type) {
     var baseUrl = '';
     var apiKey = '';
+    var channel = '';
     if (type == 'Midjourney') {
         //非空验证
         if (removeSpaces($('#mj-baseurl').val()) == "" || removeSpaces($('#mj-apikey').val()) == "") {
@@ -41,6 +46,7 @@ function saveDrawSetting(type) {
         } else {
             baseUrl = $('#mj-baseurl').val();
             apiKey = $('#mj-apikey').val();
+            channel = $('#mj-channel').val();
             loadingBtn('.savemj');
         }
     } if (type == 'DALLE3') {
@@ -51,7 +57,20 @@ function saveDrawSetting(type) {
         } else {
             baseUrl = $('#dall-baseurl').val();
             apiKey = $('#dall-apikey').val();
+            channel = $('#dall-channel').val();
             loadingBtn('.saved3');
+        }
+    }
+    if (type == 'SD') {
+        //非空验证
+        if (removeSpaces($('#sd-baseurl').val()) == "" || removeSpaces($('#sd-apikey').val()) == "") {
+            balert('请填写完整', 'danger', false, 1500, 'top');
+            return;
+        } else {
+            baseUrl = $('#sd-baseurl').val();
+            apiKey = $('#sd-apikey').val();
+            channel = $('#sd-channel').val();
+            loadingBtn('.savesd');
         }
     }
     //发起请求
@@ -61,11 +80,11 @@ function saveDrawSetting(type) {
         data: {
             type: type,
             baseUrl: baseUrl,
-            apiKey: apiKey
+            apiKey: apiKey,
+            channel: channel
         },
         success: function (res) {
-            unloadingBtn('.savemj');
-            unloadingBtn('.saved3');
+            unloadingBtn('.btn');
             if (res.success) {
                 balert(res.msg, 'success', false, 1500, 'top');
             } else {

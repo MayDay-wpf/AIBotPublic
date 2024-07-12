@@ -26,43 +26,41 @@
                 <h4 class="signup-title">创建一个新的账号，我们准备出发!</h4>
                 <h5 class="signup-subtitle">仅需2分钟即可完成注册 :-)</h5>
                 <div class="signup-form">
-                    <div class="row">
-                        <div class="col-sm-6">
-                            <div class="form-group">
-                                <label>昵称</label>
-                                <input type="text" class="form-control" placeholder="请输入您的昵称" value="" id="nick">
-                            </div>
-                        </div>
-                        <div class="col-sm-6">
-                            <div class="form-group">
-                                <label>性别</label>
-                                <input type="text" class="form-control" placeholder="输入任何文字以表示您的性别，这是您的自由" value="" id="sex">
+                    <div class="form-group">
+                        <label>昵称</label>
+                        <input type="text" class="form-control" placeholder="请输入您的昵称" value="" id="nick">
+                    </div>
+                    <div class="form-group">
+                        <label>性别</label>
+                        <input type="text" class="form-control" placeholder="输入任何文字以表示您的性别，这是您的自由" value="" id="sex">
+                    </div>
+                    <div class="form-group">
+                        <label>邮箱（只允许使用qq,gmail,163,126邮箱）</label>
+                        <input type="email" class="form-control" placeholder="请输入您的邮箱地址" value="" id="email">
+                    </div>
+                    <div class="form-group">
+                        <label>密码</label>
+                        <input type="password" class="form-control" placeholder="请输入您的密码" value="" id="password">
+                    </div>
+                    <div class="form-group">
+                        <label class="d-flex justify-content-between">
+                            <span>验证码</span>
+                        </label>
+                        <div class="d-flex">
+                            <input type="text" class="form-control w-50" placeholder="请输入图中验证码" value="" id="checkCodebyImage">
+                            <div class="ml-2">
+                                <small class="form-text text-muted">点击图片刷新 <i class="fas fa-redo"></i></small>
+                                <img src="" id="checkCodeImage" style="height: calc(1.5em + .75rem + 20px);cursor:pointer;" onclick="generateCodeImage()" />
                             </div>
                         </div>
                     </div>
-                    <div class="row mg-b-5">
-                        <div class="col-sm-6">
-                            <div class="form-group">
-                                <label>邮箱（只允许使用qq,gmail,163,126邮箱）</label>
-                                <input type="email" class="form-control" placeholder="请输入您的邮箱地址" value="" id="email">
-                            </div>
-                        </div>
-                        <div class="col-sm-6">
-                            <div class="form-group">
-                                <label>密码</label>
-                                <input type="password" class="form-control" placeholder="请输入您的密码" value="" id="password">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row mg-b-5">
-                        <div class="col-sm-6">
-                            <div class="form-group">
-                                <label>邮箱验证码</label>
-                                <input type="email" class="form-control" placeholder="请输入您收到的邮箱验证码" value="" id="checkCode">
-                            </div>
-                        </div>
-                        <div class="col-sm-6">
-                            <div class="form-group">
+                    <div class="form-group">
+                        <label class="d-flex justify-content-between">
+                            <span>邮箱验证码</span>
+                        </label>
+                        <div class="d-flex">
+                            <input type="email" class="form-control w-50" placeholder="请输入邮件验证码" value="" id="checkCode">
+                            <div class="ml-2">
                                 <button type="button" class="btn btn-primary regiestSendCode" onclick="oldsendCheckCode()" id="sendCode">发送验证码</button>
                             </div>
                         </div>
@@ -100,7 +98,7 @@
     <script src="/static/js/feather.min.js"></script>
     <script src="/static/js/perfect-scrollbar.min.js"></script>
     @* <script src="~/system/js/captcha_albb.js"></script> *@
-    <script src="~/system/js/users.js"></script>
+    <script src="~/system/js/users.js?v1"></script>
     <script src="~/system/js/balert.js"></script>
     @* <script>
     initCaptcha('sendCode', 'sendCode', sendCheckCode, disableBtn);

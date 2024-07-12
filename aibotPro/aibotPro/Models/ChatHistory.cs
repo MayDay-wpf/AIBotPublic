@@ -26,6 +26,10 @@ namespace aibotPro.Models
         public string Model { get; set; }
         [StringLength(100)]
         public string Account { get; set; }
+        [StringLength(50)]
+        public string FirstTime { get; set; }
+        [StringLength(50)]
+        public string AllTime { get; set; }
         [Column(TypeName = "datetime")]
         public DateTime? CreateTime { get; set; }
         public int? IsDel { get; set; }

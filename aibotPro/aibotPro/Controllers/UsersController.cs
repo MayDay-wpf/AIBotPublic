@@ -98,7 +98,7 @@ namespace aibotPro.Controllers
         /// <returns></returns>
         [HttpPost]
         //public IActionResult SendRegiestEmail([FromBody] JsonElement requestBody)
-        public IActionResult SendRegiestEmail(string toemail)
+        public async Task<IActionResult> SendRegiestEmail(string toemail, string checkCode, string codekey)
         {
             //string captchaVerifyParam = requestBody.GetProperty("captchaVerifyParam").GetString();
             //bool result = _systemService.AlibabaCaptchaAsync(captchaVerifyParam).Result;
@@ -112,6 +112,18 @@ namespace aibotPro.Controllers
             //    });
             //}
             //string toemail = requestBody.GetProperty("toemail").GetString();
+            if (string.IsNullOrEmpty(checkCode))
+            {
+                return Json(new { success = false, msg = "验证码不能为空" });
+            }
+            if (string.IsNullOrEmpty(codekey))
+            {
+                return Json(new { success = false, msg = "验证码异常" });
+            }
+            if (!await _usersService.CheckCodeImage("", checkCode, codekey))
+            {
+                return Json(new { success = false, msg = "验证码错误" });
+            }
             string title = "【注册验证】";
             string content = @"
                                 <!DOCTYPE html>
@@ -146,7 +158,10 @@ namespace aibotPro.Controllers
                                 <body>
                                     <div class='container'>
                                         <h1>注册验证码</h1>
-                                        <p>您的注册验证码是：<strong>{{checkCode}}</strong>，有效期10分钟。</p>
+                                        <p>您的注册验证码是：
+                                          <h2>{{checkCode}}</h2>
+                                          有效期10分钟。
+                                        </p>
                                         <p>过期后需重新获取，请您尽快完成注册 <i>:-)</i></p>
                                     </div>
                                 </body>
@@ -162,33 +177,47 @@ namespace aibotPro.Controllers
             //    });
             //}
             var tomail = toemail.ToLower();
-            if (!toemail.Contains("qq.com") && !toemail.Contains("gmail.com") && !toemail.Contains("163.com") && !toemail.Contains("126.com"))
+            try
             {
+                if (!toemail.Contains("qq.com") && !toemail.Contains("gmail.com") && !toemail.Contains("163.com") && !toemail.Contains("126.com"))
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        msg = "只允许使用qq,gmail,163,126邮箱",
+                        //captchaVerifyResult = result
+                    });
+                }
+                if (_usersService.SendRegiestEmail(toemail, title, content))
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        msg = "发送成功",
+                        //captchaVerifyResult = result
+                    });
+                }
+                else
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        msg = "邮件发送失败",
+                        //captchaVerifyResult = false
+                    });
+                }
+            }
+            catch (Exception e)
+            {
+                await _systemService.WriteLog($"注册邮件发送失败：{e.Message}", Dtos.LogLevel.Error, "system");
                 return Json(new
                 {
                     success = false,
-                    msg = "只允许使用qq,gmail,163,126邮箱",
-                    //captchaVerifyResult = result
-                });
-            }
-            if (_usersService.SendRegiestEmail(toemail, title, content))
-            {
-                return Json(new
-                {
-                    success = true,
-                    msg = "发送成功",
-                    //captchaVerifyResult = result
-                });
-            }
-            else
-            {
-                return Json(new
-                {
-                    success = false,
-                    msg = "发送失败",
+                    msg = "邮件发送失败",
                     //captchaVerifyResult = false
                 });
             }
+
         }
         /// <summary>
         /// 用户登录
@@ -197,19 +226,49 @@ namespace aibotPro.Controllers
         /// <param name="password">密码</param>
         /// <returns></returns>
         [HttpPost]
-        public IActionResult Login(string account, string password)
+        public async Task<IActionResult> Login(string account, string password, string checkCode, string codekey)
         {
             string errormsg = string.Empty;
-            if (string.IsNullOrEmpty(account)) { errormsg = "账号不能为空"; return Json(new { success = false, msg = errormsg }); }
-            if (string.IsNullOrEmpty(password)) { errormsg = "密码不能为空"; return Json(new { success = false, msg = errormsg }); }
+            string errorCountKey = $"{account}_passwordErrorCount";
+            int errorCount = 0;
+            if (!string.IsNullOrEmpty(await _redis.GetAsync(errorCountKey)))
+            {
+                errorCount = Convert.ToInt32(await _redis.GetAsync(errorCountKey));
+            }
+            if (string.IsNullOrEmpty(account)) { errormsg = "账号不能为空"; return Json(new { success = false, msg = errormsg, errorCount = errorCount }); }
+            if (string.IsNullOrEmpty(password)) { errormsg = "密码不能为空"; return Json(new { success = false, msg = errormsg, errorCount = errorCount }); }
+            if (string.IsNullOrEmpty(checkCode) && errorCount >= 3) { errormsg = "验证码不能为空"; return Json(new { success = false, msg = errormsg, errorCount = errorCount }); }
+            if (string.IsNullOrEmpty(codekey) && errorCount >= 3) { errormsg = "验证码异常"; return Json(new { success = false, msg = errormsg, errorCount = errorCount }); }
+            if (errorCount >= 3 && !await _usersService.CheckCodeImage("", checkCode, codekey))
+            {
+                errormsg = "验证码错误";
+                return Json(new { success = false, msg = errormsg, errorCount = errorCount });
+            }
             var user = _context.Users.AsNoTracking().Where(x => x.Account == account).FirstOrDefault();
-            if (user == null) { errormsg = "账号不存在"; return Json(new { success = false, msg = errormsg }); }
-            if (user.Password != _systemService.ConvertToMD5(password)) { errormsg = "密码错误"; _systemService.WriteLog("登录失败", Dtos.LogLevel.Info, account); return Json(new { success = false, msg = errormsg }); }
-            if (user.IsBan == 1) { errormsg = "账号已被禁用"; return Json(new { success = false, msg = errormsg }); }
+            if (user == null) { errormsg = "账号不存在"; return Json(new { success = false, msg = errormsg, errorCount = errorCount }); }
+            if (user.Password != _systemService.ConvertToMD5(password))
+            {
+                errormsg = "密码错误";
+                errorCount++;
+                await _redis.SetAsync(errorCountKey, errorCount.ToString());
+                await _systemService.WriteLog("登录失败", Dtos.LogLevel.Info, account);
+                return Json(new { success = false, msg = errormsg, errorCount = errorCount });
+            }
+            if (user.IsBan == 1) { errormsg = "账号已被禁用"; return Json(new { success = false, msg = errormsg, errorCount = errorCount }); }
             //生成token
+            await _redis.DeleteAsync(errorCountKey);
             var token = _jwtTokenManager.GenerateToken(user.Account);
             return Json(new { success = true, msg = "登录成功", token = token });
         }
+        [HttpPost]
+        public async Task<IActionResult> GenerateCodeImage(string key)
+        {
+            if (string.IsNullOrEmpty(key))
+                return Json(new { success = true, data = "The key was not found" });
+            string imagebase64 = await _usersService.GenerateCodeImage("", key);
+            return Json(new { success = true, data = imagebase64 });
+        }
+
         //判断用户是否登录
         [HttpPost]
         public IActionResult IsLogin()
@@ -226,7 +285,7 @@ namespace aibotPro.Controllers
         }
         [HttpPost]
         //public IActionResult SendFindPasswordEmail([FromBody] JsonElement requestBody)
-        public IActionResult SendFindPasswordEmail(string toemail)
+        public async Task<IActionResult> SendFindPasswordEmail(string toemail, string checkCode, string codekey)
         {
             //string captchaVerifyParam = requestBody.GetProperty("captchaVerifyParam").GetString();
             //bool result = _systemService.AlibabaCaptchaAsync(captchaVerifyParam).Result;
@@ -241,6 +300,18 @@ namespace aibotPro.Controllers
             //}
             //string toemail = requestBody.GetProperty("toemail").GetString();
             //判断用户是否存在
+            if (string.IsNullOrEmpty(checkCode))
+            {
+                return Json(new { success = false, msg = "验证码不能为空" });
+            }
+            if (string.IsNullOrEmpty(codekey))
+            {
+                return Json(new { success = false, msg = "验证码异常" });
+            }
+            if (!await _usersService.CheckCodeImage("", checkCode, codekey))
+            {
+                return Json(new { success = false, msg = "验证码错误" });
+            }
             var user = _context.Users.AsNoTracking().Where(x => x.Account == toemail).FirstOrDefault();
             if (user == null)
             {
@@ -324,7 +395,7 @@ namespace aibotPro.Controllers
                 return Json(new
                 {
                     success = false,
-                    msg = "发送失败",
+                    msg = "邮件发送失败",
                     captchaVerifyResult = false
                 });
             }
@@ -1078,6 +1149,22 @@ namespace aibotPro.Controllers
                 msg = "获取成功",
                 data = billLog,
                 total = total
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public IActionResult GetBalance()
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var users = _context.Users.Where(x => x.Account == username).FirstOrDefault();
+            decimal? balance = 0;
+            if (users != null)
+                balance = users.Mcoin;
+            return Json(new
+            {
+                success = true,
+                msg = "获取成功",
+                data = balance
             });
         }
     }

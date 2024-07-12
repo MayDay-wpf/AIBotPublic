@@ -189,7 +189,7 @@ namespace aibotPro.Service
             else
                 return "";
         }
-        public async Task<bool> SaveChatHistory(string account, string chatId, string content, string chatCode, string chatGroupId, string role, string model)
+        public async Task<bool> SaveChatHistory(string account, string chatId, string content, string chatCode, string chatGroupId, string role, string model, string firstTime = "", string allTime = "")
         {
             ChatHistory chatHistory = new ChatHistory();
             chatHistory.Account = account;
@@ -200,6 +200,8 @@ namespace aibotPro.Service
             chatHistory.ChatGroupId = chatGroupId;
             chatHistory.Model = model;
             chatHistory.IsDel = 0;
+            chatHistory.FirstTime = firstTime;
+            chatHistory.AllTime = allTime;
             chatHistory.CreateTime = DateTime.Now;
             _context.ChatHistories.Add(chatHistory);
             await _context.SaveChangesAsync();
@@ -440,6 +442,46 @@ namespace aibotPro.Service
                 return "";
 
         }
+
+        public async Task<SDResponse> CreateSDdraw(string prompt, string model, string imageSize, int numberImages, int seed, int inferenceSteps, float guidanceScale, string negativePrompt, string apiKey, string baseUrl, string Channel)
+        {
+            try
+            {
+                if (baseUrl.EndsWith("/"))
+                {
+                    baseUrl = baseUrl.TrimEnd('/');
+                }
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+            SDResponse sDResponse = new SDResponse();
+            if (Channel == "SiliconCloud")
+            {
+                var client = new RestClient(baseUrl + $"/v1/stabilityai/{model}/text-to-image");
+                var request = new RestRequest("", Method.Post);
+                request.AddHeader("Content-Type", "application/json");
+                request.AddHeader("Authorization", $"Bearer {apiKey}");
+                prompt = prompt.Replace("\r", "\\n").Replace("\n", "\\n");
+                SDdrawBody sDdrawBody = new SDdrawBody();
+                sDdrawBody.prompt = prompt;
+                sDdrawBody.batch_size = numberImages;
+                sDdrawBody.guidance_scale = guidanceScale;
+                sDdrawBody.seed = seed;
+                sDdrawBody.num_inference_steps = inferenceSteps;
+                sDdrawBody.image_size = imageSize;
+                var body = JsonConvert.SerializeObject(sDdrawBody);
+                request.AddParameter("application/json", body, ParameterType.RequestBody);
+                var response = await client.ExecuteAsync(request);
+                if (response.IsSuccessful)
+                {
+                    sDResponse = JsonConvert.DeserializeObject<SDResponse>(response.Content);
+                }
+            }
+            return sDResponse;
+        }
+
         public async Task<TaskResponse> GetMJTaskResponse(string taskId, string baseUrl, string apiKey)
         {
             try
@@ -489,7 +531,7 @@ namespace aibotPro.Service
                             using (var streamToReadFrom = await response.Content.ReadAsStreamAsync())
                             {
                                 // 使用ImageSharp库加载图像
-                                using (var image = Image.Load(streamToReadFrom))
+                                using (var image = SixLabors.ImageSharp.Image.Load(streamToReadFrom))
                                 {
                                     // 转换并保存为PNG格式
                                     image.SaveAsPng(fullPath);

@@ -3,35 +3,22 @@ using aibotPro.Models;
 using AlibabaCloud.OpenApiClient.Models;
 using AlibabaCloud.SDK.Captcha20230305;
 using AlibabaCloud.SDK.Captcha20230305.Models;
-using iTextSharp.text;
 using iTextSharp.text.pdf;
 using iTextSharp.text.pdf.parser;
-using iTextSharp.text.pdf.security;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using OfficeOpenXml;
-using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp;
 using Spire.Presentation;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Net;
 using System.Net.Mail;
 using System.Security.Cryptography;
-using System.Security.Principal;
 using System.Text;
 using System.Web;
 using TiktokenSharp;
-using static OpenAI.ObjectModels.SharedModels.IOpenAiModels;
-using System.Numerics;
 using aibotPro.Dtos;
-using System.Collections;
 using RestSharp;
-using System.Drawing.Imaging;
-using System.Drawing;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.Formats.Webp;
-using SixLabors.ImageSharp.Formats;
+using aibotPro.AppCode;
 
 namespace aibotPro.Service
 {
@@ -120,6 +107,14 @@ namespace aibotPro.Service
             }
 
             return code.ToString();
+        }
+        public Dictionary<string, string> GenerateCodeByImage()
+        {
+            Dictionary<string, string> dic = new Dictionary<string, string>();
+            string captchaCode = CaptchaGenerator.GenerateCaptchaCode();
+            string base64Image = CaptchaGenerator.CreateCaptchaImageBase64(captchaCode);
+            dic.Add(captchaCode, $"data:image/jpeg;base64,{base64Image}");
+            return dic;
         }
         public string ConvertToMD5(string str, int length = 16, bool lower = false)
         {
@@ -991,6 +986,17 @@ namespace aibotPro.Service
                     }
                 }
             }
+        }
+        public double CalculateTimeDifference(DateTime startTime, DateTime endTime)
+        {
+            // 计算时间差
+            TimeSpan timeDifference = endTime - startTime;
+
+            // 将时间差转换为秒，并保留一位小数
+            double seconds = Math.Round(timeDifference.TotalSeconds, 1);
+
+            // 返回格式化的字符串
+            return seconds;
         }
     }
 }

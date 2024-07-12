@@ -37,9 +37,21 @@
                         </label>
                         <input type="password" class="form-control" placeholder="请输入您的密码" value="" id="password">
                     </div>
+                    <div class="form-group" id="checkCodeBox" style="display:none">
+                        <label class="d-flex justify-content-between">
+                            <span>验证码</span>
+                        </label>
+                        <div class="d-flex">
+                            <input type="text" class="form-control w-60" placeholder="请输入图中验证码" value="" id="checkCode">
+                            <div class="ml-2">
+                                <small class="form-text text-muted">点击图片刷新 <i class="fas fa-redo"></i></small>
+                                <img src="" id="checkCodeImage" style="height: calc(1.5em + .75rem + 20px);cursor:pointer;" onclick="generateCodeImage()" />
+                            </div>
+                        </div>
+                    </div>
                     <div id="captcha-element"></div>
                     <div class="form-group d-flex mg-b-0">
-                        <button class="btn btn-brand-01 btn-uppercase flex-fill" id="checkbutton" onclick="login()">登 录</button>
+                        <button class="btn btn-brand-01 btn-uppercase flex-fill login" id="checkbutton" onclick="login()">登 录</button>
                         <a href="/Users/Regiest" class="btn btn-white btn-uppercase flex-fill mg-l-10">注 册</a>
                     </div>
                     @* <div class="divider-text mg-y-30">Or</div>
@@ -57,7 +69,7 @@
     <script src="/static/js/bootstrap.bundle.min.js"></script>
     <script src="/static/js/feather.min.js"></script>
     <script src="/static/js/perfect-scrollbar.min.js"></script>
-    <script src="~/system/js/users.js"></script>
+    <script src="~/system/js/users.js?v1"></script>
     <script src="~/system/js/balert.js"></script>
 </body>
 

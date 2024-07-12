@@ -118,45 +118,38 @@ $(document).ready(function () {
 
 
 function addCopyBtn(id = '') {
-    // 遍历所有含有 'hljs' 类的 code 标签
     var codebox;
-    if (id != '')
-        codebox = $('#' + id + ' pre code.hljs');
-    else
-        codebox = $('pre code.hljs');
-    codebox.each(function () {
-        var codeBlock = $(this); // 当前的 code 标签
+    if (id != '') {
+        codebox = $('#' + id + ' pre code.hljs, #' + id + ' pre code[class^="language-"]');
+    } else {
+        codebox = $('pre code.hljs, pre code[class^="language-"]');
+    }
 
-        // 为复制按钮创建一个容器
+    codebox.each(function () {
+        var codeBlock = $(this);
+
         var copyContainer = $('<div>').addClass('copy-container').css({
-            'text-align': 'right', // 复制按钮靠右显示
-            'background-color': 'rgb(40,44,52)', // 容器的背景颜色
-            'padding': '4px', // 容器的内边距
-            //'margin-top': '4px', // 与 code 标签之间的间距
+            'text-align': 'right',
+            'background-color': 'rgb(40,44,52)',
+            'padding': '4px',
             'display': 'block',
             'color': 'rgb(135,136,154)',
             'cursor': 'pointer'
         });
 
-        // 创建复制按钮
         var copyBtn = $('<span>').addClass('copy-btn').attr('title', 'Copy to clipboard');
         copyBtn.html(feather.icons.clipboard.toSvg());
 
         if ($(this).parent().find('.copy-btn').length === 0) {
             copyContainer.append(copyBtn);
-            // 把按钮容器添加到 code 标签的外层容器中（假设是 pre 标签）
             codeBlock.parent().append(copyContainer);
         }
 
-        // 把按钮容器添加到 code 标签的外层容器中（假设是 pre 标签）
-        codeBlock.parent().append(copyContainer);
-
-        // 实现复制功能
         copyBtn.click(function () {
-            var codeToCopy = codeBlock.text(); // 获取 code 标签中的文本
-            var tempTextArea = $('<textarea>').appendTo('body').val(codeToCopy).select(); // 创建临时的 textarea 并选中文本
-            document.execCommand('copy'); // 执行复制操作
-            tempTextArea.remove(); // 移除临时创建的 textarea
+            var codeToCopy = codeBlock.text();
+            var tempTextArea = $('<textarea>').appendTo('body').val(codeToCopy).select();
+            document.execCommand('copy');
+            tempTextArea.remove();
             balert("复制成功", "success", false, 1000, "top");
         });
     });
@@ -198,7 +191,7 @@ function editChat(id) {
             // 为每个<img>标签提取src属性
             var imgSrc = $(this).attr("src");
             image_path = imgSrc;
-            $("#openCamera").css("color", "red");
+            $("#openCamera").addClass("cameraColor");
             $Q.val($elem.text());
         });
     } else {
@@ -216,7 +209,7 @@ function quote(id) {
             // 为每个<img>标签提取src属性
             var imgSrc = $(this).attr("src");
             image_path = imgSrc;
-            $("#openCamera").css("color", "red");
+            $("#openCamera").addClass("cameraColor");
             $Q.val("回复：" + $elem.text());
         });
     } else {
@@ -344,10 +337,23 @@ function sendMsg() {
     max_textarea_Q();
     $("#Q").val("");
     $("#Q").focus();
+    var isvip = false;
+    isVIP(function (status) {
+        isvip = status;
+    });
+    var vipHead = isvip ?
+        `<div class="avatar" style="border:2px solid #FFD43B">
+             <img src='${HeadImgPath}'/>
+             <i class="fas fa-crown vipicon"></i>
+         </div>
+         <div class="nicknamevip">${UserNickText}</div>` :
+        `<div class="avatar">
+             <img src='${HeadImgPath}'/>
+         </div>
+         <div class="nickname">${UserNickText}</div>`;
     var html = `<div class="chat-message" data-group="` + chatgroupid + `">
                      <div style="display: flex; align-items: center;">
-                        <div class="avatar"><img src='${HeadImgPath}'/></div>
-                        <div class="nickname" style="font-weight: bold; color: black;">${UserNickText}</div>
+                        ${vipHead}
                      </div>
                      <div class="chat-message-box">
                        <pre id="`+ msgid_u + `"></pre>
@@ -365,7 +371,7 @@ function sendMsg() {
                        <div class="nickname" style="font-weight: bold; color: black;">AIBot</div>
                     </div>
                     <div class="chat-message-box">
-                        <div id="`+ msgid_g + `"></div><svg width="30" height="30" class="LDI"><circle cx="15" cy="15" r="7.5" fill="black" class="blinking-dot" /></svg>
+                        <div id="`+ msgid_g + `"></div><div class="spinner-grow spinner-grow-sm LDI"></div>
                     </div>
                     <div>
                         <i data-feather="copy" class="chatbtns" onclick="copyAll('`+ msgid_g + `')"></i>
@@ -384,7 +390,7 @@ function sendMsg() {
         })
         .catch(function (err) {
             processOver = true;
-            sendExceptionMsg("发送消息时出现了一些未经处理的异常 :-( 原因：", err.toString());
+            sendExceptionMsg("【Assistants】发送消息时出现了一些未经处理的异常 :-( 原因：" + err);
             //balert("您的登录令牌似乎已失效，我们将启动账号保护，请稍候，正在前往重新登录...", "danger", false, 3000, "center", function () {
             //    window.location.href = "/Users/Login";
             //});

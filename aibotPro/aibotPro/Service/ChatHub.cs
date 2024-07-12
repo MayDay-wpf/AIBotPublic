@@ -60,6 +60,10 @@ namespace aibotPro.Service
         //基础对话模型交互
         public async Task SendMessage(ChatDto chatDto)
         {
+            DateTime startTime = DateTime.Now;
+            string firstTime = "-1";
+            string allTime = "-1";
+            bool isFirstResponse = true;
             var httpContext = Context.GetHttpContext();
             string? token = string.Empty;
             token = httpContext?.Request.Query["access_token"];
@@ -207,23 +211,21 @@ namespace aibotPro.Service
                         }
                     }
                 }
-                if (string.IsNullOrEmpty(chatDto.image_path) && chatDto.aiModel == "gemini-pro-vision")
-                    chatDto.aiModel = "gemini-pro";
                 if (chatDto.file_list != null && chatDto.file_list.Count > 0)
                 {
                     string fileContent = await _filesAIService.PromptFromFiles(chatDto.file_list, Account);
-                    if (chatDto.aiModel == "gpt-4-all")
+                    if (chatDto.aiModel.Contains("-all"))
                     {
+                        promptHeadle = $"# 要求：{promptHeadle} \n\n";
                         for (int i = 0; i < chatDto.file_list.Count; i++)
                         {
-                            chatDto.system_prompt += $"# 文件地址{i + 1}：{Context.GetHttpContext().Request.Scheme}://{systemCfg.Where(x => x.CfgCode == "Domain").FirstOrDefault().CfgValue}{chatDto.file_list[i].Replace("wwwroot", "")} \n";
+                            promptHeadle += $"# 文件地址{i + 1}：{Context.GetHttpContext().Request.Scheme}://{systemCfg.Where(x => x.CfgCode == "Domain").FirstOrDefault().CfgValue}{chatDto.file_list[i].Replace("wwwroot", "").Replace("\\", "/")} \n\n";
                         }
-                        chatDto.system_prompt += "\n 请根据上述文件回答";
                         input += fileContent;
                     }
                     else
                     {
-                        promptHeadle = $"文件内容：{fileContent}\n\n{promptHeadle}";
+                        promptHeadle = $"# 要求：{promptHeadle}\n\n{fileContent}";
                     }
                 }
                 input += promptHeadle;
@@ -423,6 +425,11 @@ namespace aibotPro.Service
                 {
                     await foreach (var responseContent in _aiServer.CallingAI(aiChat, apiSetting, chatDto.chatgroupid, visionBody, cancellationToken))
                     {
+                        if (isFirstResponse)
+                        {
+                            firstTime = _systemService.CalculateTimeDifference(startTime, DateTime.Now).ToString("F1");
+                            isFirstResponse = false;
+                        }
                         if (semaphore.CurrentCount == 0)
                         {
                             // 被取消
@@ -440,6 +447,7 @@ namespace aibotPro.Service
                 }
                 finally
                 {
+                    allTime = _systemService.CalculateTimeDifference(startTime, DateTime.Now).ToString("F1");
                     _chatCancellationManager.RemoveToken(chatDto.chatgroupid);
                     //保存对话记录
                     if (!string.IsNullOrEmpty(chatDto.image_path))
@@ -470,8 +478,9 @@ namespace aibotPro.Service
                             await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                         }
                     }
-                    await _aiServer.SaveChatHistory(Account, chatId, chatDto.msg, chatDto.msgid_u, chatDto.chatgroupid, "user", chatDto.aiModel);
-                    await _aiServer.SaveChatHistory(Account, chatId, sysmsg, chatDto.msgid_g, chatDto.chatgroupid, "assistant", chatDto.aiModel);
+
+                    await _aiServer.SaveChatHistory(Account, chatId, chatDto.msg, chatDto.msgid_u, chatDto.chatgroupid, "user", chatDto.aiModel, firstTime, allTime);
+                    await _aiServer.SaveChatHistory(Account, chatId, sysmsg, chatDto.msgid_g, chatDto.chatgroupid, "assistant", chatDto.aiModel, firstTime, allTime);
                     chatRes.message = "";
                     chatRes.isfinish = true;
                     await Clients.Group(chatId).SendAsync(senMethod, chatRes);
@@ -494,6 +503,10 @@ namespace aibotPro.Service
         //创意工坊交互
         public async Task SendWorkShopMessage(ChatDto chatDto, bool onknowledge, List<string> typeCode)
         {
+            DateTime startTime = DateTime.Now;
+            string firstTime = "-1";
+            string allTime = "-1";
+            bool isFirstResponse = true;
             var httpContext = Context.GetHttpContext();
             string? token = string.Empty;
             token = httpContext?.Request.Query["access_token"];
@@ -826,6 +839,11 @@ namespace aibotPro.Service
                     {
                         await foreach (var responseContent in _baiduService.CallBaiduAI_Stream(chatCompletionCreate, openAiOptions, chatDto.chatgroupid, cancellationToken))
                         {
+                            if (isFirstResponse)
+                            {
+                                firstTime = _systemService.CalculateTimeDifference(startTime, DateTime.Now).ToString("F1");
+                                isFirstResponse = false;
+                            }
                             if (responseContent != null && !string.IsNullOrEmpty(responseContent.Result))
                             {
                                 sysmsg += responseContent.Result;
@@ -897,6 +915,11 @@ namespace aibotPro.Service
                     {
                         await foreach (var responseContent in completionResult.WithCancellation(cancellationToken))
                         {
+                            if (isFirstResponse)
+                            {
+                                firstTime = _systemService.CalculateTimeDifference(startTime, DateTime.Now).ToString("F1");
+                                isFirstResponse = false;
+                            }
                             if (responseContent.Successful)
                             {
                                 var choice = responseContent.Choices.FirstOrDefault();
@@ -994,8 +1017,9 @@ namespace aibotPro.Service
                 {
                     chatDto.msg += $@"aee887ee6d5a79fdcmay451ai8042botf1443c04<br /><img src=""{chatDto.image_path.Replace("wwwroot", "")}"" style=""max-width:50%;"" />";
                 }
-                await _aiServer.SaveChatHistory(Account, chatId, chatDto.msg, chatDto.msgid_u, chatDto.chatgroupid, "user", chatDto.aiModel);
-                await _aiServer.SaveChatHistory(Account, chatId, sysmsg, chatDto.msgid_g, chatDto.chatgroupid, "assistant", chatDto.aiModel);
+                allTime = _systemService.CalculateTimeDifference(startTime, DateTime.Now).ToString("F1");
+                await _aiServer.SaveChatHistory(Account, chatId, chatDto.msg, chatDto.msgid_u, chatDto.chatgroupid, "user", chatDto.aiModel, firstTime, allTime);
+                await _aiServer.SaveChatHistory(Account, chatId, sysmsg, chatDto.msgid_g, chatDto.chatgroupid, "assistant", chatDto.aiModel, firstTime, allTime);
                 chatRes.message = "";
                 chatRes.isfinish = true;
                 await Clients.Group(chatId).SendAsync(senMethod, chatRes);

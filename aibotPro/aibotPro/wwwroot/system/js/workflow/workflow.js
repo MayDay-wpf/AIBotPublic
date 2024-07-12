@@ -1172,7 +1172,7 @@ function pushtoPlugin(showlayer = true) {
                             layer.closeAll();
                         }, function () {
                             // 点击“返回插件列表”后的回调
-                            window.location.href = '/WorkShop/MyPlugins';
+                            window.location.href = '/WorkShop/MyPlugins?tab=mycreate';
                         });
                     }
                     else {
@@ -1388,7 +1388,7 @@ function sendMsg() {
     var html = `<div class="chat-message user"><pre id="` + msgid_u + `"></pre></div>`;
     $(".bottom-panel-content").append(html);
     $("#" + msgid_u).text(msg);
-    var gpthtml = `<div class="chat-message system"><div id="` + msgid_g + `"></div><svg width="30" height="30" class="LDI"><circle cx="15" cy="15" r="7.5" fill="black" class="blinking-dot" /></svg></div>`;
+    var gpthtml = `<div class="chat-message system"><div id="` + msgid_g + `"></div><div class="spinner-grow spinner-grow-sm LDI"></div></div>`;
     $(".bottom-panel-content").append(gpthtml);
     chatBody.animate({
         scrollTop: chatBody.prop("scrollHeight")
@@ -1398,7 +1398,7 @@ function sendMsg() {
         })
         .catch(function (err) {
             processOver = true;
-            sendExceptionMsg(err.toString());
+            sendExceptionMsg("【WorkFlow测试】发送消息时出现了一些未经处理的异常 :-( 原因：" + err);
             //balert("您的登录令牌似乎已失效，我们将启动账号保护，请稍候，正在前往重新登录...", "danger", false, 3000, "center", function () {
             //    window.location.href = "/Users/Login";
             //});
@@ -1500,4 +1500,8 @@ function getWorkShopAIModelList(callback) {
 
         }
     });
+}
+
+function goBack() {
+    window.location.href = `/WorkShop/MyWork?plugincode=${plugincode}&id=1393&type=edit`;
 }

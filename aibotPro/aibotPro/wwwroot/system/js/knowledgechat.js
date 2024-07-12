@@ -175,7 +175,7 @@ function handleFileUpload(file) {
         };
         reader.readAsDataURL(file);
     } else {
-        UploadPWT2(file);
+        //UploadPWT2(file);
     }
 }
 
@@ -290,6 +290,7 @@ connection.on('ReceiveWorkShopMessage', function (message) {
             //fileTXT = "";
         } else {
             if (message.message != null) {
+                stopTimer(`#${assistansBoxId}_timer_first`);
                 sysmsg += message.message;
                 $("#" + assistansBoxId).html(md.render(sysmsg));
                 $("#" + assistansBoxId).html(marked(sysmsg));
@@ -307,10 +308,12 @@ connection.on('ReceiveWorkShopMessage', function (message) {
         }
         jishuqi++;
     } else {
+        stopTimer(`#${assistansBoxId}_timer_first`);
+        stopTimer(`#${assistansBoxId}_timer_alltime`);
         processOver = true;
         $("#sendBtn").html(`<i data-feather="send"></i>`);
         feather.replace();
-        $("#sendBtn").css("color", "rgb(54,55,86)");
+        $("#sendBtn").removeClass("text-danger");
         $("#" + assistansBoxId).html(marked(completeMarkdown(sysmsg)));
         MathJax.typeset();
         //hljs.highlightAll();
@@ -353,7 +356,7 @@ function sendMsg() {
     processOver = false;
     $("#sendBtn").html(`<i data-feather="stop-circle"></i>`);
     feather.replace();
-    $("#sendBtn").css("color", "red")
+    $("#sendBtn").addClass("text-danger");
     chatgroupid = generateGUID();
     var msgid_u = generateGUID();
     var msgid_g = generateGUID();
@@ -376,10 +379,23 @@ function sendMsg() {
     max_textarea_Q();
     $("#Q").val("");
     $("#Q").focus();
+    var isvip = false;
+    isVIP(function (status) {
+        isvip = status;
+    });
+    var vipHead = isvip ?
+        `<div class="avatar" style="border:2px solid #FFD43B">
+             <img src='${HeadImgPath}'/>
+             <i class="fas fa-crown vipicon"></i>
+         </div>
+         <div class="nicknamevip">${UserNickText}</div>` :
+        `<div class="avatar">
+             <img src='${HeadImgPath}'/>
+         </div>
+         <div class="nickname">${UserNickText}</div>`;
     var html = `<div class="chat-message" data-group="` + chatgroupid + `">
                      <div style="display: flex; align-items: center;">
-                        <div class="avatar"><img src='${HeadImgPath}'/></div>
-                        <div class="nickname" style="font-weight: bold; color: black;">${UserNickText}</div>
+                        ${vipHead}
                      </div>
                      <div class="chat-message-box">
                        <pre id="`+ msgid_u + `"></pre>
@@ -399,9 +415,11 @@ function sendMsg() {
                        <div class="avatar gpt-avatar">A</div>
                        <div class="nickname" style="font-weight: bold; color: black;">AIBot</div>
                        <span class="badge badge-info ${thisAiModel.replace('.', '')}">${thisAiModel}</span>
+                       <span class="badge badge-pill badge-success" id="${msgid_g}_timer_first"></span>
+                       <span class="badge badge-pill badge-dark" id="${msgid_g}_timer_alltime"></span>
                     </div>
                     <div class="chat-message-box">
-                        <div id="`+ msgid_g + `"></div><svg width="30" height="30" class="LDI"><circle cx="15" cy="15" r="7.5" fill="black" class="blinking-dot" /></svg>
+                        <div id="`+ msgid_g + `"></div><div class="spinner-grow spinner-grow-sm LDI"></div>
                     </div>
                     <div>
                         <i data-feather="copy" class="chatbtns" onclick="copyAll('`+ msgid_g + `')"></i>
@@ -411,6 +429,8 @@ function sendMsg() {
                     </div>
                 </div>`;
     $(".chat-body-content").append(gpthtml);
+    startTimer(`#${msgid_g}_timer_first`, true);
+    startTimer(`#${msgid_g}_timer_alltime`);
     adjustTextareaHeight();
     chatBody.animate({
         scrollTop: chatBody.prop("scrollHeight")
@@ -420,7 +440,7 @@ function sendMsg() {
         })
         .catch(function (err) {
             processOver = true;
-            sendExceptionMsg(err.toString());
+            sendExceptionMsg("【知识库】发送消息时出现了一些未经处理的异常 :-( 原因：" + err);
             //balert("您的登录令牌似乎已失效，我们将启动账号保护，请稍候，正在前往重新登录...", "danger", false, 3000, "center", function () {
             //    window.location.href = "/Users/Login";
             //});
@@ -474,13 +494,13 @@ function getHistoryList(pageIndex, pageSize, reload, loading, searchKey) {
                 chat = chat.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                 html += `<li class="chat-item" id="` + res.data[i].chatId + `" onclick="showHistoryDetail('` + res.data[i].chatId + `')">
                             <div class="chat-item-body">
-                                <div>
-                                    <b>
-                                        `+ chat + `
-                                    </b>
+                               <div>
+                                    <txt>
+                                        ${chat}
+                                    </txt>
                                 </div>
                                 <p>
-                                    `+ res.data[i].createTime + `
+                                    ${isoStringToDateTime(res.data[i].createTime)}
                                 </p>
                             </div>
                         <span class="delete-chat">
@@ -600,10 +620,8 @@ function showHistoryDetail(id) {
     chatBody.html(`<li class="divider-text">
                         加载中...
                     </li>`);
-    $(".chat-item").css("border", "none");
-    $(".chat-item").css("background-color", "white");
-    $('[id*="' + id + '"]').css("background-color", "#f5f5fc");
-    $('[id*="' + id + '"]').css("border-right", "2px solid rgb(46,161,77)");
+    $(".chat-item").removeClass("highlight-chat-item").addClass("reset-chat-item");
+    $('[id*="' + id + '"]').addClass("highlight-chat-item");
     mobileChat(true);
     $.ajax({
         type: "Post",
@@ -616,6 +634,20 @@ function showHistoryDetail(id) {
             //console.log(res);
             chatid = id;
             var html = "";
+            var isvip = false;
+            isVIP(function (status) {
+                isvip = status;
+            });
+            var vipHead = isvip ?
+                `<div class="avatar" style="border:2px solid #FFD43B">
+                     <img src='${HeadImgPath}'/>
+                     <i class="fas fa-crown vipicon"></i>
+                 </div>
+                 <div class="nicknamevip">${UserNickText}</div>` :
+                `<div class="avatar">
+                     <img src='${HeadImgPath}'/>
+                 </div>
+                 <div class="nickname">${UserNickText}</div>`;
             for (var i = 0; i < res.data.length; i++) {
                 var content = res.data[i].chat;
                 if (res.data[i].role == "user") {
@@ -624,8 +656,7 @@ function showHistoryDetail(id) {
                         content = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                         html += `<div class="chat-message" data-group="` + res.data[i].chatGroupId + `">
                                      <div style="display: flex; align-items: center;">
-                                        <div class="avatar"><img src='${HeadImgPath}'/></div>
-                                        <div class="nickname" style="font-weight: bold; color: black;">${UserNickText}</div>
+                                        ${vipHead}
                                      </div>
                                      <div class="chat-message-box">
                                        <pre id="`+ res.data[i].chatCode + `">` + content + `</pre>
@@ -658,6 +689,17 @@ function showHistoryDetail(id) {
                         id: res.data[i].chatCode,
                         markdown: content
                     };
+                    var firstTime = '';
+                    var allTime = '';
+                    if (res.data[i].firstTime != "null" && res.data[i].allTime != "null" && res.data[i].firstTime != null && res.data[i].allTime != null) {
+                        firstTime = `<span class="badge badge-pill badge-success">${res.data[i].firstTime}s</span>`
+                        allTime = `<span class="badge badge-pill badge-dark">${res.data[i].allTime}s</span>`
+                        if (res.data[i].firstTime > 10) {
+                            firstTime = `<span class="badge badge-pill badge-danger">${res.data[i].firstTime}s</span>`
+                        } else if (res.data[i].firstTime > 5) {
+                            firstTime = `<span class="badge badge-pill badge-warning">${res.data[i].firstTime}s</span>`
+                        }
+                    }
                     markdownHis.push(item);
                     var markedcontent = marked(completeMarkdown(content));//md.render(content)//marked.parse(content);
                     var encoder = new TextEncoder();
@@ -666,6 +708,7 @@ function showHistoryDetail(id) {
                                    <div class="avatar gpt-avatar">A</div>
                                    <div class="nickname" style="font-weight: bold; color: black;">AIBot</div>
                                    <span class="badge badge-info ${res.data[i].model.replace('.', '')}">${res.data[i].model}</span>
+                                   ${firstTime}${allTime}
                                 </div>
                                 <div class="chat-message-box">
                                     <div id="`+ res.data[i].chatCode + `">` + markedcontent + `</div>
@@ -707,8 +750,7 @@ function newChat() {
     chatid = "";
     chatgroupid = "";
     chatBody.html("");
-    $(".chat-item").css("border", "none");
-    $(".chat-item").css("background-color", "white");
+    $(".chat-item").removeClass("highlight-chat-item");
     $("#Q").focus();
 }
 //加载更多历史记录
@@ -719,9 +761,11 @@ function loadMoreHistory() {
 //停止生成
 function stopGenerate() {
     processOver = true;
+    stopTimer(`#${assistansBoxId}_timer_first`);
+    stopTimer(`#${assistansBoxId}_timer_alltime`);
     $("#sendBtn").html(`<i data-feather="send"></i>`);
     feather.replace();
-    $("#sendBtn").css("color", "rgb(54,55,86)");
+    $("#sendBtn").removeClass("text-danger");
     $('.LDI').remove();
     if (sysmsg != '')
         $("#" + assistansBoxId).html(marked(completeMarkdown(sysmsg)));
@@ -819,56 +863,49 @@ function uploadIMGFile(file, destroyAlert) {
 function reviewImg(path) {
     $('#imgPreview').attr('src', path);
     $('.imgViewBox').show();
-    $("#openCamera").css("color", "red");
+    $("#openCamera").addClass("cameraColor");
 }
 //清除图片
 function ClearImg() {
     image_path = "";
     $('#imgPreview').attr('src', "");
     $('.imgViewBox').hide();
-    $("#openCamera").css("color", "rgb(135,136,154)");
+    $("#openCamera").removeClass("cameraColor");
 }
 //遍历添加复制按钮
 function addCopyBtn(id = '') {
-    // 遍历所有含有 'hljs' 类的 code 标签
     var codebox;
-    if (id != '')
-        codebox = $('#' + id + ' pre code.hljs');
-    else
-        codebox = $('pre code.hljs');
-    codebox.each(function () {
-        var codeBlock = $(this); // 当前的 code 标签
+    if (id != '') {
+        codebox = $('#' + id + ' pre code.hljs, #' + id + ' pre code[class^="language-"]');
+    } else {
+        codebox = $('pre code.hljs, pre code[class^="language-"]');
+    }
 
-        // 为复制按钮创建一个容器
+    codebox.each(function () {
+        var codeBlock = $(this);
+
         var copyContainer = $('<div>').addClass('copy-container').css({
-            'text-align': 'right', // 复制按钮靠右显示
-            'background-color': 'rgb(40,44,52)', // 容器的背景颜色
-            'padding': '4px', // 容器的内边距
-            //'margin-top': '4px', // 与 code 标签之间的间距
+            'text-align': 'right',
+            'background-color': 'rgb(40,44,52)',
+            'padding': '4px',
             'display': 'block',
             'color': 'rgb(135,136,154)',
             'cursor': 'pointer'
         });
 
-        // 创建复制按钮
         var copyBtn = $('<span>').addClass('copy-btn').attr('title', 'Copy to clipboard');
         copyBtn.html(feather.icons.clipboard.toSvg());
 
         if ($(this).parent().find('.copy-btn').length === 0) {
             copyContainer.append(copyBtn);
-            // 把按钮容器添加到 code 标签的外层容器中（假设是 pre 标签）
             codeBlock.parent().append(copyContainer);
         }
 
-        // 把按钮容器添加到 code 标签的外层容器中（假设是 pre 标签）
-        codeBlock.parent().append(copyContainer);
-
-        // 实现复制功能
         copyBtn.click(function () {
-            var codeToCopy = codeBlock.text(); // 获取 code 标签中的文本
-            var tempTextArea = $('<textarea>').appendTo('body').val(codeToCopy).select(); // 创建临时的 textarea 并选中文本
-            document.execCommand('copy'); // 执行复制操作
-            tempTextArea.remove(); // 移除临时创建的 textarea
+            var codeToCopy = codeBlock.text();
+            var tempTextArea = $('<textarea>').appendTo('body').val(codeToCopy).select();
+            document.execCommand('copy');
+            tempTextArea.remove();
             balert("复制成功", "success", false, 1000, "top");
         });
     });
@@ -910,7 +947,7 @@ function editChat(id) {
             // 为每个<img>标签提取src属性
             var imgSrc = $(this).attr("src");
             image_path = imgSrc;
-            $("#openCamera").css("color", "red");
+            $("#openCamera").addClass("cameraColor");
             $Q.val($elem.text());
         });
     } else {
@@ -935,6 +972,7 @@ function getAIModelList() {
                     html += `<a class="dropdown-item font-14" href="#" onclick="changeModel('${escapeQuotes(res.data[i].modelName)}','${escapeQuotes(res.data[i].modelNick)}')">` + res.data[i].modelNick + `</a>`;
                 }
                 $('#AIModel').html(html);
+                $(".dropdown-item").css("margin-left", 0);
             }
         },
         error: function (err) {
@@ -961,7 +999,7 @@ function quote(id) {
             // 为每个<img>标签提取src属性
             var imgSrc = $(this).attr("src");
             image_path = imgSrc;
-            $("#openCamera").css("color", "red");
+            $("#openCamera").addClass("cameraColor");
             $Q.val("回复：" + $elem.text());
         });
     } else {

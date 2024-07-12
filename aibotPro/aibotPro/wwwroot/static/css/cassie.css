@@ -50,6 +50,7 @@ html {
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
     overflow-x: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
     /*scrollbar-width: none;*/
 }
 
@@ -75,7 +76,6 @@ body {
     line-height: 1.5;
     color: #373857;
     text-align: left;
-    background-color: #fff;
     background-position: center center; /* 确保背景图片居中 */
     background-repeat: no-repeat; /* 防止背景图片重复 */
     background-attachment: fixed; /* 背景图片固定，不随页面滚动 */
@@ -2016,8 +2016,8 @@ pre {
 }
 
 .form-control:focus {
-    color: #454f5b;
-    background-color: #fff;
+    /*color: #454f5b;*/
+    /*background-color: #fff;*/
     border-color: #c4cdd6;
     outline: 0;
     box-shadow: 0 0 0 .2rem rgba(85, 86, 253, 0.25)
@@ -5688,7 +5688,8 @@ a.badge-dark.focus {
     display: flex;
     flex-direction: column;
     padding-left: 0;
-    margin-bottom: 0
+    margin-bottom: 0;
+    border-radius: 0 0 10px 10px;
 }
 
 .list-group-item-action {
@@ -6098,7 +6099,7 @@ a.close.disabled {
 
     .modal-open .modal {
         overflow-x: hidden;
-        overflow-y: auto
+        overflow-y: auto;
     }
 
 .modal {
@@ -16969,36 +16970,68 @@ body {
     }
 }
 
+/* 移动端样式 */
 @media(max-width:991.98px) {
-    .toggle-sidebar {
-        overflow: hidden
+    /* 侧边栏展开状态 */
+    .sidebar-open {
+        overflow-x: hidden;
     }
 
-        .toggle-sidebar .sidebar {
+        .sidebar-open .sidebar {
+            position: fixed; /* 确保侧边栏固定在页面上 */
             left: 0;
-            box-shadow: 0 4px 12px 0 rgba(131, 146, 165, 0.15);
-            border-right: 1px solid rgba(230, 231, 239, 0.85)
+            top: 0;
+            bottom: 0;
+            width: 240px;
+            transition: transform 0.3s ease; /* 展开时动画时间为0.3s */
+            background-color: #fff; /* 确保侧边栏背景色 */
         }
 
-        .toggle-sidebar .content {
-            transform: translateX(230px);
-            transition: transform 0.3s ease;
+        .sidebar-open .content {
+            transform: translateX(240px); /* 使用transform属性来移动内容区域 */
+            transition: transform 0.3s ease; /* 展开时动画时间为0.3s */
         }
+
+    /* 侧边栏收起状态 */
+    .sidebar-closed .sidebar {
+        transform: translateX(-240px); /* 将侧边栏隐藏 */
+    }
+
+    .sidebar-closed .content {
+        transition: all 0.3s ease; /* 缩回时动画时间为0.3s */
+    }
 }
 
+/* PC端样式 */
 @media(min-width:992px) {
-    .toggle-sidebar .sidebar {
-        left: -240px;
+    .sidebar-open .sidebar {
+        position: fixed; /* 确保侧边栏固定在页面上 */
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 240px;
+        box-shadow: 0 4px 12px 0 rgba(131, 146, 165, 0.15);
+        border-right: 1px solid rgba(230, 231, 239, 0.85);
+    }
+
+    .sidebar-open .content {
+        margin-left: 240px;
+        transition: margin-left 0.3s ease; /* 展开时动画时间为0.3s */
+    }
+
+    .sidebar-closed .sidebar {
+        position: fixed; /* 确保侧边栏固定在页面上 */
+        left: -240px; /* 将侧边栏隐藏 */
+        top: 0;
+        bottom: 0;
+        width: 240px;
+        box-shadow: none;
         border-right-width: 0;
-        box-shadow: none
     }
 
-    .toggle-sidebar .content {
-        margin-left: 0;
-    }
-
-    .toggle-sidebar .header {
-        left: 0
+    .sidebar-closed .content {
+        margin-left: 0; /* 恢复内容区域的位置 */
+        transition: margin-left 0.3s ease; /* 缩回时动画时间为0.3s */
     }
 }
 
@@ -17665,14 +17698,14 @@ body {
     }
 }
 
-.header-right a {
+/*.header-right a {
     color: #575d78
 }
 
     .header-right a:hover,
     .header-right a:focus {
         color: #06072d
-    }
+    }*/
 
 .header-right svg {
     width: 18px;
@@ -19083,7 +19116,7 @@ body {
     height: 100%;
     width: 100%;
     background-color: #fff;
-    border: 1px solid rgba(224, 225, 235, 0.85);
+    /*border: 1px solid rgba(224, 225, 235, 0.85);*/
     box-shadow: 0 4px 12px 0 rgba(131, 146, 165, 0.15), 2px 2px 5px 0 rgba(60, 70, 83, 0.04);
     display: none
 }
@@ -19118,12 +19151,12 @@ body {
 }
 
     .chat-body-options a {
-        color: rgba(55, 56, 87, 0.6)
+        /*color: rgba(55, 56, 87, 0.6)*/
     }
 
         .chat-body-options a:hover,
         .chat-body-options a:focus {
-            color: #373857
+            color: deepskyblue
         }
 
         .chat-body-options a + a {
@@ -19136,7 +19169,7 @@ body {
     }
 
 .chat-body-content {
-    height: calc(100% - 120px);
+    height: calc(100% - 140px);
     overflow: scroll;
     position: relative;
     background-color: #fff;
@@ -24472,7 +24505,7 @@ body {
     padding-top: 20px;
     margin-top: 28px;
     padding-bottom: 10px;
-    border-top: 1px solid rgba(230, 231, 239, 0.85)
+    /*border-top: 1px solid rgba(230, 231, 239, 0.85)*/
 }
 
 @media(min-width:576px) {
@@ -24565,7 +24598,7 @@ body {
 
     .demo-modal-static .modal {
         display: block;
-        position: static
+        /*position: static*/
     }
 
 .demo-modal-btn {
@@ -72429,7 +72462,7 @@ button.bg-twitter:focus,
     justify-content: center;
     font-weight: bold;
     color: white;
-    background-color: #f5f5f5;
+    /*background-color: #f5f5f5;*/
     margin-right: 10px;
     flex-shrink: 0;
     /*  防止头像大小随周围内容改变 */
@@ -72641,4 +72674,209 @@ code {
 
 .payimg {
     width: 20px;
+}
+
+.aibot-switch {
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+    user-select: none;
+}
+
+.aibot-switch-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.aibot-switch-label {
+    display: block;
+    overflow: hidden;
+    cursor: pointer;
+    border-radius: 20px;
+    transition: background-color 0.3s ease;
+}
+
+    .aibot-switch-label:before {
+        content: "";
+        display: block;
+        background: #fff;
+        position: absolute;
+        top: 2px;
+        bottom: 2px;
+        left: 2px;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    }
+
+.aibot-switch-input:checked + .aibot-switch-label:before {
+    transform: translateX(calc(100% - 4px));
+}
+
+/* Sizes */
+.aibot-switch-sm {
+    width: 30px;
+    height: 17px;
+    margin-top: 7px;
+}
+
+    .aibot-switch-sm .aibot-switch-label {
+        width: 30px;
+        height: 17px;
+    }
+
+        .aibot-switch-sm .aibot-switch-label:before {
+            width: 13px;
+            height: 13px;
+        }
+
+.aibot-switch-md {
+    width: 50px;
+    height: 28px;
+    margin-top: 18px;
+}
+
+    .aibot-switch-md .aibot-switch-label {
+        width: 50px;
+        height: 28px;
+    }
+
+        .aibot-switch-md .aibot-switch-label:before {
+            width: 24px;
+            height: 24px;
+        }
+
+.aibot-switch-lg {
+    width: 70px;
+    height: 39px;
+    margin-top: 29px;
+}
+
+    .aibot-switch-lg .aibot-switch-label {
+        width: 70px;
+        height: 39px;
+    }
+
+        .aibot-switch-lg .aibot-switch-label:before {
+            width: 35px;
+            height: 35px;
+        }
+
+.aibot-switch-sm .aibot-switch-input:checked + .aibot-switch-label:before {
+    transform: translateX(13px);
+}
+
+.aibot-switch-md .aibot-switch-input:checked + .aibot-switch-label:before {
+    transform: translateX(22px);
+}
+
+.aibot-switch-lg .aibot-switch-input:checked + .aibot-switch-label:before {
+    transform: translateX(31px);
+}
+
+/* Colors */
+.aibot-switch-primary .aibot-switch-label {
+    background-color: #007bff;
+}
+
+.aibot-switch-secondary .aibot-switch-label {
+    background-color: #6c757d;
+}
+
+.aibot-switch-success .aibot-switch-label {
+    background-color: #28a745;
+}
+
+.aibot-switch-danger .aibot-switch-label {
+    background-color: #dc3545;
+}
+
+.aibot-switch-warning .aibot-switch-label {
+    background-color: #ffc107;
+}
+
+.aibot-switch-info .aibot-switch-label {
+    background-color: #17a2b8;
+}
+
+.aibot-switch-light .aibot-switch-label {
+    background-color: #f8f9fa;
+}
+
+.aibot-switch-dark .aibot-switch-label {
+    background-color: #343a40;
+}
+
+.aibot-switch-input:not(:checked) + .aibot-switch-label {
+    background-color: #ccc;
+}
+
+.vipicon {
+    color: #FF973B;
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    transform: rotate(45deg);
+}
+
+.nickname {
+    font-weight: bold;
+    color: black;
+}
+
+.nicknamevip {
+    font-weight: bold;
+    color: #ff7700; /* 后备颜色 */
+    background-image: linear-gradient(to right, #ff0000, #d19a66);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.reset-chat-item {
+    border: none;
+    background-color: white;
+}
+
+.highlight-chat-item {
+    background-color: #f5f5fc;
+    border-right: 2px solid rgb(46,161,77);
+}
+
+.cameraColor {
+    color: red;
+}
+
+.dkmodel svg {
+    color: indigo;
+    width: 25px;
+    height: 25px;
+}
+
+.chat-message-box code::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+    /**/
+}
+
+.chat-message-box code::-webkit-scrollbar-track {
+    background: #282c34;
+    border-radius: 2px;
+}
+
+.chat-message-box code::-webkit-scrollbar-thumb {
+    background-color: dimgrey;
+    border-radius: 10px;
+}
+
+    .chat-message-box code::-webkit-scrollbar-thumb:hover {
+        background: lightgray;
+    }
+#log {
+    height: 200px;
+    background-color: antiquewhite;
+    resize: none;
+    display: none;
 }

@@ -67,7 +67,7 @@ namespace aibotPro.Service
         }
         public async Task<string> PromptFromFiles(List<string> path, string account)
         {
-            string prompt = "# 请根据以下文件内容做答：";
+            string prompt = "# 以下是文件内容：\n\n";
             //判断路径是否有wwwroot
             if (path.Count > 0)
             {
@@ -80,7 +80,7 @@ namespace aibotPro.Service
                     string fileText = await _systemService.GetFileText(path[i]);
                     if (!string.IsNullOrEmpty(fileText))
                     {
-                        prompt += $"## 文件内容：{fileText}";
+                        prompt += $"## 文件内容{i + 1}：{fileText} \n\n";
                     }
                 }
                 return prompt;

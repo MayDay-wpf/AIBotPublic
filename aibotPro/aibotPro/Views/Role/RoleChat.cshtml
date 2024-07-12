@@ -10,11 +10,11 @@
         },
         processHtmlClass: "chat-body-content",
         options: {
-            skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code", "a", "b"]
+            skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code", "a", "b", "txt"]
         }
     };
 </script>
-<link href="~/system/css/chat.css?v2" rel="stylesheet" />
+<link href="~/system/css/chat.css?v2.2" rel="stylesheet" />
 <script src="~/system/js/markdown-it.min.js"></script>
 <script src="~/system/js/tex-chtml.js"></script>
 
@@ -94,7 +94,7 @@
                         <span id="firstModel">---</span>
                         <i data-feather="chevron-down" style="width:20px;"></i>
                     </a>
-                    <div class="dropdown-menu dropdown-menu-left" aria-labelledby="chatDropdown" style="max-height: 505px;overflow-y:scroll" id="AIModel">
+                    <div class="dropdown-menu dropdown-menu-left" aria-labelledby="chatDropdown" style="max-height: 505px;overflow-y:scroll;overflow-x:hidden;" id="AIModel">
                         <div id="searchIcon" style="cursor:pointer;margin:5px;color:gray;">
                             <i data-feather="search" style="width: 20px;"></i>
                             <span>点击搜索</span>
@@ -152,6 +152,11 @@
             @*<div style="position:absolute;bottom:10%;margin-left:10px;">
             <input type="text" class="form-control" value="Amsterdam,Washington,Sydney,Beijing,Cairo" data-role="tagsinput">
             </div>*@
+            <div class="toolbar">
+                <div id="priceInfo" style="margin-bottom:5px;display:inline;">
+                </div>
+                @* <span class="badge badge-pill badge-dark">余额：<b id="balance"></b></span> *@
+            </div>
             <div class="chat-body-footer">
                 <div class="chat-body-options">
                     <a href="#" data-toggle="tooltip" title="🖼️ 图片上传" onclick="showCameraMenu()" id="openCamera">
@@ -176,7 +181,7 @@
     </div>
 </div>
 <script src="~/system/js/signalr.min.js"></script>
-<script src="~/system/js/rolechat.js?v6"></script>
+<script src="~/system/js/rolechat.js?v10.3"></script>
 <script src="~/system/js/marked.min.js"></script>
 <link href="~/system/css/atom-one-dark.min.css" rel="stylesheet" />
 <script src="~/system/js/highlight.min.js"></script>

@@ -10,10 +10,10 @@
 function addStLine() {
     var str = `<tr>
                  <td class="drag-handle"><i data-feather="align-justify"></i></td>
-                 <td><input type="text" class="form-control" maxlength="50" placeholder="模型昵称" /></td>
-                 <td><input type="text" class="form-control" maxlength="50" placeholder="模型名称(实际请求时使用)" /></td>
-                 <td><input type="text" class="form-control" maxlength="500" placeholder="Base URL"  /></td>
-                 <td><input type="text" class="form-control" maxlength="500" placeholder="API KEY"  /></td>
+                 <td><input type="text" class="form-control" placeholder="模型昵称" /></td>
+                 <td><input type="text" class="form-control" placeholder="模型名称(实际请求时使用)" /></td>
+                 <td><input type="text" class="form-control" placeholder="Base URL"  /></td>
+                 <td><input type="text" class="form-control" placeholder="API KEY"  /></td>
                  <td>
                     <select class="form-control">
                        <option checked="checked">OpenAI</option>
@@ -104,10 +104,10 @@ function getChatSetting() {
                     var checkedAttr = data[i].visionModel ? 'checked' : '';
                     var str = `<tr>
                                 <td class="drag-handle"><i data-feather="align-justify"></i></td>
-                                <td><input type="text" class="form-control" maxlength="50" placeholder="模型昵称" value="${data[i].modelNick}" /></td>
-                                <td><input type="text" class="form-control" maxlength="50" placeholder="模型名称(实际请求时使用)" value="${data[i].modelName}" /></td>
-                                <td><input type="text" class="form-control" maxlength="500" placeholder="Base URL" value="${data[i].baseUrl}" /></td>
-                                <td><input type="text" class="form-control" maxlength="500" placeholder="API KEY" value="${data[i].apiKey}" /></td>
+                                <td><input type="text" class="form-control" placeholder="模型昵称" value="${data[i].modelNick}" /></td>
+                                <td><input type="text" class="form-control" placeholder="模型名称(实际请求时使用)" value="${data[i].modelName}" /></td>
+                                <td><input type="text" class="form-control" placeholder="Base URL" value="${data[i].baseUrl}" /></td>
+                                <td><input type="text" class="form-control" placeholder="API KEY" value="${data[i].apiKey}" /></td>
                                 <td>
                                      <select class="form-control">
                                         <option value="OpenAI" ${data[i].channel === 'OpenAI' ? 'selected' : ''}>OpenAI</option>

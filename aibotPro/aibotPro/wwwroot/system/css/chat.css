@@ -83,7 +83,7 @@
 }
 
 .chat-body-content::-webkit-scrollbar-track {
-    background: rgb(239, 239, 239);
+    background: white;
     border-radius: 2px;
 }
 
@@ -327,4 +327,123 @@
     border: none;
     border-radius: 3px;
     font-size: 25px !important;
+}
+
+#modelDetails {
+    display: none;
+    border-radius: 10px;
+    position: absolute;
+    border: 1px solid #ccc;
+    background: #fff;
+    padding: 10px;
+    z-index: 1000;
+}
+
+.dropdown-header {
+    cursor: pointer;
+}
+
+.dropdown-item {
+    margin-left: 10px;
+}
+
+#dkbtn {
+    margin-left: 70%;
+    display: none;
+}
+
+@media(max-width: 768px) {
+    #dkbtn {
+        position: absolute;
+        top: 1.5%;
+        right: 2.5%;
+    }
+
+    .chat-body-footer {
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        left: 0;
+    }
+
+    .content-body-chat {
+        padding: 0;
+    }
+
+    .content-body {
+        padding: 0;
+    }
+}
+
+.icon {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    vertical-align: middle;
+}
+
+.icon-360 {
+    background-image: url('../images/modelsvg/360.svg');
+}
+
+.icon-bing {
+    background-image: url('../images/modelsvg/bing.svg');
+}
+
+.icon-claude {
+    background-image: url('../images/modelsvg/claude.svg');
+}
+
+.icon-deepseek {
+    background-image: url('../images/modelsvg/deepseek.svg');
+}
+
+.icon-ernie {
+    background-image: url('../images/modelsvg/ernie.svg');
+}
+
+.icon-gemini {
+    background-image: url('../images/modelsvg/gemini.svg');
+}
+
+.icon-glm {
+    background-image: url('../images/modelsvg/glm.svg');
+}
+
+.icon-gpt {
+    background-image: url('../images/modelsvg/gpt.svg');
+}
+
+.icon-hunyuan {
+    background-image: url('../images/modelsvg/hunyuan.svg');
+}
+
+.icon-llama {
+    background-image: url('../images/modelsvg/llama.svg');
+}
+
+.icon-minimax {
+    background-image: url('../images/modelsvg/minimax.svg');
+}
+
+.icon-mistral {
+    background-image: url('../images/modelsvg/mistral.svg');
+}
+
+.icon-moonshot {
+    background-image: url('../images/modelsvg/moonshot.svg');
+}
+
+.icon-qwen {
+    background-image: url('../images/modelsvg/qwen.svg');
+}
+
+.icon-sparkdesk {
+    background-image: url('../images/modelsvg/sparkdesk.svg');
+}
+
+.icon-suno {
+    background-image: url('../images/modelsvg/suno.svg');
 }

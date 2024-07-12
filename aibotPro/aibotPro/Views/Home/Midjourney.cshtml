@@ -13,6 +13,10 @@
             <i data-feather="arrow-left">
             </i>
         </a>
+        <button type="button" class="btn btn-primary" onclick="window.location.href='/Users/Gallery'">
+            <i data-feather="image"></i> 前往图库
+        </button>
+        &nbsp;&nbsp;
         <a href="#" class="header-help-link" onclick="MJinfo()">
             <i data-feather="help-circle">
             </i>
@@ -67,7 +71,7 @@
                             <a class="nav-link" id="NIJI-tab" data-toggle="tab" href="#NIJI" role="tab" aria-controls="NIJI" aria-selected="false">Niji-Journey</a>
                         </li>
                     </ul>
-                    <div class="tab-content bd bg-white bd-t-0 pd-20" id="myTabContent">
+                    <div class="tab-content bd bd-t-0 pd-20" id="myTabContent">
                         <div class="tab-pane fade active show" id="MJ" role="tabpanel" aria-labelledby="MJ-tab" style="text-align:center;">
                             <h5 class="MJtitle"><b>公认最强的AI绘画</b></h5>
                             <p class="mg-b-0">
@@ -151,7 +155,7 @@
                 </div>
                 <div class="log-container mb-3">
                     <span style="cursor:pointer" id="TaskLogTitle"><b>任务日志</b> <i data-feather="chevron-right"></i></span> <button class="btn btn-warning" onclick="$('#log').val('')">清空日志</button>
-                    <textarea id="log" class="form-control" style="height:200px;background-color:antiquewhite;resize: none;display:none;" readonly="readonly"></textarea>
+                    <textarea id="log" class="form-control" readonly="readonly"></textarea>
                 </div>
             </div>
         </div>
@@ -162,5 +166,5 @@
 <link rel="stylesheet" href="/system/css/magnific-popup.min.css">
 <script src="~/system/js/signalr.min.js"></script>
 <script src="~/system/js/jquery.magnific-popup.min.js"></script>
-<script src="~/system/js/midjourney.js?v4"></script>
+<script src="~/system/js/midjourney.js?v4.2"></script>
 <script src="~/system/js/uploadlogic.js"></script>

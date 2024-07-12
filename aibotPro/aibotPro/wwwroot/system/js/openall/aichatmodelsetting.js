@@ -20,6 +20,7 @@ function addStLine() {
                  <td><input type="text" class="form-control" placeholder="Base URL"  /></td>
                  <td><input type="text" class="form-control" placeholder="API KEY"  /></td>
                  <td><input type="checkbox" class="form-control"></td>
+                 <td><input type="text" class="form-control" placeholder="分组"  /></td>
                  <td><input type="number" class="form-control seq-input" placeholder="排序"  /></td>
                  <td><input type="number" class="form-control" placeholder="流延时(ms)"  /></td>
                  <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`
@@ -46,8 +47,9 @@ function saveChatSetting() {
         var baseUrl = $(row).find("input").eq(2).val();
         var apiKey = $(row).find("input").eq(3).val();
         var visionModel = $(row).find("input").eq(4).prop('checked');
-        var seq = $(row).find("input").eq(5).val();
-        var delay = $(row).find("input").eq(6).val() < 0 ? 0 : $(row).find("input").eq(6).val();
+        var group = $(row).find("input").eq(5).val();
+        var seq = $(row).find("input").eq(6).val();
+        var delay = $(row).find("input").eq(7).val() < 0 ? 0 : $(row).find("input").eq(7).val();
         if (!removeSpaces(nickname) || !removeSpaces(name) || !removeSpaces(baseUrl) || !removeSpaces(apiKey)) {
             balert('请将空的【自定义对话模型】输入行删除，或填写完整', 'danger', false, 1500, 'top');
             issave = false;
@@ -58,6 +60,7 @@ function saveChatSetting() {
             formData.append(`AImodel[${index}].BaseURL`, baseUrl);
             formData.append(`AImodel[${index}].ApiKey`, apiKey);
             formData.append(`AImodel[${index}].VisionModel`, visionModel);
+            formData.append(`AImodel[${index}].ModelGroup`, group);
             formData.append(`AImodel[${index}].Seq`, seq);
             formData.append(`AImodel[${index}].Delay`, delay);
         }
@@ -106,6 +109,7 @@ function getChatSetting() {
                                 <td><input type="text" class="form-control" placeholder="Base URL" value="${data[i].baseUrl}" /></td>
                                 <td><input type="text" class="form-control" placeholder="API KEY" value="${data[i].apiKey}" /></td>
                                 <td><input type="checkbox" class="form-control" ${checkedAttr}></td>
+                                <td><input type="text" class="form-control" placeholder="分组" value="${data[i].modelGroup}" /></td>
                                 <td><input type="number" class="form-control seq-input" placeholder="排序" value="${data[i].seq}" /></td>
                                 <td><input type="number" class="form-control" placeholder="流延时(ms)" value="${data[i].delay}" /></td>
                                 <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`

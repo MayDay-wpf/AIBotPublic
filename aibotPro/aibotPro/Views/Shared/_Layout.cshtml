@@ -11,7 +11,8 @@
     <meta name="keywords" content="AI, ChatGPT, GPT4, MJ绘画, SD绘画, Midjourney, DALL-E3, 知识库, 免费, AI文件处理, AI文件上传, GPT免费">
     <link href="~/static/css/all.min.css" rel="stylesheet">
     <link href="~/static/css/ionicons.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="~/static/css/cassie.css?v1.6">
+    <link rel="stylesheet" href="~/static/css/cassie.css?v3.4">
+    <link href="~/static/css/cassie-dark.css?v1.4" rel="stylesheet" />
     <link href="~/static/css/bootstrap-tagsinput.css" rel="stylesheet" />
     <link href="~/system/css/robot.css?v1" rel="stylesheet" />
     <link href="~/lib/jquery/dist/jquery-ui.css" rel="stylesheet" />
@@ -21,10 +22,10 @@
     <script src="~/static/js/feather.min.js"></script>
     @*<script src="~/static/js/perfect-scrollbar.min.js"></script>*@
     <script src="~/static/js/js.cookie.js"></script>
-    <script src="~/static/js/cassie.js?v3"></script>
+    <script src="~/static/js/cassie.js?v3.2"></script>
     <script src="~/system/js/xlsx.full.min.js"></script>
-    <script src="~/system/js/system.js?v6"></script>
-    <script src="~/system/js/balert.js?v1"></script>
+    <script src="~/system/js/system.js?v11.3"></script>
+    <script src="~/system/js/balert.js?v2"></script>
     <script src="~/system/js/markdown-it.min.js"></script>
     <script src="~/lib/jquery/dist/jquery-ui.js"></script>
     <script src="~/system/js/aidoc/lazyload.min.js"></script>
@@ -48,10 +49,31 @@
             height: 40px;
             margin-bottom: 5px;
         }
+        /* 纯净模式样式 */
+        body.pure-mode .sidebar,
+        body.pure-mode .header {
+            display: none;
+        }
 
+        body.pure-mode .content-body {
+            height: 100vh;
+            padding: 0;
+        }
+
+        body.pure-mode .chat-body-content {
+            padding: 10px 15% 10px 15%;
+        }
     </style>
     <script>
+        initDarkMode();
         $(function () {
+            const savedDarkMode = localStorage.getItem('darkMode');
+            const dkmodelBtn = $('.dkmodel');
+            if (savedDarkMode === 'true') {
+                dkmodelBtn.html(`<i data-feather="sun" style="color:#ffcd42"></i>`);
+            } else {
+                dkmodelBtn.html(`<i data-feather="moon"></i>`);
+            }
             // 页面加载完成后恢复滚动位置
             let savedScrollPosition = localStorage.getItem('sidebarScrollPosition');
             if (savedScrollPosition) {
@@ -74,6 +96,7 @@
             localStorage.removeItem('timestamp');
             localStorage.removeItem('robotSMtimespan');
             localStorage.removeItem('robotSM');
+            localStorage.removeItem('vipStatus');
             // 刷新页面
             window.location.reload(true);
         }
@@ -183,6 +206,9 @@
                         </a>
                         <a href="/Home/DALL" class="nav-sub-link" id="dall-nav">
                             绘画（DALL-E3）
+                        </a>
+                        <a href="/Home/StableDiffusion" class="nav-sub-link" id="sd-nav">
+                            绘画（StableDiffusion）
                         </a>
                         <a href="/Home/ChatSetting" class="nav-sub-link" id="chatsetting-nav">
                             设置（Setting）

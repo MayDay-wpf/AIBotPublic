@@ -31,6 +31,12 @@
                        placeholder="自定义API KEY">
             </div>
             <div class="form-group">
+                <label for="mj-channel">渠道:</label>
+                <select class="form-control w-50" id="mj-channel">
+                    <option>OpenAI</option>
+                </select>
+            </div>
+            <div class="form-group">
                 <button type="button" class="btn btn-primary savemj" onclick="saveDrawSetting('Midjourney')">
                     <i data-feather="save"></i>保存设置
                 </button>
@@ -54,7 +60,44 @@
                        placeholder="自定义API KEY">
             </div>
             <div class="form-group">
+                <label for="dall-channel">渠道:</label>
+                <select class="form-control w-50" id="dall-channel">
+                    <option>OpenAI</option>
+                </select>
+            </div>
+            <div class="form-group">
                 <button type="button" class="btn btn-primary saved3" onclick="saveDrawSetting('DALLE3')">
+                    <i data-feather="save"></i>保存设置
+                </button>
+            </div>
+        </div>
+    </div>
+    <p></p>
+    <div class="card">
+        <div class="card-header">
+            <h6>Stable Diffusion API</h6>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="sd-baseurl">Base URL:</label>
+                <input type="text" class="form-control" maxlength="500" id="sd-baseurl"
+                       placeholder="自定义请求地址">
+            </div>
+            <div class="form-group">
+                <label for="sd-apikey">API Key:</label>
+                <input type="text" class="form-control" maxlength="500" id="sd-apikey"
+                       placeholder="自定义API KEY">
+            </div>
+            <div class="form-group">
+                <label for="sd-channel">渠道:</label>
+                <select class="form-control w-50" id="sd-channel">
+                    <option value="SiliconCloud">SiliconCloud</option>
+                    <option value="OpenAI">OpenAI</option>
+                    <option value="SD">SD官方直连</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <button type="button" class="btn btn-primary savesd" onclick="saveDrawSetting('SD')">
                     <i data-feather="save"></i>保存设置
                 </button>
             </div>

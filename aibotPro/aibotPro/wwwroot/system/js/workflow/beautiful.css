@@ -74,7 +74,7 @@ header {
 }
 
     .drag-drawflow:hover {
-        background-color: lightgray;
+        background-color: #f0f0f4;
         transition: background-color 0.5s ease;
     }
 
@@ -358,10 +358,10 @@ header {
     }
 }
 
-.drawflow .drawflow-node.selected {
+.drawflow .drawflow-node.knowledge.selected {
     background: white;
     border: 2px solid transparent;
-    background-image: linear-gradient(white, white), linear-gradient(to right, rgb(22,157,178), rgb(255,255,255), rgb(22,157,178));
+    background-image: linear-gradient(white, white), linear-gradient(to right, #c164f2, #6547e1);
     background-origin: border-box;
     background-clip: content-box, border-box;
     -webkit-box-shadow: 0 2px 10px 2px rgb(135, 145, 128);
@@ -369,9 +369,61 @@ header {
     animation: slide 2s linear infinite;
 }
 
-    .drawflow .drawflow-node.selected .title-box {
-        color: #22598c;
-    }
+.drawflow .drawflow-node.start.selected {
+    background: white;
+    border: 2px solid transparent;
+    background-image: linear-gradient(white, white), linear-gradient(to right, #4f8af8, #6547e1);
+    background-origin: border-box;
+    background-clip: content-box, border-box;
+    -webkit-box-shadow: 0 2px 10px 2px rgb(135, 145, 128);
+    box-shadow: 0 2px 10px 2px rgb(135, 145, 128);
+    animation: slide 2s linear infinite;
+}
+
+.drawflow .drawflow-node.LLM.selected,
+.drawflow-node.javascript.selected,
+.drawflow-node.http.selected,
+.drawflow-node.DALL.selected,
+.drawflow-node.web.selected,
+.drawflow-node.ifelse.selected,
+.drawflow-node.end.selected {
+    background: white;
+    border: 2px solid transparent;
+    background-image: linear-gradient(white, white), linear-gradient(to right, #48b21d, #6547e1);
+    background-origin: border-box;
+    background-clip: content-box, border-box;
+    -webkit-box-shadow: 0 2px 10px 2px rgb(135, 145, 128);
+    box-shadow: 0 2px 10px 2px rgb(135, 145, 128);
+    animation: slide 2s linear infinite;
+}
+
+.drawflow-node.javascript.selected {
+    background-image: linear-gradient(white, white), linear-gradient(to right, #7e4a3a, #6547e1);
+}
+
+.drawflow-node.http.selected {
+    background-image: linear-gradient(white, white), linear-gradient(to right, #104bcd, #6547e1);
+}
+
+.drawflow-node.DALL.selected {
+    background-image: linear-gradient(white, white), linear-gradient(to right, #149da0, #6547e1);
+}
+
+.drawflow-node.web.selected {
+    background-image: linear-gradient(white, white), linear-gradient(to right, #1dc1dd, #6547e1);
+}
+
+.drawflow-node.ifelse.selected {
+    background-image: linear-gradient(white, white), linear-gradient(to right, #fd671c, #6547e1);
+}
+
+.drawflow-node.end.selected {
+    background-image: linear-gradient(white, white), linear-gradient(to right, #ca2746, #6547e1);
+}
+
+.drawflow .drawflow-node.selected .title-box {
+    color: #22598c;
+}
 
 .drawflow .connection .main-path {
     stroke: #4ea9ff;
@@ -531,7 +583,7 @@ header {
 .tools-title {
     text-align: center;
     height: 50px;
-    background: rgb(46,46,46);
+    background: linear-gradient(to right, #593291, #c264f2, #5a44df, #2a9a89);
     line-height: 50px;
     color: white;
 }
@@ -618,7 +670,7 @@ table {
 .panel-header {
     position: sticky;
     top: 0;
-    background-color: rgb(46,46,46);
+    background: linear-gradient(135deg, #010f12, #0c4bc1, #1bbe9f);
     padding: 0 20px;
     display: flex;
     justify-content: space-between;
@@ -649,6 +701,7 @@ table {
     box-sizing: border-box; /* 使宽度包含内边距和边框 */
     transition: border-color 0.3s, box-shadow 0.3s; /* 平滑过渡效果 */
     outline: none;
+    border: 1px solid lightgray;
 }
 
     .side-panel input:focus {
@@ -660,6 +713,7 @@ table {
     border-radius: 5px; /* 圆角 */
     box-sizing: border-box; /* 使宽度包含内边距和边框 */
     transition: border-color 0.3s, box-shadow 0.3s; /* 平滑过渡效果 */
+    border: 1px solid lightgray;
 }
 
     .side-panel .retry:focus {
@@ -672,6 +726,7 @@ table {
     box-sizing: border-box; /* 使宽度包含内边距和边框 */
     transition: border-color 0.3s, box-shadow 0.3s; /* 平滑过渡效果 */
     outline: none;
+    border: 1px solid lightgray;
 }
 
     .side-panel textarea:focus {
@@ -697,4 +752,95 @@ table {
     font-size: 12px;
     color: rgb(249,65,96);
     font-family: Comic Sans MS, Comic Sans, cursive;
+}
+
+.drag-drawflow {
+    color: dimgray;
+}
+
+    .drawflow_content_node .fa-play-circle, .drag-drawflow .fa-play-circle {
+        color: #4f8af8;
+    }
+
+    .drawflow_content_node .fa-js, .drag-drawflow .fa-js {
+        color: #7e4a3a;
+    }
+
+    .drawflow_content_node .fa-paper-plane, .drag-drawflow .fa-paper-plane {
+        color: #104bcd;
+    }
+
+    .drawflow_content_node .fa-robot, .drag-drawflow .fa-robot {
+        color: #48b21d;
+    }
+
+    .drawflow_content_node .fa-paint-brush, .drag-drawflow .fa-paint-brush {
+        color: #149da0;
+    }
+
+    .drawflow_content_node .fa-globe, .drag-drawflow .fa-globe {
+        color: #1dc1dd;
+    }
+
+    .drawflow_content_node .fa-question-circle, .drag-drawflow .fa-question-circle {
+        color: #fd671c;
+    }
+
+    .drawflow_content_node .fa-database, .drag-drawflow .fa-database {
+        color: #c164f1;
+    }
+
+    .drawflow_content_node .fa-stop-circle, .drag-drawflow .fa-stop-circle {
+        color: #ca2746;
+    }
+
+.menu .fa-bars {
+    color: #764476;
+}
+
+.menu .goback {
+    color: #0074e8;
+}
+
+.menu .clear {
+    color: #fc486f;
+}
+
+.menu .reviewJson {
+    color: #157afc;
+}
+
+.menu .testFlow {
+    color: #f89558;
+}
+
+.menu .saveFlow {
+    color: #0b5899;
+}
+
+.menu .uploadFlow {
+    color: #5748d4;
+}
+
+.infotext {
+    font-size: 12px;
+    position: absolute;
+    top: 0;
+    right: 350px;
+    line-height: 40px;
+    color: gray;
+}
+
+.menu .fa-spinner {
+    animation: spin 2s infinite linear;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }

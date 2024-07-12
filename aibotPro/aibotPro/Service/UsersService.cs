@@ -4,6 +4,7 @@ using aibotPro.Models;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using System.Runtime.CompilerServices;
 using System.Security.Principal;
 
 namespace aibotPro.Service
@@ -140,6 +141,39 @@ namespace aibotPro.Service
                 errormsg = "更新密码失败：" + ex.Message;
                 return false;
             }
+        }
+
+        public async Task<string> GenerateCodeImage(string account, string key = "")
+        {
+            //清除图像验证码缓存
+            if (string.IsNullOrEmpty(key))
+                key = $"{account}_codeimage";
+            await _redis.DeleteAsync(key);
+            //生成验证码
+            Dictionary<string, string> dic = _systemService.GenerateCodeByImage();
+            //写入缓存，5分钟
+            string code = dic.Keys.First();
+            string imagebase64 = dic[code];
+            await _redis.SetAsync(key, code, TimeSpan.FromMinutes(5));
+            return imagebase64;
+        }
+        public async Task<bool> CheckCodeImage(string account, string writeCode, string key = "")
+        {
+            if (string.IsNullOrEmpty(key))
+                key = $"{account}_codeimage";
+            string code = await _redis.GetAsync(key);
+            if (!string.IsNullOrEmpty(code))
+            {
+                if (writeCode.ToLower() == code.ToLower())
+                {
+                    await _redis.DeleteAsync(key);
+                    return true;
+                }
+                else
+                    return false;
+            }
+            else
+                return false;
         }
 
         public List<VIP> GetVIPs(string account)

@@ -1,6 +1,7 @@
 ﻿// 确保DOM完全加载完成
 
 var shareCode;
+var codekey = "";
 $(document).ready(function () {
     // 如果有需要，可以从本地存储获取计时器的状态
     // 检查localStorage中是否存在倒计时的结束时间
@@ -8,6 +9,7 @@ $(document).ready(function () {
         // 如果存在且时间未到，恢复倒计时状态
         disableButtonAndStartCountdown(true);
     }
+    generateCodeImage();
 });
 function getUrlParam(name) {
     var reg = new RegExp('(^|&)' + name + '=([^&]*)(&|$)');
@@ -100,11 +102,13 @@ function regiest() {
                 if (res.success) {
                     window.location.href = '/Users/Login';
                 }
-                else
+                else {
                     balert(res.msg, 'danger', true, 2000, "top");
+                }
             },
             error: function (xhr, status, error) {
                 unloadingBtn('.regiest');
+                generateCodeImage();
                 // 处理错误的回调
                 console.error(error);
             }
@@ -117,6 +121,7 @@ function regiest() {
 function login() {
     var account = $('#email').val().trim();
     var password = $('#password').val().trim();
+    var checkCode = $('#checkCode').val().trim();
     if (account != "" && password != "") {
         //account大于50个字符
         if (account.length < 2 || account.length > 50) {
@@ -129,12 +134,15 @@ function login() {
         //    balert('密码只允许数字和字母', 'danger', true, 2000, "top");
         //    return;
         //}
+        loadingBtn(".login");
         $.ajax({
             url: '/Users/Login',
             type: 'POST',
             data: {
                 account: account,
-                password: password
+                password: password,
+                checkCode: checkCode,
+                codekey: codekey
             },
             success: function (res) {
                 if (res.success && res.token) {
@@ -147,20 +155,30 @@ function login() {
                     // 将过期时间存储为一个时间戳，以便以后检查
                     localStorage.setItem('aibotpro_userToken_Expiration', expirationTime);
 
+                    unloadingBtn(".login");
                     // 导航到主页
                     window.location.href = '/Home/Index';
                 } else {
                     // 如果响应中没有token或请求不成功，则显示错误信息
+                    unloadingBtn(".login");
+                    generateCodeImage();
                     balert(res.msg, 'danger', true, 2000, "top");
+                    if (res.errorCount && res.errorCount >= 3) {
+                        $('#checkCodeBox').show();
+                    }
                 }
             },
             error: function (xhr, status, error) {
                 // 处理错误的回调
+                unloadingBtn(".login");
                 console.error(error);
+                generateCodeImage();
             }
         });
-    } else
-        balert('请输入账号和密码', 'danger', true, 2000, "top");
+    } else {
+        balert('请输入账号和密码以及验证码', 'danger', true, 2000, "top");
+        generateCodeImage();
+    }
 }
 //判断用户是否登录
 function isLogin(check) {
@@ -247,7 +265,7 @@ function findPassword() {
 }
 //发送找回密码邮件
 async function sendFindPasswordEmail(captchaVerifyParam) {
-    var toemail = $("#email").val();
+    var toemail = $("#email").val().trim();
     if (toemail == "") {
         balert('请输入邮箱地址', 'danger', true, 2000, "top");
         const verifyResult2 = {
@@ -307,70 +325,80 @@ async function checkCaptcha(url, params) {
 
 
 function oldFindPasswordEmail() {
-    var toemail = $("#email").val();
-    if (toemail != "") {
+    var toemail = $("#email").val().trim();
+    var checkCode = $('#checkCodebyImage').val().trim();
+    if (toemail != "" && checkCode != "") {
         disableButtonAndStartCountdown();
         $.ajax({
             url: "/Users/SendFindPasswordEmail",
             type: "post",
             dataType: "json",//返回对象
             data: {
-                toemail: toemail
+                toemail: toemail,
+                checkCode: checkCode,
+                codekey: codekey
             },
             success: function (res) {
                 if (res.success) {
                     // 立即禁用按钮，并开始倒计时
-                    balert('邮件已发送', 'info', true, 2000, "top");
+                    balert('邮件已发送', 'success', true, 2000, "top");
                 }
                 else {
-                    balert('邮件发送失败', 'danger', true, 2000, "top");
+                    balert(res.msg, 'danger', true, 2000, "top");
                     resumeCountdown();
+                    generateCodeImage();
                 }
             },
             error: function (e) {
                 console.log("失败" + e);
                 resumeCountdown();
+                generateCodeImage();
             }
         });
     } else {
-        balert('请输入邮箱地址', 'danger', true, 2000, "top");
+        balert('请输入邮箱地址和图形验证码', 'danger', true, 2000, "top");
     }
 }
 
 function oldsendCheckCode() {
-    var toemail = $("#email").val();
-    if (toemail != "") {
+    var toemail = $("#email").val().trim();
+    var checkCode = $('#checkCodebyImage').val().trim();
+    if (toemail != "" && checkCode != "") {
         disableButtonAndStartCountdown();
         $.ajax({
             url: "/Users/SendRegiestEmail",
             type: "post",
             dataType: "json",//返回对象
             data: {
-                toemail: toemail
+                toemail: toemail,
+                checkCode: checkCode,
+                codekey: codekey
             },
             success: function (res) {
                 if (res.success) {
                     // 立即禁用按钮，并开始倒计时
-                    balert('邮件已发送', 'info', true, 2000, "top");
+                    balert('邮件已发送', 'success', true, 2000, "top");
                 }
                 else {
-                    balert('邮件发送失败', 'danger', true, 2000, "top");
+                    balert(res.msg, 'danger', true, 2000, "top");
                     resumeCountdown();
+                    generateCodeImage();
                 }
             },
             error: function (e) {
                 console.log("失败" + e);
                 resumeCountdown();
+                generateCodeImage();
             }
         });
     } else {
-        balert('请输入邮箱地址', 'danger', true, 2000, "top");
+        balert('请输入邮箱地址和验证码', 'danger', true, 2000, "top");
     }
 }
 function disableBtn(success) {
     if (success) {
         // 立即禁用按钮，并开始倒计时
-        balert('邮件已发送', 'info', true, 2000, "top");
+        balert('邮件已发送', 'success', true, 2000, "top");
         disableButtonAndStartCountdown();
     }
     else {
@@ -409,4 +437,63 @@ function resumeCountdown() {
     if (localStorage.getItem("countdownEnd")) {
         disableButtonAndStartCountdown(true);
     }
+}
+
+function generateCodeImage() {
+    codekey = `cache_${generateGUID()}`;
+    $.ajax({
+        url: "/Users/GenerateCodeImage",
+        type: "post",
+        dataType: "json",//返回对象
+        data: {
+            key: codekey
+        },
+        success: function (res) {
+            if (res.success) {
+                $('#checkCodeImage').attr("src", res.data);
+            }
+            else {
+                balert(res.data, 'danger', true, 2000, "top");
+            }
+        },
+        error: function (e) {
+            console.log("失败" + e);
+        }
+    });
+}
+
+//生成GUID
+function generateGUID() {
+    function s4() {
+        return Math.floor((1 + Math.random()) * 0x10000)
+            .toString(16)
+            .substring(1);
+    }
+
+    return (
+        s4() +
+        s4() +
+        '-' +
+        s4() +
+        '-' +
+        s4() +
+        '-' +
+        s4() +
+        '-' +
+        s4() +
+        s4() +
+        s4()
+    );
+}
+//按钮进入加载状态
+function loadingBtn(dom) {
+    //禁用按钮
+    $(dom).prop('disabled', true)
+    $(dom).append(` <span class="spinner-border spinner-border-sm"role="status"aria-hidden="true"></span>`);
+}
+//解除按钮加载状态
+function unloadingBtn(dom) {
+    //恢复按钮
+    $(dom).prop('disabled', false)
+    $(dom).find('span').remove();
 }

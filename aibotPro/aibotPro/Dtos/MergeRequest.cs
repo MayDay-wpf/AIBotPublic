@@ -1,4 +1,6 @@
-﻿namespace aibotPro.Dtos
+﻿using Newtonsoft.Json;
+
+namespace aibotPro.Dtos
 {
     public class MergeRequest
     {
@@ -22,6 +24,42 @@
         public string quality { get; set; }
         public int n { get; set; }
     }
+    public class SDdrawBody
+    {
+        public string prompt { get; set; }
+        public string image_size { get; set; }
+        public int batch_size { get; set; }
+        public int num_inference_steps { get; set; }
+        public float guidance_scale { get; set; }
+        public int seed { get; set; }
+
+    }
+    public class SDResponse
+    {
+        [JsonProperty("images")]
+        public List<Image> Images { get; set; }
+
+        [JsonProperty("timings")]
+        public Timings Timings { get; set; }
+
+        [JsonProperty("seed")]
+        public int Seed { get; set; }
+
+        [JsonProperty("shared_id")]
+        public string SharedId { get; set; }
+    }
+
+    public class Image
+    {
+        [JsonProperty("url")]
+        public string Url { get; set; }
+    }
+
+    public class Timings
+    {
+        [JsonProperty("inference")]
+        public double Inference { get; set; }
+    }
     public class DALLE2drawBody
     {
         public string model { get; set; }
@@ -29,6 +67,7 @@
         public string size { get; set; }
         public int n { get; set; }
     }
+
     public class IMGResponseData
     {
         public long created { get; set; }

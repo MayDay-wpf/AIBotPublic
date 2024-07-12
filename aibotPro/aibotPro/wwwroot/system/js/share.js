@@ -8,6 +8,7 @@
     getShareInfo();
     loadMyShareList(page, page_size);
     loadLogList(page_log, page_size_log);
+    createShareLink();
 });
 let page = 1;
 let page_size = 15;

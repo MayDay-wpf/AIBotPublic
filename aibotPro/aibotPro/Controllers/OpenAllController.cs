@@ -605,7 +605,7 @@ namespace aibotPro.Controllers
         }
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
-        public IActionResult SaveDrawSetting(string type, string baseUrl, string apiKey)
+        public IActionResult SaveDrawSetting(string type, string baseUrl, string apiKey, string channel)
         {
             var drawSetting = _context.AIdraws.AsNoTracking().FirstOrDefault(x => x.ModelName == type);
             //如果为空则新增，如果不为空则修改
@@ -615,12 +615,14 @@ namespace aibotPro.Controllers
                 setting.ApiKey = apiKey;
                 setting.BaseUrl = baseUrl;
                 setting.ModelName = type;
+                setting.Channel = channel;
                 _context.AIdraws.Add(setting);
             }
             else
             {
                 drawSetting.ApiKey = apiKey;
                 drawSetting.BaseUrl = baseUrl;
+                drawSetting.Channel = channel;
                 _context.AIdraws.Update(drawSetting);
             }
             _context.SaveChanges();

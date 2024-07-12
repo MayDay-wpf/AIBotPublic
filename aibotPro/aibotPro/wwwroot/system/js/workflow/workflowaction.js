@@ -458,6 +458,7 @@ function saveNodeDataToCache(callback) {
         });
         return;
     }
+    writeInfo(`<i class="fas fa-spinner"></i> 保存中`,"lightgray");
     $.ajax({
         type: "POST",
         url: "/WorkShop/SaveNodeDataToCache",
@@ -467,7 +468,8 @@ function saveNodeDataToCache(callback) {
         },
         success: function (data) {
             if (data.success) {
-                layer.msg('保存完成', { icon: 1, offset: 't', time: 2000 });
+                //layer.msg('保存完成', { icon: 1, offset: 't', time: 2000 });
+                writeInfo(`<i class="fas fa-check-circle"></i> 保存成功:${getCurrentDateTime()}`,"#0dd068");
                 if (typeof callback === "function") {
                     callback();
                 }
@@ -525,4 +527,8 @@ function getWorkFlowNodeData(workflowcode) {
             }
         }
     });
+}
+function writeInfo(text, color) {
+    $('.infotext').html(text);
+    $('.infotext').css("color", color);
 }

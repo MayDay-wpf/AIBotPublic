@@ -44,11 +44,43 @@
     //        });
     //    }
     //});
+    var $body = $('body');
 
+    // 设置初始状态
+    if ($(window).width() >= 992) {
+        // PC端默认展开
+        $body.addClass('sidebar-open');
+    } else {
+        // 移动端默认缩回
+        $body.removeClass('sidebar-open');
+        $body.addClass('sidebar-closed');
+    }
+
+    // 点击事件
     $('.burger-menu:first-child').on('click', function (e) {
         e.preventDefault();
-        $('body').toggleClass('toggle-sidebar');
-    })
+
+        if ($body.hasClass('sidebar-open')) {
+            // 当前是展开状态，需要缩回
+            $body.removeClass('sidebar-open');
+            $body.addClass('sidebar-closed');
+        } else {
+            // 当前是缩回状态，需要展开
+            $body.removeClass('sidebar-closed');
+            $body.addClass('sidebar-open');
+        }
+    });
+
+    // 窗口大小改变时调整状态
+    $(window).resize(function () {
+        if ($(window).width() >= 992) {
+            $body.removeClass('sidebar-closed');
+            $body.addClass('sidebar-open');
+        } else {
+            $body.removeClass('sidebar-open');
+            $body.addClass('sidebar-closed');
+        }
+    });
     $('.header-search .form-control').on('focusin', function (e) {
         $(this).parent().addClass('active');
     })
