@@ -38,6 +38,9 @@
 ## 相关截图
 ![1](https://i.mij.rip/2024/02/27/b47660352729d9028be6f7edd0bd2c51.png)
 
+## 深色模式
+![QQ_1720747007544](https://github.com/user-attachments/assets/f697f1b1-4354-4902-8669-564e6df5c1e3)
+
 ## 自定义插件
 ![2](https://i.mij.rip/2024/02/27/56b35026e63d56ffe3cfe11b188d6af4.png)
 
