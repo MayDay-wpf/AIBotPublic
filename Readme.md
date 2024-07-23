@@ -64,7 +64,7 @@
 ## OpenAPI 支持外部调用AIBotPro的插件（联网、知识库、绘画、workflow等），实现AI特色功能输出，完全遵循OpenAI调用规则，免去复杂的function calling传参
 ![a8ffbb11bcd5406fb58c8f0ab87dfb6b.png](https://ice.frostsky.com/2024/04/05/a8ffbb11bcd5406fb58c8f0ab87dfb6b.png)
 
-## 硅基流动公司（https://siliconflow.cn/） 的stable-diffusion-3-medium
+## [硅基流动](https://siliconflow.cn/) 的stable-diffusion-3-medium
 ![image](https://github.com/user-attachments/assets/26261552-394c-433d-bbc5-009a380729e2)
 
 ## WorkFlow（AI流程引擎）
