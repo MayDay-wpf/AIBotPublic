@@ -2,7 +2,7 @@
 var textarea = document.getElementById("Q");
 var $Q = $("#Q");
 var chatBody = $(".chat-body-content");
-var thisAiModel = "gpt-3.5-turbo-0125"; //当前AI模型
+var thisAiModel = "gpt-4o-mini"; //当前AI模型
 var processOver = true; //是否处理完毕
 var image_path = "";
 var file_list = [];
@@ -16,6 +16,8 @@ var page_file = 1;
 var pageSize_file = 10;
 var markdownHis = [];
 let grouping = false;
+let createAiPrompt = false;
+
 $(function () {
     $('.nav-sub-link').removeClass('active');
     $('.nav-link').removeClass('active');
@@ -73,8 +75,7 @@ connection.onreconnected((connectionId) => {
 //监听键盘事件
 $(document).keypress(function (e) {
     if ($("#Q").is(":focus")) {
-        if (isMobile() && max_textarea)
-            return;
+        if (isMobile() && max_textarea) return;
         if ((e.which == 13 && e.shiftKey) || (e.which == 10 && e.shiftKey) || (e.which == 13 && e.ctrlKey) || (e.which == 10 && e.ctrlKey)) {
 
             // 这里实现光标处换行
@@ -100,25 +101,25 @@ $(document).keypress(function (e) {
         }
     }
 });
+
 function dataURLtoFile(dataurl, filename) {
-    var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-        bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+    var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1], bstr = atob(arr[1]), n = bstr.length,
+        u8arr = new Uint8Array(n);
     while (n--) {
         u8arr[n] = bstr.charCodeAt(n);
     }
     return new File([u8arr], filename, { type: mime });
 }
+
 // 阻止浏览器默认行为
 $(document).on({
     dragenter: function (e) {
         e.stopPropagation();
         e.preventDefault();
-    },
-    dragover: function (e) {
+    }, dragover: function (e) {
         e.stopPropagation();
         e.preventDefault();
-    },
-    drop: function (e) {
+    }, drop: function (e) {
         e.stopPropagation();
         e.preventDefault();
         var files = e.originalEvent.dataTransfer.files;
@@ -126,6 +127,9 @@ $(document).on({
 });
 //页面加载完成后执行
 $(document).ready(function () {
+    bindEnglishPromptTranslation("#Q");
+    bindOptimizePrompt("#Q");
+    bindInputToSidebar("#Q");
     //当#Q失去焦点时，关闭最大化
     $("#Q").blur(function () {
         if (max_textarea) {
@@ -136,9 +140,7 @@ $(document).ready(function () {
     $("#sendBtn").on("click", function () {
         if (!processOver) {
             stopGenerate();
-        }
-        else
-            sendMsg();
+        } else sendMsg();
     });
     $('#searchIcon').on('click', function (event) {
         event.stopPropagation();
@@ -164,13 +166,58 @@ $(document).ready(function () {
         $('.modelGrouping').prop('checked', false);
         grouping = false;
     }
-    if (grouping)
-        getAIModelListByGroup();
-    else
-        getAIModelList();
+    if (grouping) getAIModelListByGroup(); else getAIModelList();
+    // 检查localStorage中的缓存
+    var cache_createAiPrompt = localStorage.getItem('createAiPrompt');
+    if (cache_createAiPrompt) {
+        var cachedData = JSON.parse(cache_createAiPrompt);
+        $('.createAiPrompt').prop('checked', cachedData.value);
+        createAiPrompt = cachedData.value;
+    } else {
+        $('.createAiPrompt').prop('checked', false);
+        createAiPrompt = false;
+    }
 });
 
+document.addEventListener('DOMContentLoaded', function () {
+    // 为所有的聊天项绑定右键事件
+    document.body.addEventListener('contextmenu', function (e) {
+        const chatItem = e.target.closest('.chat-item');
+        if (chatItem) {
+            e.preventDefault();
+            const chatId = chatItem.dataset.chatId;
+            showContextMenu(e.pageX, e.pageY, chatId);
+        }
+    });
 
+    // 为移动设备绑定长按事件
+    let longPressTimer;
+    document.body.addEventListener('touchstart', function (e) {
+        const chatItem = e.target.closest('.chat-item');
+        if (chatItem) {
+            longPressTimer = setTimeout(function () {
+                const chatId = chatItem.dataset.chatId;
+                showContextMenu(e.touches[0].pageX, e.touches[0].pageY, chatId);
+            }, 500);
+        }
+    });
+
+    document.body.addEventListener('touchend', function () {
+        clearTimeout(longPressTimer);
+    });
+
+    // 阻止长按时默认的上下文菜单
+    document.body.addEventListener('touchmove', function (e) {
+        clearTimeout(longPressTimer);
+    });
+
+    // 点击其他地方关闭菜单
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.custom-context-menu')) {
+            $('.custom-context-menu').remove();
+        }
+    });
+});
 //最大化输入框
 function max_textarea_Q() {
     //#Q获得焦点
@@ -182,8 +229,7 @@ function max_textarea_Q() {
         $(".maximize-2").attr("data-feather", "minimize-2");
         feather.replace();
         max_textarea = true;
-    }
-    else {
+    } else {
         $Q.css("height", "auto");
         $Q.css("max-height", "200px");
         chatBody.css("height", "calc(100% - 140px)");
@@ -197,10 +243,7 @@ function max_textarea_Q() {
 //获取AI模型列表
 function getAIModelList() {
     $.ajax({
-        type: "Post",
-        url: "/Home/GetAImodel",
-        dataType: "json",
-        success: function (res) {
+        type: "Post", url: "/Home/GetAImodel", dataType: "json", success: function (res) {
             var html = "";
             if (res.success) {
                 modelPriceInfo(res.data[0].modelName);
@@ -225,14 +268,12 @@ function getAIModelList() {
                     }
                     // 初始化拖动排序
                     $("#modelList").sortable({
-                        revert: 100,
-                        start: function (event, ui) {
+                        revert: 100, start: function (event, ui) {
                             // 记录原始顺序
                             originalOrder = $("#modelList").sortable("toArray", { attribute: "data-model-name" });
                             // 在拖动开始时禁用点击事件
                             $('#modelList a').off('click');
-                        },
-                        stop: function (event, ui) {
+                        }, stop: function (event, ui) {
                             var newOrder = $("#modelList").sortable("toArray", { attribute: "data-model-name" });
                             // 比较新旧顺序
                             if (!arraysEqual(originalOrder, newOrder)) {
@@ -249,18 +290,15 @@ function getAIModelList() {
                 }
                 $(".dropdown-item").css("margin-left", 0);
             }
-        },
-        error: function (err) {
+        }, error: function (err) {
             // balert("系统未配置AI模型", "info", false, 2000, "center");
         }
     });
 }
+
 function getAIModelListByGroup() {
     $.ajax({
-        type: "Post",
-        url: "/Home/GetAImodel",
-        dataType: "json",
-        success: function (res) {
+        type: "Post", url: "/Home/GetAImodel", dataType: "json", success: function (res) {
             var html = "";
             if (res.success) {
                 modelPriceInfo(res.data[0].modelName);
@@ -308,15 +346,12 @@ function getAIModelListByGroup() {
                     var originalOrder;
                     // 对每个组内的模型进行排序初始化
                     $("#modelList .collapse").sortable({
-                        items: "a",
-                        revert: 100,
-                        start: function (event, ui) {
+                        items: "a", revert: 100, start: function (event, ui) {
                             // 记录原始顺序
                             originalOrder = $("#modelList .collapse").sortable("toArray", { attribute: "data-model-name" });
                             // 在拖动开始时禁用点击事件
                             $('#modelList a').off('click');
-                        },
-                        stop: function (event, ui) {
+                        }, stop: function (event, ui) {
                             var newOrder = $("#modelList .collapse").sortable("toArray", { attribute: "data-model-name" });
                             // 比较新旧顺序
                             if (!arraysEqual(originalOrder, newOrder)) {
@@ -339,15 +374,12 @@ function getAIModelListByGroup() {
                     });
                     // 允许拖动分组进行排序
                     $("#modelList").sortable({
-                        items: ".model-group",
-                        revert: 100,
-                        start: function (event, ui) {
+                        items: ".model-group", revert: 100, start: function (event, ui) {
                             $('.collapse').collapse('hide');
                             // 记录原始顺序
                             originalOrder = $("#modelList .collapse").sortable("toArray", { attribute: "data-model-name" });
                             $('.dropdown-header').off('click');
-                        },
-                        stop: function (event, ui) {
+                        }, stop: function (event, ui) {
                             var newOrder = $("#modelList .collapse").sortable("toArray", { attribute: "data-model-name" });
                             // 比较新旧顺序
                             if (!arraysEqual(originalOrder, newOrder)) {
@@ -371,21 +403,18 @@ function getAIModelListByGroup() {
                 });
                 feather.replace();
             }
-        },
-        error: function (err) {
+        }, error: function (err) {
             console.error("Error fetching AI models: ", err);
         }
     });
 }
+
 function modelPriceInfo(modelName) {
     $.ajax({
-        url: "/Home/GetModelPrice",
-        type: "post",
-        dataType: "json",//返回对象
+        url: "/Home/GetModelPrice", type: "post", dataType: "json",//返回对象
         data: {
             modelName: modelName
-        },
-        success: function (res) {
+        }, success: function (res) {
             if (res.success) {
                 res = res.data;
                 var str = ``;
@@ -401,8 +430,7 @@ function modelPriceInfo(modelName) {
                         } else {
                             str = `<span class="badge badge-pill badge-success">输出：${data.modelPrice.vipOnceFee}/次</span>`;
                         }
-                    }
-                    else {
+                    } else {
                         if (!isvip) {
                             if (data.modelPrice.modelPriceInput > 0 && data.modelPrice.modelPriceOutput > 0) {
                                 str = `<span class="badge badge-pill badge-info">输入：${data.modelPrice.modelPriceInput}/1k token</span>
@@ -414,8 +442,7 @@ function modelPriceInfo(modelName) {
                             if (data.modelPrice.vipModelPriceInput > 0 && data.modelPrice.vipModelPriceOutput > 0) {
                                 str = `<span class="badge badge-pill badge-info">输入：${data.modelPrice.vipModelPriceInput}/1k token</span>
                                    <span class="badge badge-pill badge-success">输出：${data.modelPrice.vipModelPriceOutput}/1k token</span>`;
-                            }
-                            else {
+                            } else {
                                 str = '<span class="badge badge-pill badge-success">免费</span>';
                             }
                         }
@@ -437,6 +464,7 @@ function arraysEqual(arr1, arr2) {
     }
     return true;
 }
+
 function stripHTML(html) {
     var tmp = document.createElement("DIV");
     tmp.innerHTML = html;
@@ -504,6 +532,7 @@ function filterModels() {
         });
     }
 }
+
 function saveModelSeq() {
     var items = $("#modelList").find("a");
     var formData = new FormData();
@@ -537,6 +566,7 @@ function saveModelSeq() {
         }
     });
 }
+
 function changeModel(modelName, modelNick) {
     $("#chatDropdown").html(modelNick + `<i data-feather="chevron-down" style="width:20px;"></i>`);
     feather.replace();
@@ -546,8 +576,10 @@ function changeModel(modelName, modelNick) {
     modelPriceInfo(modelName);
     balert("切换模型【" + modelNick + "】成功", "success", false, 1000);
 }
+
 //隐藏历史记录列表
 var isShowHistory = true;
+
 function hideHistoary() {
     if (!processOver) {
         balert("对话进行中,请结束后再试", "warning", false, 2000);
@@ -555,8 +587,7 @@ function hideHistoary() {
     }
     if (isMobile()) {
         mobileChat(false);
-    }
-    else {
+    } else {
         var chatSidebar = $(".chat-sidebar");
         var chatBody = $(".chat-body");
         var icon = $("#hidehis");
@@ -566,13 +597,11 @@ function hideHistoary() {
             icon.attr("data-feather", "chevron-right");
             feather.replace();
             chatBody.animate({
-                width: "100%",
-                marginLeft: "0"
+                width: "100%", marginLeft: "0"
             }, animationDuration, function () {
             });
             isShowHistory = false;
-        }
-        else {
+        } else {
             chatBody.css("width", "calc(100% - 300px)");
             icon.attr("data-feather", "chevron-left");
             feather.replace();
@@ -592,8 +621,7 @@ function mobileChat(show) {
         if (show) {
             $(".chat-sidebar").hide();
             $(".chat-body").show();
-        }
-        else {
+        } else {
             $(".chat-sidebar").show();
             $(".chat-body").hide();
         }
@@ -604,6 +632,7 @@ function mobileChat(show) {
 var md = window.markdownit();
 var sysmsg = "";
 var jishuqi = 0;
+
 // 添加显示代码语言的 Labels
 function addLanguageLabels(useSpecificId = false, assistansBoxId = '') {
     // 根据 useSpecificId 决定选择器的范围
@@ -626,6 +655,7 @@ function addLanguageLabels(useSpecificId = false, assistansBoxId = '') {
         }
     });
 }
+
 connection.on('ReceiveMessage', function (message) {
     //console.log(message);
     if (!message.isfinish) {
@@ -644,8 +674,8 @@ connection.on('ReceiveMessage', function (message) {
                 });
                 addLanguageLabels(true, assistansBoxId);
                 addCopyBtn(assistansBoxId);
-                if (Scrolling == 1)
-                    chatBody.scrollTop(chatBody[0].scrollHeight);
+                if (Scrolling == 1) chatBody.scrollTop(chatBody[0].scrollHeight);
+                applyMagnificPopup('.chat-message-box');
             }
 
         }
@@ -665,8 +695,7 @@ connection.on('ReceiveMessage', function (message) {
         });
         addLanguageLabels(true, assistansBoxId);
         var item = {
-            id: assistansBoxId,
-            markdown: sysmsg
+            id: assistansBoxId, markdown: sysmsg
         };
         markdownHis.push(item);
         sysmsg = "";
@@ -675,12 +704,13 @@ connection.on('ReceiveMessage', function (message) {
         addCopyBtn(assistansBoxId);
         getHistoryList(1, 20, true, false, "");
         addExportButtonToTables();
+        applyMagnificPopup('.chat-message-box');
     }
 });
 
 
 //发送消息
-function sendMsg() {
+function sendMsg(retryCount = 3) {
     var msg = $("#Q").val().trim();
     if (msg == "") {
         balert("请输入问题", "warning", false, 2000);
@@ -707,13 +737,13 @@ function sendMsg() {
         "chatgroupid": chatgroupid,
         "ip": IP,
         "image_path": image_path,
-        "file_list": []
+        "file_list": [],
+        "createAiPrompt": createAiPrompt
     };
     // 遍历 onfilearr 数组，在每次迭代中将文件名添加到 file_list
     if (onfilearr.length > 0) {
         onfilearr.forEach(function (file) {
-            if (file.onfile)
-                data.file_list.push(file.path);
+            if (file.onfile) data.file_list.push(file.path);
         });
     }
     max_textarea = true;
@@ -724,13 +754,11 @@ function sendMsg() {
     isVIP(function (status) {
         isvip = status;
     });
-    var vipHead = isvip ?
-        `<div class="avatar" style="border:2px solid #FFD43B">
+    var vipHead = isvip ? `<div class="avatar" style="border:2px solid #FFD43B">
              <img src='${HeadImgPath}'/>
              <i class="fas fa-crown vipicon"></i>
          </div>
-         <div class="nicknamevip">${UserNickText}</div>` :
-        `<div class="avatar">
+         <div class="nicknamevip">${UserNickText}</div>` : `<div class="avatar">
              <img src='${HeadImgPath}'/>
          </div>
          <div class="nickname">${UserNickText}</div>`;
@@ -739,11 +767,11 @@ function sendMsg() {
                         ${vipHead}
                      </div>
                      <div class="chat-message-box">
-                       <pre id="`+ msgid_u + `"></pre>
+                       <pre id="` + msgid_u + `"></pre>
                      </div>
                      <div>
-                      <i data-feather="refresh-cw" class="chatbtns" onclick="tryAgain('`+ msgid_u + `')"></i>
-                      <i data-feather="edit-3" class="chatbtns" onclick="editChat('`+ msgid_u + `')"></i>
+                      <i data-feather="refresh-cw" class="chatbtns" onclick="tryAgain('` + msgid_u + `')"></i>
+                      <i data-feather="edit-3" class="chatbtns" onclick="editChat('` + msgid_u + `')"></i>
                      </div>
                 </div>`;
     $(".chat-body-content").append(html);
@@ -760,12 +788,12 @@ function sendMsg() {
                        <span class="badge badge-pill badge-dark" id="${msgid_g}_timer_alltime"></span>
                     </div>
                     <div class="chat-message-box">
-                        <div id="`+ msgid_g + `"></div><div class="spinner-grow spinner-grow-sm LDI"></div>
+                        <div id="` + msgid_g + `"></div><div class="spinner-grow spinner-grow-sm LDI"></div>
                     </div>
                     <div>
-                        <i data-feather="copy" class="chatbtns" onclick="copyAll('`+ msgid_g + `')"></i>
-                        <i data-feather="anchor" class="chatbtns" onclick="quote('`+ msgid_g + `')"></i>
-                        <i data-feather="trash-2" class="chatbtns" onclick="deleteChatGroup('`+ chatgroupid + `')"></i>
+                        <i data-feather="copy" class="chatbtns" onclick="copyAll('` + msgid_g + `')"></i>
+                        <i data-feather="anchor" class="chatbtns" onclick="quote('` + msgid_g + `')"></i>
+                        <i data-feather="trash-2" class="chatbtns" onclick="deleteChatGroup('` + chatgroupid + `')"></i>
                         <i data-feather="codepen" class="chatbtns" data-toggle="tooltip" title="复制Markdown" onclick="toMarkdown('${msgid_g}')"></i>
                     </div>
                 </div>`;
@@ -776,16 +804,32 @@ function sendMsg() {
     chatBody.animate({
         scrollTop: chatBody.prop("scrollHeight")
     }, 500);
-    connection.invoke("SendMessage", data)
-        .then(function () {
-        })
-        .catch(function (err) {
-            processOver = true;
-            sendExceptionMsg("【文件助手】发送消息时出现了一些未经处理的异常 :-( 原因：" + err);
-            //balert("您的登录令牌似乎已失效，我们将启动账号保护，请稍候，正在前往重新登录...", "danger", false, 3000, "center", function () {
-            //    window.location.href = "/Users/Login";
-            //});
-        });
+
+    // 尝试发送消息
+    function trySendMessage() {
+        connection.invoke("SendMessage", data)
+            .then(function () {
+                // 消息发送成功
+            })
+            .catch(function (err) {
+                console.error("Send message failed:", err);
+                retryCount--;
+                if (retryCount > 0) {
+                    setTimeout(trySendMessage, 1000); // 1秒后重试
+                } else {
+                    processOver = true;
+                    balert("发送消息失败,请刷新页面后重试", "danger", false, 2000, "center");
+                    $('#' + assistansBoxId).html("发送消息失败,请刷新页面后重试 <a href='javascript:location.reload();'>点击刷新</a>");
+                    stopTimer(`#${assistansBoxId}_timer_first`);
+                    stopTimer(`#${assistansBoxId}_timer_alltime`);
+                    $('.LDI').remove();
+                    sendExceptionMsg("发送消息失败，请检查网络连接并重试。");
+                }
+            });
+
+    }
+
+    trySendMessage();
 }
 
 //调起素材库&上传文件
@@ -796,18 +840,11 @@ function showUploadFileMenu() {
 
 //获取历史记录
 function getHistoryList(pageIndex, pageSize, reload, loading, searchKey) {
-    if (loading)
-        $(".chat-list").append(`<li class="divider-text" style="text-align:center;">加载中...</li>`);
+    if (loading) $(".chat-list").append(`<li class="divider-text" style="text-align:center;">加载中...</li>`);
     $.ajax({
-        type: "Post",
-        url: "/Home/GetChatHistoriesList",
-        dataType: "json",
-        data: {
-            pageIndex: pageIndex,
-            pageSize: pageSize,
-            searchKey: searchKey
-        },
-        success: function (res) {
+        type: "Post", url: "/Home/GetChatHistoriesList", dataType: "json", data: {
+            pageIndex: pageIndex, pageSize: pageSize, searchKey: searchKey
+        }, success: function (res) {
             //console.log(res);
             $(".divider-text").remove();
             if (res.data.length <= 0 && pageIndex > 1 && !reload) {
@@ -832,7 +869,7 @@ function getHistoryList(pageIndex, pageSize, reload, loading, searchKey) {
                 //转译尖括号
                 chat = chat.replace(/&lt;/g, "&amp;lt;").replace(/&gt;/g, "&amp;gt;");
                 chat = chat.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                html += `<li class="chat-item" id="` + res.data[i].chatId + `" onclick="showHistoryDetail('` + res.data[i].chatId + `')">
+                html += `<li class="chat-item" id="${res.data[i].chatId}" onclick="showHistoryDetail('${res.data[i].chatId}')" data-chat-id="${res.data[i].chatId}">
                             <div class="chat-item-body">
                                 <div>
                                     <txt>
@@ -844,38 +881,32 @@ function getHistoryList(pageIndex, pageSize, reload, loading, searchKey) {
                                 </p>
                             </div>
                         <span class="delete-chat">
-                            <i data-feather="x" onclick="deleteChat('`+ res.data[i].chatId + `')"></i>
+                            <i data-feather="x" onclick="deleteChat('` + res.data[i].chatId + `')"></i>
                         </span>
                     </li>`;
             }
-            if (reload)
-                $(".chat-list").html(html);
-            else {
+            if (reload) $(".chat-list").html(html); else {
                 $(".chat-list").append(html);
                 $(".chat-sidebar-body").animate({
                     scrollTop: $(".chat-sidebar-body")[0].scrollHeight
                 }, 500);
             }
             feather.replace();
-        },
-        error: function (err) {
+        }, error: function (err) {
             //window.location.href = "/Users/Login";
             //balert("出现了未经处理的异常，请联系管理员：" + err, "danger", false, 2000, "center");
         }
     });
 }
+
 //删除历史记录
 function deleteChat(id) {
     event.stopPropagation();
     showConfirmationModal("提示", "确定删除这条历史记录吗？", function () {
         $.ajax({
-            type: "Post",
-            url: "/Home/DelChatHistory",
-            dataType: "json",
-            data: {
+            type: "Post", url: "/Home/DelChatHistory", dataType: "json", data: {
                 chatId: id
-            },
-            success: function (res) {
+            }, success: function (res) {
                 if (res.success) {
                     balert("删除成功", "success", false, 1000, "top");
                     $('[id*="' + id + '"]').remove();
@@ -884,34 +915,29 @@ function deleteChat(id) {
                         chatid = "";
                     }
                 }
-            },
-            error: function (err) {
+            }, error: function (err) {
                 //window.location.href = "/Users/Login";
                 balert("删除失败，错误请联系管理员：err", "danger", false, 2000, "center");
             }
         });
     });
 }
+
 //删除所有历史记录
 function deleteChatAll() {
     showPromptModal("提示", `请输入<b style="color:red;">“justdoit”</b>以删除全部历史记录<br/>`, function (text) {
         if (text == "justdoit") {
             $.ajax({
-                type: "Post",
-                url: "/Home/DelChatHistory",
-                dataType: "json",
-                data: {
+                type: "Post", url: "/Home/DelChatHistory", dataType: "json", data: {
                     chatId: ''
-                },
-                success: function (res) {
+                }, success: function (res) {
                     if (res.success) {
                         balert("删除成功", "success", false, 1000, "top");
                         chatBody.html("");
                         $(".chat-list").html("");
                         chatid = "";
                     }
-                },
-                error: function (err) {
+                }, error: function (err) {
                     //window.location.href = "/Users/Login";
                     balert("删除失败，错误请联系管理员：err", "danger", false, 2000, "center");
                 }
@@ -923,27 +949,22 @@ function deleteChatAll() {
         }
     })
 }
+
 //删除消息组
 function deleteChatGroup(id) {
     showConfirmationModal("提示", "确定删除这条记录吗？", function () {
         $.ajax({
-            type: "Post",
-            url: "/Home/DelChatGroup",
-            dataType: "json",
-            data: {
+            type: "Post", url: "/Home/DelChatGroup", dataType: "json", data: {
                 groupId: id
-            },
-            success: function (res) {
+            }, success: function (res) {
                 if (res.success) {
                     balert("删除成功", "success", false, 1000, "top");
                     $('[data-group="' + id + '"]').remove();
                     //刷新列表
                     getHistoryList(pageIndex, pageSize, true, false, $("#searchKey").val().trim());
-                    if (chatBody.find('[data-group]').length <= 0)
-                        chatid = "";
+                    if (chatBody.find('[data-group]').length <= 0) chatid = "";
                 }
-            },
-            error: function (err) {
+            }, error: function (err) {
                 //window.location.href = "/Users/Login";
                 balert("删除失败，错误请联系管理员：err", "danger", false, 2000, "center");
             }
@@ -964,13 +985,9 @@ function showHistoryDetail(id) {
     $('[id*="' + id + '"]').addClass("highlight-chat-item");
     mobileChat(true);
     $.ajax({
-        type: "Post",
-        url: "/Home/ShowHistoryDetail",
-        dataType: "json",
-        data: {
+        type: "Post", url: "/Home/ShowHistoryDetail", dataType: "json", data: {
             chatId: id
-        },
-        success: function (res) {
+        }, success: function (res) {
             //console.log(res);
             chatid = id;
             var html = "";
@@ -978,13 +995,11 @@ function showHistoryDetail(id) {
             isVIP(function (status) {
                 isvip = status;
             });
-            var vipHead = isvip ?
-                `<div class="avatar" style="border:2px solid #FFD43B">
+            var vipHead = isvip ? `<div class="avatar" style="border:2px solid #FFD43B">
                      <img src='${HeadImgPath}'/>
                      <i class="fas fa-crown vipicon"></i>
                  </div>
-                 <div class="nicknamevip">${UserNickText}</div>` :
-                `<div class="avatar">
+                 <div class="nicknamevip">${UserNickText}</div>` : `<div class="avatar">
                      <img src='${HeadImgPath}'/>
                  </div>
                  <div class="nickname">${UserNickText}</div>`;
@@ -999,11 +1014,11 @@ function showHistoryDetail(id) {
                                         ${vipHead}
                                      </div>
                                      <div class="chat-message-box">
-                                       <pre id="`+ res.data[i].chatCode + `">` + content + `</pre>
+                                       <pre id="` + res.data[i].chatCode + `">` + content + `</pre>
                                      </div>
                                      <div>
-                                      <i data-feather="refresh-cw" class="chatbtns" onclick="tryAgain('`+ res.data[i].chatCode + `')"></i>
-                                      <i data-feather="edit-3" class="chatbtns" onclick="editChat('`+ res.data[i].chatCode + `')"></i>
+                                      <i data-feather="refresh-cw" class="chatbtns" onclick="tryAgain('` + res.data[i].chatCode + `')"></i>
+                                      <i data-feather="edit-3" class="chatbtns" onclick="editChat('` + res.data[i].chatCode + `')"></i>
                                      </div>
                                  </div>`;
                     } else {
@@ -1014,20 +1029,18 @@ function showHistoryDetail(id) {
                                     <div class="nickname" style="font-weight: bold; color: black;">${UserNickText}</div>
                                  </div>
                                  <div class="chat-message-box">
-                                   <pre id="`+ res.data[i].chatCode + `">` + contentarr[0].replace(/</g, "&lt;").replace(/>/g, "&gt;") + contentarr[1] + `</pre>
+                                   <pre id="` + res.data[i].chatCode + `">` + contentarr[0].replace(/</g, "&lt;").replace(/>/g, "&gt;") + contentarr[1] + `</pre>
                                  </div>
                                  <div>
-                                      <i data-feather="refresh-cw" class="chatbtns" onclick="tryAgain('`+ res.data[i].chatCode + `')"></i>
-                                      <i data-feather="edit-3" class="chatbtns" onclick="editChat('`+ res.data[i].chatCode + `')"></i>
+                                      <i data-feather="refresh-cw" class="chatbtns" onclick="tryAgain('` + res.data[i].chatCode + `')"></i>
+                                      <i data-feather="edit-3" class="chatbtns" onclick="editChat('` + res.data[i].chatCode + `')"></i>
                                  </div>
                             </div>`;
                     }
 
-                }
-                else {
+                } else {
                     var item = {
-                        id: res.data[i].chatCode,
-                        markdown: content
+                        id: res.data[i].chatCode, markdown: content
                     };
                     var firstTime = '';
                     var allTime = '';
@@ -1051,12 +1064,12 @@ function showHistoryDetail(id) {
                                    ${firstTime}${allTime}
                                 </div>
                                 <div class="chat-message-box">
-                                    <div id="`+ res.data[i].chatCode + `">` + markedcontent + `</div>
+                                    <div id="` + res.data[i].chatCode + `">` + markedcontent + `</div>
                                 </div>
                                 <div>
-                                  <i data-feather="copy" class="chatbtns" onclick="copyAll('`+ res.data[i].chatCode + `')"></i>
-                                  <i data-feather="anchor" class="chatbtns" onclick="quote('`+ res.data[i].chatCode + `')"></i>
-                                  <i data-feather="trash-2" class="chatbtns" onclick="deleteChatGroup('`+ res.data[i].chatGroupId + `')"></i>
+                                  <i data-feather="copy" class="chatbtns" onclick="copyAll('` + res.data[i].chatCode + `')"></i>
+                                  <i data-feather="anchor" class="chatbtns" onclick="quote('` + res.data[i].chatCode + `')"></i>
+                                  <i data-feather="trash-2" class="chatbtns" onclick="deleteChatGroup('` + res.data[i].chatGroupId + `')"></i>
                                   <i data-feather="codepen" class="chatbtns" data-toggle="tooltip" title="复制Markdown" onclick="toMarkdown('${res.data[i].chatCode}')"></i>
                                 </div>
                             </div>`;
@@ -1073,13 +1086,14 @@ function showHistoryDetail(id) {
             feather.replace();
             //滚动到最底部
             chatBody.scrollTop(chatBody[0].scrollHeight);
-        },
-        error: function (err) {
+            applyMagnificPopup('.chat-message-box');
+        }, error: function (err) {
             //window.location.href = "/Users/Login";
             balert("删除失败，错误请联系管理员：err", "danger", false, 2000, "center");
         }
     });
 }
+
 //新建会话
 function newChat() {
     if (!processOver) {
@@ -1093,11 +1107,13 @@ function newChat() {
     $(".chat-item").removeClass("highlight-chat-item");
     $("#Q").focus();
 }
+
 //加载更多历史记录
 function loadMoreHistory() {
     pageIndex++;
     getHistoryList(pageIndex, pageSize, false, true, $("#searchKey").val().trim());
 }
+
 //停止生成
 function stopGenerate() {
     processOver = true;
@@ -1107,8 +1123,7 @@ function stopGenerate() {
     feather.replace();
     $("#sendBtn").removeClass("text-danger");
     $('.LDI').remove();
-    if (sysmsg != '')
-        $("#" + assistansBoxId).html(marked(completeMarkdown(sysmsg)));
+    if (sysmsg != '') $("#" + assistansBoxId).html(marked(completeMarkdown(sysmsg)));
     MathJax.typeset();
     $("#" + assistansBoxId + " pre code").each(function (i, block) {
         hljs.highlightElement(block);
@@ -1116,16 +1131,11 @@ function stopGenerate() {
     addLanguageLabels(true, assistansBoxId);
     addCopyBtn(assistansBoxId);
     $.ajax({
-        type: "Post",
-        url: "/Home/StopGenerate",
-        dataType: "json",
-        data: {
+        type: "Post", url: "/Home/StopGenerate", dataType: "json", data: {
             chatId: chatgroupid
-        },
-        success: function (res) {
+        }, success: function (res) {
             console.log(`file停止生成，Id：${chatgroupid} --${getCurrentDateTime()}`);
-        },
-        error: function (err) {
+        }, error: function (err) {
             //window.location.href = "/Users/Login";
             balert("出现了一些未经处理的异常，请联系管理员", "danger", false, 2000, "center", function () {
                 sendExceptionMsg(err.toString());
@@ -1139,8 +1149,7 @@ $('body').on('click', '.popup-item', function () {
     var type = $(this).data('type');
     if (type == "archive") {
 
-    }
-    else if (type == "upload") {
+    } else if (type == "upload") {
         uploadFiles();
     }
 });
@@ -1176,9 +1185,7 @@ async function uploadChunk(file, chunk, chunks, start, chunkSize) {
             contentType: 'application/json',
             success: function (response) {
                 onfilearr.push({
-                    fileName: response.fileName,
-                    path: response.path.replace('wwwroot', ''),
-                    onfile: true
+                    fileName: response.fileName, path: response.path.replace('wwwroot', ''), onfile: true
                 });
                 $('#onfilelist').show();
                 $('#p1').text('上传完成');
@@ -1200,6 +1207,7 @@ $('#fileslibsitem').scroll(function () {
         getFiles('loadmore');
     }
 });
+
 function getFiles(type) {
     if (type == 'init') {
         page_file = 1;
@@ -1209,15 +1217,10 @@ function getFiles(type) {
         page_file++;
     }
     var data = {
-        name: '',
-        page: page_file,
-        pageSize: pageSize_file
+        name: '', page: page_file, pageSize: pageSize_file
     };
     $.ajax({
-        type: 'Post',
-        url: '/FilesAI/GetFilesLibs',
-        data: data,
-        success: function (res) {
+        type: 'Post', url: '/FilesAI/GetFilesLibs', data: data, success: function (res) {
             if (res.success) {
                 var html = '';
                 for (var i = 0; i < res.data.length; i++) {
@@ -1247,6 +1250,7 @@ function getFiles(type) {
         }
     });
 }
+
 // 当复选框状态改变时
 $('#fileslibsitem').on('change', 'input[type="checkbox"]', function (e) {
     var path = $(this).val();
@@ -1256,9 +1260,7 @@ $('#fileslibsitem').on('change', 'input[type="checkbox"]', function (e) {
         if (onfilearr.findIndex(item => item.path === path) === -1) {
             // 添加到onfilearr
             onfilearr.push({
-                fileName: filename,
-                path: path,
-                onfile: true
+                fileName: filename, path: path, onfile: true
             });
         }
     } else {
@@ -1313,12 +1315,10 @@ function loadOnfilelist() {
             $onfilesitem.empty();
             if (onfilearr.length == 0) {
                 $('#onfilelist').hide();
-            } else
-                loadOnfilelist(); // 重新加载文件列表
+            } else loadOnfilelist(); // 重新加载文件列表
         });
     }
 }
-
 
 
 async function uploadFiles() {
@@ -1397,6 +1397,7 @@ function addCopyBtn(id = '') {
         });
     });
 }
+
 function copyAll(id) {
     //复制全部text
     var codeToCopy = $("#" + id).text();
@@ -1461,10 +1462,10 @@ function quote(id) {
     $Q.focus();
     adjustTextareaHeight();
 }
+
 //----------------------通用函数----------------------
 function adjustTextareaHeight() {
-    if (max_textarea)
-        return;
+    if (max_textarea) return;
 
     textarea.style.height = 'auto'; // Temporarily shrink textarea to auto to get the right scrollHeight.
     let scrollHeight = textarea.scrollHeight;
@@ -1475,15 +1476,16 @@ function adjustTextareaHeight() {
         textarea.style.height = scrollHeight + "px"; // Set height to scrollHeight directly.
         chatBody.css("height", "calc(100% - " + (140 + scrollHeight) + "px)");
     }
-    if (scrollHeight == 39)
-        chatBody.css("height", "calc(100% - 140px)");
+    if (scrollHeight == 39) chatBody.css("height", "calc(100% - 140px)");
 }
+
 // 绑定input事件
 textarea.addEventListener("input", adjustTextareaHeight);
 // 绑定keyup事件
 textarea.addEventListener("keyup", adjustTextareaHeight);
 //绑定change事件
 textarea.addEventListener("change", adjustTextareaHeight);
+
 function toMarkdown(id) {
     var item = markdownHis.find(function (element) {
         return element.id === id;

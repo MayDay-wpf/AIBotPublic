@@ -9,6 +9,7 @@
 });
 let pageIndex = 1;
 let pageSize = 999;
+
 function getGoods() {
     //发起请求
     $.ajax({
@@ -58,6 +59,7 @@ function getGoods() {
         }
     })
 }
+
 function payTo(type, goodCode, money) {
     showConfirmationModal("确认订单", `确认支付【${money}】元吗？`, function () {
         loadingOverlay.show();
@@ -74,9 +76,9 @@ function payTo(type, goodCode, money) {
                 success: function (res) {
                     loadingOverlay.hide();
                     if (res.success) {
+                        localStorage.removeItem('vipStatus');
                         balert("支付成功", "success", false, 2000, "center");
-                    }
-                    else
+                    } else
                         balert("支付失败", "danger", false, 2000, "center");
                 },
                 error: function (e) {
@@ -97,6 +99,7 @@ function payTo(type, goodCode, money) {
                 },
                 success: function (res) {
                     if (res.success) {
+                        localStorage.removeItem('vipStatus');
                         res = res.data;
                         // 创建一个隐藏的表单
                         var $form = $('<form>', {
@@ -166,8 +169,7 @@ function payTo(type, goodCode, money) {
                             value: 'MD5'
                         }).appendTo($form);
                         $form.submit();
-                    }
-                    else
+                    } else
                         balert("发起支付失败，请重试", "danger", false, 2000, "center", loadingOverlay.hide());
                 },
                 error: function (e) {

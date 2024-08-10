@@ -86,7 +86,7 @@ namespace aibotPro.Controllers
             knowledge.CreateTime = DateTime.Now;
             //开始处理文件
             await _redisService.SetAsync($"{username}_wikiuploadlog", $"开始处理文件{request.FileName}");
-            await _knowledgeService.UploadKnowledgeToVector("text-embedding-3-small", request.ProcessType, "gpt-3.5-turbo-0125", path, knowledge.FileCode, "", username);
+            await _knowledgeService.UploadKnowledgeToVector("text-embedding-3-small", request.ProcessType, "gpt-4o-mini", path, knowledge.FileCode, "", username);
             _knowledgeService.SaveKnowledgeFile(knowledge);
             return Ok(new
             {
@@ -270,7 +270,7 @@ namespace aibotPro.Controllers
                     using (var scope = _serviceProvider.CreateScope())
                     {
                         var milvusService = scope.ServiceProvider.GetRequiredService<IMilvusService>();
-                        List<MilvusDataDto> milvusDataDtos = await _knowledgeService.CreateMilvusList(username, path, "text-embedding-3-small", request.ProcessType, "gpt-3.5-turbo-0125", request.TypeCode, knowledge.FileCode);
+                        List<MilvusDataDto> milvusDataDtos = await _knowledgeService.CreateMilvusList(username, path, "text-embedding-3-small", request.ProcessType, "gpt-4o-mini", request.TypeCode, knowledge.FileCode);
                         await milvusService.InsertVector(milvusDataDtos, knowledge.FileCode, username);
                     }
 

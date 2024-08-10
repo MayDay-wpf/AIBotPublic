@@ -7,33 +7,39 @@ $(document).ready(function () {
     // 检查localStorage中是否存在倒计时的结束时间
     if (localStorage.getItem("countdownEnd") && new Date().getTime() < localStorage.getItem("countdownEnd")) {
         // 如果存在且时间未到，恢复倒计时状态
-        disableButtonAndStartCountdown(true);
+        initializeButton();
+        resumeCountdownIfNeeded();
     }
     generateCodeImage();
 });
+
 function getUrlParam(name) {
     var reg = new RegExp('(^|&)' + name + '=([^&]*)(&|$)');
     var r = window.location.search.substr(1).match(reg);
     if (r != null) return decodeURI(r[2]);
     return '';
 }
+
 //验证邮箱格式，只允许qq,gmail,163,126,sina,hotmail
 function isEmail(str) {
     var reg = /^(?:\w+\.?)*\w+@(?:qq|gmail|163|126)\.(?:com|cn|com\.cn)$/;
     return reg.test(str);
 }
+
 //按钮进入加载状态
 function loadingBtn(dom) {
     //禁用按钮
     $(dom).prop('disabled', true)
     $(dom).append(` <span class="spinner-border spinner-border-sm"role="status"aria-hidden="true"></span>`);
 }
+
 //解除按钮加载状态
 function unloadingBtn(dom) {
     //恢复按钮
     $(dom).prop('disabled', false)
     $(dom).find('span').remove();
 }
+
 function regiest() {
     loadingBtn('.regiest');
     if (!$("#agree").is(":checked")) {
@@ -92,21 +98,17 @@ function regiest() {
         shareCode = getUrlParam('sharecode');
         formData.append('shareCode', shareCode)
         $.ajax({
-            url: '/Users/Regiest',
-            type: 'POST',
-            data: formData, // FormData 支持混合的数据类型
+            url: '/Users/Regiest', type: 'POST', data: formData, // FormData 支持混合的数据类型
             processData: false, // 确保 jQuery 不要处理数据
             contentType: false, // 不要设置任何内容类型头
             success: function (res) {
                 unloadingBtn('.regiest');
                 if (res.success) {
                     window.location.href = '/Users/Login';
-                }
-                else {
+                } else {
                     balert(res.msg, 'danger', true, 2000, "top");
                 }
-            },
-            error: function (xhr, status, error) {
+            }, error: function (xhr, status, error) {
                 unloadingBtn('.regiest');
                 generateCodeImage();
                 // 处理错误的回调
@@ -118,6 +120,7 @@ function regiest() {
         unloadingBtn('.regiest');
     }
 }
+
 function login() {
     var account = $('#email').val().trim();
     var password = $('#password').val().trim();
@@ -136,15 +139,9 @@ function login() {
         //}
         loadingBtn(".login");
         $.ajax({
-            url: '/Users/Login',
-            type: 'POST',
-            data: {
-                account: account,
-                password: password,
-                checkCode: checkCode,
-                codekey: codekey
-            },
-            success: function (res) {
+            url: '/Users/Login', type: 'POST', data: {
+                account: account, password: password, checkCode: checkCode, codekey: codekey
+            }, success: function (res) {
                 if (res.success && res.token) {
                     // 将token存储在localStorage中
                     localStorage.setItem('aibotpro_userToken', res.token);
@@ -167,8 +164,7 @@ function login() {
                         $('#checkCodeBox').show();
                     }
                 }
-            },
-            error: function (xhr, status, error) {
+            }, error: function (xhr, status, error) {
                 // 处理错误的回调
                 unloadingBtn(".login");
                 console.error(error);
@@ -180,6 +176,7 @@ function login() {
         generateCodeImage();
     }
 }
+
 //判断用户是否登录
 function isLogin(check) {
     var token = localStorage.getItem('aibotpro_userToken');
@@ -187,8 +184,7 @@ function isLogin(check) {
 
     if (!token || !expiration) {
         return false;
-    }
-    else {
+    } else {
         // 如果token过期，则删除它
         if (isExpired(expiration)) {
             localStorage.removeItem('aibotpro_userToken');
@@ -196,25 +192,19 @@ function isLogin(check) {
             return false;
         } else {
             //请求后台验证token是否有效
-            if (!check)
-                return true;
+            if (!check) return true;
             $.ajax({
-                url: '/Users/IsLogin',
-                type: 'POST',
-                data: {
+                url: '/Users/IsLogin', type: 'POST', data: {
                     token: token
-                },
-                success: function (res) {
+                }, success: function (res) {
                     if (res.success) {
                         return true;
-                    }
-                    else {
+                    } else {
                         localStorage.removeItem('aibotpro_userToken');
                         localStorage.removeItem('aibotpro_userToken_Expiration');
                         return false;
                     }
-                },
-                error: function (xhr, status, error) {
+                }, error: function (xhr, status, error) {
                     // 处理错误的回调
                     console.error(error);
                 }
@@ -224,6 +214,7 @@ function isLogin(check) {
 
     return new Date().getTime() < expiration;
 }
+
 //找回密码
 function findPassword() {
     var account = $('#email').val().trim();
@@ -241,36 +232,27 @@ function findPassword() {
             return;
         }
         $.ajax({
-            url: '/Users/FindPassword',
-            type: 'POST',
-            data: {
-                account: account,
-                password: password,
-                checkCode: checkCode
-            },
-            success: function (res) {
+            url: '/Users/FindPassword', type: 'POST', data: {
+                account: account, password: password, checkCode: checkCode
+            }, success: function (res) {
                 if (res.success) {
                     window.location.href = '/Users/Login';
-                }
-                else
-                    balert(res.msg, 'danger', true, 2000, "top");
-            },
-            error: function (xhr, status, error) {
+                } else balert(res.msg, 'danger', true, 2000, "top");
+            }, error: function (xhr, status, error) {
                 // 处理错误的回调
                 console.error(error);
             }
         });
-    } else
-        balert('请填写完整所有资料', 'danger', true, 2000, "top");
+    } else balert('请填写完整所有资料', 'danger', true, 2000, "top");
 }
+
 //发送找回密码邮件
 async function sendFindPasswordEmail(captchaVerifyParam) {
     var toemail = $("#email").val().trim();
     if (toemail == "") {
         balert('请输入邮箱地址', 'danger', true, 2000, "top");
         const verifyResult2 = {
-            captchaResult: true,
-            bizResult: "",
+            captchaResult: true, bizResult: "",
         };
         return verifyResult2;
     }
@@ -291,8 +273,7 @@ async function sendCheckCode(captchaVerifyParam) {
     if (toemail == "") {
         balert('请输入邮箱地址', 'danger', true, 2000, "top");
         const verifyResult2 = {
-            captchaResult: true,
-            bizResult: "",
+            captchaResult: true, bizResult: "",
         };
         return verifyResult2;
     }
@@ -302,18 +283,16 @@ async function sendCheckCode(captchaVerifyParam) {
         toemail: toemail
     });
     const verifyResult = {
-        captchaResult: result.captchaVerifyResult,
-        bizResult: result.success,
+        captchaResult: result.captchaVerifyResult, bizResult: result.success,
     };
     return verifyResult;
 }
+
 async function checkCaptcha(url, params) {
     const response = await fetch(url, {
-        method: 'POST',
-        headers: {
+        method: 'POST', headers: {
             'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(params), // 将参数对象转换为 JSON 字符串
+        }, body: JSON.stringify(params), // 将参数对象转换为 JSON 字符串
     });
 
     if (!response.ok) {
@@ -330,33 +309,27 @@ function oldFindPasswordEmail() {
     if (toemail != "" && checkCode != "") {
         disableButtonAndStartCountdown();
         $.ajax({
-            url: "/Users/SendFindPasswordEmail",
-            type: "post",
-            dataType: "json",//返回对象
+            url: "/Users/SendFindPasswordEmail", type: "post", dataType: "json",//返回对象
             data: {
-                toemail: toemail,
-                checkCode: checkCode,
-                codekey: codekey
-            },
-            success: function (res) {
+                toemail: toemail, checkCode: checkCode, codekey: codekey
+            }, success: function (res) {
                 if (res.success) {
                     // 立即禁用按钮，并开始倒计时
                     balert('邮件已发送', 'success', true, 2000, "top");
-                }
-                else {
+                } else {
                     balert(res.msg, 'danger', true, 2000, "top");
-                    resumeCountdown();
                     generateCodeImage();
+                    stopCountdownImmediately();
                 }
-            },
-            error: function (e) {
+            }, error: function (e) {
                 console.log("失败" + e);
-                resumeCountdown();
                 generateCodeImage();
+                stopCountdownImmediately();
             }
         });
     } else {
         balert('请输入邮箱地址和图形验证码', 'danger', true, 2000, "top");
+        stopCountdownImmediately();
     }
 }
 
@@ -366,97 +339,131 @@ function oldsendCheckCode() {
     if (toemail != "" && checkCode != "") {
         disableButtonAndStartCountdown();
         $.ajax({
-            url: "/Users/SendRegiestEmail",
-            type: "post",
-            dataType: "json",//返回对象
+            url: "/Users/SendRegiestEmail", type: "post", dataType: "json",//返回对象
             data: {
-                toemail: toemail,
-                checkCode: checkCode,
-                codekey: codekey
-            },
-            success: function (res) {
+                toemail: toemail, checkCode: checkCode, codekey: codekey
+            }, success: function (res) {
                 if (res.success) {
                     // 立即禁用按钮，并开始倒计时
                     balert('邮件已发送', 'success', true, 2000, "top");
-                }
-                else {
+                } else {
                     balert(res.msg, 'danger', true, 2000, "top");
-                    resumeCountdown();
                     generateCodeImage();
+                    stopCountdownImmediately();
                 }
-            },
-            error: function (e) {
+            }, error: function (e) {
                 console.log("失败" + e);
-                resumeCountdown();
                 generateCodeImage();
+                stopCountdownImmediately();
             }
         });
     } else {
         balert('请输入邮箱地址和验证码', 'danger', true, 2000, "top");
+        stopCountdownImmediately();
     }
 }
+
 function disableBtn(success) {
     if (success) {
         // 立即禁用按钮，并开始倒计时
         balert('邮件已发送', 'success', true, 2000, "top");
         disableButtonAndStartCountdown();
-    }
-    else {
+    } else {
         balert('邮件发送失败,只允许使用qq,gmail,163,126邮箱', 'danger', true, 2000, "top");
     }
 }
 
-function disableButtonAndStartCountdown(isResuming = false) {
-    var $button = $(".btn-primary"); // 按钮选择器
-    var countdown = 60;
-    var now = new Date().getTime();
-    var countdownEnd = now + countdown * 1000;
+let countdownTimer;
+let $button;
+const COUNTDOWN_DURATION = 60; // 倒计时时长（秒）
 
-    if (isResuming) {
-        // 如果是恢复倒计时，计算剩余时间
-        countdown = Math.round((localStorage.getItem("countdownEnd") - now) / 1000);
-    } else {
-        // 不是恢复状态时，存储倒计时结束时间
-        localStorage.setItem("countdownEnd", countdownEnd);
-    }
-
-    $button.prop('disabled', true).addClass('btn-secondary').removeClass('btn-primary');
-
-    var interval = setInterval(function () {
-        countdown--;
-        $button.text('发送验证码(' + countdown + ')');
-
-        if (countdown <= 0) {
-            clearInterval(interval);
-            $button.prop('disabled', false).addClass('btn-primary').removeClass('btn-secondary').text('发送验证码');
-            localStorage.removeItem("countdownEnd"); // 清理localStorage
-        }
-    }, 1000);
+function initializeButton() {
+    $button = $(".btn-primary, .btn-secondary").filter(":visible:first");
 }
-function resumeCountdown() {
-    if (localStorage.getItem("countdownEnd")) {
-        disableButtonAndStartCountdown(true);
+
+function updateButtonText(text) {
+    if ($button) {
+        $button.text(text);
     }
+}
+
+function setButtonEnabled(enabled) {
+    if ($button) {
+        $button.prop('disabled', !enabled)
+            .toggleClass('btn-primary', enabled)
+            .toggleClass('btn-secondary', !enabled);
+    }
+}
+
+function resetButtonState() {
+    setButtonEnabled(true);
+    updateButtonText('发送验证码');
+    localStorage.removeItem("countdownEnd");
+}
+
+function startCountdown(duration) {
+    let endTime = new Date().getTime() + duration * 1000;
+    localStorage.setItem("countdownEnd", endTime);
+
+    function tick() {
+        let now = new Date().getTime();
+        let remainingTime = Math.ceil((endTime - now) / 1000);
+
+        if (remainingTime <= 0) {
+            resetButtonState();
+        } else {
+            updateButtonText(`发送验证码(${remainingTime})`);
+            setButtonEnabled(false);
+            countdownTimer = setTimeout(tick, 1000);
+        }
+    }
+
+    tick();
+}
+
+function stopCountdown() {
+    clearTimeout(countdownTimer);
+    resetButtonState();
+}
+
+function resumeCountdownIfNeeded() {
+    let countdownEnd = localStorage.getItem("countdownEnd");
+    if (countdownEnd) {
+        let now = new Date().getTime();
+        let remainingTime = Math.ceil((countdownEnd - now) / 1000);
+        if (remainingTime > 0) {
+            startCountdown(remainingTime);
+        } else {
+            resetButtonState();
+        }
+    }
+}
+
+function disableButtonAndStartCountdown() {
+    initializeButton();
+    stopCountdown(); // 总是先停止之前的倒计时
+    startCountdown(COUNTDOWN_DURATION);
+}
+
+// 全局函数，用于立即停止倒计时
+function stopCountdownImmediately() {
+    initializeButton();
+    stopCountdown();
 }
 
 function generateCodeImage() {
     codekey = `cache_${generateGUID()}`;
     $.ajax({
-        url: "/Users/GenerateCodeImage",
-        type: "post",
-        dataType: "json",//返回对象
+        url: "/Users/GenerateCodeImage", type: "post", dataType: "json",//返回对象
         data: {
             key: codekey
-        },
-        success: function (res) {
+        }, success: function (res) {
             if (res.success) {
                 $('#checkCodeImage').attr("src", res.data);
-            }
-            else {
+            } else {
                 balert(res.data, 'danger', true, 2000, "top");
             }
-        },
-        error: function (e) {
+        }, error: function (e) {
             console.log("失败" + e);
         }
     });
@@ -470,27 +477,16 @@ function generateGUID() {
             .substring(1);
     }
 
-    return (
-        s4() +
-        s4() +
-        '-' +
-        s4() +
-        '-' +
-        s4() +
-        '-' +
-        s4() +
-        '-' +
-        s4() +
-        s4() +
-        s4()
-    );
+    return (s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4());
 }
+
 //按钮进入加载状态
 function loadingBtn(dom) {
     //禁用按钮
     $(dom).prop('disabled', true)
     $(dom).append(` <span class="spinner-border spinner-border-sm"role="status"aria-hidden="true"></span>`);
 }
+
 //解除按钮加载状态
 function unloadingBtn(dom) {
     //恢复按钮

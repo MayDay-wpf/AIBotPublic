@@ -29,6 +29,7 @@ function Pay(payMoney, type, param) {
             },
             success: function (res) {
                 if (res.success) {
+                    localStorage.removeItem('vipStatus');
                     res = res.data;
                     // 创建一个隐藏的表单
                     var $form = $('<form>', {
@@ -98,8 +99,7 @@ function Pay(payMoney, type, param) {
                         value: 'MD5'
                     }).appendTo($form);
                     $form.submit();
-                }
-                else
+                } else
                     balert("发起支付失败，请重试", "danger", false, 2000, "center");
             },
             error: function (e) {
@@ -124,9 +124,9 @@ function BalncePayVIP(mcoin) {
             success: function (res) {
                 loadingOverlay.hide();
                 if (res.success) {
+                    localStorage.removeItem('vipStatus');
                     balert("支付成功", "success", false, 2000, "center");
-                }
-                else
+                } else
                     balert(res.msg, "danger", false, 2000, "center");
             },
             error: function (e) {

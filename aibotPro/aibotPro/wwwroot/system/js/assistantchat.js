@@ -89,6 +89,7 @@ $(document).keypress(function (e) {
         }
     }
 });
+
 function newChat() {
     if (!processOver) {
         balert("对话进行中,请结束后再试", "warning", false, 2000);
@@ -99,7 +100,11 @@ function newChat() {
     chatBody.html("");
     $("#Q").focus();
 }
+
 $(document).ready(function () {
+    bindEnglishPromptTranslation("#Q");
+    bindOptimizePrompt("#Q");
+    bindInputToSidebar("#Q");
     //当#Q失去焦点时，关闭最大化
     $("#Q").blur(function () {
         if (max_textarea) {
@@ -110,8 +115,7 @@ $(document).ready(function () {
     $("#sendBtn").on("click", function () {
         if (!processOver) {
             stopGenerate();
-        }
-        else
+        } else
             sendMsg();
     })
 });
@@ -154,6 +158,7 @@ function addCopyBtn(id = '') {
         });
     });
 }
+
 function copyAll(id) {
     //复制全部text
     var codeToCopy = $("#" + id).text();
@@ -199,6 +204,7 @@ function editChat(id) {
     }
     adjustTextareaHeight();
 }
+
 //引用
 function quote(id) {
     var $elem = $("#" + id);
@@ -218,6 +224,7 @@ function quote(id) {
     $Q.focus();
     adjustTextareaHeight();
 }
+
 function adjustTextareaHeight() {
     if (max_textarea)
         return;
@@ -232,8 +239,9 @@ function adjustTextareaHeight() {
         chatBody.css("height", "calc(100% - " + (120 + scrollHeight) + "px)");
     }
     if (scrollHeight == 39)
-        chatBody.css("height", "calc(100% - 120px)");
+        chatBody.css("height", "calc(100% - 140px)");
 }
+
 // 绑定input事件
 textarea.addEventListener("input", adjustTextareaHeight);
 // 绑定keyup事件
@@ -266,6 +274,7 @@ connection.on('ReceiveAssistantMessage', function (message) {
                 addCopyBtn(assistansBoxId);
                 if (Scrolling == 1)
                     chatBody.scrollTop(chatBody[0].scrollHeight);
+                applyMagnificPopup('.chat-message-box');
             }
 
         }
@@ -300,6 +309,7 @@ connection.on('ReceiveAssistantMessage', function (message) {
         addExportButtonToTables();
         if (Scrolling == 1)
             chatBody.scrollTop(chatBody[0].scrollHeight);
+        applyMagnificPopup('.chat-message-box');
     }
     if (message.file_id != null && message.file_id != "") {
         sysmsg += `<button class="btn btn-info" onclick="window.location.href='/AssistantGPT/DownloadFile?fileid=${message.file_id}'">强制下载按钮</button>`
@@ -307,7 +317,7 @@ connection.on('ReceiveAssistantMessage', function (message) {
 });
 
 //发送消息
-function sendMsg() {
+function sendMsg(retryCount = 3) {
     var msg = $("#Q").val().trim();
     if (msg == "") {
         balert("请输入问题", "warning", false, 2000);
@@ -356,11 +366,11 @@ function sendMsg() {
                         ${vipHead}
                      </div>
                      <div class="chat-message-box">
-                       <pre id="`+ msgid_u + `"></pre>
+                       <pre id="` + msgid_u + `"></pre>
                      </div>
                      <div>
-                      <i data-feather="refresh-cw" class="chatbtns" onclick="tryAgain('`+ msgid_u + `')"></i>
-                      <i data-feather="edit-3" class="chatbtns" onclick="editChat('`+ msgid_u + `')"></i>
+                      <i data-feather="refresh-cw" class="chatbtns" onclick="tryAgain('` + msgid_u + `')"></i>
+                      <i data-feather="edit-3" class="chatbtns" onclick="editChat('` + msgid_u + `')"></i>
                      </div>
                 </div>`;
     $(".chat-body-content").append(html);
@@ -371,11 +381,11 @@ function sendMsg() {
                        <div class="nickname" style="font-weight: bold; color: black;">AIBot</div>
                     </div>
                     <div class="chat-message-box">
-                        <div id="`+ msgid_g + `"></div><div class="spinner-grow spinner-grow-sm LDI"></div>
+                        <div id="` + msgid_g + `"></div><div class="spinner-grow spinner-grow-sm LDI"></div>
                     </div>
                     <div>
-                        <i data-feather="copy" class="chatbtns" onclick="copyAll('`+ msgid_g + `')"></i>
-                        <i data-feather="anchor" class="chatbtns" onclick="quote('`+ msgid_g + `')"></i>
+                        <i data-feather="copy" class="chatbtns" onclick="copyAll('` + msgid_g + `')"></i>
+                        <i data-feather="anchor" class="chatbtns" onclick="quote('` + msgid_g + `')"></i>
                         <i data-feather="codepen" class="chatbtns" data-toggle="tooltip" title="复制Markdown" onclick="toMarkdown('${msgid_g}')"></i>
                     </div>
                 </div>`;
@@ -385,16 +395,31 @@ function sendMsg() {
         scrollTop: chatBody.prop("scrollHeight")
     }, 500);
     feather.replace();
-    connection.invoke("SendAssistantMessage", data)
-        .then(function () {
-        })
-        .catch(function (err) {
-            processOver = true;
-            sendExceptionMsg("【Assistants】发送消息时出现了一些未经处理的异常 :-( 原因：" + err);
-            //balert("您的登录令牌似乎已失效，我们将启动账号保护，请稍候，正在前往重新登录...", "danger", false, 3000, "center", function () {
-            //    window.location.href = "/Users/Login";
-            //});
-        });
+
+    // 尝试发送消息
+    function trySendMessage() {
+        connection.invoke("SendAssistantMessage", data)
+            .then(function () {
+                // 消息发送成功
+            })
+            .catch(function (err) {
+                console.error("Send message failed:", err);
+                retryCount--;
+                if (retryCount > 0) {
+                    setTimeout(trySendMessage, 1000); // 1秒后重试
+                } else {
+                    processOver = true;
+                    balert("发送消息失败,请刷新页面后重试", "danger", false, 2000, "center");
+                    $('#' + assistansBoxId).html("发送消息失败,请刷新页面后重试 <a href='javascript:location.reload();'>点击刷新</a>");
+                    stopTimer(`#${assistansBoxId}_timer_first`);
+                    stopTimer(`#${assistansBoxId}_timer_alltime`);
+                    $('.LDI').remove();
+                    sendExceptionMsg("发送消息失败，请检查网络连接并重试。");
+                }
+            });
+    }
+
+    trySendMessage();
 }
 
 
@@ -409,16 +434,16 @@ function max_textarea_Q() {
         $(".maximize-2").attr("data-feather", "minimize-2");
         feather.replace();
         max_textarea = true;
-    }
-    else {
+    } else {
         $Q.css("height", "auto");
         $Q.css("max-height", "200px");
-        chatBody.css("height", "calc(100% - 120px)");
+        chatBody.css("height", "calc(100% - 140px)");
         $(".maximize-2").attr("data-feather", "maximize-2");
         feather.replace();
         max_textarea = false;
     }
 }
+
 function toMarkdown(id) {
     var item = markdownHis.find(function (element) {
         return element.id === id;

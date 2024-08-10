@@ -1,4 +1,4 @@
-﻿let thisAiModel = 'gpt-3.5-turbo-0125';
+﻿let thisAiModel = 'gpt-4o-mini';
 $(function () {
     $('.nav-sub-link').removeClass('active');
     $('.nav-link').removeClass('active');
@@ -6,8 +6,12 @@ $(function () {
     $("#ai-main-menu").parent().toggleClass('show');
     $("#ai-main-menu").parent().siblings().removeClass('show');
     $("#sd-nav").addClass('active');
+    $('#fixSeedCheckbox').prop('checked', false);
 });
 $(document).ready(function () {
+    bindEnglishPromptTranslation("#inputText");
+    bindOptimizePrompt("#inputText");
+
     // 更新字符计数的函数
     function updateCharCount() {
         var charCount = $('#inputText').val().length;
@@ -56,10 +60,12 @@ $(document).ready(function () {
     $('#guidanceScale').on('input', function () {
         $('#guidanceScaleValue').text(parseFloat($(this).val()).toFixed(1));
     });
+
     // 随机种子函数
     function getRandomSeed() {
         return Math.floor(Math.random() * 10000000000);
     }
+
     var randomSeed = getRandomSeed();
     $('#seedInput').val(randomSeed);
     // 为随机按钮添加点击事件
@@ -98,9 +104,7 @@ $(document).ready(function () {
             balert('发送任务创建请求成功', 'success', false, 1000, "center");
             $("#nt").text('绘图中，请勿刷新页面...');
             $.ajax({
-                type: "POST",
-                url: "/AIdraw/CreateSDTask",
-                data: {
+                type: "POST", url: "/AIdraw/CreateSDTask", data: {
                     prompt: prompt,
                     model: model,
                     imageSize: imageSize,
@@ -109,8 +113,10 @@ $(document).ready(function () {
                     inferenceSteps: inferenceSteps,
                     guidanceScale: guidanceScale,
                     negativePrompt: negativePrompt
-                },
-                success: function (data) {
+                }, success: function (data) {
+                    if (!$('#fixSeedCheckbox').is(':checked')) {
+                        $('#seedInput').val(getRandomSeed());
+                    }
                     if (data.success) {
                         //显示图片
                         $("#nt").text('绘制完成,点击图片查看大图');
@@ -151,8 +157,7 @@ $(document).ready(function () {
                         //跳转到任务列表
                         $('html, body').animate({ scrollTop: $('.content-body').height() }, 1000);
                         $('.image-popup').magnificPopup({
-                            type: 'image',
-                            gallery: {
+                            type: 'image', gallery: {
                                 enabled: true
                             }
                         });
@@ -162,8 +167,10 @@ $(document).ready(function () {
                         $("#resview").hide();
                         balert(data.msg, 'danger', false, 1000, "center");
                     }
-                },
-                error: function (xhr, status, error) {
+                }, error: function (xhr, status, error) {
+                    if (!$('#fixSeedCheckbox').is(':checked')) {
+                        $('#seedInput').val(getRandomSeed());
+                    }
                     //恢复按钮
                     $("#createTaskBtn").prop('disabled', false).addClass('btn-success').removeClass('btn-secondary');
                     $("#resview").hide();
@@ -175,6 +182,21 @@ $(document).ready(function () {
             $('html, body').animate({ scrollTop: 0 }, 'slow');
             //输入框获得焦点
             $('#inputText').focus();
+        }
+    });
+
+    $('#modelSelect').change(function () {
+        var selectedValue = $(this).val();  // 获取选中选项的值
+        if (selectedValue === "black-forest-labs/FLUX.1-schnell") {
+            $('.numberImagesValue').slideUp();
+            $('.inferenceSteps').slideUp();
+            $('.guidanceScale').slideUp();
+            $('.negativePrompt').slideUp();
+        } else {
+            $('.numberImagesValue').slideDown();
+            $('.inferenceSteps').slideDown();
+            $('.guidanceScale').slideDown();
+            $('.negativePrompt').slideDown();
         }
     });
 
@@ -319,4 +341,36 @@ function sendMsg() {
             //    window.location.href = "/Users/Login";
             //});
         });
+}
+
+//转英语提示词
+function englishPrompt() {
+    var msg = $("#inputText").val().trim();
+    if (msg === "") {
+        balert("请输入待转换的绘画提示词", "warning", false, 2000);
+        return;
+    }
+    loadingBtn('.englishPrompt');
+    $.ajax({
+        type: "POST",
+        url: "/AIdraw/EnglishPrompt",
+        dataType: "json",
+        data: {
+            "prompt": msg,
+        },
+        success: function (data) {
+            unloadingBtn('.englishPrompt');
+            if (data.success) {
+                $("#inputText").val(data.data)
+            } else {
+                balert("转换失败，请重试", "danger", false, 2000);
+            }
+        },
+        error: function (err) {
+            unloadingBtn('.englishPrompt');
+            balert("转换失败，请重试", "danger", false, 2000);
+            sendExceptionMsg("【/AIdraw/EnglishPrompt】出现了一些未经处理的异常 :-( 原因：" + err);
+        }
+    })
+
 }

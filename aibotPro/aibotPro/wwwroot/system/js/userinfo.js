@@ -5,6 +5,14 @@
     $("#usercenter-main-menu").parent().toggleClass('show');
     $("#usercenter-main-menu").parent().siblings().removeClass('show');
     $("#user_usercenter_nav").addClass('active');
+    isSupperVIP(function (isSuper) {
+        if (isSuper) {
+            $('.calendar-overlay').hide();
+            getThisMonthSignInList();
+        } else {
+            $('.calendar-overlay').show();
+        }
+    });
     getUserInfo();
     isVIPbyUserInfo();
 });
@@ -12,6 +20,7 @@ let avatar = '';
 let page = 1;
 let page_size = 15;
 let total = 0;
+
 function loadImage(event) {
     var input = event.target;
     if (input.files && input.files[0]) {
@@ -43,8 +52,7 @@ function loadImage(event) {
                 if (res.success) {
                     avatar = res.filePath.replace('wwwroot', '');
                     HeadImgPath = res.filePath.replace('wwwroot', '');
-                }
-                else {
+                } else {
                     balert(res.msg, 'danger', false, 1500, 'center');
                 }
             }
@@ -56,9 +64,7 @@ function getUserInfo() {
     //发起请求
     loadingOverlay.show();
     $.ajax({
-        url: "/Users/GetUserInfo",
-        type: "post",
-        dataType: "json",//返回对象
+        url: "/Users/GetUserInfo", type: "post", dataType: "json",//返回对象
         success: function (res) {
             if (res.success) {
                 res = res.data;
@@ -68,11 +74,12 @@ function getUserInfo() {
                 $('#account').text(res.account);
                 $('#sex').text(res.sex);
                 $('#mcoin').text(res.mcoin);
-                $('#createtime').text(res.createTime);
+                $('#createtime').text(isoStringToDateTime(res.createTime));
             }
         }
     });
 }
+
 function saveUserInfo() {
     var nick = $('#nickname').val();
     if (nick == "") {
@@ -85,19 +92,14 @@ function saveUserInfo() {
     }
     loadingBtn('.saveUserInfoBtn');
     $.ajax({
-        url: "/Users/SaveUserInfo",
-        type: "post",
-        dataType: "json",//返回对象
+        url: "/Users/SaveUserInfo", type: "post", dataType: "json",//返回对象
         data: {
-            nick: nick,
-            avatar: avatar
-        },
-        success: function (res) {
+            nick: nick, avatar: avatar
+        }, success: function (res) {
             unloadingBtn('.saveUserInfoBtn');
             if (res.success) {
                 balert('保存成功', 'success', false, 1500, 'center');
-            }
-            else {
+            } else {
                 balert(res.msg, 'danger', false, 1500, 'center');
             }
         }
@@ -107,18 +109,15 @@ function saveUserInfo() {
 function isVIPbyUserInfo() {
     //发起请求
     $.ajax({
-        url: "/Users/IsVIP",
-        type: "post",
-        dataType: "json",//返回对象
+        url: "/Users/IsVIP", type: "post", dataType: "json",//返回对象
         success: function (res) {
             loadingOverlay.hide();
             if (res.success) {
                 $('#isvip').show();
-                $('#vipendtime').text(res.data[0].endTime);
-            }
-            else {
+                $('#vipendtime').text(isoStringToDateTime(res.data[0].endTime));
+            } else {
                 $('#isvip').hide();
-                $('#vipendtime').text('未开通');
+                $('#vipendtime').html('<span>未开通</span> <a href="/Pay/VIP" class="text-success">点击前往开通VIP</a>');
             }
         }
     });
@@ -145,6 +144,17 @@ $(document).ready(function () {
             loadOrders(page, page_size);
         }
     });
+
+    const daysInMonth = moment("2024-07", "YYYY-MM").daysInMonth();
+    const firstDay = moment("2024-07-01", "YYYY-MM-DD").day();
+
+    for (let i = 0; i < firstDay; i++) {
+        $('#calendarBody').append('<div></div>');
+    }
+
+    for (let i = 1; i <= daysInMonth; i++) {
+        $('#calendarBody').append(`<div class="calendar-day">${i}</div>`);
+    }
 });
 
 // 加载订单数据的函数
@@ -152,14 +162,9 @@ function loadOrders(page, page_size) {
     // 示例中没有详细的后端接口URL，所以这里假设为'/api/getOrders'
     // 实际开发中需要替换为正确的URL
     $.ajax({
-        url: '/Users/GetOrders',
-        type: 'Post',
-        data: {
-            page: page,
-            page_size: page_size
-        },
-        dataType: 'json',
-        success: function (response) {
+        url: '/Users/GetOrders', type: 'Post', data: {
+            page: page, page_size: page_size
+        }, dataType: 'json', success: function (response) {
             if (response.success) {
                 var orders = response.data;
                 total = response.total;
@@ -168,8 +173,7 @@ function loadOrders(page, page_size) {
             } else {
                 alert(response.msg);
             }
-        },
-        error: function (error) {
+        }, error: function (error) {
             console.log(error);
             alert('加载失败，请稍后再试');
         }
@@ -187,9 +191,7 @@ function updateOrderList(orders) {
         if (orders[i].orderStatus == 'NO') {
             status = `<span style="color:red">未支付</span>`
             dosomething = `<button class="btn btn-success" onclick="checkOrder('` + orders[i].orderCode + `')">核验</button>`;
-        }
-        else
-            status = `<span style="color:green">已支付</span>`;
+        } else status = `<span style="color:green">已支付</span>`;
         str += `<tr><td>` + orders[i].orderCode + `</td><td>` + orders[i].orderMoney + `</td><td>` + orders[i].createTime + `</td><td>` + status + `</td><td>` + dosomething + `</td></tr>`;
     }
     $orderList.html(str);
@@ -287,13 +289,10 @@ function updatePagination(currentPage, totalPages) {
 function checkOrder(orderCode) {
     loadingOverlay.show();
     $.ajax({
-        url: "/Users/CheckUserOrder",
-        type: "post",
-        dataType: "json",//返回对象
+        url: "/Users/CheckUserOrder", type: "post", dataType: "json",//返回对象
         data: {
             orderCode: orderCode
-        },
-        success: function (res) {
+        }, success: function (res) {
             loadingOverlay.hide();
             if (res.success) {
                 balert('核验结果：' + res.msg, 'success', false, 1500, 'center');
@@ -301,8 +300,7 @@ function checkOrder(orderCode) {
             } else {
                 balert('核验结果：' + res.msg, 'danger', false, 1500, 'center');
             }
-        },
-        error: function (e) {
+        }, error: function (e) {
             loadingOverlay.hide();
             window.location.href = "/Users/Login"
         }
@@ -313,16 +311,61 @@ function signIn() {
     //发起请求
     loadingBtn('.signInBtn');
     $.ajax({
-        url: "/Users/SignIn",
-        type: "post",
-        dataType: "json",//返回对象
+        url: "/Users/SignIn", type: "post", dataType: "json",//返回对象
         success: function (res) {
             unloadingBtn('.signInBtn');
             if (res.success) {
                 balert(res.msg, 'success', false, 1500, 'center');
-            }
-            else {
+                const now = moment();
+                const today = now.date();
+                const currentMonth = now.month();
+                const currentYear = now.year();
+
+                $(`.calendar-day`).filter(function () {
+                    const dayText = $(this).text().trim();
+                    return dayText === today.toString() && $(this).closest('.calendar').find('.calendar-header').text().includes(`${currentYear}年${currentMonth + 1}月`);
+                }).addClass('active animate__animated animate__rubberBand');
+                getBalanceToDom('#mcoin');
+                $('.signInBtn').prop('disabled', true).text('今日已签到').css('cursor', 'not-allowed');
+            } else {
                 balert(res.msg, 'danger', false, 1500, 'center');
+            }
+        }
+    });
+}
+
+function getThisMonthSignInList() {
+    $.ajax({
+        url: "/Users/GetThisMonthSignInList", type: "post", dataType: "json", success: function (res) {
+            if (res.success && res.data && Array.isArray(res.data)) {
+                var isTodaySigned = false;
+                var today = new Date();
+                var currentYear = today.getFullYear();
+                var currentMonth = today.getMonth();
+                var currentDay = today.getDate();
+                $('.calendar-header').text(`${currentYear}年${currentMonth + 1}月`);
+                // 清除所有之前的 'active' 类
+                $('.calendar-day').removeClass('active animate__animated animate__rubberBand');
+                res.data.forEach(function (dateString) {
+                    var date = new Date(dateString);
+                    var day = date.getDate();
+
+                    // 使用日期数字来选择元素
+                    $(`.calendar-day:contains('${day}')`)
+                        .filter(function () {
+                            // 确保我们只选择exact match，避免选中包含这个数字的其他元素
+                            return $(this).text().trim() === day.toString();
+                        })
+                        .addClass('active animate__animated animate__rubberBand');
+
+                    if (date.getFullYear() === currentYear && date.getMonth() === currentMonth && day === currentDay) {
+                        isTodaySigned = true;
+                    }
+                });
+
+                if (isTodaySigned) {
+                    $('.signInBtn').prop('disabled', true).text('今日已签到').css('cursor', 'not-allowed');
+                }
             }
         }
     });
@@ -337,18 +380,14 @@ function exchangeCard() {
     //发起请求
     loadingBtn('.exchangeCardBtn');
     $.ajax({
-        url: "/Users/ExchangeCard",
-        type: "post",
-        dataType: "json",//返回对象
+        url: "/Users/ExchangeCard", type: "post", dataType: "json",//返回对象
         data: {
             cardno: cardno
-        },
-        success: function (res) {
+        }, success: function (res) {
             unloadingBtn('.exchangeCardBtn');
             if (res.success) {
                 balert(res.msg, 'success', false, 1500, 'center');
-            }
-            else {
+            } else {
                 balert(res.msg, 'danger', false, 1500, 'center');
             }
         }

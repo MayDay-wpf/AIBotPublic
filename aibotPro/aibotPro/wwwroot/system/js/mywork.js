@@ -136,6 +136,14 @@ function initEditor(index, code) {
                 mode: "javascript",
                 theme: "3024-night",
             });
+            // 在编辑器中启用活动的代码提示功能
+            editor.on("inputRead", function (cm, event) {
+                if (!cm.state.completionActive && event.origin !== 'setValue') {
+                    cm.showHint({
+                        completeSingle: false
+                    });
+                }
+            });
         }
         if (!editor) {
             // Update editor settings if it already exists
@@ -164,6 +172,14 @@ function initEditor(index, code) {
                 lineNumbers: true,
                 mode: "javascript",
                 theme: "3024-night"
+            });
+            // 在编辑器中启用活动的代码提示功能
+            editor2.on("inputRead", function (cm, event) {
+                if (!cm.state.completionActive && event.origin !== 'setValue') {
+                    cm.showHint({
+                        completeSingle: false
+                    });
+                }
             });
         }
         if (!editor2) {
@@ -637,7 +653,7 @@ function getPluginInfo(plugincode, id, type) {
                     $('#plugin-mixed').hide();
                     $('#plugin-workflow').show();
                     $('#workflowBox').html(`<img src="/system/images/workflow.png"/>
-                                           <p>${plugin.workFlowCode}</p>`);
+                                           <p>点击编辑/查看</p>`);
                     workflowcode = plugin.workFlowCode;
                     $('#pluginprice').val(plugin.pluginprice);
                     $('#plugin-1').show();

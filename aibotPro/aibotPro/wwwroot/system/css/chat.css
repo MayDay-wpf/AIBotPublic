@@ -6,7 +6,7 @@
 
 .chatbtns {
     display: inline;
-    color: rgb(135,136,154);
+    color: rgb(135, 136, 154);
     cursor: pointer;
     width: 15px;
     margin-right: 10px;
@@ -32,6 +32,7 @@
     border-bottom-left-radius: 10px; /* 左下角圆角 */
     border-bottom-right-radius: 10px; /* 右下角圆角 */
 }
+
 /* 代码语言显示标签样式 */
 .code-lang-label-container {
     background-color: rgb(80, 80, 90); /* 设置背景色 */
@@ -73,7 +74,6 @@
 .dropdown-menu::-webkit-scrollbar-corner {
     background: #179a16;
 }
-
 
 
 .chat-body-content::-webkit-scrollbar {
@@ -232,12 +232,12 @@
     color: rgb(72, 209, 204);
 }
 
-.360gpt-pro {
+.t360gpt-pro {
     background-color: rgb(240, 248, 255);
     color: rgb(173, 216, 230);
 }
 
-.360gpt-turbo-responsibility-8k {
+.t360gpt-turbo-responsibility-8k {
     background-color: rgb(240, 255, 240);
     color: rgb(34, 139, 34);
 }
@@ -348,11 +348,11 @@
 }
 
 #dkbtn {
-    margin-left: 70%;
+    margin-left: 65%;
     display: none;
 }
 
-@media(max-width: 768px) {
+@media (max-width: 768px) {
     #dkbtn {
         position: absolute;
         top: 1.5%;
@@ -373,6 +373,97 @@
     .content-body {
         padding: 0;
     }
+}
+
+.slider-container {
+    padding: 5px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+#seniorSettingItems {
+    display: none;
+}
+
+.custom-context-menu {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    padding: 5px 0;
+    min-width: 150px;
+}
+
+    .custom-context-menu ul {
+        list-style: none;
+        margin: 0;
+        padding: 5px;
+    }
+
+        .custom-context-menu ul li {
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: background-color 0.2s ease;
+            border-radius: 5px;
+        }
+
+            .custom-context-menu ul li:hover {
+                background-color: #f5f5f5;
+            }
+
+            .custom-context-menu ul li i {
+                margin-right: 8px;
+                width: 16px;
+                text-align: center;
+            }
+
+            .custom-context-menu ul li svg {
+                width: 16px;
+            }
+
+            .custom-context-menu ul li span {
+                flex-grow: 1;
+            }
+
+
+#promptList {
+    height: 100vh;
+    overflow: hidden;
+    border-left: 1px solid lightgray;
+}
+
+#promptItems {
+    overflow-y: scroll;
+}
+
+.prompt-items-container {
+    flex-grow: 1;
+    overflow-y: scroll;
+    padding-right: 5px;
+}
+
+
+.prompt-list-group-item {
+    border-radius: 5px;
+    border: 1px solid lightgray;
+    padding: 10px;
+    margin-bottom: 5px;
+}
+
+.prompt-content {
+    max-height: 100px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    padding-top: 10px;
 }
 
 .icon {

@@ -562,5 +562,72 @@ namespace aibotPro.Controllers
                 data = result
             });
         }
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> OptimizePrompt(string prompt)
+        {
+            var username = _jwtTokenManager
+           .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var systemPrompt =
+                @"You are an advanced AI prompt optimization assistant. Your task is to improve the given prompt to make it more effective, clear, and likely to produce better results. Analyze the input prompt and provide an optimized version. Output the result in JSON format.
+                     The JSON should contain a key named 'optimizedPrompt' that stores the improved prompt.
+                     Here is an example of the JSON return value:
+                     {
+                        'optimizedPrompt': 'Your optimized prompt text will appear here'
+                     }";
+            prompt = $"Prompt to optimize: {prompt}";
+            var resultJson = await _ai.GPTJsonModel(systemPrompt, prompt, "gpt-4o-mini", username);
+            if (!string.IsNullOrEmpty(resultJson))
+            {
+                var resultData = JsonConvert.DeserializeObject<OptimizeResult>(resultJson);
+                if (resultData != null && !string.IsNullOrEmpty(resultData.OptimizedPrompt))
+                    return Ok(new
+                    {
+                        success = true,
+                        data = resultData.OptimizedPrompt
+                    });
+            }
+
+            return Ok(new
+            {
+                success = false
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public IActionResult AddUserPrompt(string prompt)
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            bool result = _usersService.AddUserPrompt(prompt, username);
+            return Ok(new
+            {
+                success = true
+            });
+        }
+
+        [Authorize]
+        [HttpPost]
+        public IActionResult GetUserPromptList(string prompt, int page, int size)
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var list = _usersService.GetUserPromptList(username, page, size, out int total, prompt);
+            return Ok(new
+            {
+                success = true,
+                data = list,
+                total = total
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public IActionResult DeleteUserPrompt(int id)
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            bool result = _usersService.DeleteUserPrompt(id, username);
+            return Ok(new
+            {
+                success = result
+            });
+        }
     }
 }

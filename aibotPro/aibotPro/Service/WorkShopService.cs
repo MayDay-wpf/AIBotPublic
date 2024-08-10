@@ -33,7 +33,8 @@ namespace aibotPro.Service
         private readonly IHubContext<ChatHub> _hubContext;
         private readonly IMilvusService _milvusService;
         private readonly ICOSService _cossService;
-        public WorkShopService(AIBotProContext context, ISystemService systemService, IAiServer aiServer, IUsersService usersService, IRedisService redisService, IFinanceService financeService, IServiceProvider serviceProvider, IHubContext<ChatHub> hubContext, IMilvusService milvusService, ICOSService cossService)
+        private readonly IBaiduService _baiduService;
+        public WorkShopService(AIBotProContext context, ISystemService systemService, IAiServer aiServer, IUsersService usersService, IRedisService redisService, IFinanceService financeService, IServiceProvider serviceProvider, IHubContext<ChatHub> hubContext, IMilvusService milvusService, ICOSService cossService, IBaiduService baiduService)
         {
             _context = context;
             _systemService = systemService;
@@ -45,6 +46,7 @@ namespace aibotPro.Service
             _hubContext = hubContext;
             _milvusService = milvusService;
             _cossService = cossService;
+            _baiduService = baiduService;
         }
         public bool InstallPlugin(string account, int pluginId, out string errormsg)
         {
@@ -412,34 +414,34 @@ namespace aibotPro.Service
                 string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "");
                 Task.Run(async () =>
                  {
-                    using (var scope = _serviceProvider.CreateScope()) // _serviceProvider 是 IServiceProvider 的一个实例。
-                    {
-                        // 这里做一些后续处理，比如更新数据库记录等
-                        string savePath = Path.Combine("wwwroot", "files/dallres", account);
-                        await _aiServer.DownloadImageAsync(pluginResDto.result, savePath, newFileName);
-                        var aiSaveService = scope.ServiceProvider.GetRequiredService<IAiServer>(); // 假设保存记录方法在IAiSaveService中。
-                        var cosService = scope.ServiceProvider.GetRequiredService<ICOSService>();
-                        var systemService = scope.ServiceProvider.GetRequiredService<ISystemService>();
-                        string thumbSavePath = systemService.CompressImage(Path.Combine(savePath, newFileName + ".png"), 75);
-                        //查询是否启用了COS
-                        var systemCfg = systemService.GetSystemCfgs();
-                        var cos_switch = systemCfg.FirstOrDefault(x => x.CfgKey == "COS_Switch");
-                        if (cos_switch != null)
-                        {
-                            string cos_switch_val = cos_switch.CfgValue;
-                            if (!string.IsNullOrEmpty(cos_switch_val) && cos_switch_val == "1")
-                            {
-                                string coskey = $"dallres/{DateTime.Now.ToString("yyyyMMdd")}/{newFileName}.png";
-                                string thumbFileName =System.IO.Path.GetFileName(thumbSavePath); 
-                                thumbKey = coskey.Replace(System.IO.Path.GetFileName(imgResPath), thumbFileName);
-                                imgResPath = cosService.PutObject(coskey, Path.Combine(savePath, newFileName + ".png"), newFileName + ".png");
-                                thumbSavePath= cosService.PutObject(thumbKey, thumbSavePath, thumbFileName);
-                                referenceImgPath = coskey;
-                            }
-                        }
-                        await aiSaveService.SaveAiDrawResult(account, "DALLE3", imgResPath, prompt, referenceImgPath,thumbSavePath,thumbKey);
-                    }
-                });
+                     using (var scope = _serviceProvider.CreateScope()) // _serviceProvider 是 IServiceProvider 的一个实例。
+                     {
+                         // 这里做一些后续处理，比如更新数据库记录等
+                         string savePath = Path.Combine("wwwroot", "files/dallres", account);
+                         var aiSaveService = scope.ServiceProvider.GetRequiredService<IAiServer>();
+                         var cosService = scope.ServiceProvider.GetRequiredService<ICOSService>();
+                         var systemService = scope.ServiceProvider.GetRequiredService<ISystemService>();
+                         await aiSaveService.DownloadImageAsync(pluginResDto.result, savePath, newFileName);
+                         string thumbSavePath = systemService.CompressImage(Path.Combine(savePath, newFileName + ".png"), 75);
+                         //查询是否启用了COS
+                         var systemCfg = systemService.GetSystemCfgs();
+                         var cos_switch = systemCfg.FirstOrDefault(x => x.CfgKey == "COS_Switch");
+                         if (cos_switch != null)
+                         {
+                             string cos_switch_val = cos_switch.CfgValue;
+                             if (!string.IsNullOrEmpty(cos_switch_val) && cos_switch_val == "1")
+                             {
+                                 string coskey = $"dallres/{DateTime.Now.ToString("yyyyMMdd")}/{newFileName}.png";
+                                 string thumbFileName = System.IO.Path.GetFileName(thumbSavePath);
+                                 thumbKey = coskey.Replace(System.IO.Path.GetFileName(imgResPath), thumbFileName);
+                                 imgResPath = cosService.PutObject(coskey, Path.Combine(savePath, newFileName + ".png"), newFileName + ".png");
+                                 thumbSavePath = cosService.PutObject(thumbKey, thumbSavePath, thumbFileName);
+                                 referenceImgPath = coskey;
+                             }
+                         }
+                         await aiSaveService.SaveAiDrawResult(account, "DALLE3", imgResPath, prompt, referenceImgPath, thumbSavePath, thumbKey);
+                     }
+                 });
 
             }
             else if (fnName == "search_google_when_gpt_cannot_answer")
@@ -846,7 +848,7 @@ namespace aibotPro.Service
                                 int workflowLimit = 20;
                                 if (_systemService.GetSystemCfgs().Where(s => s.CfgCode == "WorkFlow_Limit").FirstOrDefault() != null)
                                     workflowLimit = int.Parse(_systemService.GetSystemCfgs().Where(s => s.CfgCode == "WorkFlow_Limit").FirstOrDefault().CfgValue);
-                                WorkflowEngine workflowEngine = new WorkflowEngine(workFlowNodeData, _aiServer, _systemService, _financeService, _context, account, _serviceProvider, _hubContext, chatId, senMethod, _redisService, _milvusService, workflowLimit, _cossService);
+                                WorkflowEngine workflowEngine = new WorkflowEngine(workFlowNodeData, _aiServer, _systemService, _financeService, _context, account, _serviceProvider, _hubContext, chatId, senMethod, _redisService, _milvusService, workflowLimit, _cossService, _baiduService);
                                 List<NodeOutput> workflowResult = await workflowEngine.Execute(startOutputJson);
                                 //查询工作流结束模式
                                 var endNodeData = (EndData)workFlowNodeData.Drawflow.Home.Data.Values.FirstOrDefault(x => x.Name == "end").Data;

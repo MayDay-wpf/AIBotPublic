@@ -348,6 +348,26 @@ header {
     width: 220px;
 }
 
+.drawflow-node.end, .drawflow-node.start {
+    width: 130px;
+}
+
+.drawflow-node.javascript,
+.drawflow-node.http,
+.drawflow-node.DALL,
+.drawflow-node.web,
+.drawflow-node.debug {
+    width: 200px;
+}
+
+.drawflow-node.ifelse {
+    width: 230px;
+}
+
+.drawflow-node.downloadimg {
+    width: 280px;
+}
+
 @keyframes slide {
     0% {
         background-position: 0% 50%;
@@ -386,7 +406,9 @@ header {
 .drawflow-node.DALL.selected,
 .drawflow-node.web.selected,
 .drawflow-node.ifelse.selected,
-.drawflow-node.end.selected {
+.drawflow-node.end.selected,
+.drawflow-node.downloadimg.selected,
+.drawflow-node.debug.selected {
     background: white;
     border: 2px solid transparent;
     background-image: linear-gradient(white, white), linear-gradient(to right, #48b21d, #6547e1);
@@ -421,9 +443,20 @@ header {
     background-image: linear-gradient(white, white), linear-gradient(to right, #ca2746, #6547e1);
 }
 
+.drawflow-node.downloadimg.selected {
+    background-image: linear-gradient(white, white), linear-gradient(to right, #573fe9, #6547e1);
+}
+
+.drawflow-node.debug.selected {
+    background-image: linear-gradient(white, white), linear-gradient(to right, #1aaba8, #6547e1);
+}
+
+
+
 .drawflow .drawflow-node.selected .title-box {
     color: #22598c;
 }
+
 
 .drawflow .connection .main-path {
     stroke: #4ea9ff;
@@ -655,7 +688,7 @@ table {
 .side-panel {
     height: 100%;
     position: fixed;
-    z-index: 9999;
+    z-index: 9;
     top: 0;
     right: 0;
     background-color: rgb(244,244,244);
@@ -679,19 +712,34 @@ table {
     color: white;
 }
 
-    .panel-header span {
-        margin: 0;
-    }
+.panel-footer {
+    width: 100%;
+    position: fixed;
+    bottom: 0;
+    background: lightgray;
+    border-top: 1px solid #cacaca;
+    padding: 5px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 9999;
+    color: white;
+}
 
-    .panel-header .close-btn {
-        padding: 8px;
-        text-decoration: none;
-        font-size: 25px;
-        color: white;
-    }
+.panel-header span {
+    margin: 0;
+}
+
+.panel-header .close-btn {
+    padding: 8px;
+    text-decoration: none;
+    font-size: 25px;
+    color: white;
+}
 
 .panel-content {
     padding: 15px 15px;
+    margin-bottom: 60px;
 }
 
 
@@ -794,6 +842,14 @@ table {
         color: #ca2746;
     }
 
+    .drawflow_content_node .fa-image, .drag-drawflow .fa-image {
+        color: #573fe9;
+    }
+
+    .drawflow_content_node .fa-bug, .drag-drawflow .fa-bug {
+        color: #1aaba8;
+    }
+
 .menu .fa-bars {
     color: #764476;
 }
@@ -831,6 +887,11 @@ table {
     color: gray;
 }
 
+.savebtninfo {
+    font-size: 12px;
+    color: gray;
+}
+
 .menu .fa-spinner {
     animation: spin 2s infinite linear;
 }
@@ -843,4 +904,12 @@ table {
     100% {
         transform: rotate(360deg);
     }
+}
+
+.imageUrl, .chatlog, .imgurl, .downloadImgPrompt {
+    width: 100%;
+}
+
+.chatlog {
+    height: 150px;
 }

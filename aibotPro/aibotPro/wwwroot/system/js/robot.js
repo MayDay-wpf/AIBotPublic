@@ -210,7 +210,7 @@ function getNotice() {
     });
 }
 
-var thisAiModel_bot = "gpt-3.5-turbo-0125-CYGF"; //当前AI模型
+var thisAiModel_bot = "gpt-4o-mini-CYGF"; //当前AI模型
 var processOver_bot = true; //是否处理完毕
 var chatid_bot = "";
 var assistansBoxId_bot = "";
@@ -307,7 +307,9 @@ connection_bot.on('ReceiveWorkShopMessage_bot', function (message) {
         $(".bot-chat-body").scrollTop($(".bot-chat-body")[0].scrollHeight);
     }
     if (message.jscode != null && message.jscode != "") {
-        eval(message.jscode);
+        (function () {
+            eval(message.jscode);
+        })();
     }
 });
 function sendMsg_bot() {

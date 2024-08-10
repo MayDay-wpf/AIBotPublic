@@ -14,7 +14,7 @@ namespace aibotPro.Interface
         Task<FreePlanDto> GetFreePlan(string account);//获取免费详情
         Task<bool> IsVip(string account);//是否是VIP
         Task<List<VIP>> GetVipData(string account);//获取VIP信息
-        Task<bool> VipExceed(string account);//VIP是否过期
+        Task<VIPDto> VipExceed(string account);//VIP是否过期
         Task<List<ModelPrice>> GetModelPriceList();//获取模型价格列表
         Task<ModelPrice> ModelPrice(string modelName);//获取模型价格
         PayInfoDto PayInfo(string account, int money, string type, string param = null);//获取支付通道信息

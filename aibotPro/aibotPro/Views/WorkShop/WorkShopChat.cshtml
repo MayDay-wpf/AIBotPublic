@@ -25,7 +25,7 @@
         width: 100px;
     }
 </style>
-<link href="~/system/css/chat.css?v2.2" rel="stylesheet" />
+<link href="~/system/css/chat.css?v2.3" rel="stylesheet" />
 <script src="~/system/js/markdown-it.min.js"></script>
 <script src="~/system/js/tex-chtml.js"></script>
 <div class="header header-chat">
@@ -161,7 +161,7 @@
                 </div>
                 <div class="form-group">
                     <i data-feather="maximize-2" class="maximize-2" style="width:15px;float:right;cursor:pointer" onclick="max_textarea_Q()"></i>
-                    <textarea type="text" class="form-control" placeholder="输入问题，Enter发送，Ctrl+Enter或Shift+Enter换行" id="Q" style="max-height:200px;"></textarea>
+                    <textarea type="text" class="form-control" placeholder="输入问题，Enter发送，Ctrl+Enter或Shift+Enter换行，首字符输入 / 打开提词本" id="Q" style="max-height:200px;"></textarea>
                 </div>
                 <button class="btn btn-icon" data-toggle="tooltip" title="发送" id="sendBtn">
                     <i data-feather="send"></i>
@@ -172,7 +172,8 @@
     </div>
 </div>
 <script src="~/system/js/signalr.min.js"></script>
-<script src="~/system/js/workshopchat.js?v10.3"></script>
+<script src="~/system/js/workshopchat.js?v10.6"></script>
 <script src="~/system/js/marked.min.js"></script>
 <link href="~/system/css/atom-one-dark.min.css" rel="stylesheet" />
 <script src="~/system/js/highlight.min.js"></script>
+<script src="~/system/js/dart.js"></script>

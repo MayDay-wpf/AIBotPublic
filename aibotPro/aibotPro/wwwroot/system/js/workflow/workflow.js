@@ -1,6 +1,6 @@
 ﻿var workflowcode = '';
 var plugincode = '';
-var jsonmodelAI = ['gpt-3.5-turbo-0125', 'gpt-3.5-turbo-0125-openai', 'gpt-4-0125-preview', 'gpt-4-0125-preview-openai'];
+var jsonmodelAI = ['gpt-3.5-turbo', 'gpt-3.5-turbo-0125', 'gpt-4o-mini', 'gpt-4o-mini-openai', 'gpt-4-0125-preview', 'gpt-4-0125-preview-openai', 'deepseek-chat', 'deepseek-coder'];
 let pageIndex_k = 1;
 let pageSize_k = 20;
 $(function () {
@@ -13,6 +13,18 @@ $(function () {
         });
     else
         getWorkFlowNodeData(workflowcode);
+    const savedDarkMode = localStorage.getItem('darkMode');
+    const dkmodelBtn = $('.dkmodel');
+    if (savedDarkMode === 'true') {
+        dkmodelBtn.html(`<i class="fas fa-sun" style="color:#ffcd42"></i> 开灯`);
+    } else {
+        dkmodelBtn.html(`<i class="fas fa-moon"></i> 关灯`);
+    }
+    // 页面加载完成后恢复滚动位置
+    let savedScrollPosition = localStorage.getItem('sidebarScrollPosition');
+    if (savedScrollPosition) {
+        $('#dpSidebarBody').scrollTop(savedScrollPosition);
+    }
 })
 $(document).ready(function () {
     // 隐藏侧边栏
@@ -80,6 +92,7 @@ $(document).ready(function () {
     // 默认情况下隐藏代码编辑器
     toggleCodeEditor();
 });
+
 function toggleCodeEditor() {
     const selectedValue = $('.endAction').val();
     if (selectedValue === 'ai') {
@@ -88,10 +101,12 @@ function toggleCodeEditor() {
         $('#codeBox').show();
     }
 }
+
 var myTextarea;
 var codeeditor;
 var functionName = '';
 let isNodeBeingDeleted = false;
+
 function initCodeEditor(code) {
     //if (!myTextarea) {
     myTextarea = document.getElementById("myTextarea");
@@ -100,17 +115,12 @@ function initCodeEditor(code) {
         mode: "javascript",
         theme: "3024-night"
     });
-    //}
-    //if (!codeeditor) {
-    // Update editor settings if it already exists
-    codeeditor.setOption("mode", "javascript");
-    codeeditor.setOption("theme", "3024-night");
-    //}
-    codeeditor.setValue(code);
-    codeeditor.setSize('auto', '500px');
+    codeEditorSetOption(codeeditor, code);
 }
+
 var endTextarea;
 var endCodeeditor;
+
 function initEndCodeEditor(code) {
     endTextarea = document.getElementById("endTextarea");
     endCodeeditor = CodeMirror.fromTextArea(endTextarea, {
@@ -118,14 +128,12 @@ function initEndCodeEditor(code) {
         mode: "javascript",
         theme: "3024-night"
     });
-
-    endCodeeditor.setOption("mode", "javascript");
-    endCodeeditor.setOption("theme", "3024-night");
-    endCodeeditor.setValue(code);
-    endCodeeditor.setSize('auto', '500px');
+    codeEditorSetOption(endCodeeditor, code);
 }
+
 var llmTextarea;
 var llmCodeeditor;
+
 function initLLMCodeEditor(code) {
     llmTextarea = document.getElementById("llmTextarea");
     llmCodeeditor = CodeMirror.fromTextArea(llmTextarea, {
@@ -133,14 +141,12 @@ function initLLMCodeEditor(code) {
         mode: "javascript",
         theme: "3024-night"
     });
-
-    llmCodeeditor.setOption("mode", "javascript");
-    llmCodeeditor.setOption("theme", "3024-night");
-    llmCodeeditor.setValue(code);
-    llmCodeeditor.setSize('auto', '500px');
+    codeEditorSetOption(llmCodeeditor, code);
 }
+
 var httpTextarea;
 var httpCodeeditor;
+
 function initHttpCodeEditor(code) {
     httpTextarea = document.getElementById("httpTextarea");
     httpCodeeditor = CodeMirror.fromTextArea(httpTextarea, {
@@ -148,14 +154,12 @@ function initHttpCodeEditor(code) {
         mode: "javascript",
         theme: "3024-night"
     });
-
-    httpCodeeditor.setOption("mode", "javascript");
-    httpCodeeditor.setOption("theme", "3024-night");
-    httpCodeeditor.setValue(code);
-    httpCodeeditor.setSize('auto', '500px');
+    codeEditorSetOption(httpCodeeditor, code);
 }
+
 var ifelseTextarea;
 var ifelseCodeeditor;
+
 function initIfElseCodeEditor(code) {
     ifelseTextarea = document.getElementById("ifelseTextarea");
     ifelseCodeeditor = CodeMirror.fromTextArea(ifelseTextarea, {
@@ -163,12 +167,23 @@ function initIfElseCodeEditor(code) {
         mode: "javascript",
         theme: "3024-night"
     });
-
-    ifelseCodeeditor.setOption("mode", "javascript");
-    ifelseCodeeditor.setOption("theme", "3024-night");
-    ifelseCodeeditor.setValue(code);
-    ifelseCodeeditor.setSize('auto', '500px');
+    codeEditorSetOption(ifelseCodeeditor, code);
 }
+
+function codeEditorSetOption(codeEditor, code) {
+    codeEditor.setOption("mode", "javascript");
+    codeEditor.setOption("theme", "3024-night");
+    codeEditor.setValue(code);
+    codeEditor.setSize('auto', '500px');
+    codeEditor.on("inputRead", function (cm, event) {
+        if (!cm.state.completionActive && event.origin !== 'setValue') {
+            cm.showHint({
+                completeSingle: false
+            });
+        }
+    });
+}
+
 function getAIModelList(callback) {
     $.ajax({
         type: "Post",
@@ -190,6 +205,7 @@ function getAIModelList(callback) {
         }
     });
 }
+
 function getKonwLedgeTypeByMilvus(type, callback) {
     if (type == 'loadmore')
         loadingBtn('.loadmorebtn');
@@ -307,7 +323,10 @@ editor.on('nodeSelected', function (id) {
     thisNodeId = id;
     thisNodeName = name;
     var html = "";
-    $("#sidePanel .panel-title").text(`${name}-${id}节点`);
+    if (name == "start" || name == "end")
+        $("#sidePanel .panel-title").text(`${name}`);
+    else
+        $("#sidePanel .panel-title").text(`${name}（节点Id:${id}）`);
     switch (name) {
         case 'start':
             html = `<p>参数（output，选填）：</p>
@@ -321,6 +340,7 @@ editor.on('nodeSelected', function (id) {
                             </div>
                         </div>
                         <p class="nodeinfo">
+                            <span><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></span><br>
                             当下级节点需要获取start的参数时，使用{{start.参数名}}获取，例如{{start.city}}
                         </p>`;
             $('.configure').html(html);
@@ -351,6 +371,7 @@ editor.on('nodeSelected', function (id) {
             html = ` <label>编写脚本：</label>
                          <textarea id="myTextarea"></textarea>
                      <p class="nodeinfo">
+                     <span><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></span><br>
                           javascript节点必须return一个规范的json字符串，例如：<br>
                             function javascript2(){<br>
                                 return '{ "data": {"code":200,"status":true}}'<br>
@@ -419,6 +440,7 @@ editor.on('nodeSelected', function (id) {
                     <p>循环条件脚本：</p>
                     <textarea id="httpTextarea"></textarea>
                     <p class="nodeinfo">
+                    <span><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></span><br>
                       * 当Http请求节点有返回值时，必须是一个Json对象，例如请求返回值为{"data":{"code":200,"status":true}}，使用{{http+节点Id.json结构值}}获取，例如{{http1.data.status}} 可获取到值：true<br><br>
                       * 当需要循环执行时，return true;代表结束循环<br><br>
                       * return false;将持续循环<br><br>
@@ -487,13 +509,11 @@ editor.on('nodeSelected', function (id) {
                 }
                 if (data.output.httpmaxcount) {
                     $('.httpmaxcount').val(data.output.httpmaxcount);
-                }
-                else
+                } else
                     $('.httpmaxcount').val(10);
                 if (data.output.httpdelayed) {
                     $('.httpdelayed').val(data.output.httpdelayed);
-                }
-                else
+                } else
                     $('.httpdelayed').val(10);
                 initHttpCodeEditor(code);
             }
@@ -507,6 +527,8 @@ editor.on('nodeSelected', function (id) {
                     <div>
                     <p>Prompt（模板示例{{参数}}，必填）：</p>
                     <textarea class="prompt" style="width:100%;height:150px;"></textarea>
+                    <p>图片链接（模板示例{{参数}}，选填）：</p>
+                    <input type="text" placeholder="请输入图片链接" class="imgUrl"  />
                     <p>失败重试次数（≤5）：</p>
                     <input type="number" class="retry" value="0" max="5" min="0" />
                     <p>Stream：</p>
@@ -519,6 +541,7 @@ editor.on('nodeSelected', function (id) {
                     <textarea id="llmTextarea"></textarea>
                     <p></p>
                     <div class="nodeinfo">
+                    <span><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></span><br>
                       * 当下级节点需要获取AI处理的返回数据时，使用{{LLM+节点Id.data}}获取，例如{{LLM1.data}}<br><br>
                       * 当Stream选择true时 API会中途返回LLM响应至客户端<br><br>
                       * 当需要循环执行时，return true;代表结束循环，return 其他时，会以返回值作为prompt继续提交给LLM<br><br>
@@ -555,6 +578,9 @@ editor.on('nodeSelected', function (id) {
                     }
                     if (data.output.prompt) {
                         $(".prompt").val(data.output.prompt);
+                    }
+                    if (data.output.imgurl) {
+                        $(".imgurl").val(data.output.imgurl);
                     }
                     if (data.output.retry) {
                         $(".retry").val(data.output.retry);
@@ -598,6 +624,7 @@ editor.on('nodeSelected', function (id) {
                     <p>失败重试次数（≤5）：</p>
                     <input type="number" class="retry" value="0" max="5" min="0" />
                     <p class="nodeinfo">
+                    <span><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></span><br>
                     当下级节点需要获取绘画图片链接时，使用{{DALL+节点Id.data}}获取，例如{{DALL1.data}}
                     </p>`
             $('.configure').html(html);
@@ -625,6 +652,7 @@ editor.on('nodeSelected', function (id) {
                     <p>失败重试次数（≤5）：</p>
                     <input type="number" class="retry" value="0" max="5" min="0" />
                     <p class="nodeinfo">
+                    <span><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></span><br>
                     当下级节点需要获取绘画图片链接时，使用{{DALLsm+节点Id.data}}获取，例如{{DALLsm1.data}}
                     </p>`
             $('.configure').html(html);
@@ -638,10 +666,33 @@ editor.on('nodeSelected', function (id) {
                 }
             }
             break;
+        case 'downloadimg':
+            html = `<p>线上图片链接（模板示例{{参数}}，必填）：</p>
+                    <input type="text" placeholder="请输入图片链接" class="imageUrl"  />
+                    <p>图片描述（模板示例{{参数}}，选填）：</p>
+                    <input type="text" placeholder="请输入图片描述" class="downloadImgPrompt"  />
+                    <p class="nodeinfo">
+                    <span><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></span><br>
+                      * 此节点作用于将【线上图片链接】转存至【图库】<br><br>
+                      * 此节点可使用{{downloadimg+节点Id.data}}获取返回值，例如{{downloadimg1.data}}<br><br>
+                      * 此节点返回值为原样返回您需要下载的图片链接
+                    </p>`
+            $('.configure').html(html);
+            if (node && node.data && Object.entries(node.data).length > 0) {
+                var data = node.data;
+                if (data.output.imageurl) {
+                    $(".imageUrl").val(data.output.imageurl);
+                }
+                if (data.output.prompt) {
+                    $(".downloadImgPrompt").val(data.output.prompt);
+                }
+            }
+            break;
         case 'web':
             html = `<p>搜索关键词（模板示例{{参数}}，必填）：</p>
                     <textarea class="prompt" style="width:100%;height:150px;" placeholder="请输入搜索关键词"></textarea>
                     <p class="nodeinfo">
+                    <span><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></span><br>
                     注意：此节点只充当搜索引擎，请不要输入自然语言，否则会影响搜索结果<br>
                     当下级节点需要获取搜索结果时，使用{{web+节点Id.data}}获取，例如{{web1.data}}
                     </p>`
@@ -657,6 +708,7 @@ editor.on('nodeSelected', function (id) {
             html = ` <label>编写脚本：</label>
                          <textarea id="ifelseTextarea"></textarea>
                      <p class="nodeinfo">
+                     <span><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></span><br>
                           ifelse节点必须return一个布尔值，流程会根据布尔值的结果决定走向<br>
                             function ifelse2(){<br>
                                 return 1>2<br>
@@ -686,6 +738,7 @@ editor.on('nodeSelected', function (id) {
                     <p>知识库选用：</p>
                     <div id="onknowledgeitem">加载中...</div>
                     <p class="nodeinfo">
+                    <span><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></span><br>
                     当下级节点需要获取知识库检索结果时，使用{{knowledge+节点Id.data}}获取，例如{{knowledge1.data}}
                     </p>`
             $('.configure').html(html);
@@ -713,6 +766,24 @@ editor.on('nodeSelected', function (id) {
                 }
             });
 
+            break;
+        case 'debug':
+            html = `<p>需要向聊天窗口发送的内容（模板示例{{参数}}，必填）：</p>
+                    <textarea placeholder="输入需要发送的内容" class="chatlog"></textarea>
+                    <p class="nodeinfo">
+                    <span><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></span><br>
+                      * 此节点用于调试，方式为：向Chat推送任意消息,支持markdown<br><br>
+                      * 此节点在Open API中不生效<br><br>
+                      * 此节点可使用{{debug+节点Id.data}}获取返回值，例如{{debug1.data}}<br><br>
+                      * 此节点返回值为原样返回您需要发送的内容
+                    </p>`
+            $('.configure').html(html);
+            if (node && node.data && Object.entries(node.data).length > 0) {
+                var data = node.data;
+                if (data.output.chatlog) {
+                    $(".chatlog").val(data.output.chatlog);
+                }
+            }
             break;
         case 'end':
             html = `<div class="box">
@@ -808,6 +879,7 @@ for (var i = 0; i < elements.length; i++) {
 
 var mobile_item_selec = '';
 var mobile_last_move = null;
+
 function positionMobile(ev) {
     mobile_last_move = ev;
 }
@@ -838,6 +910,7 @@ function drop(ev) {
     }
 
 }
+
 function addRow(element) {
     var table = element.closest('.box').querySelector('.parameters-table');
     var newRow = table.insertRow(-1);
@@ -855,7 +928,9 @@ function addRow(element) {
     var deleteBtn = document.createElement("button");
     deleteBtn.textContent = "删除";
     deleteBtn.classList.add("delete-btn");
-    deleteBtn.onclick = function () { deleteRow(this); };
+    deleteBtn.onclick = function () {
+        deleteRow(this);
+    };
 
     cell5.appendChild(deleteBtn);
 }
@@ -873,7 +948,9 @@ function addPrRow(element) {
     var deleteBtn = document.createElement("button");
     deleteBtn.textContent = "删除";
     deleteBtn.classList.add("delete-btn");
-    deleteBtn.onclick = function () { deleteRow(this); };
+    deleteBtn.onclick = function () {
+        deleteRow(this);
+    };
 
     cell3.appendChild(deleteBtn);
 }
@@ -891,10 +968,13 @@ function addHdRow(element) {
     var deleteBtn = document.createElement("button");
     deleteBtn.textContent = "删除";
     deleteBtn.classList.add("delete-btn");
-    deleteBtn.onclick = function () { deleteRow(this); };
+    deleteBtn.onclick = function () {
+        deleteRow(this);
+    };
 
     cell3.appendChild(deleteBtn);
 }
+
 function addCkRow(element) {
     var table = element.closest('.box').querySelector('.cookies-table');
     var newRow = table.insertRow(-1);
@@ -908,7 +988,9 @@ function addCkRow(element) {
     var deleteBtn = document.createElement("button");
     deleteBtn.textContent = "删除";
     deleteBtn.classList.add("delete-btn");
-    deleteBtn.onclick = function () { deleteRow(this); };
+    deleteBtn.onclick = function () {
+        deleteRow(this);
+    };
 
     cell3.appendChild(deleteBtn);
 }
@@ -980,6 +1062,7 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
                 output: {
                     aimodel: "",
                     prompt: "",
+                    imgurl: "",
                     retry: 0,
                     stream: false,
                     jsonmodel: false,
@@ -1013,6 +1096,18 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
                     retry: 0
                 }
             }, DALLsm);
+            break;
+        case 'downloadimg':
+            var downloadimg = `
+            <div>
+              <div class="title-box"><i class="far fa-image"></i> <span class="nodeText">图片下载(downloadImg)</span></div>
+            </div>`;
+            editor.addNode('downloadimg', 1, 1, pos_x, pos_y, 'downloadimg', {
+                output: {
+                    imageurl: "",
+                    prompt: ""
+                }
+            }, downloadimg);
             break;
         case 'web':
             var web = `
@@ -1050,6 +1145,18 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
                 }
             }, knowledge);
             break;
+        case 'debug':
+            var debug = `
+            <div>
+              <div class="title-box"><i class="fas fa-bug"></i> <span class="nodeText"> Debug(debug)</span></span></div>
+            </div>
+            `;
+            editor.addNode('debug', 1, 1, pos_x, pos_y, 'debug', {
+                output: {
+                    chatlog: ""
+                }
+            }, debug);
+            break;
         case 'end':
             var end = `
             <div>
@@ -1067,6 +1174,7 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
 }
 
 var transform = '';
+
 function showpopup(e) {
     e.target.closest(".drawflow-node").style.zIndex = "9999";
     e.target.children[0].style.display = "block";
@@ -1123,7 +1231,9 @@ function exportDrawFlow() {
         content: `<pre>${escapeHtml(jsonString)}</pre>`
     });
 }
+
 let toolsHide = false;
+
 function hideTools() {
     if (!toolsHide) {
         $("#drawflow").css("width", "calc(100vw)");
@@ -1135,7 +1245,9 @@ function hideTools() {
         toolsHide = false;
     }
 }
+
 let optionMax_b = false;
+
 function optionMax() {
     if (!optionMax_b) {
         $(".side-panel").css("width", "70%");
@@ -1174,8 +1286,7 @@ function pushtoPlugin(showlayer = true) {
                             // 点击“返回插件列表”后的回调
                             window.location.href = '/WorkShop/MyPlugins?tab=mycreate';
                         });
-                    }
-                    else {
+                    } else {
                         layer.msg(data.msg, { icon: 2, time: 2000 });
                     }
                 }
@@ -1228,7 +1339,8 @@ editor.createCurvature = function (start_pos_x, start_pos_y, end_pos_x, end_pos_
             return ' M ' + line_x + ' ' + line_y + ' C ' + hx1 + ' ' + line_y + ' ' + hx2 + ' ' + y + ' ' + x + '  ' + y;
             break;
         default:
-            var hx1 = line_x + Math.abs(x - line_x) * curvature; var hx2 = x - Math.abs(x - line_x) * curvature;
+            var hx1 = line_x + Math.abs(x - line_x) * curvature;
+            var hx2 = x - Math.abs(x - line_x) * curvature;
             let xx = ' M ' + line_x + ' ' + line_y + ' C ' + hx1 + ' ' + line_y + ' ' + (hx2) + ' ' + y + ' ' + (x - 20) + '  ' + y + ' M ' + (x - 11) + ' ' + y + ' L' + (x - 20) + ' ' + (y - 5) + '  L' + (x - 20) + ' ' + (y + 5) + 'Z';
             return xx;
             break;
@@ -1281,7 +1393,7 @@ connection.onreconnected((connectionId) => {
 var chatid = "";
 var chatgroupid = "";
 var assistansBoxId = "";
-var thisAiModel = "gpt-3.5-turbo-0125-CYGF"; //当前AI模型
+var thisAiModel = "gpt-4o-mini-CYGF"; //当前AI模型
 var processOver = true;
 var bottomPanel = document.getElementById('bottomPanel');
 var closePanelBtn = document.getElementById('debugerclosePanelBtn');
@@ -1290,6 +1402,7 @@ var chatBody = $(".bottom-panel-content");
 var md = window.markdownit();
 var sysmsg = "";
 var jishuqi = 0;
+
 // 添加显示代码语言的 Labels
 function addLanguageLabels(useSpecificId = false, assistansBoxId = '') {
     // 根据 useSpecificId 决定选择器的范围
@@ -1312,6 +1425,7 @@ function addLanguageLabels(useSpecificId = false, assistansBoxId = '') {
         }
     });
 }
+
 connection.on('ReceiveWorkShopMessage', function (message) {
     //console.log(message);
     if (!message.isfinish) {
@@ -1404,6 +1518,7 @@ function sendMsg() {
             //});
         });
 }
+
 //新建会话
 function newChat() {
     if (!processOver) {
@@ -1415,6 +1530,7 @@ function newChat() {
     chatBody.html("");
     $("#Q").focus();
 }
+
 function stopGenerate() {
     processOver = true;
     $("#sendBtn").css('background-color', 'rgb(0,123,255)');
@@ -1452,6 +1568,7 @@ function debugWorkFlow() {
     bottomPanel.classList.add('show');
     getWorkShopAIModelList();
 }
+
 closePanelBtn.addEventListener('click', () => {
     bottomPanel.classList.remove('show');
     $('#overlay').hide();
@@ -1475,11 +1592,11 @@ $(document).ready(function () {
     $("#sendBtn").on("click", function () {
         if (!processOver) {
             stopGenerate();
-        }
-        else
+        } else
             sendMsg();
     });
 });
+
 function getWorkShopAIModelList(callback) {
     $.ajax({
         type: "Post",
@@ -1504,4 +1621,18 @@ function getWorkShopAIModelList(callback) {
 
 function goBack() {
     window.location.href = `/WorkShop/MyWork?plugincode=${plugincode}&id=1393&type=edit`;
+}
+function darkModel() {
+    const isDarkMode = $('html').hasClass('dark');
+    const newMode = !isDarkMode;
+    const dkmodelBtn = $('.dkmodel');
+    if (newMode) {
+        $('html').addClass('dark');
+        dkmodelBtn.html(`<i class="fas fa-sun" style="color:#ffcd42"></i> 开灯`);
+    } else {
+        $('html').removeClass('dark');
+        dkmodelBtn.html(`<i class="fas fa-moon"></i> 关灯`);
+    }
+    // 保存状态到 localStorage
+    localStorage.setItem('darkMode', newMode);
 }

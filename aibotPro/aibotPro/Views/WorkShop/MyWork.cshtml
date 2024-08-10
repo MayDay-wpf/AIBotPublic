@@ -3,10 +3,15 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <link href="~/system/css/mywork.css" rel="stylesheet" />
-<link rel="stylesheet" href="/system/css/codemirror.min.css">
-<link rel="stylesheet" href="/system/css/3024-night.min.css">
-<script src="/system/js/codemirror.min.js"></script>
-<script src="/system/js/javascript.min.js"></script>
+<link rel="stylesheet" href="~/system/js/codemirror5/codemirror.min.css">
+<link rel="stylesheet" href="~/system/js/codemirror5/3024-night.min.css">
+<script src="~/system/js/codemirror5/codemirror.min.js"></script>
+<script src="~/system/js/codemirror5/javascript.min.js"></script>
+<!-- 引入显示提示的插件和样式 -->
+<link rel="stylesheet" href="~/system/js/codemirror5/show-hint.min.css">
+<script src="~/system/js/codemirror5/show-hint.min.js"></script>
+<!-- 引入JavaScript代码提示 -->
+<script src="~/system/js/codemirror5/javascript-hint.min.js"></script>
 <div class="header">
     <div class="header-left">
         <a id="menuMain" href="" class="burger-menu">
@@ -399,4 +404,4 @@
         </div>
     </div>
 </div>
-<script src="~/system/js/mywork.js"></script>
+<script src="~/system/js/mywork.js?v1"></script>

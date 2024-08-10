@@ -2,7 +2,7 @@
 var referenceImgPath = '';
 var showlog = false;
 var intervalId;
-let thisAiModel = 'gpt-3.5-turbo-0125';
+let thisAiModel = 'gpt-4o-mini';
 let drawmodel = 'fast';
 $(function () {
     $('.nav-sub-link').removeClass('active');
@@ -21,6 +21,9 @@ $(function () {
     $('#fast').prop('checked', true);
 })
 $(document).ready(function () {
+    bindEnglishPromptTranslation("#inputText");
+    bindOptimizePrompt("#inputText");
+
     // 更新字符计数的函数
     function updateCharCount() {
         var charCount = $('#inputText').val().length;
@@ -112,8 +115,7 @@ $(document).ready(function () {
                         writeDrawLog('信息：任务创建成功，TaskId：' + res.taskId + '——' + getCurrentDateTime());
                         // 开始查询任务状态
                         queryTaskStatus(res.taskId, "CREATE");
-                    }
-                    else {
+                    } else {
                         balert(res.msg, 'danger', false, 2000, "center");
                         writeDrawLog('失败：' + res.msg + '——' + getCurrentDateTime());
                         //恢复按钮
@@ -131,8 +133,7 @@ $(document).ready(function () {
                     unloadingBtn('.createTask');
                 }
             });
-        }
-        else {
+        } else {
             balert('请输入绘画提示词', 'danger', false, 1000, "center");
             $('html, body').animate({ scrollTop: 0 }, 'slow');
             //输入框获得焦点
@@ -147,8 +148,7 @@ $(document).ready(function () {
             feather.replace();
             showlog = true;
             $('html, body').animate({ scrollTop: $('.content-body').height() }, 1000);
-        }
-        else {
+        } else {
             $("#log").hide();
             $(this).html(`<b>任务日志</b> <i data-feather="chevron-right"></i>`);
             feather.replace();
@@ -159,6 +159,7 @@ $(document).ready(function () {
         drawmodel = $(this).val();
     });
 });
+
 function writeDrawLog(str) {
     $("#log").val($("#log").val() + str + `\n`);
     $("#log").scrollTop($("#log")[0].scrollHeight); // 滚动到底部
@@ -193,31 +194,31 @@ function queryTaskStatus(taskId, tasktype) {
                         if (tasktype == "CREATE" || tasktype == "VARIATION") {
                             var html = `<div class="card">
                                             <div class="card-header">
-                                                <h5>任务结果 ID： <span id="taskID">`+ taskId + `</span></h5>
+                                                <h5>任务结果 ID： <span id="taskID">` + taskId + `</span></h5>
                                             </div>
                                             <div class="card-body" style="text-align:center;">
                                                 <div id="resBox">
                                                     <div class="text-center mb-3">
-                                                        <a href="`+ res.taskResponse.imageUrl + `" id="resimgurl-a" class="image-popup">
-                                                            <img src="`+ res.taskResponse.imageUrl + `" class="img-fluid" style="width:30%;min-width:300px;" alt="任务结果">
+                                                        <a href="` + res.taskResponse.imageUrl + `" id="resimgurl-a" class="image-popup">
+                                                            <img src="` + res.taskResponse.imageUrl + `" class="img-fluid" style="width:30%;min-width:300px;" alt="任务结果">
                                                         </a>
                                                     </div>
                                                     <div id="actionBtnlst">
                                                         <div class="text-center mt-3">
-                                                            <button type="button" class="btn btn-primary mr-2" onclick="createActionTask('`+ taskId + `','UPSCALE','1')"><i data-feather="zoom-in"></i> 放大 图1</button>
-                                                            <button type="button" class="btn btn-primary mr-2" onclick="createActionTask('`+ taskId + `','UPSCALE','2')"><i data-feather="zoom-in"></i> 放大 图2</button>
+                                                            <button type="button" class="btn btn-primary mr-2" onclick="createActionTask('` + taskId + `','UPSCALE','1')"><i data-feather="zoom-in"></i> 放大 图1</button>
+                                                            <button type="button" class="btn btn-primary mr-2" onclick="createActionTask('` + taskId + `','UPSCALE','2')"><i data-feather="zoom-in"></i> 放大 图2</button>
                                                         </div>
                                                         <div class="text-center mt-3">
-                                                            <button type="button" class="btn btn-primary mr-2" onclick="createActionTask('`+ taskId + `','UPSCALE','3')"><i data-feather="zoom-in"></i> 放大 图3</button>
-                                                            <button type="button" class="btn btn-primary mr-2" onclick="createActionTask('`+ taskId + `','UPSCALE','4')"><i data-feather="zoom-in"></i> 放大 图4</button>
+                                                            <button type="button" class="btn btn-primary mr-2" onclick="createActionTask('` + taskId + `','UPSCALE','3')"><i data-feather="zoom-in"></i> 放大 图3</button>
+                                                            <button type="button" class="btn btn-primary mr-2" onclick="createActionTask('` + taskId + `','UPSCALE','4')"><i data-feather="zoom-in"></i> 放大 图4</button>
                                                         </div>
                                                         <div class="text-center mt-3">
-                                                            <button type="button" class="btn btn-info mr-2" onclick="createActionTask('`+ taskId + `','VARIATION','1')"><i data-feather="edit"></i> 改进 图1</button>
-                                                            <button type="button" class="btn btn-info mr-2" onclick="createActionTask('`+ taskId + `','VARIATION','2')"><i data-feather="edit"></i> 改进 图2</button>
+                                                            <button type="button" class="btn btn-info mr-2" onclick="createActionTask('` + taskId + `','VARIATION','1')"><i data-feather="edit"></i> 改进 图1</button>
+                                                            <button type="button" class="btn btn-info mr-2" onclick="createActionTask('` + taskId + `','VARIATION','2')"><i data-feather="edit"></i> 改进 图2</button>
                                                         </div>
                                                         <div class="text-center mt-3">
-                                                            <button type="button" class="btn btn-info mr-2" onclick="createActionTask('`+ taskId + `','VARIATION','3')"><i data-feather="edit"></i> 改进 图3</button>
-                                                            <button type="button" class="btn btn-info mr-2" onclick="createActionTask('`+ taskId + `','VARIATION','4')"><i data-feather="edit"></i> 改进 图4</button>
+                                                            <button type="button" class="btn btn-info mr-2" onclick="createActionTask('` + taskId + `','VARIATION','3')"><i data-feather="edit"></i> 改进 图3</button>
+                                                            <button type="button" class="btn btn-info mr-2" onclick="createActionTask('` + taskId + `','VARIATION','4')"><i data-feather="edit"></i> 改进 图4</button>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -229,13 +230,13 @@ function queryTaskStatus(taskId, tasktype) {
                         } else {
                             var html = `<div class="card">
                                             <div class="card-header">
-                                                <h5>任务结果 ID： <span id="taskID">`+ taskId + `</span></h5>
+                                                <h5>任务结果 ID： <span id="taskID">` + taskId + `</span></h5>
                                             </div>
                                             <div class="card-body" style="text-align:center;">
                                                 <div id="resBox">
                                                     <div class="text-center mb-3">
-                                                    <a href="`+ res.taskResponse.imageUrl + `" id="resimgurl-a" class="image-popup">
-                                                        <img src="`+ res.taskResponse.imageUrl + `" class="img-fluid" style="width:30%;min-width:300px;" alt="任务结果">
+                                                    <a href="` + res.taskResponse.imageUrl + `" id="resimgurl-a" class="image-popup">
+                                                        <img src="` + res.taskResponse.imageUrl + `" class="img-fluid" style="width:30%;min-width:300px;" alt="任务结果">
                                                     </a>
                                                     </div>
                                                 </div>
@@ -252,15 +253,13 @@ function queryTaskStatus(taskId, tasktype) {
                     intervalId = setTimeout(function () {
                         queryTaskStatus(taskId, tasktype);
                     }, 3000);
-                }
-                else {
+                } else {
                     balert(res.msg, 'danger', false, 1000, "center");
                     writeDrawLog('失败：' + res.msg + '——' + getCurrentDateTime());
                 }
             }
         });
-    }
-    else {
+    } else {
         balert('请输入任务ID', 'danger', false, 1000, "center");
         //恢复按钮
         unloadingBtn('.createTask');
@@ -296,8 +295,7 @@ function createActionTask(taskId, changetype, changeindex) {
                 $('.cancelTask').show();
                 // 开始查询任务状态
                 queryTaskStatus(res.taskId, changetype);
-            }
-            else {
+            } else {
                 unloadingBtn('.createTask');
                 balert(res.msg, 'danger', false, 2000, "center");
                 writeDrawLog('失败：' + res.msg + '——' + getCurrentDateTime());
@@ -536,4 +534,36 @@ function sendMsg() {
             //    window.location.href = "/Users/Login";
             //});
         });
+}
+
+//转英语提示词
+function englishPrompt() {
+    var msg = $("#inputText").val().trim();
+    if (msg === "") {
+        balert("请输入待转换的绘画提示词", "warning", false, 2000);
+        return;
+    }
+    loadingBtn('.englishPrompt');
+    $.ajax({
+        type: "POST",
+        url: "/AIdraw/EnglishPrompt",
+        dataType: "json",
+        data: {
+            "prompt": msg,
+        },
+        success: function (data) {
+            unloadingBtn('.englishPrompt');
+            if (data.success) {
+                $("#inputText").val(data.data)
+            } else {
+                balert("转换失败，请重试", "danger", false, 2000);
+            }
+        },
+        error: function (err) {
+            unloadingBtn('.englishPrompt');
+            balert("转换失败，请重试", "danger", false, 2000);
+            sendExceptionMsg("【/AIdraw/EnglishPrompt】出现了一些未经处理的异常 :-( 原因：" + err);
+        }
+    })
+
 }

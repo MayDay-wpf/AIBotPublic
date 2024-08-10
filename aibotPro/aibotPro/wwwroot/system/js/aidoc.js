@@ -100,7 +100,7 @@ function send(prompt, chatId) {
     var data = {
         "msg": prompt,
         "chatid": chatId,
-        "aiModel": 'gpt-3.5-turbo-0125',
+        "aiModel": 'gpt-4o-mini',
         "msgid_u": msgid_u,
         "msgid_g": msgid_g,
         "chatgroupid": chatgroupid,

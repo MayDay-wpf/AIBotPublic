@@ -25,6 +25,7 @@ var LLMdata = {
     output: {
         aimodel: "",
         prompt: "",
+        imgurl: "",
         retry: 0,
         stream: false,
         jsonmodel: false,
@@ -44,6 +45,12 @@ var DALLsmdata = {
     output: {
         prompt: "",
         retry: 0
+    }
+}
+var downloadimagedata = {
+    output: {
+        imageurl: "",
+        prompt: ""
     }
 }
 var webdata = {
@@ -68,6 +75,11 @@ var knowledgedata = {
         retry: 0,
         topk: 3,
         typecode: []
+    }
+}
+var debug = {
+    output: {
+        chatlog: ""
     }
 }
 var regex = /'/;
@@ -232,6 +244,7 @@ function saveNodeData() {
                 output: {
                     aimodel: "",
                     prompt: "",
+                    imgurl: "",
                     retry: 0,
                     stream: false,
                     jsonmodel: false,
@@ -241,6 +254,7 @@ function saveNodeData() {
             }
             var AImodel = $('.aimodel').val();
             var Prompt = $('.prompt').val();
+            var ImgUrl = $('.imgurl').val();
             var Retry = $('.retry').val();
             var Stream = $('.stream').val();
             var JsonModel = $('.jsonmodel').val();
@@ -261,6 +275,7 @@ function saveNodeData() {
             }
             var js = llmCodeeditor.getValue();
             LLMdata.output.prompt = Prompt;
+            LLMdata.output.imgurl = ImgUrl;
             LLMdata.output.retry = Retry;
             LLMdata.output.stream = Stream;
             LLMdata.output.jsonmodel = JsonModel;
@@ -335,6 +350,29 @@ function saveNodeData() {
             DALLsmdata.output.prompt = Prompt;
             DALLsmdata.output.retry = Retry;
             editor.updateNodeDataFromId(thisNodeId, DALLsmdata);
+            saveNodeDataToCache();
+            return true;
+            break;
+        case 'downloadimg':
+            downloadimage = {
+                output: {
+                    imageurl: "",
+                    prompt: ""
+                }
+            }
+            var ImageUrl = $('.imageUrl').val();
+            var downloadImgPrompt = $('.downloadImgPrompt').val();
+            if (ImageUrl == "") {
+                layer.msg('请填写图片下载链接', { icon: 2, time: 2500 }, function () {
+                    layer.closeAll();
+                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                });
+                return false;
+            }
+            downloadimage.output.imageurl = ImageUrl;
+            if (downloadImgPrompt != "")
+                downloadimage.output.prompt = downloadImgPrompt;
+            editor.updateNodeDataFromId(thisNodeId, downloadimage);
             saveNodeDataToCache();
             return true;
             break;
@@ -430,6 +468,25 @@ function saveNodeData() {
             saveNodeDataToCache();
             return true;
             break;
+        case 'debug':
+            debug = {
+                output: {
+                    chatlog: ""
+                }
+            }
+            var chatlog = $('.chatlog').val();
+            if (chatlog == "") {
+                layer.msg('请填写需要发送的内容', { icon: 2, time: 2500 }, function () {
+                    layer.closeAll();
+                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                });
+                return false;
+            }
+            debug.output.chatlog = chatlog;
+            editor.updateNodeDataFromId(thisNodeId, debug);
+            saveNodeDataToCache();
+            return true;
+            break;
         case 'end':
             enddata = {
                 output: {
@@ -458,7 +515,7 @@ function saveNodeDataToCache(callback) {
         });
         return;
     }
-    writeInfo(`<i class="fas fa-spinner"></i> 保存中`,"lightgray");
+    writeInfo(`<i class="fas fa-spinner"></i> 保存中`, "lightgray");
     $.ajax({
         type: "POST",
         url: "/WorkShop/SaveNodeDataToCache",
@@ -469,13 +526,16 @@ function saveNodeDataToCache(callback) {
         success: function (data) {
             if (data.success) {
                 //layer.msg('保存完成', { icon: 1, offset: 't', time: 2000 });
-                writeInfo(`<i class="fas fa-check-circle"></i> 保存成功:${getCurrentDateTime()}`,"#0dd068");
+                writeInfo(`<i class="fas fa-check-circle"></i> 保存成功:${getCurrentDateTime()}`, "#0dd068");
                 if (typeof callback === "function") {
                     callback();
                 }
             }
             else {
-                layer.msg(data.msg, { icon: 2, offset: 't', time: 2000 });
+                layer.msg(data.msg, { icon: 2, offset: 't', time: 2000 }, layer.closeAll());
+                writeInfo(`<i class="fas fa-times-circle"></i> ${data.msg}`, "#c7221e");
+                bottomPanel.classList.remove('show');
+                $('#overlay').hide();
             }
         }
     });
@@ -531,4 +591,6 @@ function getWorkFlowNodeData(workflowcode) {
 function writeInfo(text, color) {
     $('.infotext').html(text);
     $('.infotext').css("color", color);
+    $('.savebtninfo').html(text);
+    $('.savebtninfo').css("color", color);
 }

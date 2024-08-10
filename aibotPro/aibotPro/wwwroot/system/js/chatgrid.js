@@ -51,7 +51,7 @@ connection.onreconnected((connectionId) => {
 });
 var sysmsg = "";
 var jishuqi = 0;
-var thisAiModel = 'gpt-4-turbo-preview';
+var thisAiModel = 'gpt-4o-mini';
 connection.on('ReceiveMessage', function (message) {
     //console.log(message);
     if (!message.isfinish) {
@@ -105,7 +105,7 @@ function sendMsg() {
         "chatgroupid": chatgroupid,
         "ip": IP,
         "image_path": '',
-        "system_prompt": "请根据要求,输出一个符合vega-lite规范的schema json文本 \n Rply:中文"
+        "system_prompt": "# 要求一:请根据要求,输出一个符合vega-lite规范的schema json文本 \n\n # 要求二:不要说多余的话直接一行输出json文本 \n"
     };
     connection.invoke("SendMessage", data)
         .then(function () {

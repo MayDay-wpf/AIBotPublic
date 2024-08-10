@@ -3,13 +3,19 @@
 }
 <title>工作流（WorkFlow）</title>
 <link href="~/system/js/workflow/drawflow.min.css?v1" rel="stylesheet" />
-<link href="~/system/js/workflow/beautiful.css?v1.2" rel="stylesheet" />
+<link href="~/system/js/workflow/beautiful.css?v1.8" rel="stylesheet" />
+<link href="~/system/js/workflow/beautiful-dark.css?v1.0" rel="stylesheet" />
 <link href="~/system/js/workflow/all.min.css" rel="stylesheet" />
-<link href="~/system/js/workflow/worknode.css?v2.1" rel="stylesheet" />
-<link href="~/system/css/codemirror.min.css" rel="stylesheet">
-<link href="~/system/css/3024-night.min.css" rel="stylesheet">
-<script src="~/system/js/codemirror.min.js"></script>
-<script src="~/system/js/javascript.min.js"></script>
+<link href="~/system/js/workflow/worknode.css?v2.3" rel="stylesheet" />
+<link rel="stylesheet" href="~/system/js/codemirror5/codemirror.min.css">
+<link rel="stylesheet" href="~/system/js/codemirror5/3024-night.min.css">
+<script src="~/system/js/codemirror5/codemirror.min.js"></script>
+<script src="~/system/js/codemirror5/javascript.min.js"></script>
+<!-- 引入显示提示的插件和样式 -->
+<link rel="stylesheet" href="~/system/js/codemirror5/show-hint.min.css">
+<script src="~/system/js/codemirror5/show-hint.min.js"></script>
+<!-- 引入JavaScript代码提示 -->
+<script src="~/system/js/codemirror5/javascript-hint.min.js"></script>
 <script src="~/lib/jquery/dist/jquery.min.js"></script>
 <script src="~/system/js/workflow/drawflow.min.js"></script>
 <script src="~/system/js/workflow/all.min.js"></script>
@@ -28,6 +34,7 @@
             skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code", "a", "b"]
         }
     };
+    initDarkMode();
 </script>
 <script src="~/system/js/markdown-it.min.js"></script>
 <script src="~/system/js/tex-chtml.js"></script>
@@ -45,8 +52,11 @@
             <!-- 内容 -->
             <div class="panel-content">
                 <div class="configure"></div>
-                <br />
-                <button class="btn btn-info" onclick="saveNodeData()">保存</button>
+            </div>
+            <div class="panel-footer">
+                <button class="btn btn-info" onclick="saveNodeData()">
+                    点击保存 <span class="savebtninfo"></span>
+                </button>
             </div>
         </div>
     </div>
@@ -89,9 +99,9 @@
             <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="DALL">
                 <i class="fas fa-paint-brush"></i><span> DALL·E3（DALL）</span>
             </div>
-            @* <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="DALLsm">
-            <i class="fas fa-pen"></i><span> DALL·E2（DALLsm）</span>
-            </div> *@
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="downloadimg">
+                <i class="far fa-image"></i><span> 图片下载（downloadImg）</span>
+            </div>
             <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="web">
                 <i class="fas fa-globe"></i><span> 联网搜索（web）</span>
             </div>
@@ -100,6 +110,9 @@
             </div>
             <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="knowledge">
                 <i class="fas fa-database"></i><span> 知识库查询（knowledge）</span>
+            </div>
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="debug">
+                <i class="fas fa-bug"></i><span> Debug（debug）</span>
             </div>
             <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="end">
                 <i class="fas fa-stop-circle"></i><span> 结束（end）</span>
@@ -116,13 +129,18 @@
                     <li><button class="btn btn-info" onclick="exportDrawFlow()">预览Json</button></li>
                     <li><button class="btn btn-info" onclick="saveNodeDataToCache()">保存</button></li>
                     <li><button class="btn btn-info" onclick="pushtoPlugin()">发布至插件</button></li> *@
-                    <li onclick="hideTools()"><i class="fas fa-bars" style="font-size:20px;"></i></li>
+                    <li onclick="hideTools()">
+                        <i class="fas fa-bars" style="font-size:20px;"></i>
+                    </li>
                     <li onclick="goBack()" class="goback"><i class="fas fa-chevron-left"></i> 返回</li>
                     <li onclick="editor.clearModuleSelected()" class="clear"><i class="fas fa-trash-alt"></i> 清空</li>
                     <li onclick="exportDrawFlow()" class="reviewJson"><i class="fas fa-eye"></i> 预览Json</li>
                     <li onclick="debugWorkFlow()" class="testFlow"><i class="fas fa-terminal"></i> 测试</li>
                     <li onclick="saveNodeDataToCache()" class="saveFlow"><i class="fas fa-save"></i> 保存</li>
                     <li onclick="pushtoPlugin()" class="uploadFlow"><i class="fas fa-upload"></i> 发布至插件</li>
+                    <li class="dkmodel" onclick="darkModel()">
+                        <i class="fas fa-moon"></i>
+                    </li>
                 </ul>
                 <span class="infotext"></span>
             </div>
@@ -141,8 +159,9 @@
     </div>
 </div>
 <script src="~/system/js/signalr.min.js"></script>
-<script src="~/system/js/workflow/workflow.js?v2.3"></script>
-<script src="~/system/js/workflow/workflowaction.js?v3.1"></script>
+<script src="~/system/js/workflow/workflow.js?v3.0"></script>
+<script src="~/system/js/workflow/workflowaction.js?v3.5"></script>
 <script src="~/system/js/marked.min.js"></script>
 <link href="~/system/css/atom-one-dark.min.css" rel="stylesheet" />
 <script src="~/system/js/highlight.min.js"></script>
+<script src="~/system/js/dart.js"></script>

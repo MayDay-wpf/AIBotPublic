@@ -6,10 +6,12 @@
     $("#pay-main-menu").parent().siblings().removeClass('show');
     $("#balance-pay-nav").addClass('active');
 });
+
 function setCustomAmount(amount) {
     // 将选定的金额填入自定义金额输入框
     $('#customAmount').val(amount);
 }
+
 $(document).ready(function () {
     $('#customAmount').on('input', function () {
         var inputValue = $(this).val();
@@ -19,6 +21,7 @@ $(document).ready(function () {
         }
     });
 });
+
 function Pay(type) {
     var payMoney = $('#customAmount').val();
     // 如果自定义金额为空，则提示用户输入金额
@@ -41,6 +44,7 @@ function Pay(type) {
         },
         success: function (res) {
             if (res.success) {
+                localStorage.removeItem('vipStatus');
                 res = res.data;
                 // 创建一个隐藏的表单
                 var $form = $('<form>', {
@@ -110,8 +114,7 @@ function Pay(type) {
                     value: 'MD5'
                 }).appendTo($form);
                 $form.submit();
-            }
-            else
+            } else
                 balert("发起支付失败，请重试", "danger", false, 2000, "center");
         },
         error: function (e) {

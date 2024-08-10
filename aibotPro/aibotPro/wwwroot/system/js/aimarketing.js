@@ -12,7 +12,7 @@ let voice = 'alloy';
 let mp3Arr = [];
 let combinedMp3 = '';
 let imglist = [];
-let model = 'gpt-3.5-turbo-0125';
+let model = 'gpt-4o-mini';
 let d3imgsize = '1024x1024';
 
 $(document).ready(function () {

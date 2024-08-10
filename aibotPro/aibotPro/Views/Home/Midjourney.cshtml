@@ -2,7 +2,7 @@
     ViewData["Title"] = "Midjourney";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-<link href="~/system/css/midjourney.css" rel="stylesheet" />
+<link href="~/system/css/midjourney.css" rel="stylesheet"/>
 <div class="header">
     <div class="header-left">
         <a id="menuMain" href="" class="burger-menu">
@@ -44,7 +44,8 @@
         <div class="card">
             <div class="card-header">
                 <h5>第一步：输入提示词</h5>
-                <button class="btn btn-outline-success greatePrompt" onclick="sendMsg()"><img src="~/system/images/magic_stick.png" style="width:20px;" />优化提示词</button>
+                <button class="btn btn-outline-success greatePrompt" onclick="sendMsg()"><img src="~/system/images/magic_stick.png" style="width:20px;"/>优化提示词</button>
+                <button class="btn btn-outline-info englishPrompt" onclick="englishPrompt()"><img src="~/system/images/translated.png" style="width:20px;"/>转英语提示词</button>
             </div>
             <div class="card-body">
                 <div class="textarea-container">
@@ -73,19 +74,23 @@
                     </ul>
                     <div class="tab-content bd bd-t-0 pd-20" id="myTabContent">
                         <div class="tab-pane fade active show" id="MJ" role="tabpanel" aria-labelledby="MJ-tab" style="text-align:center;">
-                            <h5 class="MJtitle"><b>公认最强的AI绘画</b></h5>
+                            <h5 class="MJtitle">
+                                <b>公认最强的AI绘画</b>
+                            </h5>
                             <p class="mg-b-0">
-                                <img src="~/system/images/m1.png" style="width:30%;max-width:400px" />
-                                <img src="~/system/images/m2.png" style="width:30%;max-width:400px" />
-                                <img src="~/system/images/m3.png" style="width:30%;max-width:400px" />
+                                <img src="~/system/images/m1.png" style="width:30%;max-width:400px"/>
+                                <img src="~/system/images/m2.png" style="width:30%;max-width:400px"/>
+                                <img src="~/system/images/m3.png" style="width:30%;max-width:400px"/>
                             </p>
                         </div>
                         <div class="tab-pane fade" id="NIJI" role="tabpanel" aria-labelledby="NIJI-tab" style="text-align:center;">
-                            <h5 class="NIJItitle"><b>魔法般的二次元AI绘画生成</b></h5>
+                            <h5 class="NIJItitle">
+                                <b>魔法般的二次元AI绘画生成</b>
+                            </h5>
                             <p class="mg-b-0">
-                                <img src="~/system/images/n1.png" style="width:30%;max-width:400px" />
-                                <img src="~/system/images/n2.png" style="width:30%;max-width:400px" />
-                                <img src="~/system/images/n3.png" style="width:30%;max-width:400px" />
+                                <img src="~/system/images/n1.png" style="width:30%;max-width:400px"/>
+                                <img src="~/system/images/n2.png" style="width:30%;max-width:400px"/>
+                                <img src="~/system/images/n3.png" style="width:30%;max-width:400px"/>
                             </p>
                         </div>
                     </div>
@@ -154,7 +159,9 @@
                     <div id="p2" class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
                 </div>
                 <div class="log-container mb-3">
-                    <span style="cursor:pointer" id="TaskLogTitle"><b>任务日志</b> <i data-feather="chevron-right"></i></span> <button class="btn btn-warning" onclick="$('#log').val('')">清空日志</button>
+                    <span style="cursor:pointer" id="TaskLogTitle">
+                        <b>任务日志</b> <i data-feather="chevron-right"></i>
+                    </span> <button class="btn btn-warning" onclick="$('#log').val('')">清空日志</button>
                     <textarea id="log" class="form-control" readonly="readonly"></textarea>
                 </div>
             </div>
@@ -166,5 +173,5 @@
 <link rel="stylesheet" href="/system/css/magnific-popup.min.css">
 <script src="~/system/js/signalr.min.js"></script>
 <script src="~/system/js/jquery.magnific-popup.min.js"></script>
-<script src="~/system/js/midjourney.js?v4.2"></script>
+<script src="~/system/js/midjourney.js?v4.3"></script>
 <script src="~/system/js/uploadlogic.js"></script>

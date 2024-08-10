@@ -304,13 +304,17 @@ namespace aibotPro.Service
             var vip = await _context.VIPs.Where(x => x.Account == account).ToListAsync();
             return vip;
         }
-        public async Task<bool> VipExceed(string account)
+        public async Task<VIPDto> VipExceed(string account)
         {
+            VIPDto dto = new VIPDto();
             //查询用户是否是VIP
             var vip = await _context.VIPs.Where(x => x.Account == account).ToListAsync();
             if (vip.Count == 0)
             {
-                return false;
+                //未开通
+                dto.Exceed = false;
+                dto.Unopened = true;
+                return dto;
             }
             //遍历VIP列表
             foreach (var item in vip)
@@ -319,17 +323,19 @@ namespace aibotPro.Service
                 if (item.EndTime < DateTime.Now)
                 {
                     _context.VIPs.Remove(item);
-                    _context.SaveChanges();
                 }
             }
-            //如果VIP列表为空，则返回true
+            _context.SaveChanges();
+            vip = await _context.VIPs.Where(x => x.Account == account).ToListAsync();
+            //更新后再检查该用户会员状态
             if (vip.Count == 0)
             {
-                return true;
+                //已过期
+                dto.Exceed = true;
+                dto.Unopened = false;
             }
-            else
-                return false;
-            return true;
+            return dto;
+
         }
         public async Task<List<ModelPrice>> GetModelPriceList()
         {

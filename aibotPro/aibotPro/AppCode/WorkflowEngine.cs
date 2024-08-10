@@ -2,6 +2,7 @@
 using aibotPro.Interface;
 using aibotPro.Models;
 using aibotPro.Service;
+using iTextSharp.text;
 using iTextSharp.text.pdf.qrcode;
 using JavaScriptEngineSwitcher.ChakraCore;
 using JavaScriptEngineSwitcher.Core;
@@ -17,6 +18,7 @@ using Spire.Presentation.Charts;
 using StackExchange.Redis;
 using System;
 using System.Diagnostics;
+using System.Net.Mail;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
@@ -46,8 +48,9 @@ namespace aibotPro.AppCode
         private readonly IMilvusService _milvusService;
         private readonly ICOSService _cossService;
         private static int _checkCount;
+        private readonly IBaiduService _baiduService;
         private Dictionary<string, int> _nodeCheckCounts = new Dictionary<string, int>();
-        public WorkflowEngine(WorkFlowNodeData workflowData, IAiServer aiServer, ISystemService systemService, IFinanceService financeService, AIBotProContext context, string account, IServiceProvider serviceProvider, IHubContext<ChatHub> hubContext, string chatId, string senMethod, IRedisService redisService, IMilvusService milvusService, int checkCount, ICOSService cossService)
+        public WorkflowEngine(WorkFlowNodeData workflowData, IAiServer aiServer, ISystemService systemService, IFinanceService financeService, AIBotProContext context, string account, IServiceProvider serviceProvider, IHubContext<ChatHub> hubContext, string chatId, string senMethod, IRedisService redisService, IMilvusService milvusService, int checkCount, ICOSService cossService, IBaiduService baiduService)
         {
             _workflowData = workflowData;
             _aiServer = aiServer;
@@ -63,6 +66,7 @@ namespace aibotPro.AppCode
             _milvusService = milvusService;
             _checkCount = checkCount;
             _cossService = cossService;
+            _baiduService = baiduService;
         }
         public async Task<List<NodeOutput>> Execute(string startNodeOutput)
         {
@@ -264,6 +268,9 @@ namespace aibotPro.AppCode
                 /*case "DALLsm":
                     nodeOutput = await ProcessDALLsmNode(node, result);
                     break;*/
+                case "downloadimg":
+                    nodeOutput = await ProcessDownLoadImgNode(node, result);
+                    break;
                 case "web":
                     nodeOutput = await ProcessWebNode(node, result);
                     break;
@@ -272,6 +279,9 @@ namespace aibotPro.AppCode
                     break;
                 case "knowledge":
                     nodeOutput = await ProcessKonwledgeNode(node, result);
+                    break;
+                case "debug":
+                    nodeOutput = await ProcessDebugNode(node, result);
                     break;
                 case "end":
                     nodeOutput = await ProcessEndNode(node, result);
@@ -400,7 +410,7 @@ namespace aibotPro.AppCode
             {
                 foreach (var itemHd in httpData.Output.HeadersItems)
                 {
-                    headers.Add(itemHd.HdValue, itemHd.HdValue);
+                    headers.Add(itemHd.HdKey, itemHd.HdValue);
                 }
             }
             if (httpData.Output.CookiesItems.Count > 0)
@@ -484,6 +494,29 @@ namespace aibotPro.AppCode
             bool jsonModel = llmData.Output.JsonModel;
             int initialRetryCount = retryCount;
             int maxcount = llmData.Output.LLMMaxcount;
+            AiChat aiChat = null;
+            VisionBody visionBody = null;
+            APISetting apiSetting = CreateAPISetting(aimodel);
+            if (!string.IsNullOrEmpty(llmData.Output.ImgUrl))
+            {
+                string imgurl = FillScriptWithValues(llmData.Output.ImgUrl, result);
+                if (apiSetting.IsVisionModel.HasValue && apiSetting.IsVisionModel.Value)
+                    visionBody = CreateVisionBody(aimodel, prompt, imgurl, stream, jsonModel);
+                else
+                {
+                    string imageData = await _systemService.ImgConvertToBase64(imgurl);
+                    string imgTxt = _baiduService.GetText(imageData);
+                    string imgRes = _baiduService.GetRes(imageData);
+                    prompt = @$"# 要求：请你充当图片内容分析师,回答:{prompt}
+                                * 图像中的文字识别结果为：{imgTxt}
+                                * 图像中物体和场景识别结果为：{imgRes}";
+                    aiChat = CreateAiChat(aimodel, prompt, stream, jsonModel);
+                }
+            }
+            else
+            {
+                aiChat = CreateAiChat(aimodel, prompt, stream, jsonModel);
+            }
             while (true)
             {
                 if (maxcount < 0)
@@ -499,7 +532,7 @@ namespace aibotPro.AppCode
                         result = string.Empty;
                         if (!stream || string.IsNullOrEmpty(_chatId))
                         {
-                            result = await _aiServer.CallingAINotStream(prompt, aimodel, jsonModel);
+                            result = await _aiServer.CallingAINotStream(aiChat, apiSetting, visionBody);
                             if (!jsonModel)
                                 result = EscapeSpecialCharacters(result);
                             if (!string.IsNullOrEmpty(result))
@@ -530,38 +563,9 @@ namespace aibotPro.AppCode
                         }
                         else
                         {
-                            AiChat aiChat = new AiChat();
-                            APISetting apiSetting = new APISetting();
-                            var aImodels = _systemService.GetAImodel();
-                            string apiKey = aImodels.Where(x => x.ModelName == aimodel).FirstOrDefault().ApiKey;
-                            //标准化baseurl
-                            string baseUrl = aImodels.Where(x => x.ModelName == aimodel).FirstOrDefault().BaseUrl;
                             try
                             {
-                                if (baseUrl.EndsWith("/"))
-                                {
-                                    baseUrl = baseUrl.TrimEnd('/');
-                                }
-                            }
-                            catch (Exception e)
-                            {
-                                throw e;
-                            }
-                            apiSetting.ApiKey = apiKey;
-                            apiSetting.BaseUrl = baseUrl;
-                            aiChat.Model = aimodel;
-                            aiChat.Stream = true;
-                            List<Message> messages = new List<Message>();
-                            Message message = new Message
-                            {
-                                Role = "user",
-                                Content = prompt
-                            };
-                            messages.Add(message);
-                            aiChat.Messages = messages;
-                            try
-                            {
-                                await foreach (var responseContent in _aiServer.CallingAI(aiChat, apiSetting, _chatId))
+                                await foreach (var responseContent in _aiServer.CallingAI(aiChat, apiSetting, _chatId, visionBody))
                                 {
                                     result += responseContent.Choices[0].Delta.Content;
                                     await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, new ChatRes { message = responseContent.Choices[0].Delta.Content });
@@ -635,6 +639,93 @@ namespace aibotPro.AppCode
             _nodeCheckCounts[nodeKey]--;
             return nodeOutput;
         }
+        private AiChat CreateAiChat(string aimodel, string prompt, bool stream, bool jsonModel)
+        {
+            AiChat aiChat = new AiChat();
+            aiChat.Model = aimodel;
+            aiChat.Stream = stream;
+            if (jsonModel)
+            {
+                aiChat.ResponseFormat = new ResponseFormat()
+                {
+                    Type = "json_object"
+                };
+            }
+            List<Message> messages = new List<Message>();
+            Message message = new Message
+            {
+                Role = "user",
+                Content = prompt
+            };
+            messages.Add(message);
+            aiChat.Messages = messages;
+            return aiChat;
+        }
+        private VisionBody CreateVisionBody(string aimodel, string prompt, string imgurl, bool stream, bool jsonModel)
+        {
+            VisionBody visionBody = new VisionBody();
+            visionBody.model = aimodel;
+            visionBody.stream = stream;
+            if (jsonModel)
+            {
+                visionBody.response_format = new ResponseFormat()
+                {
+                    Type = "json_object"
+                };
+            }
+            List<VisionChatMesssage> messages = new List<VisionChatMesssage>();
+            List<VisionContent> visionContents = new List<VisionContent>();
+            VisionContent textVisionContent = new VisionContent()
+            {
+                type = "text",
+                text = prompt
+            };
+            VisionContent imgVisionContent = new VisionContent()
+            {
+                type = "image_url",
+                image_url = new VisionImg
+                {
+                    url = imgurl
+                }
+            };
+            visionContents.Add(textVisionContent);
+            visionContents.Add(imgVisionContent);
+            messages.Add(new VisionChatMesssage
+            {
+                role = "user",
+                content = visionContents
+            });
+            visionBody.messages = messages.ToArray();
+            return visionBody;
+        }
+        private APISetting CreateAPISetting(string aimodel)
+        {
+            APISetting apiSetting = new APISetting();
+            var aImodels = _systemService.GetAImodel();
+            AImodel aiModelInfo = aImodels.Where(x => x.ModelName == aimodel).FirstOrDefault();
+            if (aiModelInfo == null)
+            {
+                throw new Exception("AI模型不存在");
+            }
+            string apiKey = aiModelInfo.ApiKey;
+            //标准化baseurl
+            string baseUrl = aiModelInfo.BaseUrl;
+            try
+            {
+                if (baseUrl.EndsWith("/"))
+                {
+                    baseUrl = baseUrl.TrimEnd('/');
+                }
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+            apiSetting.ApiKey = apiKey;
+            apiSetting.BaseUrl = baseUrl;
+            apiSetting.IsVisionModel = aiModelInfo.VisionModel;
+            return apiSetting;
+        }
         private async Task<NodeOutput> ProcessDALLNode(NodeData node, List<NodeOutput> result)
         {
             var nodeKey = node.Name + node.Id;
@@ -652,7 +743,7 @@ namespace aibotPro.AppCode
             if (!string.IsNullOrEmpty(_chatId))
             {
                 ChatRes chatRes = new ChatRes();
-                chatRes.message = $"✍";
+                chatRes.message = $"✍ \n";
                 await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
             }
             string prompt = FillScriptWithValues(dallData.Output.Prompt, result);
@@ -709,10 +800,10 @@ namespace aibotPro.AppCode
                 {
                     // 这里做一些后续处理，比如更新数据库记录等
                     string savePath = Path.Combine("wwwroot", "files/dallres", _account);
-                    await _aiServer.DownloadImageAsync(airesult, savePath, newFileName);
-                    var aiSaveService = scope.ServiceProvider.GetRequiredService<IAiServer>(); // 假设保存记录方法在IAiSaveService中。
+                    var aiSaveService = scope.ServiceProvider.GetRequiredService<IAiServer>();
                     var cosService = scope.ServiceProvider.GetRequiredService<ICOSService>();
                     var systemService = scope.ServiceProvider.GetRequiredService<ISystemService>();
+                    await aiSaveService.DownloadImageAsync(airesult, savePath, newFileName);
                     string thumbSavePath = systemService.CompressImage(Path.Combine(savePath, newFileName + ".png"), 75);
                     //查询是否启用了COS
                     var systemCfg = systemService.GetSystemCfgs();
@@ -723,16 +814,129 @@ namespace aibotPro.AppCode
                         if (!string.IsNullOrEmpty(cos_switch_val) && cos_switch_val == "1")
                         {
                             string coskey = $"dallres/{DateTime.Now.ToString("yyyyMMdd")}/{newFileName}.png";
-                            string thumbFileName =System.IO.Path.GetFileName(thumbSavePath); 
+                            string thumbFileName = System.IO.Path.GetFileName(thumbSavePath);
                             thumbKey = coskey.Replace(System.IO.Path.GetFileName(imgResPath), thumbFileName);
                             imgResPath = cosService.PutObject(coskey, Path.Combine(savePath, newFileName + ".png"), newFileName + ".png");
-                            thumbSavePath= cosService.PutObject(thumbKey, thumbSavePath, thumbFileName);
+                            thumbSavePath = cosService.PutObject(thumbKey, thumbSavePath, thumbFileName);
                             referenceImgPath = coskey;
                         }
                     }
-                    await aiSaveService.SaveAiDrawResult(_account, "DALLE3", imgResPath, prompt, referenceImgPath,thumbSavePath,thumbKey);
+                    await aiSaveService.SaveAiDrawResult(_account, "DALLE3", imgResPath, prompt, referenceImgPath, thumbSavePath, thumbKey);
                 }
             });
+            nodeOutput.NodeName = nodeKey;
+            nodeOutput.OutputData = jsonBuilder.ToString();
+            nodeOutput.NextNodes = FindNextNode(node.Outputs);
+            _nodeCheckCounts[nodeKey]--;
+            return nodeOutput;
+        }
+
+        private async Task<NodeOutput> ProcessDownLoadImgNode(NodeData node, List<NodeOutput> result)
+        {
+            var nodeKey = node.Name + node.Id;
+            if (!_nodeCheckCounts.ContainsKey(nodeKey))
+            {
+                _nodeCheckCounts[nodeKey] = _checkCount;
+            }
+            if (_nodeCheckCounts[nodeKey] <= 0)
+            {
+                throw new Exception($"节点 {nodeKey} 的运行次数超出系统设定的极限, 触发流程引擎死循环保护, 请修正您的 WorkFlow");
+            }
+            NodeOutput nodeOutput = new NodeOutput();
+            DownLoadImg downLoadImageData = (DownLoadImg)node.Data;
+            string imageUrl = FillScriptWithValues(downLoadImageData.Output.ImageUrl, result);
+            string prompt = FillScriptWithValues(downLoadImageData.Output.Prompt, result);
+            if (!string.IsNullOrEmpty(_chatId))
+            {
+                ChatRes chatRes = new ChatRes();
+                chatRes.message = $"📥 \n";
+                await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
+                if (string.IsNullOrEmpty(imageUrl))
+                {
+                    string error = $"❌ 图片链接为空，请重试";
+                    throw new Exception(error);
+                }
+            }
+            // 在后台启动一个任务下载图片
+            string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "");
+            string imgResPath = Path.Combine("/files/workflowdownloadres", _account, newFileName + ".png");
+            string referenceImgPath = string.Empty;
+            string thumbKey = string.Empty;
+            // 这里做一些后续处理，比如更新数据库记录等
+            string savePath = Path.Combine("wwwroot", "files/workflowdownloadres", _account);
+            Task.Run(async () =>
+            {
+                using (var scope = _serviceProvider.CreateScope()) // _serviceProvider 是 IServiceProvider 的一个实例。
+                {
+                    // 这里做一些后续处理，比如更新数据库记录等
+                    string savePath = Path.Combine("wwwroot", "files/workflowdownloadres", _account);
+                    var aiSaveService = scope.ServiceProvider.GetRequiredService<IAiServer>(); // 假设保存记录方法在IAiSaveService中。
+                    var cosService = scope.ServiceProvider.GetRequiredService<ICOSService>();
+                    var systemService = scope.ServiceProvider.GetRequiredService<ISystemService>();
+                    await aiSaveService.DownloadImageAsync(imageUrl, savePath, newFileName);
+                    string thumbSavePath = systemService.CompressImage(Path.Combine(savePath, newFileName + ".png"), 75);
+                    //查询是否启用了COS
+                    var systemCfg = systemService.GetSystemCfgs();
+                    var cos_switch = systemCfg.FirstOrDefault(x => x.CfgKey == "COS_Switch");
+                    if (cos_switch != null)
+                    {
+                        string cos_switch_val = cos_switch.CfgValue;
+                        if (!string.IsNullOrEmpty(cos_switch_val) && cos_switch_val == "1")
+                        {
+                            string coskey = $"workflowdownloadres/{DateTime.Now.ToString("yyyyMMdd")}/{newFileName}.png";
+                            string thumbFileName = System.IO.Path.GetFileName(thumbSavePath);
+                            thumbKey = coskey.Replace(System.IO.Path.GetFileName(imgResPath), thumbFileName);
+                            imgResPath = cosService.PutObject(coskey, Path.Combine(savePath, newFileName + ".png"), newFileName + ".png");
+                            thumbSavePath = cosService.PutObject(thumbKey, thumbSavePath, thumbFileName);
+                            referenceImgPath = coskey;
+                        }
+                    }
+                    await aiSaveService.SaveAiDrawResult(_account, "workflowdownloadres", imgResPath, prompt, prompt, thumbSavePath, thumbKey);
+                }
+            });
+            var jsonBuilder = new StringBuilder();
+            jsonBuilder.Append("{");
+            jsonBuilder.Append($"\"{node.Name + node.Id}\":");
+            jsonBuilder.Append("{");
+            jsonBuilder.Append($"\"data\":");
+            jsonBuilder.Append($"\"{imageUrl}\"");
+            jsonBuilder.Append("}");
+            jsonBuilder.Append("}");
+            nodeOutput.NodeName = nodeKey;
+            nodeOutput.OutputData = jsonBuilder.ToString();
+            nodeOutput.NextNodes = FindNextNode(node.Outputs);
+            _nodeCheckCounts[nodeKey]--;
+            return nodeOutput;
+        }
+
+        private async Task<NodeOutput> ProcessDebugNode(NodeData node, List<NodeOutput> result)
+        {
+            var nodeKey = node.Name + node.Id;
+            if (!_nodeCheckCounts.ContainsKey(nodeKey))
+            {
+                _nodeCheckCounts[nodeKey] = _checkCount;
+            }
+            if (_nodeCheckCounts[nodeKey] <= 0)
+            {
+                throw new Exception($"节点 {nodeKey} 的运行次数超出系统设定的极限, 触发流程引擎死循环保护, 请修正您的 WorkFlow");
+            }
+            NodeOutput nodeOutput = new NodeOutput();
+            DebugData debugData = (DebugData)node.Data;
+            string chatLog = FillScriptWithValues(debugData.Output.ChatLog, result);
+            if (!string.IsNullOrEmpty(_chatId))
+            {
+                ChatRes chatRes = new ChatRes();
+                chatRes.message = $"{chatLog} \n";
+                await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
+            }
+            var jsonBuilder = new StringBuilder();
+            jsonBuilder.Append("{");
+            jsonBuilder.Append($"\"{node.Name + node.Id}\":");
+            jsonBuilder.Append("{");
+            jsonBuilder.Append($"\"data\":");
+            jsonBuilder.Append($"\"{chatLog}\"");
+            jsonBuilder.Append("}");
+            jsonBuilder.Append("}");
             nodeOutput.NodeName = nodeKey;
             nodeOutput.OutputData = jsonBuilder.ToString();
             nodeOutput.NextNodes = FindNextNode(node.Outputs);
@@ -811,8 +1015,8 @@ namespace aibotPro.AppCode
                 {
                     // 这里做一些后续处理，比如更新数据库记录等
                     string savePath = Path.Combine("wwwroot", "files/dallres", _account);
-                    await _aiServer.DownloadImageAsync(airesult, savePath, newFileName);
-                    var aiSaveService = scope.ServiceProvider.GetRequiredService<IAiServer>(); // 假设保存记录方法在IAiSaveService中。
+                    var aiSaveService = scope.ServiceProvider.GetRequiredService<IAiServer>();
+                    await aiSaveService.DownloadImageAsync(airesult, savePath, newFileName);
                     await aiSaveService.SaveAiDrawResult(_account, "DALLE2", imgResPath, prompt, "workflow_Engine");
                 }
             });

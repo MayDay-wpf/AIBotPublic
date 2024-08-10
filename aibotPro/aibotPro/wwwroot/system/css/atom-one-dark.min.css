@@ -56,3 +56,8 @@ code.language-vue {
     background-color: #282c34;
     padding: 10px;
 }
+code.language-dart {
+    display: block;
+    background-color: #282c34;
+    padding: 10px;
+}

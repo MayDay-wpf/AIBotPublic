@@ -9,7 +9,8 @@ let fontColor = '#000000';
 var menuShow = true;
 var savedDarkMode = localStorage.getItem('darkMode');
 var timerIds = {};
-
+let promptlistPage = 1;
+let promptlistSize = 20;
 
 $(document).ready(function () {
     let savedScrollPosition = localStorage.getItem('sidebarScrollPosition');
@@ -38,14 +39,12 @@ $(document).ready(function () {
         isAdmin();
         getUISetting();
         customMenu();
+        getUserPromptList('init');
         // 创建应用按钮
         var applyBtn = $('<button/>', {
-            class: 'btn btn-info apply-btn',
-            html: '<i class="icon ion-quote"></i> 引用',
-            css: {
+            class: 'btn btn-info apply-btn', html: '<i class="icon ion-quote"></i> 引用', css: {
                 'display': 'none'
-            },
-            click: function () {
+            }, click: function () {
                 $(this).hide();
                 copyBtn.hide();
                 window.getSelection().removeAllRanges();
@@ -58,12 +57,9 @@ $(document).ready(function () {
 
         // 创建复制按钮
         var copyBtn = $('<button/>', {
-            class: 'btn btn-success copy-btn-select',
-            html: feather.icons['copy'].toSvg() + ' 复制',
-            css: {
+            class: 'btn btn-success copy-btn-select', html: feather.icons['copy'].toSvg() + ' 复制', css: {
                 'display': 'none'
-            },
-            click: function () {
+            }, click: function () {
                 copyText(selectedText);
                 $(this).hide();
                 applyBtn.hide();
@@ -84,8 +80,7 @@ $(document).ready(function () {
                     if (selectedText) {
                         // 显示按钮并调整位置
                         applyBtn.css({
-                            'left': e.pageX,
-                            'top': e.pageY + 10 // 根据需要调整偏移量
+                            'left': e.pageX, 'top': e.pageY + 10 // 根据需要调整偏移量
                         }).fadeIn();
 
                         copyBtn.css({
@@ -128,6 +123,7 @@ $(document).ready(function () {
             }
         });
     }
+    //如果hljs已已定义
     IsBlackUser();
     getUserInfo();
 });
@@ -136,9 +132,7 @@ $(document).ready(function () {
 function isMobile() {
     var userAgentInfo = navigator.userAgent;
     //判断鸿蒙系统
-    var Agents = ["Android", "iPhone",
-        "SymbianOS", "Windows Phone",
-        "iPad", "iPod", "HarmonyOS"];
+    var Agents = ["Android", "iPhone", "SymbianOS", "Windows Phone", "iPad", "iPod", "HarmonyOS"];
     var flag = false;
     for (var v = 0; v < Agents.length; v++) {
         if (userAgentInfo.indexOf(Agents[v]) > 0) {
@@ -149,14 +143,12 @@ function isMobile() {
     //console.log(flag);
     return flag;
 }
+
 //获取IP信息
 function getIpInfo() {
     //请求GetIPInfo
     $.ajax({
-        type: "Post",
-        url: "/Home/GetIPInfo",
-        dataType: "json",
-        success: function (res) {
+        type: "Post", url: "/Home/GetIPInfo", dataType: "json", success: function (res) {
             if (res.success) {
                 IP = res.ip;
                 Address = res.address;
@@ -173,34 +165,19 @@ function generateGUID() {
             .substring(1);
     }
 
-    return (
-        s4() +
-        s4() +
-        '-' +
-        s4() +
-        '-' +
-        s4() +
-        '-' +
-        s4() +
-        '-' +
-        s4() +
-        s4() +
-        s4()
-    );
+    return (s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4());
 }
+
 //发送异常信息
 function sendExceptionMsg(msg) {
     $.ajax({
-        type: "Post",
-        url: "/Home/WriteLog",
-        data: {
+        type: "Post", url: "/Home/WriteLog", data: {
             msg: msg
-        },
-        dataType: "json",
-        success: function (res) {
+        }, dataType: "json", success: function (res) {
         }
     });
 }
+
 //获取当前时间
 function getCurrentDateTime() {
     const now = new Date();
@@ -213,10 +190,12 @@ function getCurrentDateTime() {
 
     return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
 }
+
 //获取当前时间戳
 function getCurrentTimestamp() {
     return new Date().getTime();
 }
+
 //iso时间转换为标准时间格式
 function isoStringToDateTime(isoString) {
     const date = new Date(isoString);
@@ -229,6 +208,7 @@ function isoStringToDateTime(isoString) {
 
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
+
 //获取URL参数
 function getUrlParam(name) {
     var reg = new RegExp('(^|&)' + name + '=([^&]*)(&|$)');
@@ -236,12 +216,14 @@ function getUrlParam(name) {
     if (r != null) return decodeURI(r[2]);
     return '';
 }
+
 //按钮进入加载状态
 function loadingBtn(dom) {
     //禁用按钮
     $(dom).prop('disabled', true)
     $(dom).append(` <span class="spinner-border spinner-border-sm"role="status"aria-hidden="true"></span>`);
 }
+
 //解除按钮加载状态
 function unloadingBtn(dom) {
     //恢复按钮
@@ -266,16 +248,17 @@ var loadingOverlay = {
         });
     }
 };
+
 //去除字符串中的空格
 function removeSpaces(str) {
     return str.replace(/\s+/g, '');
 }
+
 //table导出Excel
 function addExportButtonToTables() {
     // 遍历页面中的所有table
     $('table').each(function () {
-        if ($(this).prev().hasClass('export-btn'))
-            return;
+        if ($(this).prev().hasClass('export-btn')) return;
         // 创建导出Excel按钮
         var exportBtn = $('<button class="btn btn-sm btn-success ed export-btn">').text('导出Excel');
         // 添加按钮点击事件
@@ -327,29 +310,28 @@ function addExportButtonToTables() {
 function isVipExpired() {
     //发起请求
     $.ajax({
-        url: "/Users/VipExceed",
-        type: "post",
-        dataType: "json",//返回对象
+        url: "/Users/VipExceed", type: "post", dataType: "json",//返回对象
         success: function (res) {
             if (res.success) {
-                //提示VIP已过期
-                showConfirmationModal('VIP已过期', '您的VIP已过期，是否立即续费？', function () {
-                    window.location.href = '/Pay/VIP';
-                });
-                return true;
+                res = res.data;
+                if (res.exceed && !res.unopened) {
+                    //用户开通了会员，但是依旧过期
+                    showConfirmationModal('VIP已过期', '您的VIP已过期，是否立即续费？', function () {
+                        window.location.href = '/Pay/VIP';
+                    });
+                }
+
             }
         }
     })
 }
+
 //获取用户设置
 function getUserSetting() {
     //发起请求
     $.ajax({
-        url: "/Users/getUserSetting",
-        type: "post",
-        dataType: "json",//返回对象
-        async: false,
-        success: function (res) {
+        url: "/Users/getUserSetting", type: "post", dataType: "json",//返回对象
+        async: false, success: function (res) {
             if (res.success) {
                 res = res.data;
                 //保存滚动设置
@@ -358,15 +340,13 @@ function getUserSetting() {
         }
     });
 }
+
 //是否为管理员
 function isAdmin() {
     //发起请求
     $.ajax({
-        url: "/Users/IsAdmin",
-        type: "post",
-        dataType: "json",//返回对象
-        async: false,
-        success: function (res) {
+        url: "/Users/IsAdmin", type: "post", dataType: "json",//返回对象
+        async: false, success: function (res) {
             if (res.success) {
                 //判断#system-menu中是否存在.system-admin-aibot-pro
                 if ($("#system-menu .system-admin-aibot-pro").length === 0) {
@@ -542,20 +522,18 @@ function isAdmin() {
                     });
                 }
             });
-        },
-        error: function (res) {
+        }, error: function (res) {
             $(".system-admin-aibot-pro").remove();
             return false;
         }
     });
 }
+
 //判断是否为黑名单用户
 function IsBlackUser() {
     //发起请求
     $.ajax({
-        url: "/Users/IsBlackUser",
-        type: "post",
-        dataType: "json",//返回对象
+        url: "/Users/IsBlackUser", type: "post", dataType: "json",//返回对象
         success: function (res) {
             if (res.success) {
                 res = res.data;
@@ -579,19 +557,17 @@ function shutDown() {
     //跳转到登录页面
     window.location.href = '/Users/Login';
 }
+
 function price() {
     //发起请求
     $.ajax({
-        url: "/Home/GetModelPrice",
-        type: "post",
-        dataType: "json",//返回对象
+        url: "/Home/GetModelPrice", type: "post", dataType: "json",//返回对象
         success: function (res) {
             if (res.success) {
                 res = res.data;
                 var str = '<div style="max-height:500px;overflow-y: scroll;"><p>我们的原则是：<b>不限期无理由退款,用户体验第一</b></p><p>退款方式：加左下角QQ群找<b>群主</b></p><p>退款金额=充值-使用-所有赠送金额</p><p>1k token≈600汉字，下方的输入输出价格皆以1k token 为标准<p><p>计费算法=(输入+输出)*倍率，倍率小于1则是有折扣<p><p style="color:orangered"><b>各模型价格受OpenAI等官方影响存在不稳定性，以及特殊活动，模型价格也会有差异，本站保留在合理范围内，随时涨价或降价或上架或下架各模型的权力</b></p><table><tr><td>模型昵称</td><td>模型名</td><td>输入价格</td><td>输出价格</td><td>VIP输入价格</td><td>VIP输出价格</td><td>普通用户倍率</td><td>VIP倍率</td><td>普通用户按次计费</td><td>VIP按次计费</td></tr>';
                 for (var i = 0; i < res.length; i++) {
-                    if (res[i].modelNick == null || res[i].modelNick == "")
-                        res[i].modelNick = res[i].modelPrice.modelName;
+                    if (res[i].modelNick == null || res[i].modelNick == "") res[i].modelNick = res[i].modelPrice.modelName;
                     str += `<tr><td>${res[i].modelNick}</td>
                             <td>${res[i].modelPrice.modelName}</td>
                             <td>${res[i].modelPrice.modelPriceInput}</td>
@@ -619,9 +595,7 @@ function copyText(txt) {
 
 function getUserInfo() {
     $.ajax({
-        url: "/Users/GetUserInfo",
-        type: "post",
-        dataType: "json",//返回对象
+        url: "/Users/GetUserInfo", type: "post", dataType: "json",//返回对象
         success: function (res) {
             if (res.success) {
                 res = res.data;
@@ -631,11 +605,10 @@ function getUserInfo() {
         }
     });
 }
+
 function IsLogin() {
     $.ajax({
-        url: "/Users/IsLogin",
-        type: "post",
-        dataType: "json",//返回对象
+        url: "/Users/IsLogin", type: "post", dataType: "json",//返回对象
         success: function (res) {
             if (!res.success) {
                 window.location.href = "/Users/Login"
@@ -645,6 +618,7 @@ function IsLogin() {
         }
     });
 }
+
 // 改进后的Base64编码函数，可以处理中文字符
 function encodeBase64(str) {
     // 使用encodeURIComponent先将非ASCII字符编码，然后转成base64
@@ -654,16 +628,13 @@ function encodeBase64(str) {
 // 改进后的Base64解码函数，可以处理中文字符
 function decodeBase64(encodedStr) {
     // 先将base64解码，然后使用decodeURIComponent将编码的字符还原
-    return decodeURIComponent(Array.from(atob(encodedStr)).map(c =>
-        '%' + c.charCodeAt(0).toString(16).padStart(2, '0')
-    ).join(''));
+    return decodeURIComponent(Array.from(atob(encodedStr)).map(c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join(''));
 }
+
 function getUISetting() {
     //loadingOverlay.show();
     $.ajax({
-        url: '/Home/GetUISetting',
-        type: 'Post',
-        success: function (res) {
+        url: '/Home/GetUISetting', type: 'Post', success: function (res) {
             //loadingOverlay.hide();
             if (res.success) {
                 if (res.data.systemName != null) {
@@ -687,10 +658,7 @@ function getUISetting() {
                     fontColor = '#000000';
                 }
                 if (res.data.shadowSize != null) {
-                    if (res.data.shadowSize > 0)
-                        $('body').css('text-shadow', `0 0 ${res.data.shadowSize}px ${fontColor}`);
-                    else
-                        $('body').css('text-shadow', 'none');
+                    if (res.data.shadowSize > 0) $('body').css('text-shadow', `0 0 ${res.data.shadowSize}px ${fontColor}`); else $('body').css('text-shadow', 'none');
                 } else {
                     $('body').css('text-shadow', 'none');
                 }
@@ -701,8 +669,7 @@ function getUISetting() {
                     $('body').css('background', `none`);
                     backgroundImg = '';
                 }
-            }
-            else {
+            } else {
                 //balert(res.msg, 'danger', false, 1500, 'center');
             }
         }, errr: function () {
@@ -710,16 +677,25 @@ function getUISetting() {
         }
     });
 }
+
 function aboutus() {
     showConfirmationModal('AIBot Pro System', 'AIBot Pro System 是一款基于OpenAI的对话系统<br>支持多种功能，包括创意工坊、角色扮演、文件助手、知识库、产品中心、充值中心、个人中心等<br>AIBot Pro由 MayMay团队开发运营，如果觉得我们做到还不错<br><b style="color:red">【请收购我们】</b>');
 }
+
 function customMenu() {
     $("#systemNAME").html('Mufasa');
     //检查#custommenu 下是否存在#QQ #ABOUTUS #GITHUB
     if ($("#custommenu #QQ").length > 0 || $("#custommenu #ABOUTUS").length > 0 || $("#custommenu #GITHUB").length > 0) {
         return;
     }
-    var html = `<li class="nav-item" id="QQ">
+    var html = `<li class="nav-item" id="STATUS">
+                    <a href="https://status.aibotpro.cn/status/aibot" style="color:#17a2b8" class="nav-link" target="_blank">
+                        <i data-feather="activity">
+                        </i>
+                        模型可用性监控
+                    </a>
+                </li>
+               <li class="nav-item" id="QQ">
                     <a href="https://qm.qq.com/q/gNwQHVDhkc" style="color:rgb(23,223,135)" class="nav-link" target="_blank">
                         <i data-feather="message-circle">
                         </i>
@@ -766,11 +742,18 @@ function customMenu() {
                         GitHub
                     </a>
                   </li>
-                  <li class="nav-item" id="GITHUB">
+                  <li class="nav-item" id="VSCodeWeb">
                     <a href="https://vscode.dev/?vscode-lang=zh-cn" class="nav-link" target="_blank">
                         <i data-feather="code">
                         </i>
                         VS Code for the Web
+                    </a>
+                  </li>
+                  <li class="nav-item" id="SQLTruck">
+                    <a href="https://sql.aibotpro.cn/" class="nav-link" target="_blank">
+                        <i data-feather="coffee">
+                        </i>
+                        SQL-Truck
                     </a>
                   </li>
                 </li>
@@ -792,6 +775,7 @@ function customMenu() {
     $("#custommenu").append(html);
     feather.replace();
 }
+
 function escapeHtml(unsafe) {
     return unsafe
         .replace(/&/g, "&amp;")
@@ -800,9 +784,11 @@ function escapeHtml(unsafe) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
+
 function escapeQuotes(str) {
     return str.replace(/'/g, "\\'");
 }
+
 function truncateString(str, num) {
     if (str.length > num) {
         return str.slice(0, num) + "...";
@@ -810,6 +796,7 @@ function truncateString(str, num) {
         return str;
     }
 }
+
 function completeMarkdown(markdown) {
     const lines = markdown.split('\n');
     let inCodeBlock = false;
@@ -849,14 +836,15 @@ function completeMarkdown(markdown) {
 
     return completedMarkdown;
 }
-function isVIP(callback) {
+
+function isVIP(callback, needQuery = false) {
     if (typeof callback !== 'function') {
         return;
     }
     const now = new Date().getTime();
     const cachedData = localStorage.getItem('vipStatus');
 
-    if (cachedData) {
+    if (cachedData && !needQuery) {
         const { status, expiry } = JSON.parse(cachedData);
         if (now < expiry) {
             // 缓存有效，直接返回结果
@@ -870,21 +858,15 @@ function isVIP(callback) {
 
     // 缓存不存在或已过期，发起请求
     $.ajax({
-        url: "/Users/IsVIP",
-        type: "post",
-        dataType: "json",
-        async: false,
-        success: function (res) {
+        url: "/Users/IsVIP", type: "post", dataType: "json", async: false, success: function (res) {
             const currentTimestamp = new Date().getTime();
             const status = res.success;
             const vipStatus = {
-                status: status,
-                expiry: currentTimestamp + 3600000 // 1小时后过期
+                status: status, expiry: currentTimestamp + 3600000 // 1小时后过期
             };
             localStorage.setItem('vipStatus', JSON.stringify(vipStatus));
             callback(status);
-        },
-        error: function (err) {
+        }, error: function (err) {
             console.error("查询VIP状态时出错:", err);
             callback(false); // 出错时默认为非VIP
         }
@@ -899,10 +881,7 @@ function getBalanceToDom(dom) {
     }
 
     $.ajax({
-        url: "/Users/GetBalance",
-        type: "post",
-        dataType: "json",
-        success: function (res) {
+        url: "/Users/GetBalance", type: "post", dataType: "json", success: function (res) {
             if (res && res.data !== undefined) {
                 var oldBalance = parseFloat($domElement.text()) || 0;
                 var newBalance = parseFloat(res.data);
@@ -930,8 +909,29 @@ function getBalanceToDom(dom) {
                     $('body').append($animation);
 
                     $animation.animate({
-                        top: '-=50px',
-                        opacity: 0
+                        top: '-=50px', opacity: 0
+                    }, 1500, function () {
+                        $(this).remove();
+                    });
+                } else if (difference < -0.5) {
+                    //余额增多
+                    var $animation = $('<div>')
+                        .text('+' + Math.abs(difference.toFixed(4)))
+                        .css({
+                            position: 'absolute',
+                            left: $domElement.offset().left + 'px',
+                            top: $domElement.offset().top + 'px',
+                            color: '#43e700',
+                            fontSize: '15px',
+                            fontWeight: 'bold',
+                            opacity: 1,
+                            zIndex: 9999
+                        });
+
+                    $('body').append($animation);
+
+                    $animation.animate({
+                        top: '-=50px', opacity: 0
                     }, 1500, function () {
                         $(this).remove();
                     });
@@ -941,12 +941,12 @@ function getBalanceToDom(dom) {
             } else {
                 console.error("响应数据格式不正确:", res);
             }
-        },
-        error: function (err) {
+        }, error: function (err) {
             console.error("查询余额时出错:", err);
         }
     });
 }
+
 function darkModel() {
     const isDarkMode = $('html').hasClass('dark');
     const newMode = !isDarkMode;
@@ -1000,4 +1000,334 @@ function stopTimer(selector) {
         clearInterval(timerId); // 使用timerId清除计时器
         delete timerIds[selector]; // 移除全局对象中的timerId，保持数据清洁
     }
+}
+
+function applyMagnificPopup(selector) {
+    $(selector + ' img').each(function () {
+        var $img = $(this);
+        // 检查图片是否已被处理，避免重复添加
+        if (!$img.hasClass('magnified')) {
+            $img.addClass('magnified'); // 标记已处理
+            // 只有当图片没有被<a>标签包裹时，才添加包裹
+            if (!$img.parent().is('a')) {
+                $img.wrap('<a href="' + $img.attr('src') + '" class="magnific"></a>');
+            }
+        }
+    });
+
+    // 为新包裹的<a>标签初始化magnificPopup
+    $(selector + ' .magnific:not(.mfp-ready)').magnificPopup({
+        type: 'image', gallery: {
+            enabled: true  // 启用画廊功能
+        }
+    }).addClass('mfp-ready'); // 标记a标签为已初始化
+}
+
+function isSupperVIP(callback) {
+    $.ajax({
+        url: "/Users/IsSupperVIP", type: "post", dataType: "json", success: function (res) {
+            callback(res.success);
+        }, error: function (err) {
+            sendExceptionMsg(`【API：/Users/IsSupperVIP】:${err}`);
+            callback(false);  // 出错时默认为非超级VIP
+        }
+    });
+}
+
+//AI转英语快捷键
+function bindEnglishPromptTranslation(selector) {
+    // 创建一个固定位置的小型加载指示器
+    var $loadingIndicator = $('<div class="position-fixed p-2 rounded shadow-sm wait" style="display:none; z-index: 1050; right: 50%; bottom: 10px;">')
+        .append('<div class="spinner-border spinner-border-sm text-primary mr-2" role="status"><span class="sr-only">Loading...</span></div>')
+        .append('<span>正在翻译...</span>');
+    $('body').append($loadingIndicator);
+
+    function showLoadingIndicator() {
+        $loadingIndicator.fadeIn(200);
+    }
+
+    function hideLoadingIndicator() {
+        $loadingIndicator.fadeOut(200);
+    }
+
+    $(selector).on('input', function () {
+        //检查设置是否开启
+        var enable = true;
+        var shortcuts_cache = localStorage.getItem('shortcuts');
+        if (shortcuts_cache) {
+            var cachedData = JSON.parse(shortcuts_cache);
+            enable = cachedData.value;
+        }
+        if (!enable)
+            return;
+        var $inputElement = $(this);
+        var fullText = $inputElement.val();
+        var lastIndexOfM = fullText.toLowerCase().lastIndexOf('mmmmm');
+
+        // 如果没有找到完整的 'mmmmm' 字符串，则返回
+        if (lastIndexOfM === -1) return;
+
+        // 检查 'mmmmm' 是否在 3 秒内完成输入
+        if (Date.now() - $inputElement.data('lastMTime') <= 3000) {
+            var textBeforeM = fullText.substring(0, lastIndexOfM);
+            var textAfterM = fullText.substring(lastIndexOfM + 5);
+
+            // 显示加载提示
+            showLoadingIndicator();
+
+            $.ajax({
+                type: "POST",
+                url: "/AIdraw/EnglishPrompt",
+                dataType: "json",
+                data: { "prompt": textBeforeM },
+                success: function (data) {
+                    if (data.success) {
+                        // 验证是否仍然包含 'mmmmm'，确保用户在加载时没有修改
+                        if ($inputElement.val().includes('mmmmm')) {
+                            // 只替换 'mmmmm'
+                            $inputElement.val(textBeforeM + data.data + textAfterM);
+                        }
+                    } else {
+                        balert("转换失败，请重试", "danger", false, 2000);
+                    }
+                },
+                error: function (err) {
+                    balert("转换失败，请重试", "danger", false, 2000);
+                    sendExceptionMsg("【/AIdraw/EnglishPrompt】：" + err.statusText, "danger");
+                },
+                complete: function () {
+                    hideLoadingIndicator();
+                }
+            });
+        }
+    }).on('keypress', function (e) {
+        if ((e.key === 'm' || e.key === 'M') && ($(this).val() + e.key).toLowerCase().indexOf('mmmmm') !== -1) {
+            $(this).data('lastMTime', Date.now());
+        }
+    });
+}
+//AI优化提示词
+function bindOptimizePrompt(selector) {
+    // 创建一个固定位置的小型加载指示器
+    var $loadingIndicator = $('<div class="position-fixed p-2 rounded shadow-sm wait" style="display:none; z-index: 1050; right: 50%; bottom: 10px;">')
+        .append('<div class="spinner-border spinner-border-sm text-primary mr-2" role="status"><span class="sr-only">Loading...</span></div>')
+        .append('<span>正在优化提示词...</span>');
+    $('body').append($loadingIndicator);
+
+    function showLoadingIndicator() {
+        $loadingIndicator.fadeIn(200);
+    }
+
+    function hideLoadingIndicator() {
+        $loadingIndicator.fadeOut(200);
+    }
+
+    $(selector).on('input', function () {
+        //检查设置是否开启
+        var enable = true;
+        var shortcuts_cache = localStorage.getItem('shortcuts');
+        if (shortcuts_cache) {
+            var cachedData = JSON.parse(shortcuts_cache);
+            enable = cachedData.value;
+        }
+        if (!enable)
+            return;
+
+        var $inputElement = $(this);
+        var fullText = $inputElement.val();
+        var lastIndexOfF = fullText.toLowerCase().lastIndexOf('fffff');
+
+        // 如果没有找到完整的 'fffff' 字符串，则返回
+        if (lastIndexOfF === -1) return;
+
+        // 检查 'fffff' 是否在 3 秒内完成输入
+        if (Date.now() - $inputElement.data('lastMTime') <= 3000) {
+            var textBeforeF = fullText.substring(0, lastIndexOfF);
+            var textAfterF = fullText.substring(lastIndexOfF + 5);
+
+            // 显示加载提示
+            showLoadingIndicator();
+
+            $.ajax({
+                type: "POST",
+                url: "/Home/OptimizePrompt",
+                dataType: "json",
+                data: { "prompt": textBeforeF },
+                success: function (data) {
+                    if (data.success) {
+                        // 验证是否仍然包含 'fffff'，确保用户在加载时没有修改
+                        if ($inputElement.val().includes('fffff')) {
+                            // 只替换 'fffff'
+                            $inputElement.val(textBeforeF + data.data + textAfterF);
+                        }
+                    } else {
+                        balert("优化失败，请重试", "danger", false, 2000);
+                    }
+                },
+                error: function (err) {
+                    balert("优化失败，请重试", "danger", false, 2000);
+                    sendExceptionMsg("【/Home/OptimizePrompt】：" + err.statusText, "danger");
+                },
+                complete: function () {
+                    hideLoadingIndicator();
+                }
+            });
+        }
+    }).on('keypress', function (e) {
+        if ((e.key === 'f' || e.key === 'F') && ($(this).val() + e.key).toLowerCase().indexOf('fffff') !== -1) {
+            $(this).data('lastMTime', Date.now());
+        }
+    });
+}
+//常用题词本
+function bindInputToSidebar(selector) {
+    $(selector).on('input', function (e) {
+        var inputValue = $(this).val();
+
+        // 检查输入是否只有一个斜杠
+        if (inputValue === '/') {
+            // 打开侧边栏
+            $('#offCanvas1').addClass('show');
+        } else {
+            // 其他所有情况都关闭侧边栏
+            $('#offCanvas1').removeClass('show');
+        }
+    });
+
+    // 当输入框失去焦点时，如果内容为空，关闭侧边栏
+    $(selector).on('blur', function () {
+        if ($(this).val() === '') {
+            $('#offCanvas1').removeClass('show');
+        }
+    });
+
+    // 保留原有的关闭侧边栏和点击外部关闭的功能
+    $('.off-canvas .close').on('click', function (e) {
+        e.preventDefault();
+        $(this).closest('.off-canvas').removeClass('show');
+    });
+
+    $(document).on('click touchstart', function (e) {
+        e.stopPropagation();
+        if (!$(e.target).closest('.off-canvas-menu').length) {
+            var offCanvas = $(e.target).closest('.off-canvas').length;
+            if (!offCanvas) {
+                $('.off-canvas.show').removeClass('show');
+            }
+        }
+    });
+}
+function showContextMenu(x, y, chatId) {
+    // 隐藏任何已显示的右键菜单
+    $('.custom-context-menu').remove();
+
+    // 创建并显示右键菜单
+    var menuHtml = `
+        <div class="custom-context-menu" style="top:${y}px; left:${x}px; position:absolute; z-index:1000;">
+            <ul>
+                <li onclick="saveMemory('','${chatId}')"><i data-feather="cpu"></i>&nbsp;存入记忆</li>
+                <li onclick="deleteChat('${chatId}')" class="text-danger"><i data-feather="trash-2"></i>&nbsp;删除</li>
+            </ul>
+        </div>
+    `;
+
+    $('body').append(menuHtml);
+    feather.replace();
+    // 点击其他地方隐藏菜单
+    $(document).on('click', function () {
+        $('.custom-context-menu').remove();
+    });
+}
+function addUserPrompt() {
+    var prompt = $('#newPrompt').val().trim();
+    if (prompt == "") {
+        balert("请输入提示词", "danger", false, 1500, "center");
+        return;
+    }
+    $.ajax({
+        url: "/Home/AddUserPrompt",
+        type: "post",
+        dataType: "json",
+        data: {
+            prompt: prompt
+        },
+        success: function (res) {
+            balert("添加成功", "success", false, 1500, "center");
+            promptlistPage = 1;
+            promptlistSize = 20;
+            getUserPromptList('init');
+        }, error: function (err) {
+            sendExceptionMsg(`【API：/Home/AddUserPrompt】:${err}`);
+        }
+    });
+}
+function getUserPromptList(type) {
+    $.ajax({
+        url: "/Home/GetUserPromptList",
+        type: "post",
+        dataType: "json",
+        data: {
+            page: promptlistPage,
+            size: promptlistSize
+        },
+        success: function (res) {
+            if (res.success) {
+                var html = ``;
+                var data = res.data;
+                for (var i = 0; i < data.length; i++) {
+                    html += `<li class="prompt-list-group-item">
+                                <div class="prompt-content">
+                                    <p id='promptitem-${data[i].id}'>${escapeHtml(data[i].prompt)}</p>
+                                </div>
+                                <button class="btn btn-sm btn-outline-secondary copy-btn" onclick="copyText($('#promptitem-${data[i].id}').text())">
+                                    <i data-feather="copy"></i> 复制
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger copy-btn" onclick="deleteUserPrompt(${data[i].id})">
+                                    <i data-feather="x"></i> 删除
+                                </button>
+                            </li>`;
+                }
+                if (type == 'loadmore') {
+                    if (data.length == 0) {
+                        balert("没有更多了", "warning", false, 1500, "center");
+                        promptlistPage--;
+                    }
+                    $('#promptItems').append(html);
+                }
+                else
+                    $('#promptItems').html(html);
+                feather.replace();
+            }
+        }, error: function (err) {
+            sendExceptionMsg(`【API：/Home/GetUserPromptList】:${err}`);
+        }
+    });
+}
+function deleteUserPrompt(id) {
+    $.ajax({
+        url: "/Home/DeleteUserPrompt",
+        type: "post",
+        dataType: "json",
+        data: {
+            id: id
+        },
+        success: function (res) {
+            if (res.success) {
+                balert("删除成功", "success", false, 1500, "center");
+                promptlistPage = 1;
+                promptlistSize = 20;
+                getUserPromptList('init');
+            } else {
+                balert("删除失败", "danger", false, 1500, "center");
+            }
+
+        }, error: function (err) {
+            balert("系统异常", "danger", false, 1500, "center");
+            sendExceptionMsg(`【API：/Home/AddUserPrompt】:${err}`);
+        }
+    });
+}
+function loadmorePromptList() {
+    promptlistPage++;
+    getUserPromptList('loadmore');
 }

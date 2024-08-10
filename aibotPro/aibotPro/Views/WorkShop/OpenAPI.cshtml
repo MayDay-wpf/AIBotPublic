@@ -37,10 +37,13 @@
         <div class="card-body">
             <div class="form-group">
                 <label for="apiurl">API Key</label>
-                <input type="text" class="form-control" maxlength="200" id="apikey" placeholder="暂无apikey，请点击下方创建" readonly="readonly">
+                <input type="text" class="form-control" maxlength="200" id="apikey"
+                       placeholder="暂无apikey，请点击下方创建" readonly="readonly">
             </div>
             <button class="btn btn-success" onclick="createApiKey()"><i data-feather="plus-circle"></i> 创建</button>
-            <button class="btn btn-info" onclick="copyText($('#apikey').val())"><i data-feather="copy"></i> 复制</button>
+            <button class="btn btn-info" onclick="copyText($('#apikey').val())">
+                <i data-feather="copy"></i> 复制
+            </button>
         </div>
     </div>
     <p></p>
@@ -73,7 +76,9 @@
                     </label>
                 </div>
             </div>
-            <p class="tx-info">第三方插件请前往<a href="/WorkShop/WorkShopMarket">【插件市场】</a>安装即可生效，同理卸载即失效</p>
+            <p class="tx-info">
+                第三方插件请前往<a href="/WorkShop/WorkShopMarket">【插件市场】</a>安装即可生效，同理卸载即失效
+            </p>
         </div>
     </div>
     <p></p>
@@ -103,8 +108,14 @@
     <p></p>
     <div class="card">
         <div class="card-header">
-            <h5>请求示例</h5>
-            <p>完全遵循OpenAI请求方式，您可以使用OpenAI SDK进行调用</p>
+            <h5>说明文档</h5>
+            <p class="small font-weight-bold">
+                完全遵循OpenAI请求方式，您可以使用OpenAI
+                SDK进行调用，请参考下方说明文档
+            </p>
+            <p class="small font-weight-bold text-danger">
+                API所有模型仅对少量用户进行高并发内测，如您未收到测试邀请邮件，请勿高并发调用，否则将无法使用。
+            </p>
         </div>
         <div class="card-body">
             <div class="form-group">
@@ -114,31 +125,70 @@
                 <label for="apiurl">API Key 填写在 Headers 的Authorization 注意 需要添加Bearer</label>
             </div>
             <div class="form-group">
-                <label for="apiurl">可选模型（点击复制）：<b id="canUseModel">--</b></label>
+                <i data-feather="flag" class="text-success"></i> <label for="apiurl">创意工坊可选模型（点击复制）：<b id="canUseModel">--</b></label>
             </div>
             <div class="form-group">
-                <b>cURL示例</b>
-                <pre style="background-color:antiquewhite;color:black;font-size:18px;">
-curl --location --request POST 'https://aibotpro.cn/v1/chat/completions' \
---header 'Authorization: Bearer sk-3ce2284b*************' \
---header 'User-Agent: Apifox/1.0.0 (https://apifox.com)' \
---header 'Content-Type: application/json' \
---header 'Accept: */*' \
---header 'Host: aibotpro.cn' \
---header 'Connection: keep-alive' \
---data-raw '{
-  "model": "gpt-3.5-turbo-0125",
-  "messages": [
-    {
-      "role": "user",
-      "content": "你好"
-    }
-  ],
-  "stream": false
-}'
-                </pre>
+                <i data-feather="flag" class="text-info"></i> <label for="apiurl">基础对话可选模型（点击复制）：<b id="defaultCanUseModel">--</b></label>
+            </div>
+            <div class="form-group">
+                <label>
+                    <i class="fas fa-question-circle" style="color:#689e38"></i> <b>两种模型区别</b>
+                </label><br>
+                <label>工坊模型可以根据账号安装的插件进行自动调用，基础对话模型不支持插件调用。</label>
+            </div>
+            <div class="form-group">
+                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link active" id="curl-tab" data-toggle="tab" href="#curl" role="tab">
+                            cURL
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="python-tab" data-toggle="tab" href="#python" role="tab">
+                            Python
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="csharp-tab" data-toggle="tab" href="#csharp" role="tab">
+                            C#
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="java-tab" data-toggle="tab" href="#java" role="tab">
+                            Java
+                        </a>
+                    </li>
+                </ul>
+                <div class="tab-content mt-3" id="myTabContent">
+                    <div class="tab-pane fade show active" id="curl" role="tabpanel">
+                        <h4>
+                            <label>cURL示例</label>
+                        </h4>
+                        <pre><code class="language-bash" id="curlCode"></code></pre>
+                    </div>
+                    <div class="tab-pane fade" id="python" role="tabpanel">
+                        <h4>
+                            <label>Python示例</label>
+                        </h4>
+                        <pre><code class="language-python" id="pythonCode"></code></pre>
+                    </div>
+                    <div class="tab-pane fade" id="csharp" role="tabpanel">
+                        <h4>
+                            <label>C#示例</label>
+                        </h4>
+                        <pre><code class="language-csharp" id="csharpCode"></code></pre>
+                    </div>
+                    <div class="tab-pane fade" id="java" role="tabpanel">
+                        <h4>
+                            <label>Java示例</label>
+                        </h4>
+                        <pre><code class="language-java" id="javaCode"></code></pre>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
-<script src="~/system/js/openapi.js?v1"></script>
+<script src="~/system/js/markdown-it.min.js"></script>
+<script src="~/system/js/highlight.min.js"></script>
+<script src="~/system/js/openapi.js?v1.1"></script>

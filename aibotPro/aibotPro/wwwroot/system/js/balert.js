@@ -1,7 +1,7 @@
 ﻿// 提醒框
 function balert(message, type, dismissible, autoCloseTime, position, callback) {
     var positionStyle = {};
-
+    positionStyle.transform = '';
     // Determine alert position style based on input
     switch (position) {
         case 'top':
@@ -41,6 +41,8 @@ function balert(message, type, dismissible, autoCloseTime, position, callback) {
     // Ensure alertContainer exists in the body
     if ($("#alertContainer").length === 0) {
         $('body').prepend('<div id="alertContainer"></div>');
+    } else {
+        $('#alertContainer').removeAttr('style'); // 移除所有已设定样式
     }
 
     // Set alertContainer styles based on position

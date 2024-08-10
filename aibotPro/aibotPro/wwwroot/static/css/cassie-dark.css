@@ -3,6 +3,35 @@
     transition: all .5s;
 }
 
+    html.dark .sidebar-body::-webkit-scrollbar-track {
+        background: #1e1e1e;
+        border-radius: 2px;
+    }
+
+    html.dark ::-webkit-scrollbar-thumb {
+        background-color: dimgrey;
+        border-radius: 10px;
+    }
+
+        html.dark ::-webkit-scrollbar-thumb:hover {
+            background: lightgray;
+        }
+
+
+    html.dark ::-webkit-scrollbar-track {
+        background: #1e1e1e;
+        border-radius: 2px;
+    }
+
+    html.dark ::-webkit-scrollbar-thumb {
+        background-color: dimgrey;
+        border-radius: 10px;
+    }
+
+        html.dark ::-webkit-scrollbar-thumb:hover {
+            background: lightgray;
+        }
+
     html.dark #modelSearch {
         background-color: #16161a;
         color: white;
@@ -132,11 +161,11 @@ html.dark .chat-message-box p {
 }
 
 html.dark .chat-message-box ol li {
-    color: lightslategray;
+    color: rgb(23, 223, 135);
 }
 
 html.dark .chat-message-box ul li {
-    color: lightslategray;
+    color: #17a2b8;
 }
 
 
@@ -186,7 +215,7 @@ html.dark .spinner-grow {
 
 html.dark .header {
     background-color: black;
-    border-bottom: 1px solid #1e1e1e;
+    /*border-bottom: 1px solid #1e1e1e;*/
 }
 
 html.dark .burger-menu {
@@ -384,7 +413,7 @@ html.dark input[type="text"],
 html.dark input[type="number"],
 html.dark input[type="password"],
 html.dark textarea {
-    background-color: #2b2b2f;
+    background-color: #16161a !important;
     color: aliceblue;
 }
 
@@ -477,7 +506,6 @@ html.dark .sidebar-body::-webkit-scrollbar-thumb {
     }
 
 
-
 html.dark .chat-sidebar-body::-webkit-scrollbar-track {
     background: #1e1e1e;
     border-radius: 2px;
@@ -491,7 +519,6 @@ html.dark .chat-sidebar-body::-webkit-scrollbar-thumb {
     html.dark .chat-sidebar-body::-webkit-scrollbar-thumb:hover {
         background: lightgray;
     }
-
 
 
 html.dark .chat-body-content::-webkit-scrollbar-track {
@@ -575,3 +602,174 @@ html.dark #TaskLogTitle {
 html.dark .card #log {
     background-color: #1e1e1e;
 }
+
+html.dark .chat-body h1 {
+    color: aliceblue;
+}
+
+html.dark .chat-body h2 {
+    color: aliceblue;
+}
+
+html.dark .chat-body h3 {
+    color: aliceblue;
+}
+
+html.dark .chat-body h4 {
+    color: aliceblue;
+}
+
+html.dark .chat-body h5 {
+    color: aliceblue;
+}
+
+html.dark .chat-body h6 {
+    color: aliceblue;
+}
+
+html.dark .calendar {
+    background-color: #1e1e1e;
+    color: aliceblue;
+}
+
+html.dark .calendar-overlay {
+    background-color: rgba(44, 44, 44, 0.5);
+}
+
+html.dark .list-group-item {
+    background-color: #324350;
+    color: lightseagreen;
+    border: none;
+}
+
+html.dark .markdown-content {
+    background-color: transparent;
+}
+
+html.dark .slider-container {
+    background-color: #2e2e2e;
+}
+
+html.dark .wait {
+    color: aliceblue;
+    background-color: #1e1e1e;
+}
+
+html.dark .custom-context-menu {
+    background-color: #222226;
+    border-color: gray;
+    color: aliceblue;
+}
+
+    html.dark .custom-context-menu ul li:hover {
+        background-color: #000000;
+    }
+
+html.dark .sticky-top {
+    color: aliceblue;
+}
+
+html.dark #promptList {
+    background-color: #16161a;
+    border-left: 1px solid black;
+}
+
+html.dark #promptItems {
+    color: #92e492;
+}
+
+html.dark .prompt-list-group-item {
+    border-color: gray;
+}
+
+html.dark .bot-chat-window {
+    background-color: #1e1e1e;
+}
+
+html.dark .bot-chat-header {
+    background-color: #2e2e2e;
+    color: aliceblue;
+}
+
+html.dark .bot-message {
+    background-color: #2e2e2e;
+    color: lightgray;
+}
+
+html.dark .speech-bubble-left {
+    background-color: #000000;
+    color: lightgray;
+}
+
+html.dark .speech-bubble {
+    background-color: #000000;
+    color: lightgray;
+}
+
+    html.dark .speech-bubble::before {
+        border-color: #000000 transparent transparent;
+    }
+
+html.dark .robot__head {
+    background-color: #8230ff;
+}
+
+    html.dark .robot__head::before {
+        background-color: #5556fd;
+    }
+
+html.dark .robot__body {
+    background-color: #8230ff;
+}
+
+    html.dark .robot__body::before {
+        background-color: #5556fd;
+    }
+
+    html.dark .robot__body::after {
+        background-color: #ffcd42;
+    }
+
+html.dark .robot__head__ears {
+    border-right-color: #17a2b8;
+    border-left-color: #17a2b8;
+}
+
+html.dark .robot__body__hand--left {
+    background-color: #8230ff;
+}
+
+html.dark .robot__body__hand--right {
+    background-color: #5556fd;
+}
+
+html.dark .robot__shadow {
+    background-color: #000000
+}
+
+html.dark .daterangepicker {
+    background-color: #1e1e1e;
+    color: lightgray;
+}
+
+    html.dark .daterangepicker .ranges li:hover {
+        background-color: black;
+    }
+
+    html.dark .daterangepicker td.off, .daterangepicker td.off.in-range, .daterangepicker td.off.start-date, .daterangepicker td.off.end-date {
+        background-color: #2c2c2c;
+    }
+
+    html.dark .daterangepicker td.available:hover, .daterangepicker th.available:hover {
+        background-color: black;
+    }
+
+    html.dark .daterangepicker td.in-range {
+        background-color: #5556fd;
+        color: #f7c657;
+    }
+
+    html.dark .daterangepicker td.active {
+        background-color: #5556fd;
+        color: #ea7ccc;
+    }

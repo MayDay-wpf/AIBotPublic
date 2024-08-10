@@ -477,7 +477,7 @@ namespace aibotPro.Service
                 chatRes.message = "";
                 chatRes.isfinish = true;
                 await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                result = false;
+                return false;
             }
             // 检查用户余额是否不足，只有在需要收费时检查
             if (shouldCharge && user.Mcoin <= 0)
@@ -487,9 +487,9 @@ namespace aibotPro.Service
                 chatRes.message = "";
                 chatRes.isfinish = true;
                 await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                result = false;
+                return false;
             }
-            if (chatDto.isbot && !chatDto.aiModel.Contains("gpt-3.5"))
+            if (chatDto.isbot && !chatDto.aiModel.Contains("gpt-3.5") && !chatDto.aiModel.Contains("gpt-4o-mini"))
             {
                 chatRes.message = "您正在使用非正当手段修改我的基底模型，我们允许且欢迎您寻找本站的BUG，但很明显，这个漏洞已经被开发团队修复，请您不要再继续尝试，本站不会记录任何用户的正常行为，但是对于异常行为有着详细的日志信息和风控手段，感谢您的合作与支持，如果您还有其他问题，请询问我。";
                 await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
@@ -497,8 +497,9 @@ namespace aibotPro.Service
                 chatRes.isfinish = true;
                 await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
                 await _systemService.WriteLog("异常行为：用户尝试修改Robot的基底模型", Dtos.LogLevel.Fatal, account);
-                result = false;
+                return false;
             }
+
             return result;
         }
         public List<ErrorBilling> GetErrorBilling(string username, int page, int page_size, out int total)
@@ -521,6 +522,72 @@ namespace aibotPro.Service
                                 .ToList();
             return bills;
         }
+        public bool IsSupperVIP(string account)
+        {
+            var vipInfo = _context.VIPs.AsNoTracking().Where(v => v.Account == account && v.VipType == "VIP|90" && v.EndTime >= DateTime.Now).FirstOrDefault();
+            if (vipInfo != null)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public List<DateTime> GetThisMonthSignInList(string account)
+        {
+            var signInList = new List<DateTime>();
+            var now = DateTime.Now;
+            var startOfMonth = new DateTime(now.Year, now.Month, 1);
+            var endOfMonth = startOfMonth.AddMonths(1).AddSeconds(-1);
 
+            var thisMonthSignIn = _context.SignIns.AsNoTracking()
+                .Where(s => s.Account == account
+                       && s.CreateTime >= startOfMonth
+                       && s.CreateTime <= endOfMonth)
+                .Select(s => s.CreateTime.Value)
+                .ToList();
+
+            return thisMonthSignIn;
+        }
+        public bool AddUserPrompt(string prompt, string account)
+        {
+            var userprompt = new UserPrompt
+            {
+                Account = account,
+                Prompt = prompt,
+                CreateTime = DateTime.Now
+            };
+            _context.UserPrompts.Add(userprompt);
+            _context.SaveChanges();
+            return true;
+        }
+
+        public List<UserPrompt> GetUserPromptList(string account, int page, int size, out int total, string prompt = "")
+        {
+            IQueryable<UserPrompt> query = null;
+            if (!string.IsNullOrEmpty(prompt))
+                query = _context.UserPrompts.Where(s => s.Account == account && s.Prompt.Contains(prompt));
+            else
+                query = _context.UserPrompts.Where(s => s.Account == account);
+            total = query.Count();
+            var list = query.OrderByDescending(x => x.Id)
+                                .Skip((page - 1) * size)
+                                .Take(size)
+                                .ToList();
+            return list;
+        }
+        public bool DeleteUserPrompt(int id, string account)
+        {
+            var obj = _context.UserPrompts.Where(s => s.Id == id && s.Account == account).FirstOrDefault();
+            if (obj != null)
+            {
+                _context.UserPrompts.Remove(obj);
+                _context.SaveChanges();
+                return true;
+            }
+            return false;
+        }
     }
+
 }

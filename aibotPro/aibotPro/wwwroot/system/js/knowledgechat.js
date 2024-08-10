@@ -14,7 +14,7 @@ var max_textarea = false;
 var textarea = document.getElementById("Q");
 var $Q = $("#Q");
 var chatBody = $(".chat-body-content");
-var thisAiModel = "gpt-3.5-turbo-0125"; //当前AI模型
+var thisAiModel = "gpt-4o-mini"; //当前AI模型
 var processOver = true; //是否处理完毕
 var image_path = "";
 var onknowledgearr = [];
@@ -105,6 +105,7 @@ $(document).keypress(function (e) {
         }
     }
 });
+
 function dataURLtoFile(dataurl, filename) {
     var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
         bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
@@ -113,6 +114,7 @@ function dataURLtoFile(dataurl, filename) {
     }
     return new File([u8arr], filename, { type: mime });
 }
+
 // 阻止浏览器默认行为
 $(document).on({
     dragenter: function (e) {
@@ -132,6 +134,9 @@ $(document).on({
 });
 //页面加载完成后执行
 $(document).ready(function () {
+    bindEnglishPromptTranslation("#Q");
+    bindOptimizePrompt("#Q");
+    bindInputToSidebar("#Q");
     //当#Q失去焦点时，关闭最大化
     $("#Q").blur(function () {
         if (max_textarea) {
@@ -151,12 +156,49 @@ $(document).ready(function () {
     $("#sendBtn").on("click", function () {
         if (!processOver) {
             stopGenerate();
-        }
-        else
+        } else
             sendMsg();
     })
 });
+document.addEventListener('DOMContentLoaded', function () {
+    // 为所有的聊天项绑定右键事件
+    document.body.addEventListener('contextmenu', function (e) {
+        const chatItem = e.target.closest('.chat-item');
+        if (chatItem) {
+            e.preventDefault();
+            const chatId = chatItem.dataset.chatId;
+            showContextMenu(e.pageX, e.pageY, chatId);
+        }
+    });
 
+    // 为移动设备绑定长按事件
+    let longPressTimer;
+    document.body.addEventListener('touchstart', function (e) {
+        const chatItem = e.target.closest('.chat-item');
+        if (chatItem) {
+            longPressTimer = setTimeout(function () {
+                const chatId = chatItem.dataset.chatId;
+                showContextMenu(e.touches[0].pageX, e.touches[0].pageY, chatId);
+            }, 500);
+        }
+    });
+
+    document.body.addEventListener('touchend', function () {
+        clearTimeout(longPressTimer);
+    });
+
+    // 阻止长按时默认的上下文菜单
+    document.body.addEventListener('touchmove', function (e) {
+        clearTimeout(longPressTimer);
+    });
+
+    // 点击其他地方关闭菜单
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.custom-context-menu')) {
+            $('.custom-context-menu').remove();
+        }
+    });
+});
 function handleDroppedFiles(files) {
     for (var i = 0; i < files.length; i++) {
         handleFileUpload(files[i]);
@@ -190,11 +232,10 @@ function max_textarea_Q() {
         $(".maximize-2").attr("data-feather", "minimize-2");
         feather.replace();
         max_textarea = true;
-    }
-    else {
+    } else {
         $Q.css("height", "auto");
         $Q.css("max-height", "200px");
-        chatBody.css("height", "calc(100% - 120px)");
+        chatBody.css("height", "calc(100% - 140px)");
         $(".maximize-2").attr("data-feather", "maximize-2");
         feather.replace();
         max_textarea = false;
@@ -203,6 +244,7 @@ function max_textarea_Q() {
 
 //隐藏历史记录列表
 var isShowHistory = true;
+
 function hideHistoary() {
     if (!processOver) {
         balert("对话进行中,请结束后再试", "warning", false, 2000);
@@ -210,8 +252,7 @@ function hideHistoary() {
     }
     if (isMobile()) {
         mobileChat(false);
-    }
-    else {
+    } else {
         var chatSidebar = $(".chat-sidebar");
         var chatBody = $(".chat-body");
         var icon = $("#hidehis");
@@ -226,8 +267,7 @@ function hideHistoary() {
             }, animationDuration, function () {
             });
             isShowHistory = false;
-        }
-        else {
+        } else {
             chatBody.css("width", "calc(100% - 300px)");
             icon.attr("data-feather", "chevron-left");
             feather.replace();
@@ -247,8 +287,7 @@ function mobileChat(show) {
         if (show) {
             $(".chat-sidebar").hide();
             $(".chat-body").show();
-        }
-        else {
+        } else {
             $(".chat-sidebar").show();
             $(".chat-body").hide();
         }
@@ -259,6 +298,7 @@ function mobileChat(show) {
 var md = window.markdownit();
 var sysmsg = "";
 var jishuqi = 0;
+
 // 添加显示代码语言的 Labels
 function addLanguageLabels(useSpecificId = false, assistansBoxId = '') {
     // 根据 useSpecificId 决定选择器的范围
@@ -281,6 +321,7 @@ function addLanguageLabels(useSpecificId = false, assistansBoxId = '') {
         }
     });
 }
+
 connection.on('ReceiveWorkShopMessage', function (message) {
     //console.log(message);
     if (!message.isfinish) {
@@ -303,6 +344,7 @@ connection.on('ReceiveWorkShopMessage', function (message) {
                 addCopyBtn(assistansBoxId);
                 if (Scrolling == 1)
                     chatBody.scrollTop(chatBody[0].scrollHeight);
+                applyMagnificPopup('.chat-message-box');
             }
 
         }
@@ -334,6 +376,7 @@ connection.on('ReceiveWorkShopMessage', function (message) {
         addExportButtonToTables();
         if (Scrolling == 1)
             chatBody.scrollTop(chatBody[0].scrollHeight);
+        applyMagnificPopup('.chat-message-box');
     }
     if (message.jscode != null && message.jscode != "") {
         eval(message.jscode);
@@ -342,7 +385,7 @@ connection.on('ReceiveWorkShopMessage', function (message) {
 
 
 //发送消息
-function sendMsg() {
+function sendMsg(retryCount = 3) {
     var msg = $("#Q").val().trim();
     var onknowledge = true;
     if (msg == "") {
@@ -398,11 +441,11 @@ function sendMsg() {
                         ${vipHead}
                      </div>
                      <div class="chat-message-box">
-                       <pre id="`+ msgid_u + `"></pre>
+                       <pre id="` + msgid_u + `"></pre>
                      </div>
                      <div>
-                      <i data-feather="refresh-cw" class="chatbtns" onclick="tryAgain('`+ msgid_u + `')"></i>
-                      <i data-feather="edit-3" class="chatbtns" onclick="editChat('`+ msgid_u + `')"></i>
+                      <i data-feather="refresh-cw" class="chatbtns" onclick="tryAgain('` + msgid_u + `')"></i>
+                      <i data-feather="edit-3" class="chatbtns" onclick="editChat('` + msgid_u + `')"></i>
                      </div>
                 </div>`;
     $(".chat-body-content").append(html);
@@ -419,12 +462,12 @@ function sendMsg() {
                        <span class="badge badge-pill badge-dark" id="${msgid_g}_timer_alltime"></span>
                     </div>
                     <div class="chat-message-box">
-                        <div id="`+ msgid_g + `"></div><div class="spinner-grow spinner-grow-sm LDI"></div>
+                        <div id="` + msgid_g + `"></div><div class="spinner-grow spinner-grow-sm LDI"></div>
                     </div>
                     <div>
-                        <i data-feather="copy" class="chatbtns" onclick="copyAll('`+ msgid_g + `')"></i>
-                        <i data-feather="anchor" class="chatbtns" onclick="quote('`+ msgid_g + `')"></i>
-                        <i data-feather="trash-2" class="chatbtns" onclick="deleteChatGroup('`+ chatgroupid + `')"></i>
+                        <i data-feather="copy" class="chatbtns" onclick="copyAll('` + msgid_g + `')"></i>
+                        <i data-feather="anchor" class="chatbtns" onclick="quote('` + msgid_g + `')"></i>
+                        <i data-feather="trash-2" class="chatbtns" onclick="deleteChatGroup('` + chatgroupid + `')"></i>
                         <i data-feather="codepen" class="chatbtns" data-toggle="tooltip" title="复制Markdown" onclick="toMarkdown('${msgid_g}')"></i>
                     </div>
                 </div>`;
@@ -435,16 +478,32 @@ function sendMsg() {
     chatBody.animate({
         scrollTop: chatBody.prop("scrollHeight")
     }, 500);
-    connection.invoke("SendWorkShopMessage", data, onknowledge, onknowledgearr)
-        .then(function () {
-        })
-        .catch(function (err) {
-            processOver = true;
-            sendExceptionMsg("【知识库】发送消息时出现了一些未经处理的异常 :-( 原因：" + err);
-            //balert("您的登录令牌似乎已失效，我们将启动账号保护，请稍候，正在前往重新登录...", "danger", false, 3000, "center", function () {
-            //    window.location.href = "/Users/Login";
-            //});
-        });
+
+    // 尝试发送消息
+    function trySendMessage() {
+        connection.invoke("SendWorkShopMessage", data, onknowledge, onknowledgearr)
+            .then(function () {
+                // 消息发送成功
+            })
+            .catch(function (err) {
+                console.error("Send message failed:", err);
+                retryCount--;
+                if (retryCount > 0) {
+                    setTimeout(trySendMessage, 1000); // 1秒后重试
+                } else {
+                    processOver = true;
+                    balert("发送消息失败,请刷新页面后重试", "danger", false, 2000, "center");
+                    $('#' + assistansBoxId).html("发送消息失败,请刷新页面后重试 <a href='javascript:location.reload();'>点击刷新</a>");
+                    stopTimer(`#${assistansBoxId}_timer_first`);
+                    stopTimer(`#${assistansBoxId}_timer_alltime`);
+                    $('.LDI').remove();
+                    sendExceptionMsg("发送消息失败，请检查网络连接并重试。");
+                }
+            });
+
+    }
+
+    trySendMessage();
 }
 
 //调起摄像头&相册
@@ -492,7 +551,7 @@ function getHistoryList(pageIndex, pageSize, reload, loading, searchKey) {
                 //转译尖括号
                 chat = chat.replace(/&lt;/g, "&amp;lt;").replace(/&gt;/g, "&amp;gt;");
                 chat = chat.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                html += `<li class="chat-item" id="` + res.data[i].chatId + `" onclick="showHistoryDetail('` + res.data[i].chatId + `')">
+                html += `<li class="chat-item" id="${res.data[i].chatId}" onclick="showHistoryDetail('${res.data[i].chatId}')" data-chat-id="${res.data[i].chatId}">
                             <div class="chat-item-body">
                                <div>
                                     <txt>
@@ -504,7 +563,7 @@ function getHistoryList(pageIndex, pageSize, reload, loading, searchKey) {
                                 </p>
                             </div>
                         <span class="delete-chat">
-                            <i data-feather="x" onclick="deleteChat('`+ res.data[i].chatId + `')"></i>
+                            <i data-feather="x" onclick="deleteChat('` + res.data[i].chatId + `')"></i>
                         </span>
                     </li>`;
             }
@@ -524,6 +583,7 @@ function getHistoryList(pageIndex, pageSize, reload, loading, searchKey) {
         }
     });
 }
+
 //删除历史记录
 function deleteChat(id) {
     event.stopPropagation();
@@ -552,6 +612,7 @@ function deleteChat(id) {
         });
     });
 }
+
 //删除所有历史记录
 function deleteChatAll() {
     showPromptModal("提示", `请输入<b style="color:red;">“justdoit”</b>以删除全部历史记录<br/>`, function (text) {
@@ -583,6 +644,7 @@ function deleteChatAll() {
         }
     })
 }
+
 //删除消息组
 function deleteChatGroup(id) {
     showConfirmationModal("提示", "确定删除这条记录吗？", function () {
@@ -659,11 +721,11 @@ function showHistoryDetail(id) {
                                         ${vipHead}
                                      </div>
                                      <div class="chat-message-box">
-                                       <pre id="`+ res.data[i].chatCode + `">` + content + `</pre>
+                                       <pre id="` + res.data[i].chatCode + `">` + content + `</pre>
                                      </div>
                                      <div>
-                                      <i data-feather="refresh-cw" class="chatbtns" onclick="tryAgain('`+ res.data[i].chatCode + `')"></i>
-                                      <i data-feather="edit-3" class="chatbtns" onclick="editChat('`+ res.data[i].chatCode + `')"></i>
+                                      <i data-feather="refresh-cw" class="chatbtns" onclick="tryAgain('` + res.data[i].chatCode + `')"></i>
+                                      <i data-feather="edit-3" class="chatbtns" onclick="editChat('` + res.data[i].chatCode + `')"></i>
                                      </div>
                                  </div>`;
                     } else {
@@ -674,17 +736,16 @@ function showHistoryDetail(id) {
                                      <div class="nickname" style="font-weight: bold; color: black;">${UserNickText}</div>
                                  </div>
                                  <div class="chat-message-box">
-                                   <pre id="`+ res.data[i].chatCode + `">` + contentarr[0].replace(/</g, "&lt;").replace(/>/g, "&gt;") + contentarr[1] + `</pre>
+                                   <pre id="` + res.data[i].chatCode + `">` + contentarr[0].replace(/</g, "&lt;").replace(/>/g, "&gt;") + contentarr[1] + `</pre>
                                  </div>
                                  <div>
-                                      <i data-feather="refresh-cw" class="chatbtns" onclick="tryAgain('`+ res.data[i].chatCode + `')"></i>
-                                      <i data-feather="edit-3" class="chatbtns" onclick="editChat('`+ res.data[i].chatCode + `')"></i>
+                                      <i data-feather="refresh-cw" class="chatbtns" onclick="tryAgain('` + res.data[i].chatCode + `')"></i>
+                                      <i data-feather="edit-3" class="chatbtns" onclick="editChat('` + res.data[i].chatCode + `')"></i>
                                  </div>
                             </div>`;
                     }
 
-                }
-                else {
+                } else {
                     var item = {
                         id: res.data[i].chatCode,
                         markdown: content
@@ -711,12 +772,12 @@ function showHistoryDetail(id) {
                                    ${firstTime}${allTime}
                                 </div>
                                 <div class="chat-message-box">
-                                    <div id="`+ res.data[i].chatCode + `">` + markedcontent + `</div>
+                                    <div id="` + res.data[i].chatCode + `">` + markedcontent + `</div>
                                 </div>
                                 <div>
-                                  <i data-feather="copy" class="chatbtns" onclick="copyAll('`+ res.data[i].chatCode + `')"></i>
-                                  <i data-feather="anchor" class="chatbtns" onclick="quote('`+ res.data[i].chatCode + `')"></i>
-                                  <i data-feather="trash-2" class="chatbtns" onclick="deleteChatGroup('`+ res.data[i].chatGroupId + `')"></i>
+                                  <i data-feather="copy" class="chatbtns" onclick="copyAll('` + res.data[i].chatCode + `')"></i>
+                                  <i data-feather="anchor" class="chatbtns" onclick="quote('` + res.data[i].chatCode + `')"></i>
+                                  <i data-feather="trash-2" class="chatbtns" onclick="deleteChatGroup('` + res.data[i].chatGroupId + `')"></i>
                                   <i data-feather="codepen" class="chatbtns" data-toggle="tooltip" title="复制Markdown" onclick="toMarkdown('${res.data[i].chatCode}')"></i>
                                 </div>
                             </div>`;
@@ -733,6 +794,7 @@ function showHistoryDetail(id) {
             feather.replace();
             //滚动到最底部
             chatBody.scrollTop(chatBody[0].scrollHeight);
+            applyMagnificPopup('.chat-message-box');
         },
         error: function (err) {
             //window.location.href = "/Users/Login";
@@ -740,6 +802,7 @@ function showHistoryDetail(id) {
         }
     });
 }
+
 //新建会话
 function newChat() {
     if (!processOver) {
@@ -753,11 +816,13 @@ function newChat() {
     $(".chat-item").removeClass("highlight-chat-item");
     $("#Q").focus();
 }
+
 //加载更多历史记录
 function loadMoreHistory() {
     pageIndex++;
     getHistoryList(pageIndex, pageSize, false, true, $("#searchKey").val().trim());
 }
+
 //停止生成
 function stopGenerate() {
     processOver = true;
@@ -801,8 +866,7 @@ $('body').on('click', '.popup-item', function () {
     if (type == "camera") {
         $fileInput.attr('capture', 'environment');
         $fileInput.click();
-    }
-    else if (type == "upload") {
+    } else if (type == "upload") {
         $fileInput.removeAttr("capture");
         $fileInput.click();
     }
@@ -848,8 +912,7 @@ function uploadIMGFile(file, destroyAlert) {
                 balert("上传成功", "success", false, 800, "center");
                 reviewImg(res.data.replace("wwwroot", ""));
                 image_path = res.data;
-            }
-            else {
+            } else {
                 ClearImg();
             }
         },
@@ -859,12 +922,14 @@ function uploadIMGFile(file, destroyAlert) {
         }
     });
 }
+
 //预览图片
 function reviewImg(path) {
     $('#imgPreview').attr('src', path);
     $('.imgViewBox').show();
     $("#openCamera").addClass("cameraColor");
 }
+
 //清除图片
 function ClearImg() {
     image_path = "";
@@ -872,6 +937,7 @@ function ClearImg() {
     $('.imgViewBox').hide();
     $("#openCamera").removeClass("cameraColor");
 }
+
 //遍历添加复制按钮
 function addCopyBtn(id = '') {
     var codebox;
@@ -910,6 +976,7 @@ function addCopyBtn(id = '') {
         });
     });
 }
+
 function copyAll(id) {
     //复制全部text
     var codeToCopy = $("#" + id).text();
@@ -981,6 +1048,7 @@ function getAIModelList() {
         }
     });
 }
+
 //切换模型
 function changeModel(modelName, modelNick) {
     $("#chatDropdown").html(modelNick + `<i data-feather="chevron-down" style="width:20px;"></i>`);
@@ -990,6 +1058,7 @@ function changeModel(modelName, modelNick) {
     thisAiModel = modelName;
     balert("切换模型【" + modelNick + "】成功", "success", false, 1000);
 }
+
 function quote(id) {
     var $elem = $("#" + id);
     // 检查是否存在<img>标签
@@ -1008,10 +1077,12 @@ function quote(id) {
     $Q.focus();
     adjustTextareaHeight();
 }
+
 $(document).on('click', '.dropdown-menu-onfile', function (event) {
     event.stopPropagation();
 
 });
+
 function getKonwLedgeTypeByMilvus(type) {
     if (type == 'loadmore')
         loadingBtn('.loadmorebtn');
@@ -1051,6 +1122,7 @@ function getKonwLedgeTypeByMilvus(type) {
         }
     });
 }
+
 // 当复选框状态改变时
 $('#onknowledgeitem').on('change', 'input[type="checkbox"]', function (e) {
     var typecode = $(this).val();
@@ -1065,7 +1137,6 @@ $('#onknowledgeitem').on('change', 'input[type="checkbox"]', function (e) {
         onknowledgearr = onknowledgearr.filter(item => item !== typecode);
     }
 });
-
 
 
 //----------------------通用函数----------------------
@@ -1083,14 +1154,16 @@ function adjustTextareaHeight() {
         chatBody.css("height", "calc(100% - " + (120 + scrollHeight) + "px)");
     }
     if (scrollHeight == 39)
-        chatBody.css("height", "calc(100% - 120px)");
+        chatBody.css("height", "calc(100% - 140px)");
 }
+
 // 绑定input事件
 textarea.addEventListener("input", adjustTextareaHeight);
 // 绑定keyup事件
 textarea.addEventListener("keyup", adjustTextareaHeight);
 //绑定change事件
 textarea.addEventListener("change", adjustTextareaHeight);
+
 function toMarkdown(id) {
     var item = markdownHis.find(function (element) {
         return element.id === id;

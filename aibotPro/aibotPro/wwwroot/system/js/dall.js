@@ -1,6 +1,6 @@
 ﻿var d3imgsize = '1024x1024';
 var quality = 'standard';
-let thisAiModel = 'gpt-3.5-turbo-0125';
+let thisAiModel = 'gpt-4o-mini';
 $(function () {
     $('.nav-sub-link').removeClass('active');
     $('.nav-link').removeClass('active');
@@ -10,6 +10,8 @@ $(function () {
     $("#dall-nav").addClass('active');
 })
 $(document).ready(function () {
+    bindEnglishPromptTranslation("#inputText");
+    bindOptimizePrompt("#inputText");
     // 更新字符计数的函数
     function updateCharCount() {
         var charCount = $('#inputText').val().length;
@@ -252,4 +254,36 @@ function sendMsg() {
             //    window.location.href = "/Users/Login";
             //});
         });
+}
+
+//转英语提示词
+function englishPrompt() {
+    var msg = $("#inputText").val().trim();
+    if (msg === "") {
+        balert("请输入待转换的绘画提示词", "warning", false, 2000);
+        return;
+    }
+    loadingBtn('.englishPrompt');
+    $.ajax({
+        type: "POST",
+        url: "/AIdraw/EnglishPrompt",
+        dataType: "json",
+        data: {
+            "prompt": msg,
+        },
+        success: function (data) {
+            unloadingBtn('.englishPrompt');
+            if (data.success) {
+                $("#inputText").val(data.data)
+            } else {
+                balert("转换失败，请重试", "danger", false, 2000);
+            }
+        },
+        error: function (err) {
+            unloadingBtn('.englishPrompt');
+            balert("转换失败，请重试", "danger", false, 2000);
+            sendExceptionMsg("【/AIdraw/EnglishPrompt】出现了一些未经处理的异常 :-( 原因：" + err);
+        }
+    })
+
 }

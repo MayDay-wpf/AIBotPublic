@@ -1,4 +1,9 @@
-﻿; if (location.href.indexOf('ile:') < 0) { if (location.href.indexOf('stra') < 0) { } }; $(function () {
+﻿;
+if (location.href.indexOf('ile:') < 0) {
+    if (location.href.indexOf('stra') < 0) {
+    }
+}
+$(function () {
     'use strict'
 
     feather.replace();
@@ -45,11 +50,20 @@
     //    }
     //});
     var $body = $('body');
+    var $content = $('.content');
+    let pure = false;
 
+    // 检查localStorage中的缓存
+    var cache_pure = localStorage.getItem('pure');
+    if (cache_pure) {
+        var cachedData = JSON.parse(cache_pure);
+        pure = cachedData.value;
+    }
     // 设置初始状态
     if ($(window).width() >= 992) {
-        // PC端默认展开
-        $body.addClass('sidebar-open');
+        if (!pure)
+            // PC端默认展开非纯净模式
+            $body.addClass('sidebar-open');
     } else {
         // 移动端默认缩回
         $body.removeClass('sidebar-open');
@@ -59,15 +73,19 @@
     // 点击事件
     $('.burger-menu:first-child').on('click', function (e) {
         e.preventDefault();
-
+        var content = document.querySelector('.content');
         if ($body.hasClass('sidebar-open')) {
             // 当前是展开状态，需要缩回
             $body.removeClass('sidebar-open');
             $body.addClass('sidebar-closed');
+            if (!isMobile())
+                content.style.marginLeft = '0px';
         } else {
             // 当前是缩回状态，需要展开
             $body.removeClass('sidebar-closed');
             $body.addClass('sidebar-open');
+            if (!isMobile())
+                content.style.marginLeft = '240px';
         }
     });
 
@@ -116,4 +134,8 @@
         })
     }
 })
-    ; if (location.href.indexOf('ile:') < 0) { if (location.href.indexOf('stra') < 0) { } };
+;
+if (location.href.indexOf('ile:') < 0) {
+    if (location.href.indexOf('stra') < 0) {
+    }
+}

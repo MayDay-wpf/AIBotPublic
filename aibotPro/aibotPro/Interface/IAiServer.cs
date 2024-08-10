@@ -9,7 +9,7 @@ namespace aibotPro.Interface
     public interface IAiServer
     {
         IAsyncEnumerable<AiRes> CallingAI(AiChat aiChat, APISetting apiSetting, string chatId, VisionBody visionBody = null, [EnumeratorCancellation] CancellationToken cancellationToken = default);//调用AI接口（流式）
-        Task<string> CallingAINotStream(string prompt, string model, bool jsonModel = false);//调用AI接口（非流式）
+        Task<string> CallingAINotStream(AiChat aiChat, APISetting apiSetting, VisionBody visionBody = null);//调用AI接口（非流式）
         Task<bool> SaveChatHistory(string account, string chatId, string content, string chatCode, string chatGroupId, string role, string model, string firstTime = "", string allTime = "");//AI对话记录入库
         List<ChatHistory> GetChatHistories(string account, string chatId, int historyCount);//获取ai聊天记录
         Task<List<ChatHistory>> GetChatHistoriesList(string account, int pageIndex, int pageSize, string searchKey);//获取历史记录列表
@@ -40,5 +40,6 @@ namespace aibotPro.Interface
         Task<bool> SaveMemory(string aimodel, string account, string chatgroupId, string chatId);//存入记忆
         RestRequest CreateRequest(string model, string input, string embeddingsapikey);//创建嵌入请求
         Task<Dtos.SearchVectorResultByMilvus> GetMemory(string aimodel, string account, string prompt);//获取记忆
+        Task<string> CreateHistoryPrompt(List<Message> messages, List<VisionChatMesssage> visionChatMesssages = null);//总结历史记录生成Prompt
     }
 }

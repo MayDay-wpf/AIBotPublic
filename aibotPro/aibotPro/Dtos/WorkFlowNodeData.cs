@@ -55,6 +55,9 @@ namespace aibotPro.Dtos
                 case "DALLsm":
                     Data = RawData.ToObject<DALLsmData>();
                     break;
+                case "downloadimg":
+                    Data = RawData.ToObject<DownLoadImg>();
+                    break;
                 case "web":
                     Data = RawData.ToObject<WebData>();
                     break;
@@ -63,6 +66,9 @@ namespace aibotPro.Dtos
                     break;
                 case "knowledge":
                     Data = RawData.ToObject<KnowledgeData>();
+                    break;
+                case "debug":
+                    Data = RawData.ToObject<DebugData>();
                     break;
                 case "end":
                     Data = RawData.ToObject<EndData>();
@@ -183,6 +189,20 @@ namespace aibotPro.Dtos
         public new DALLsmOutput Output { get; set; }
         public override object GetOutput() => Output;
     }
+    // DownLoadImageData派生类
+    public class DownLoadImg : NodeSpecificData
+    {
+        [JsonProperty("output")]
+        public new DownLoadImageOutput Output { get; set; }
+        public override object GetOutput() => Output;
+    }
+    // DebugData派生类
+    public class DebugData : NodeSpecificData
+    {
+        [JsonProperty("output")]
+        public new DebugOutput Output { get; set; }
+        public override object GetOutput() => Output;
+    }
     // Web派生类
     public class WebData : NodeSpecificData
     {
@@ -255,6 +275,8 @@ namespace aibotPro.Dtos
 
         [JsonProperty("prompt")]
         public string Prompt { get; set; }
+        [JsonProperty("imgurl")]
+        public string ImgUrl { get; set; }
         [JsonProperty("retry")]
         public int Retry { get; set; }
         [JsonProperty("stream")]
@@ -284,6 +306,19 @@ namespace aibotPro.Dtos
         [JsonProperty("retry")]
         public int Retry { get; set; }
     }
+    public class DownLoadImageOutput
+    {
+        [JsonProperty("imageurl")]
+        public string ImageUrl { get; set; }
+        [JsonProperty("prompt")]
+        public string Prompt { get; set; }
+    }
+    public class DebugOutput
+    {
+        [JsonProperty("chatlog")]
+        public string ChatLog { get; set; }
+    }
+
     public class WebOutput
     {
         [JsonProperty("prompt")]

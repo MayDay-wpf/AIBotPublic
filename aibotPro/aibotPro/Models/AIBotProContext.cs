@@ -62,6 +62,7 @@ namespace aibotPro.Models
         public virtual DbSet<UISetting> UISettings { get; set; }
         public virtual DbSet<UseUpLog> UseUpLogs { get; set; }
         public virtual DbSet<User> Users { get; set; }
+        public virtual DbSet<UserPrompt> UserPrompts { get; set; }
         public virtual DbSet<UserSetting> UserSettings { get; set; }
         public virtual DbSet<VIP> VIPs { get; set; }
         public virtual DbSet<WorkFlow> WorkFlows { get; set; }

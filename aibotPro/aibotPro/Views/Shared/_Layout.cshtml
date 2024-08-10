@@ -7,24 +7,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
     <meta name="description" content="Responsive Bootstrap 4 Dashboard and Admin Template">
     <meta name="author" content="ThemePixels">
-    <meta name="description" content="免费使用AI工具如ChatGPT, GPT4, MJ绘画, SD绘画, Midjourney, DALL-E3等。提供AI文件处理, AI文件上传以及GPT免费使用。丰富的AI知识库,助您掌握人工智能技术。">
-    <meta name="keywords" content="AI, ChatGPT, GPT4, MJ绘画, SD绘画, Midjourney, DALL-E3, 知识库, 免费, AI文件处理, AI文件上传, GPT免费">
+    <meta name="description" content="探索ChatGPT、GPT4等最新AI技术,使用MJ、SD等AI画图工具释放创意。免费访问全面的AI服务和知识库,加速您的学习与应用。立即开始您的AI之旅!">
+    <meta name="keywords" content="AI技术,ChatGPT,GPT4,Claude,Gemini,AI画图(MJ绘画,SD绘画,Midjourney,DALL-E3),免费AI工具,AI文件处理,AI知识库,GPT使用">
+    <meta property="og:title" content="AIBotPRO - 探索AI技术的最佳平台">
+    <meta property="og:description" content="发现最新AI技术,使用专业AI工具,访问全面的AI知识库。免费开启您的AI探索之旅!">
+    <meta property="og:image" content="https://maymay5.com/image/vipchatgptlogo.png">
+    <link rel="canonical" href="https://aibotpro.cn">
     <link href="~/static/css/all.min.css" rel="stylesheet">
     <link href="~/static/css/ionicons.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="~/static/css/cassie.css?v3.4">
-    <link href="~/static/css/cassie-dark.css?v1.4" rel="stylesheet" />
+    <link rel="stylesheet" href="~/static/css/cassie.css?v4.4">
+    <link href="~/static/css/cassie-dark.css?v2.3" rel="stylesheet" />
     <link href="~/static/css/bootstrap-tagsinput.css" rel="stylesheet" />
-    <link href="~/system/css/robot.css?v1" rel="stylesheet" />
+    <link href="~/system/css/robot.css?v1.1" rel="stylesheet" />
     <link href="~/lib/jquery/dist/jquery-ui.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/system/css/magnific-popup.min.css">
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/static/js/bootstrap-tagsinput.min.js"></script>
     <script src="~/static/js/bootstrap.bundle.min.js"></script>
     <script src="~/static/js/feather.min.js"></script>
     @*<script src="~/static/js/perfect-scrollbar.min.js"></script>*@
     <script src="~/static/js/js.cookie.js"></script>
-    <script src="~/static/js/cassie.js?v3.2"></script>
+    <script src="~/static/js/cassie.js?v3.3"></script>
     <script src="~/system/js/xlsx.full.min.js"></script>
-    <script src="~/system/js/system.js?v11.3"></script>
+    <script src="~/system/js/system.js?v11.9"></script>
     <script src="~/system/js/balert.js?v2"></script>
     <script src="~/system/js/markdown-it.min.js"></script>
     <script src="~/lib/jquery/dist/jquery-ui.js"></script>
@@ -459,10 +464,30 @@
     <div class="content">
         @RenderBody()
     </div>
+    <div id="offCanvas1" class="off-canvas off-canvas-overlay off-canvas-right">
+        <div class="pd-10 ht-100p d-flex flex-column" id="promptList">
+            <div class="sticky-top pb-3">
+                <h5 class="tx-semibold mg-b-25"><i class="fas fa-info-circle"></i> 常用提示词</h5>
+
+                <div id="addPromptForm" class="mg-b-20">
+                    <div class="form-group">
+                        <textarea class="form-control" style="border-radius:5px" id="newPrompt" rows="3" placeholder="输入新的提示词"></textarea>
+                    </div>
+                    <button class="btn btn-primary btn-block" onclick="addUserPrompt()"><i data-feather="plus-circle"></i> 添加提示词</button>
+                </div>
+            </div>
+
+            <!-- 提示词列表 -->
+            <ul class="list-group prompt-items-container" id="promptItems">
+                <span class="text-info">加载中...</span>
+            </ul>
+            <button class="btn btn-info" onclick="loadmorePromptList()"><i data-feather="chevrons-down"></i> 加载更多</button>
+        </div>
+    </div>
     <script src="~/system/js/signalr.min.js"></script>
     <script src="~/system/js/robot.js?v2"></script>
     <script src="~/system/js/marked.min.js"></script>
     <link href="~/system/css/atom-one-dark.min.css" rel="stylesheet" />
-    <script src="~/system/js/highlight.min.js"></script>
+    <script src="~/system/js/jquery.magnific-popup.min.js"></script>
 </body>
 </html>

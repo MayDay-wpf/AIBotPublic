@@ -3,7 +3,7 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<link href="~/system/css/sd.css?v1" rel="stylesheet" />
+<link href="~/system/css/sd.css?v1.1" rel="stylesheet" />
 <div class="header">
     <div class="header-left">
         <a id="menuMain" href="" class="burger-menu">
@@ -46,6 +46,7 @@
             <div class="card-header">
                 <h5>第一步：输入提示词</h5>
                 <button class="btn btn-outline-success greatePrompt" onclick="sendMsg()"><img src="~/system/images/magic_stick.png" style="width:20px;" />优化提示词</button>
+                <button class="btn btn-outline-info englishPrompt" onclick="englishPrompt()"><img src="~/system/images/translated.png" style="width:20px;" />转英语提示词</button>
             </div>
             <div class="card-body">
                 <div class="textarea-container">
@@ -67,96 +68,131 @@
             <div class="card-body" style="text-align:center;">
                 <div class="model-settings">
                     <div class="form-group little-tips">
-                        <p><b>小贴士</b></p>
+                        <p>
+                            <b>小贴士</b>
+                        </p>
                         <p>1：随机种子固定后，风格将被固定，所以建议每生成一次，切换一次随机种子</p>
                         <p>2：绘制尺寸选择1:1的效果是最好的</p>
                         <p>3：如果绘制总是不理想，可以适当减少步骤数</p>
                     </div>
                     <div class="form-group">
-                        <label for="modelSelect"><b>模型</b></label>
+                        <label for="modelSelect">
+                            <b>模型</b>
+                        </label>
                         <select class="form-control" id="modelSelect">
-                            <option value="stable-diffusion-3-medium">Stable-Diffusion-3-Medium</option>
-                            <option value="stable-diffusion-xl-base-1.0">Stable-Diffusion-XL</option>
+                            <option value="stabilityai/stable-diffusion-3-medium">Stable-Diffusion-3-Medium</option>
+                            <option value="stabilityai/stable-diffusion-xl-base-1.0">Stable-Diffusion-XL</option>
+                            <option value="black-forest-labs/FLUX.1-schnell">FLUX.1-Schnell</option>
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label><b>绘制尺寸</b></label>
+                        <label>
+                            <b>绘制尺寸</b>
+                        </label>
                         <div class="image-size-selector">
                             <label class="image-size-option">
                                 <input type="radio" name="imageSize" value="1024x1024" checked>
                                 <div class="image-size-border">
-                                    <svg viewBox="0 0 24 24" width="24" height="24"><rect width="22" height="22" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" /></svg>
+                                    <svg viewBox="0 0 24 24" width="24" height="24">
+                                        <rect width="22" height="22" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" />
+                                    </svg>
                                 </div>
                                 <span>1:1</span>
                             </label>
                             <label class="image-size-option">
                                 <input type="radio" name="imageSize" value="1024x2048">
                                 <div class="image-size-border">
-                                    <svg viewBox="0 0 24 48" width="24" height="48"><rect width="22" height="46" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" /></svg>
+                                    <svg viewBox="0 0 24 48" width="24" height="48">
+                                        <rect width="22" height="46" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" />
+                                    </svg>
                                 </div>
                                 <span>1:2</span>
                             </label>
                             <label class="image-size-option">
                                 <input type="radio" name="imageSize" value="1536x1024">
                                 <div class="image-size-border">
-                                    <svg viewBox="0 0 36 24" width="36" height="24"><rect width="34" height="22" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" /></svg>
+                                    <svg viewBox="0 0 36 24" width="36" height="24">
+                                        <rect width="34" height="22" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" />
+                                    </svg>
                                 </div>
                                 <span>3:2</span>
                             </label>
                             <label class="image-size-option">
                                 <input type="radio" name="imageSize" value="1536x2048">
                                 <div class="image-size-border">
-                                    <svg viewBox="0 0 24 32" width="24" height="32"><rect width="22" height="30" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" /></svg>
+                                    <svg viewBox="0 0 24 32" width="24" height="32">
+                                        <rect width="22" height="30" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" />
+                                    </svg>
                                 </div>
                                 <span>3:4</span>
                             </label>
                             <label class="image-size-option">
                                 <input type="radio" name="imageSize" value="2048x1152">
                                 <div class="image-size-border">
-                                    <svg viewBox="0 0 48 27" width="48" height="27"><rect width="46" height="25" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" /></svg>
+                                    <svg viewBox="0 0 48 27" width="48" height="27">
+                                        <rect width="46" height="25" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" />
+                                    </svg>
                                 </div>
                                 <span>16:9</span>
                             </label>
                             <label class="image-size-option">
                                 <input type="radio" name="imageSize" value="1152x2048">
                                 <div class="image-size-border">
-                                    <svg viewBox="0 0 27 48" width="27" height="48"><rect width="25" height="46" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" /></svg>
+                                    <svg viewBox="0 0 27 48" width="27" height="48">
+                                        <rect width="25" height="46" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" />
+                                    </svg>
                                 </div>
                                 <span>9:16</span>
                             </label>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="numberImages"><b>绘制数量: <span id="numberImagesValue">1</span></b></label>
+                    <div class="form-group numberImagesValue">
+                        <label for="numberImages">
+                            <b>绘制数量: <span id="numberImagesValue">1</span></b>
+                        </label>
                         <input type="range" class="custom-range" id="numberImages" min="1" max="4" step="1" value="1">
                     </div>
 
                     <div class="form-group">
-                        <label for="seedInput"><b>随机种子</b></label>
+                        <label for="seedInput">
+                            <b>随机种子</b>
+                        </label>
                         <div class="input-group">
-                            <input type="number" class="form-control" id="seedInput" min="0" max="9999999999" value="0">
+                            <input type="number" class="form-control" id="seedInput" max="9999999999" value="0">
                             <div class="input-group-append">
                                 <button class="btn btn-outline-secondary" type="button" id="randomSeedBtn">
                                     <i class="fas fa-sync-alt"></i>
                                 </button>
                             </div>
                         </div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="fixSeedCheckbox">
+                            <label class="form-check-label" for="fixSeedCheckbox">
+                                固定随机种子
+                            </label>
+                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="inferenceSteps"><b>步骤数: <span id="inferenceStepsValue">25</span></b></label>
+                    <div class="form-group inferenceSteps">
+                        <label for="inferenceSteps">
+                            <b>步骤数: <span id="inferenceStepsValue">25</span></b>
+                        </label>
                         <input type="range" class="custom-range" id="inferenceSteps" min="1" max="50" step="1" value="25">
                     </div>
 
-                    <div class="form-group">
-                        <label for="guidanceScale"><b>提示词权重: <span id="guidanceScaleValue">4.5</span></b></label>
+                    <div class="form-group guidanceScale">
+                        <label for="guidanceScale">
+                            <b>提示词权重: <span id="guidanceScaleValue">4.5</span></b>
+                        </label>
                         <input type="range" class="custom-range" id="guidanceScale" min="0" max="20" step="0.1" value="4.5">
                     </div>
 
-                    <div class="form-group">
-                        <label for="negativePrompt"><b>反向词</b></label>
+                    <div class="form-group negativePrompt">
+                        <label for="negativePrompt">
+                            <b>反向词</b>
+                        </label>
                         <textarea class="form-control" id="negativePrompt" rows="3"></textarea>
                     </div>
                 </div>
@@ -198,4 +234,4 @@
 <script src="~/system/js/signalr.min.js"></script>
 <link rel="stylesheet" href="~/system/css/magnific-popup.min.css">
 <script src="~/system/js/jquery.magnific-popup.min.js"></script>
-<script src="~/system/js/sd.js"></script>
+<script src="~/system/js/sd.js?v1.0.0"></script>

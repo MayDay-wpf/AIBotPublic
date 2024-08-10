@@ -81,7 +81,7 @@ function getMyInstall() {
                                         <h5 class="card-title">`+ item.pnickname + `</h5>
                                         <p class="card-text" style="max-height: 100px; overflow: auto;">`+ item.pfunctioninfo + `</p>
                                         <div class="d-flex justify-content-center flex-wrap">
-                                            <button class="btn btn-sm btn-secondary" onclick="uninstallPlugin(`+ item.id + `)">卸载</button>
+                                            <button class="btn btn-sm btn-danger" onclick="uninstallPlugin(`+ item.id + `)"><i data-feather="trash-2"></i> 卸载</button>
                                         </div>
                                         <div style="display: flex; justify-content: center; align-items: center;">
                                             <label class="ml-2"><input type="checkbox" class="plugin-checkbox" name="mandatoryHit" data-plugin-id="` + item.installId + `" ${change}> 是否必须使用 <a href="#" class="header-help-link" onclick="mustHitInfo()"><i data-feather="help-circle"></i></a></label>
@@ -132,7 +132,7 @@ function getPlugins() {
                                     <div class="card-body">
                                         <h5 class="card-title">${item.pnickname}</h5>
                                         <p class="card-text" style="max-height: 100px; overflow: auto;">${item.pfunctioninfo}</p>
-                                        <div class="d-flex justify-content-center flex-wrap">
+                                        <div class="d-flex justify-content-center">
                                             <button class="btn btn-sm btn-primary" style="margin-right:10px" onclick="editPlugin('${item.pcode}',${item.id})">编辑</button>
                                             <button class="btn btn-sm btn-success" style="margin-right:10px" onclick="insertMyPlugin(${item.id})">安装</button>
                                             ${controlButton}
