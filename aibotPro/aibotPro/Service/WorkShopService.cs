@@ -18,6 +18,7 @@ using System.Text;
 using Microsoft.AspNetCore.SignalR;
 using System.Collections.Generic;
 using NuGet.Protocol.Plugins;
+using System.Runtime.CompilerServices;
 
 namespace aibotPro.Service
 {
@@ -34,7 +35,11 @@ namespace aibotPro.Service
         private readonly IMilvusService _milvusService;
         private readonly ICOSService _cossService;
         private readonly IBaiduService _baiduService;
-        public WorkShopService(AIBotProContext context, ISystemService systemService, IAiServer aiServer, IUsersService usersService, IRedisService redisService, IFinanceService financeService, IServiceProvider serviceProvider, IHubContext<ChatHub> hubContext, IMilvusService milvusService, ICOSService cossService, IBaiduService baiduService)
+
+        public WorkShopService(AIBotProContext context, ISystemService systemService, IAiServer aiServer,
+            IUsersService usersService, IRedisService redisService, IFinanceService financeService,
+            IServiceProvider serviceProvider, IHubContext<ChatHub> hubContext, IMilvusService milvusService,
+            ICOSService cossService, IBaiduService baiduService)
         {
             _context = context;
             _systemService = systemService;
@@ -48,6 +53,7 @@ namespace aibotPro.Service
             _cossService = cossService;
             _baiduService = baiduService;
         }
+
         public bool InstallPlugin(string account, int pluginId, out string errormsg)
         {
             errormsg = string.Empty;
@@ -57,13 +63,16 @@ namespace aibotPro.Service
                 errormsg = "插件不存在";
                 return false;
             }
+
             //判断用户是否已经安装过
-            var pluginsInstall_b = _context.PluginsInstalls.Where(x => x.Account == account && x.PluginsCode == plugin.Pcode).FirstOrDefault();
+            var pluginsInstall_b = _context.PluginsInstalls
+                .Where(x => x.Account == account && x.PluginsCode == plugin.Pcode).FirstOrDefault();
             if (pluginsInstall_b != null)
             {
                 errormsg = "已安装过该插件";
                 return false;
             }
+
             //如果安装者不是作者，且不是VIP，且插件不免费，则需要支付
             if (plugin.Account != account && !_financeService.IsVip(account).Result && plugin.Pluginprice > 0)
             {
@@ -72,6 +81,7 @@ namespace aibotPro.Service
                 {
                     return false;
                 }
+
                 //插件作者增加余额
                 if (!_financeService.UpdateUserMoney(plugin.Account, plugin.Pluginprice.Value, "add", out errormsg))
                 {
@@ -86,6 +96,7 @@ namespace aibotPro.Service
             _context.PluginsInstalls.Add(pluginsInstall);
             return _context.SaveChanges() > 0;
         }
+
         public bool InstallMyPlugin(string account, int pluginId, out string errormsg)
         {
             errormsg = string.Empty;
@@ -95,13 +106,16 @@ namespace aibotPro.Service
                 errormsg = "插件不存在";
                 return false;
             }
+
             //判断用户是否已经安装过
-            var pluginsInstall_b = _context.PluginsInstalls.Where(x => x.Account == account && x.PluginsCode == plugin.Pcode).FirstOrDefault();
+            var pluginsInstall_b = _context.PluginsInstalls
+                .Where(x => x.Account == account && x.PluginsCode == plugin.Pcode).FirstOrDefault();
             if (pluginsInstall_b != null)
             {
                 errormsg = "已安装过该插件";
                 return false;
             }
+
             PluginsInstall pluginsInstall = new PluginsInstall();
             pluginsInstall.Account = account;
             pluginsInstall.PluginsCode = plugin.Pcode;
@@ -119,13 +133,16 @@ namespace aibotPro.Service
                 errormsg = "插件不存在";
                 return false;
             }
+
             //判断用户是否已经安装过
-            var pluginsInstall = _context.PluginsInstalls.Where(x => x.Account == account && x.PluginsCode == plugin.Pcode).FirstOrDefault();
+            var pluginsInstall = _context.PluginsInstalls
+                .Where(x => x.Account == account && x.PluginsCode == plugin.Pcode).FirstOrDefault();
             if (pluginsInstall == null)
             {
                 errormsg = "未安装过该插件";
                 return false;
             }
+
             _context.PluginsInstalls.Remove(pluginsInstall);
             //保存
             _context.SaveChanges();
@@ -156,12 +173,11 @@ namespace aibotPro.Service
 
             // 然后添加分页逻辑，此处同样是构建查询，没有执行
             var plugins = query.OrderBy(x => x.CreateTime) // 这里可以根据需要替换为合适的排序字段
-                                .Skip((page - 1) * pageSize)
-                                .Take(pageSize)
-                                .ToList(); // 直到调用ToList，查询才真正执行
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList(); // 直到调用ToList，查询才真正执行
 
             return plugins;
-
         }
 
         public bool DeletePlugin(string account, int pluginId, out string errormsg)
@@ -175,35 +191,43 @@ namespace aibotPro.Service
                 errormsg = "插件不存在";
                 return false;
             }
+
             //判断用户是否安装了该插件
-            var pluginsInstall = _context.PluginsInstalls.Where(x => x.Account == account && x.PluginsCode == plugin.Pcode).FirstOrDefault();
+            var pluginsInstall = _context.PluginsInstalls
+                .Where(x => x.Account == account && x.PluginsCode == plugin.Pcode).FirstOrDefault();
             if (pluginsInstall != null)
             {
                 errormsg = "用户已安装该插件，无法删除";
                 return false;
             }
+
             //删除用户该插件安装记录
             _context.Plugins.Remove(plugin);
             _context.SaveChanges();
             return true;
         }
 
-        public WorkShopPlugin GetPlugin(int pluginId, string account, string pcode = "", string pfunctionName = "")
+        public WorkShopPlugin GetPlugin(int pluginId, string account, string pcode = "", string pfunctionName = "", bool running = false)
         {
             Models.Plugin plugin = new Models.Plugin();
             //获取插件信息，如果pcode不为空，则根据pcode获取
             if (!string.IsNullOrEmpty(pcode))
-                plugin = _context.Plugins.Where(x => x.Pcode == pcode && (x.IsPublic == "yes" || x.Account == account)).FirstOrDefault();
+                plugin = _context.Plugins.Where(x => x.Pcode == pcode && (x.IsPublic == "yes" || x.Account == account))
+                    .FirstOrDefault();
             else if (!string.IsNullOrEmpty(pfunctionName))
-                plugin = _context.Plugins.Where(x => x.Pfunctionname == pfunctionName && (x.IsPublic == "yes" || x.Account == account)).FirstOrDefault();
+                plugin = _context.Plugins
+                    .Where(x => x.Pfunctionname == pfunctionName && (x.IsPublic == "yes" || x.Account == account))
+                    .FirstOrDefault();
             else
-                plugin = _context.Plugins.Where(x => x.Id == pluginId && (x.IsPublic == "yes" || x.Account == account)).FirstOrDefault();
+                plugin = _context.Plugins.Where(x => x.Id == pluginId && (x.IsPublic == "yes" || x.Account == account))
+                    .FirstOrDefault();
             if (plugin == null)
             {
                 return null;
             }
+
             //是否开源
-            if (plugin.Popensource == "no")
+            if (plugin.Popensource == "no" && !running)
             {
                 //判断是否是作者
                 if (plugin.Account != account)
@@ -211,6 +235,7 @@ namespace aibotPro.Service
                     return null;
                 }
             }
+
             WorkShopPlugin workShopPlugin = new WorkShopPlugin
             {
                 Id = plugin.Id,
@@ -236,23 +261,28 @@ namespace aibotPro.Service
                     ParamName = x.PrName,
                     ParamConst = x.PrConst
                 }).ToList(),
-                Pheaders = _context.PluginsHeaders.Where(x => x.HdCode == plugin.PheadersCode).Select(x => new PluginHeaderDto
-                {
-                    PheadersCode = x.HdCode,
-                    PheadersName = x.HdName,
-                    PheadersValue = x.HdValue
-                }).ToList(),
-                Pcookies = _context.PluginsCookies.Where(x => x.CkCode == plugin.PcookiesCode).Select(x => new PluginCookieDto
-                {
-                    PcookiesCode = x.CkCode,
-                    PcookiesName = x.CkName,
-                    PcookiesValue = x.CkValue
-                }).ToList(),
-                JsonPr = _context.PluginsJsonPrs.Where(x => x.PrCode == plugin.Pcode).Select(x => x.JsonContent).FirstOrDefault(),
-                WorkFlowCode = _context.WorkFlows.Where(x => x.Pcode == plugin.Pcode).Select(x => x.FlowCode).FirstOrDefault()
+                Pheaders = _context.PluginsHeaders.Where(x => x.HdCode == plugin.PheadersCode).Select(x =>
+                    new PluginHeaderDto
+                    {
+                        PheadersCode = x.HdCode,
+                        PheadersName = x.HdName,
+                        PheadersValue = x.HdValue
+                    }).ToList(),
+                Pcookies = _context.PluginsCookies.Where(x => x.CkCode == plugin.PcookiesCode).Select(x =>
+                    new PluginCookieDto
+                    {
+                        PcookiesCode = x.CkCode,
+                        PcookiesName = x.CkName,
+                        PcookiesValue = x.CkValue
+                    }).ToList(),
+                JsonPr = _context.PluginsJsonPrs.Where(x => x.PrCode == plugin.Pcode).Select(x => x.JsonContent)
+                    .FirstOrDefault(),
+                WorkFlowCode = _context.WorkFlows.Where(x => x.Pcode == plugin.Pcode).Select(x => x.FlowCode)
+                    .FirstOrDefault()
             };
             return workShopPlugin;
         }
+
         public List<PluginDto> GetPluginInstall(string account)
         {
             //获取用户安装的插件
@@ -271,8 +301,10 @@ namespace aibotPro.Service
                     plugins.Add(pluginDto);
                 }
             }
+
             return plugins;
         }
+
         public List<PluginDto> GetPluginByTest(string pcode)
         {
             //遍历插件安装记录，获取插件信息
@@ -285,8 +317,10 @@ namespace aibotPro.Service
                 pluginDto.MustHit = true;
                 plugins.Add(pluginDto);
             }
+
             return plugins;
         }
+
         public List<PluginParamDto> GetPluginParams(int pluginId)
         {
             //获取插件参数
@@ -295,16 +329,19 @@ namespace aibotPro.Service
             {
                 return null;
             }
-            var pluginParams = _context.PluginsParams.Where(x => x.PrCode == plugin.ParamCode).Select(x => new PluginParamDto
-            {
-                ParamCode = x.PrCode,
-                ParamType = x.PrType,
-                ParamInfo = x.PrInfo,
-                ParamName = x.PrName,
-                ParamConst = x.PrConst
-            }).ToList();
+
+            var pluginParams = _context.PluginsParams.Where(x => x.PrCode == plugin.ParamCode).Select(x =>
+                new PluginParamDto
+                {
+                    ParamCode = x.PrCode,
+                    ParamType = x.PrType,
+                    ParamInfo = x.PrInfo,
+                    ParamName = x.PrName,
+                    ParamConst = x.PrConst
+                }).ToList();
             return pluginParams;
         }
+
         public PluginsJsonPr GetPluginsJsonPr(int pluginId)
         {
             //获取插件参数
@@ -313,9 +350,11 @@ namespace aibotPro.Service
             {
                 return null;
             }
+
             var pluginsJsonPr = _context.PluginsJsonPrs.Where(x => x.PrCode == plugin.Pcode).FirstOrDefault();
             return pluginsJsonPr;
         }
+
         public List<PluginHeaderDto> GetPluginHeaders(int pluginId)
         {
             //获取插件headers
@@ -324,14 +363,17 @@ namespace aibotPro.Service
             {
                 return null;
             }
-            var pluginHeaders = _context.PluginsHeaders.Where(x => x.HdCode == plugin.PheadersCode).Select(x => new PluginHeaderDto
-            {
-                PheadersCode = x.HdCode,
-                PheadersName = x.HdName,
-                PheadersValue = x.HdValue
-            }).ToList();
+
+            var pluginHeaders = _context.PluginsHeaders.Where(x => x.HdCode == plugin.PheadersCode).Select(x =>
+                new PluginHeaderDto
+                {
+                    PheadersCode = x.HdCode,
+                    PheadersName = x.HdName,
+                    PheadersValue = x.HdValue
+                }).ToList();
             return pluginHeaders;
         }
+
         public List<PluginCookieDto> GetPluginCookies(int pluginId)
         {
             //获取插件cookies
@@ -340,15 +382,19 @@ namespace aibotPro.Service
             {
                 return null;
             }
-            var pluginCookies = _context.PluginsCookies.Where(x => x.CkCode == plugin.PcookiesCode).Select(x => new PluginCookieDto
-            {
-                PcookiesCode = x.CkCode,
-                PcookiesName = x.CkName,
-                PcookiesValue = x.CkValue
-            }).ToList();
+
+            var pluginCookies = _context.PluginsCookies.Where(x => x.CkCode == plugin.PcookiesCode).Select(x =>
+                new PluginCookieDto
+                {
+                    PcookiesCode = x.CkCode,
+                    PcookiesName = x.CkName,
+                    PcookiesValue = x.CkValue
+                }).ToList();
             return pluginCookies;
         }
-        public async Task<PluginResDto> RunPlugin(string account, FunctionCall fn, string chatId = "", string senMethod = "", List<string> typeCode = null)
+
+        public async Task<PluginResDto> RunPlugin(string account, FunctionCall fn, string chatId = "",
+            string senMethod = "", List<string> typeCode = null, [EnumeratorCancellation] CancellationToken cancellationToken = default, int topK = 3, bool reranker = false, int topN = 3)
         {
             PluginResDto pluginResDto = new PluginResDto();
             //获取插件信息
@@ -369,9 +415,11 @@ namespace aibotPro.Service
                     pluginResDto.errormsg = "DALL-E3为付费插件，您的余额不足";
                     return pluginResDto;
                 }
+
                 //获取对话设置
                 var chatSetting = _usersService.GetChatSetting(account);
-                if (chatSetting != null && chatSetting.MyDall != null && chatSetting.MyDall.ApiKey != null && chatSetting.MyDall.BaseURL != null)
+                if (chatSetting != null && chatSetting.MyDall != null && chatSetting.MyDall.ApiKey != null &&
+                    chatSetting.MyDall.BaseURL != null)
                 {
                     baseUrl = chatSetting.MyDall.BaseURL;
                     apiKey = chatSetting.MyDall.ApiKey;
@@ -386,9 +434,11 @@ namespace aibotPro.Service
                         pluginResDto.errormsg = "AI模型不存在";
                         return pluginResDto;
                     }
+
                     baseUrl = aiModel.BaseUrl;
                     apiKey = aiModel.ApiKey;
                 }
+
                 string prompt = string.Empty;
                 string drawsize = "1024x1024";
                 string quality = "standard";
@@ -402,6 +452,7 @@ namespace aibotPro.Service
                         quality = entry.Value.ToString();
                     quality = entry.Value.ToString();
                 }
+
                 pluginResDto.result = await _aiServer.CreateDALLdraw(prompt, drawsize, quality, baseUrl, apiKey);
                 pluginResDto.dallprompt = prompt;
                 //扣费
@@ -411,38 +462,42 @@ namespace aibotPro.Service
                 string referenceImgPath = prompt;
                 string imgResPath = string.Empty;
                 string thumbKey = string.Empty;
-                string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "");
+                string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" +
+                                     Guid.NewGuid().ToString().Replace("-", "");
                 Task.Run(async () =>
-                 {
-                     using (var scope = _serviceProvider.CreateScope()) // _serviceProvider 是 IServiceProvider 的一个实例。
-                     {
-                         // 这里做一些后续处理，比如更新数据库记录等
-                         string savePath = Path.Combine("wwwroot", "files/dallres", account);
-                         var aiSaveService = scope.ServiceProvider.GetRequiredService<IAiServer>();
-                         var cosService = scope.ServiceProvider.GetRequiredService<ICOSService>();
-                         var systemService = scope.ServiceProvider.GetRequiredService<ISystemService>();
-                         await aiSaveService.DownloadImageAsync(pluginResDto.result, savePath, newFileName);
-                         string thumbSavePath = systemService.CompressImage(Path.Combine(savePath, newFileName + ".png"), 75);
-                         //查询是否启用了COS
-                         var systemCfg = systemService.GetSystemCfgs();
-                         var cos_switch = systemCfg.FirstOrDefault(x => x.CfgKey == "COS_Switch");
-                         if (cos_switch != null)
-                         {
-                             string cos_switch_val = cos_switch.CfgValue;
-                             if (!string.IsNullOrEmpty(cos_switch_val) && cos_switch_val == "1")
-                             {
-                                 string coskey = $"dallres/{DateTime.Now.ToString("yyyyMMdd")}/{newFileName}.png";
-                                 string thumbFileName = System.IO.Path.GetFileName(thumbSavePath);
-                                 thumbKey = coskey.Replace(System.IO.Path.GetFileName(imgResPath), thumbFileName);
-                                 imgResPath = cosService.PutObject(coskey, Path.Combine(savePath, newFileName + ".png"), newFileName + ".png");
-                                 thumbSavePath = cosService.PutObject(thumbKey, thumbSavePath, thumbFileName);
-                                 referenceImgPath = coskey;
-                             }
-                         }
-                         await aiSaveService.SaveAiDrawResult(account, "DALLE3", imgResPath, prompt, referenceImgPath, thumbSavePath, thumbKey);
-                     }
-                 });
+                {
+                    using (var scope = _serviceProvider.CreateScope()) // _serviceProvider 是 IServiceProvider 的一个实例。
+                    {
+                        // 这里做一些后续处理，比如更新数据库记录等
+                        string savePath = Path.Combine("wwwroot", "files/dallres", account);
+                        var aiSaveService = scope.ServiceProvider.GetRequiredService<IAiServer>();
+                        var cosService = scope.ServiceProvider.GetRequiredService<ICOSService>();
+                        var systemService = scope.ServiceProvider.GetRequiredService<ISystemService>();
+                        await aiSaveService.DownloadImageAsync(pluginResDto.result, savePath, newFileName);
+                        string thumbSavePath =
+                            systemService.CompressImage(Path.Combine(savePath, newFileName + ".png"), 75);
+                        //查询是否启用了COS
+                        var systemCfg = systemService.GetSystemCfgs();
+                        var cos_switch = systemCfg.FirstOrDefault(x => x.CfgKey == "COS_Switch");
+                        if (cos_switch != null)
+                        {
+                            string cos_switch_val = cos_switch.CfgValue;
+                            if (!string.IsNullOrEmpty(cos_switch_val) && cos_switch_val == "1")
+                            {
+                                string coskey = $"dallres/{DateTime.Now.ToString("yyyyMMdd")}/{newFileName}.png";
+                                string thumbFileName = System.IO.Path.GetFileName(thumbSavePath);
+                                thumbKey = coskey.Replace(System.IO.Path.GetFileName(imgResPath), thumbFileName);
+                                imgResPath = cosService.PutObject(coskey, Path.Combine(savePath, newFileName + ".png"),
+                                    newFileName + ".png");
+                                thumbSavePath = cosService.PutObject(thumbKey, thumbSavePath, thumbFileName);
+                                referenceImgPath = coskey;
+                            }
+                        }
 
+                        await aiSaveService.SaveAiDrawResult(account, "DALLE3", imgResPath, prompt, referenceImgPath,
+                            thumbSavePath, thumbKey);
+                    }
+                });
             }
             else if (fnName == "search_google_when_gpt_cannot_answer")
             {
@@ -456,23 +511,32 @@ namespace aibotPro.Service
                 {
                     query = entry.Value.ToString();
                 }
+
                 var googleSearch = await _aiServer.GetWebSearchResult(query, googleSearchApiKey, googleSearchEngineId);
                 string searchResult = string.Empty;
                 for (int i = 0; i < googleSearch.Count; i++)
                 {
-                    searchResult += $"# {i + 1}:标题：{googleSearch[i].Title}\n # 链接地址：{googleSearch[i].Link}\n # 摘要：{googleSearch[i].Snippet}；\n\n";
+                    searchResult +=
+                        $"# {i + 1}:标题：{googleSearch[i].Title}\n # 链接地址：{googleSearch[i].Link}\n # 摘要：{googleSearch[i].Snippet}；\n\n";
                 }
-                pluginResDto.result = $"I will give you a question or an instruction. Your objective is to answer my question or fulfill my instruction.\n\nMy question or instruction is: {query}\n\nFor your reference, today's date is {DateTime.Now.ToString()} in Beijing.\n\nIt's possible that the question or instruction, or just a portion of it, requires relevant information from the internet to give a satisfactory answer or complete the task. Therefore, provided below is the necessary information obtained from the internet, which sets the context for addressing the question or fulfilling the instruction. You will write a comprehensive reply to the given question or instruction. Do not include urls and sources in the summary text. If the provided information from the internet results refers to multiple subjects with the same name, write separate answers for each subject:\n\"\"\"\n{searchResult}\n\"\"\"\n Reply in 中文";
+
+                pluginResDto.result =
+                    $"I will give you a question or an instruction. Your objective is to answer my question or fulfill my instruction.\n\nMy question or instruction is: {query}\n\nFor your reference, today's date is {DateTime.Now.ToString()} in Beijing.\n\nIt's possible that the question or instruction, or just a portion of it, requires relevant information from the internet to give a satisfactory answer or complete the task. Therefore, provided below is the necessary information obtained from the internet, which sets the context for addressing the question or fulfilling the instruction. You will write a comprehensive reply to the given question or instruction. Do not include urls and sources in the summary text. If the provided information from the internet results refers to multiple subjects with the same name, write separate answers for each subject:\n\"\"\"\n{searchResult}\n\"\"\"\n Reply in 中文";
             }
             else if (fnName == "search_knowledge_base")
             {
                 List<SystemCfg> systemCfgs = _systemService.GetSystemCfgs();
-                var Alibaba_DashVectorApiKey = systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorApiKey")?.CfgValue;
-                var Alibaba_DashVectorEndpoint = systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorEndpoint")?.CfgValue;
-                var Alibaba_DashVectorCollectionName = systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorCollectionName")?.CfgValue;
+                var Alibaba_DashVectorApiKey =
+                    systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorApiKey")?.CfgValue;
+                var Alibaba_DashVectorEndpoint =
+                    systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorEndpoint")?.CfgValue;
+                var Alibaba_DashVectorCollectionName =
+                    systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorCollectionName")?.CfgValue;
                 var EmbeddingsUrl = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsUrl")?.CfgValue;
                 var EmbeddingsApiKey = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsApiKey")?.CfgValue;
-                VectorHelper vectorHelper = new VectorHelper(_redisService, Alibaba_DashVectorApiKey, Alibaba_DashVectorEndpoint, Alibaba_DashVectorCollectionName, EmbeddingsUrl, EmbeddingsApiKey);
+                var EmbeddingsModel = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsModel")?.CfgValue;
+                VectorHelper vectorHelper = new VectorHelper(_redisService, Alibaba_DashVectorApiKey,
+                    Alibaba_DashVectorEndpoint, Alibaba_DashVectorCollectionName, EmbeddingsUrl, EmbeddingsApiKey, EmbeddingsModel);
                 pluginResDto.doubletreating = true;
                 pluginResDto.doubletype = "knowledge";
                 string query = string.Empty;
@@ -480,23 +544,28 @@ namespace aibotPro.Service
                 {
                     query = entry.Value.ToString();
                 }
+
                 List<string> pm = new List<string>();
                 pm.Add(query);
-                List<List<double>> vectorList = await vectorHelper.StringToVectorAsync("text-embedding-3-small", pm.Select(s => s.Replace("\r", "").Replace("\n", "")).ToList(), account);
+                List<List<double>> vectorList = await vectorHelper.StringToVectorAsync(EmbeddingsModel,
+                    pm.Select(s => s.Replace("\r", "").Replace("\n", "")).ToList(), account);
                 if (vectorList[0] == null)
                 {
-                    await _systemService.WriteLog("text-embedding-3-small模型执行失败，该问题通常重试后即可", Dtos.LogLevel.Error, "system");
-                    throw new Exception("text-embedding-3-small模型执行失败，该问题通常重试后即可");
+                    await _systemService.WriteLog("嵌入模型执行失败，该问题通常重试后即可", Dtos.LogLevel.Error,
+                        "system");
+                    throw new Exception("嵌入模型执行失败，该问题通常重试后即可");
                 }
+
                 SearchVectorPr searchVectorPr = new SearchVectorPr();
                 searchVectorPr.filter = $"account = '{account}'";
-                searchVectorPr.topk = 3;
+                searchVectorPr.topk = topK;
                 searchVectorPr.vector = vectorList[0];
                 SearchVectorResult searchVectorResult = new SearchVectorResult();
                 if (typeCode != null && typeCode.Count > 0)
                 {
                     List<float> vectorByMilvus = searchVectorPr.vector.ConvertAll(x => (float)x);
-                    var resultByMilvus = await _milvusService.SearchVector(vectorByMilvus, account, typeCode, searchVectorPr.topk);
+                    var resultByMilvus =
+                        await _milvusService.SearchVector(vectorByMilvus, account, typeCode, searchVectorPr.topk);
                     searchVectorResult = new SearchVectorResult
                     {
                         code = resultByMilvus.Code,
@@ -516,19 +585,36 @@ namespace aibotPro.Service
                 }
                 else
                     searchVectorResult = vectorHelper.SearchVector(searchVectorPr);
+
                 string knowledge = string.Empty;
                 if (searchVectorResult.output != null)
                 {
+                    List<string> docs = new List<string>();
                     for (int i = 0; i < searchVectorResult.output.Count; i++)
                     {
                         Output output = searchVectorResult.output[i];
                         knowledge += $"{i + 1}：{output.fields.knowledge} \n";
+                        docs.Add(output.fields.knowledge);
                     }
-                    pluginResDto.result = $@"知识库查询结果如下：
+                    if (reranker)
+                    {
+                        var rerankRes = await _aiServer.RerankerJinaAI(docs, "jina-reranker-v2-base-multilingual", query, topN);
+                        if (rerankRes != null && rerankRes.Results.Count > 0)
+                        {
+                            knowledge = string.Empty;
+                            for (int i = 0; i < rerankRes.Results.Count; i++)
+                            {
+                                knowledge += $"{i + 1}：{rerankRes.Results[i].Document.Text} \n";
+                            }
+                        }
+                    }
+
+                    pluginResDto.result = $@"知识库查询结果如下
                                            {knowledge}
                                            - 保持回答尽可能参考知识库的内容。 
                                            - 使用 Markdown 语法优化回答格式。
-                                           - 以知识库中的理念和说话风格来解答用户的问题。 
+                                           - 以知识库中的理念和说话风格来解答用户的问题。
+                                           - 查询结果中可能出现图片链接，请你以纯文本markdown形式原样输出图片,并且注意图片和文字合理使用换行符换行，每张图独占一行以增加可读性
                                            - 使用与问题相同的语言回答。";
                 }
                 else
@@ -537,13 +623,14 @@ namespace aibotPro.Service
             else
             {
                 //获取插件信息
-                var plugin = GetPlugin(-1, account, "", fnName);
+                var plugin = GetPlugin(-1, account, "", fnName, true);
                 if (plugin == null)
                 {
                     pluginResDto.result = string.Empty;
                     pluginResDto.errormsg = "插件不存在";
                     return pluginResDto;
                 }
+
                 //获取插件模式
                 string runLocation = plugin.PrunLocation;
                 string useHtml = plugin.Pusehtml;
@@ -566,6 +653,7 @@ namespace aibotPro.Service
                             headers.Add(item_hd.PheadersName, item_hd.PheadersValue);
                         }
                     }
+
                     if (plugin_ck != null)
                     {
                         foreach (var item_ck in plugin_ck)
@@ -573,6 +661,7 @@ namespace aibotPro.Service
                             cookies.Add(item_ck.PcookiesName, item_ck.PcookiesValue);
                         }
                     }
+
                     foreach (var entry in fn.ParseArguments())
                     {
                         var pr_val = entry.Value;
@@ -581,13 +670,14 @@ namespace aibotPro.Service
                             var pr = plugin_pr.Where(x => x.ParamName == entry.Key).FirstOrDefault();
                             if (pr != null)
                             {
-                                if (!string.IsNullOrEmpty(pr.ParamConst))//如果是常量
+                                if (!string.IsNullOrEmpty(pr.ParamConst)) //如果是常量
                                     parameters.Add(pr.ParamName, pr.ParamConst);
                                 else
                                     parameters.Add(pr.ParamName, pr_val);
                             }
                         }
                     }
+
                     string jsonBody = string.Empty;
                     if (plugin_jsonpr != null)
                     {
@@ -597,8 +687,8 @@ namespace aibotPro.Service
                         {
                             jsonBody = Regex.Replace(jsonBody, @"\{\{" + item.Key + @"\}\}", item.Value.ToString());
                         }
-
                     }
+
                     if (plugin.Pmethod == "get")
                     {
                         pluginResDto.result = _aiServer.AiGet(url, parameters, headers, cookies);
@@ -607,6 +697,7 @@ namespace aibotPro.Service
                     {
                         pluginResDto.result = _aiServer.AiPost(url, parameters, headers, cookies, jsonBody);
                     }
+
                     if (useHtml == "true")
                     {
                         pluginResDto.doubletreating = false;
@@ -616,7 +707,6 @@ namespace aibotPro.Service
                     {
                         pluginResDto.doubletreating = true;
                     }
-
                 }
                 else if (pModel == "plugin-offline")
                 {
@@ -624,7 +714,7 @@ namespace aibotPro.Service
                     //初始化脚本引擎
                     IServiceCollection services = new ServiceCollection();
                     services.AddJsEngineSwitcher(options => options.DefaultEngineName = ChakraCoreJsEngine.EngineName)
-                            .AddChakraCore();
+                        .AddChakraCore();
 
                     IServiceProvider serviceProvider = services.BuildServiceProvider();
                     IJsEngineSwitcher jsEngineSwitcher = serviceProvider.GetRequiredService<IJsEngineSwitcher>();
@@ -643,7 +733,7 @@ namespace aibotPro.Service
                             var pr = plugin_pr.Where(x => x.ParamName == entry.Key).FirstOrDefault();
                             if (pr != null)
                             {
-                                if (!string.IsNullOrEmpty(pr.ParamConst))//如果是常量
+                                if (!string.IsNullOrEmpty(pr.ParamConst)) //如果是常量
                                 {
                                     arguments.Add(pr.ParamConst.ToString());
                                     runScript += $@"var {entry.Key}=`{pr.ParamConst.ToString()}`;  ";
@@ -656,10 +746,12 @@ namespace aibotPro.Service
                                     else
                                         runScript += $@"var {entry.Key}={Convert.ToString(pr_val)};  ";
                                 }
+
                                 qdScriptpr += entry.Key + ",";
                             }
                         }
                     }
+
                     object[] arr = arguments.ToArray();
                     //后端运行脚本
                     if (runLocation == "back-end")
@@ -684,7 +776,6 @@ namespace aibotPro.Service
                         pluginResDto.result = $"{runScript} {plugin.Pfunctionname}({qdScriptpr.TrimEnd(',')});";
                         pluginResDto.doubletreating = false;
                         pluginResDto.doubletype = "js";
-
                     }
                 }
                 else if (pModel == "plugin-mixed")
@@ -706,6 +797,7 @@ namespace aibotPro.Service
                             headers.Add(item_hd.PheadersName, item_hd.PheadersValue);
                         }
                     }
+
                     if (plugin_ck != null)
                     {
                         foreach (var item_ck in plugin_ck)
@@ -713,6 +805,7 @@ namespace aibotPro.Service
                             cookies.Add(item_ck.PcookiesName, item_ck.PcookiesValue);
                         }
                     }
+
                     foreach (var entry in fn.ParseArguments())
                     {
                         var pr_val = entry.Value;
@@ -721,13 +814,14 @@ namespace aibotPro.Service
                             var pr = plugin_pr.Where(x => x.ParamName == entry.Key).FirstOrDefault();
                             if (pr != null)
                             {
-                                if (!string.IsNullOrEmpty(pr.ParamConst))//如果是常量
+                                if (!string.IsNullOrEmpty(pr.ParamConst)) //如果是常量
                                     parameters.Add(pr.ParamName, pr.ParamConst);
                                 else
                                     parameters.Add(pr.ParamName, pr_val);
                             }
                         }
                     }
+
                     string jsonBody = string.Empty;
                     if (plugin_jsonpr != null)
                     {
@@ -737,8 +831,8 @@ namespace aibotPro.Service
                         {
                             jsonBody = Regex.Replace(jsonBody, @"\{\{" + item.Key + @"\}\}", item.Value.ToString());
                         }
-
                     }
+
                     if (plugin.Pmethod == "get")
                     {
                         request_res = _aiServer.AiGet(url, parameters, headers, cookies);
@@ -747,12 +841,13 @@ namespace aibotPro.Service
                     {
                         request_res = _aiServer.AiPost(url, parameters, headers, cookies, jsonBody);
                     }
+
                     //脚本回调
                     string jsCode = plugin.Pjscode;
                     //初始化脚本引擎
                     IServiceCollection services = new ServiceCollection();
                     services.AddJsEngineSwitcher(options => options.DefaultEngineName = ChakraCoreJsEngine.EngineName)
-                            .AddChakraCore();
+                        .AddChakraCore();
 
                     IServiceProvider serviceProvider = services.BuildServiceProvider();
                     IJsEngineSwitcher jsEngineSwitcher = serviceProvider.GetRequiredService<IJsEngineSwitcher>();
@@ -784,9 +879,7 @@ namespace aibotPro.Service
                         pluginResDto.result = $"{script_pr} {runScript} {plugin.Pfunctionname}(res)";
                         pluginResDto.doubletreating = false;
                         pluginResDto.doubletype = "js";
-
                     }
-
                 }
                 else if (pModel == "plugin-workflow")
                 {
@@ -805,6 +898,7 @@ namespace aibotPro.Service
                             pluginResDto.doubletreating = false;
                             return pluginResDto;
                         }
+
                         //找到start节点
                         WorkFlowNodeData workFlowNodeData = JsonConvert.DeserializeObject<WorkFlowNodeData>(nodeData);
                         //找到start节点
@@ -821,22 +915,24 @@ namespace aibotPro.Service
                             if (startOutput != null)
                             {
                                 Dictionary<string, string> parameters = new Dictionary<string, string>();
-                                if (startOutput.PrItems.Count > 0)//判断开始节点是否有参数
+                                if (startOutput.PrItems.Count > 0) //判断开始节点是否有参数
                                 {
                                     foreach (var entry in fn.ParseArguments())
                                     {
                                         string pr_val = entry.Value.ToString();
                                         string key = entry.Key;
-                                        var pr = startOutput.PrItems.Where(x => x.PrName.Replace(" ", "") == key).FirstOrDefault();
+                                        var pr = startOutput.PrItems.Where(x => x.PrName.Replace(" ", "") == key)
+                                            .FirstOrDefault();
                                         if (pr != null)
                                         {
-                                            if (!string.IsNullOrEmpty(pr.PrConst))//如果是常量
+                                            if (!string.IsNullOrEmpty(pr.PrConst)) //如果是常量
                                                 parameters.Add(pr.PrName, pr.PrConst);
                                             else
                                                 parameters.Add(pr.PrName, pr_val);
                                         }
                                     }
                                 }
+
                                 if (parameters.Count > 0)
                                 {
                                     startOutputJson = GenerateJson("start", parameters);
@@ -845,19 +941,32 @@ namespace aibotPro.Service
                                 {
                                     startOutputJson = "{}";
                                 }
+
                                 int workflowLimit = 20;
-                                if (_systemService.GetSystemCfgs().Where(s => s.CfgCode == "WorkFlow_Limit").FirstOrDefault() != null)
-                                    workflowLimit = int.Parse(_systemService.GetSystemCfgs().Where(s => s.CfgCode == "WorkFlow_Limit").FirstOrDefault().CfgValue);
-                                WorkflowEngine workflowEngine = new WorkflowEngine(workFlowNodeData, _aiServer, _systemService, _financeService, _context, account, _serviceProvider, _hubContext, chatId, senMethod, _redisService, _milvusService, workflowLimit, _cossService, _baiduService);
+                                if (_systemService.GetSystemCfgs().Where(s => s.CfgCode == "WorkFlow_Limit")
+                                        .FirstOrDefault() != null)
+                                    workflowLimit = int.Parse(_systemService.GetSystemCfgs()
+                                        .Where(s => s.CfgCode == "WorkFlow_Limit").FirstOrDefault().CfgValue);
+                                WorkflowEngine workflowEngine = new WorkflowEngine(workFlowNodeData, _aiServer,
+                                    _systemService, _financeService, _context, account, _serviceProvider, _hubContext,
+                                    chatId, senMethod, _redisService, _milvusService, workflowLimit, _cossService,
+                                    _baiduService, cancellationToken);
                                 List<NodeOutput> workflowResult = await workflowEngine.Execute(startOutputJson);
                                 //查询工作流结束模式
-                                var endNodeData = (EndData)workFlowNodeData.Drawflow.Home.Data.Values.FirstOrDefault(x => x.Name == "end").Data;
+                                var endNodeData = (EndData)workFlowNodeData.Drawflow.Home.Data.Values
+                                    .FirstOrDefault(x => x.Name == "end").Data;
                                 pluginResDto.result = string.Empty;
                                 string endAction = endNodeData.Output.EndAction;
                                 if (endAction != "ai")
                                     pluginResDto.doubletreating = false;
+                                if (endAction == "unhand")
+                                {
+                                    return pluginResDto;
+                                }
+
                                 pluginResDto.doubletype = endAction;
-                                string jscode = workflowResult.Where(w => w.NodeName == "end").FirstOrDefault().OutputData;
+                                string jscode = workflowResult.Where(w => w.NodeName == "end").FirstOrDefault()
+                                    .OutputData;
                                 if (endAction == "js")
                                     jscode = jscode + " end();";
                                 pluginResDto.result = jscode;
@@ -873,6 +982,7 @@ namespace aibotPro.Service
                     return pluginResDto;
                 }
             }
+
             return pluginResDto;
         }
 
@@ -884,10 +994,13 @@ namespace aibotPro.Service
             if (string.IsNullOrEmpty(nodedata))
             {
                 //从数据库读取
-                nodedata = _context.WorkFlows.Where(x => x.FlowCode == workflowcode).Select(x => x.FlowJson).FirstOrDefault();
+                nodedata = _context.WorkFlows.Where(x => x.FlowCode == workflowcode).Select(x => x.FlowJson)
+                    .FirstOrDefault();
             }
+
             return nodedata;
         }
+
         public bool SetMandatoryHit(string account, int id, bool mustHit)
         {
             //设置插件必中
@@ -897,18 +1010,22 @@ namespace aibotPro.Service
                 if (mustHit)
                 {
                     //其他插件全部设置为非必中
-                    var otherInstalls = _context.PluginsInstalls.Where(x => x.Account == account && x.Id != id).ToList();
+                    var otherInstalls = _context.PluginsInstalls.Where(x => x.Account == account && x.Id != id)
+                        .ToList();
                     foreach (var otherPlugin in otherInstalls)
                     {
                         otherPlugin.MustHit = false;
                     }
                 }
+
                 plugin.MustHit = mustHit;
                 _context.SaveChanges();
                 return true;
             }
+
             return false;
         }
+
         public async Task<List<OpenAPIModelSetting>> GetOpenAPIModelSetting(string account)
         {
             List<OpenAPIModelSetting> openAPIModelSettings = new List<OpenAPIModelSetting>();
@@ -917,12 +1034,14 @@ namespace aibotPro.Service
             var openApiSetting = await _redisService.GetAsync(openapiKey);
             if (openApiSetting == null)
             {
-                openAPIModelSettings = _context.OpenAPIModelSettings.AsNoTracking().Where(x => x.Account == account).ToList();
+                openAPIModelSettings = _context.OpenAPIModelSettings.AsNoTracking().Where(x => x.Account == account)
+                    .ToList();
                 if (openAPIModelSettings != null && openAPIModelSettings.Count > 0)
                 {
                     //写入缓存
                     await _redisService.SetAsync(openapiKey, JsonConvert.SerializeObject(openAPIModelSettings));
                 }
+
                 return openAPIModelSettings;
             }
             else
@@ -931,6 +1050,7 @@ namespace aibotPro.Service
                 return openAPIModelSettings;
             }
         }
+
         public async Task<bool> SaveOpenAPIModelSetting(string account, List<OpenAPIModelSetting> openAPIModelSetting)
         {
             string openapiKey = $"OpenAPI_{account}";
@@ -947,16 +1067,19 @@ namespace aibotPro.Service
                 };
                 _context.OpenAPIModelSettings.Add(openAPIModel);
             }
+
             _context.SaveChanges();
             //更新缓存
             var newSettings = _context.OpenAPIModelSettings.Where(x => x.Account == account);
             await _redisService.SetAsync(openapiKey, JsonConvert.SerializeObject(newSettings));
             return true;
         }
+
         public async Task<bool> InstallOrUninstallSystemPlugins(string account, string pluginName, bool status)
         {
             bool result = false;
-            var plugin = await _context.SystemPluginsInstalls.Where(p => p.PluginName == pluginName && p.Account == account).FirstOrDefaultAsync();
+            var plugin = await _context.SystemPluginsInstalls
+                .Where(p => p.PluginName == pluginName && p.Account == account).FirstOrDefaultAsync();
             if (status)
             {
                 if (plugin == null)
@@ -977,6 +1100,7 @@ namespace aibotPro.Service
                     _context.SystemPluginsInstalls.Remove(plugin);
                 result = true;
             }
+
             await _context.SaveChangesAsync();
             //系统插件信息写入缓存
             var plugins = _context.SystemPluginsInstalls.Where(p => p.Account == account).ToList();
@@ -984,6 +1108,7 @@ namespace aibotPro.Service
             await _redisService.SetAsync(key, JsonConvert.SerializeObject(plugins));
             return result;
         }
+
         public async Task<List<SystemPluginsInstall>> GetSystemPluginsInstall(string account)
         {
             List<SystemPluginsInstall> systemPluginsInstallList = new List<SystemPluginsInstall>();
@@ -998,9 +1123,12 @@ namespace aibotPro.Service
             }
             else
                 systemPluginsInstallList = JsonConvert.DeserializeObject<List<SystemPluginsInstall>>(pluginsCache);
+
             return systemPluginsInstallList;
         }
+
         #region workflow通用函数
+
         private static string FillJsonTemplate(string jsonTemplate, Dictionary<string, string> parameters)
         {
             string pattern = @"{{(\w+)}}";
@@ -1020,6 +1148,7 @@ namespace aibotPro.Service
 
             return filledJson;
         }
+
         private static string GenerateJson(string objectName, Dictionary<string, string> data)
         {
             var jsonBuilder = new StringBuilder();
@@ -1053,6 +1182,7 @@ namespace aibotPro.Service
 
             return jsonBuilder.ToString();
         }
+
         #endregion
     }
 }

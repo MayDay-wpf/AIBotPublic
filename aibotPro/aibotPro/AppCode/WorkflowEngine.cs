@@ -19,6 +19,8 @@ using StackExchange.Redis;
 using System;
 using System.Diagnostics;
 using System.Net.Mail;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
@@ -28,6 +30,7 @@ using System.Xml.Linq;
 using TiktokenSharp;
 using static iTextSharp.text.pdf.AcroFields;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using CSScriptLib;
 
 namespace aibotPro.AppCode
 {
@@ -50,7 +53,13 @@ namespace aibotPro.AppCode
         private static int _checkCount;
         private readonly IBaiduService _baiduService;
         private Dictionary<string, int> _nodeCheckCounts = new Dictionary<string, int>();
-        public WorkflowEngine(WorkFlowNodeData workflowData, IAiServer aiServer, ISystemService systemService, IFinanceService financeService, AIBotProContext context, string account, IServiceProvider serviceProvider, IHubContext<ChatHub> hubContext, string chatId, string senMethod, IRedisService redisService, IMilvusService milvusService, int checkCount, ICOSService cossService, IBaiduService baiduService)
+        private readonly CancellationToken _cancellationToken;
+
+        public WorkflowEngine(WorkFlowNodeData workflowData, IAiServer aiServer, ISystemService systemService,
+            IFinanceService financeService, AIBotProContext context, string account, IServiceProvider serviceProvider,
+            IHubContext<ChatHub> hubContext, string chatId, string senMethod, IRedisService redisService,
+            IMilvusService milvusService, int checkCount, ICOSService cossService, IBaiduService baiduService,
+            [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             _workflowData = workflowData;
             _aiServer = aiServer;
@@ -67,124 +76,16 @@ namespace aibotPro.AppCode
             _checkCount = checkCount;
             _cossService = cossService;
             _baiduService = baiduService;
+            _cancellationToken = cancellationToken;
         }
+
         public async Task<List<NodeOutput>> Execute(string startNodeOutput)
         {
             var startNode = _workflowData.Drawflow.Home.Data.Values.FirstOrDefault(x => x.Name == "start");
             var processedNodes = new HashSet<string>();
-            //var builds = Builds(startNode, 0);
-            //return await ExecuteFlow(builds, startNodeOutput);
             return await ExecuteFlow(startNodeOutput);
-            //return ExecuteNode(startNode, startNodeOutput, processedNodes);
         }
-        //private List<WorkFlowNodeBuild> Builds(NodeData node, int seq)
-        //{
-        //    var result = new List<WorkFlowNodeBuild>();
-        //    var levelNodes = new Dictionary<int, List<NodeData>>();
-        //    var nodeMaxLevel = new Dictionary<int, int>();
 
-        //    void UpdateNodeLevel(NodeData currentNode, int currentLevel, HashSet<NodeData> visitedNodes)
-        //    {
-        //        if (visitedNodes.Contains(currentNode))
-        //        {
-        //            throw new Exception("Detected a circular dependency in the workflow.");
-        //        }
-        //        visitedNodes.Add(currentNode);
-
-        //        // 更新当前节点的层级
-        //        if (!nodeMaxLevel.ContainsKey(currentNode.Id) || nodeMaxLevel[currentNode.Id] < currentLevel)
-        //        {
-        //            nodeMaxLevel[currentNode.Id] = currentLevel;
-        //        }
-
-        //        // 递归更新后续节点的层级
-        //        foreach (var output in currentNode.Outputs)
-        //        {
-        //            foreach (var connection in output.Value.Connections)
-        //            {
-        //                var nextNodeId = connection.Node;
-        //                var nextNode = _workflowData.Drawflow.Home.Data.Values.FirstOrDefault(x => x.Id.ToString() == nextNodeId);
-        //                if (nextNode != null)
-        //                {
-        //                    UpdateNodeLevel(nextNode, currentLevel + 1, new HashSet<NodeData>(visitedNodes));
-        //                }
-        //            }
-        //        }
-        //    }
-
-        //    // 首先确定所有节点的最大层级
-        //    UpdateNodeLevel(node, seq, new HashSet<NodeData>());
-
-        //    // 根据节点最大层级构建层级结构
-        //    void RecursiveBuild(NodeData currentNode, int currentSeq, HashSet<NodeData> visitedNodes)
-        //    {
-        //        if (visitedNodes.Contains(currentNode))
-        //        {
-        //            throw new Exception("Detected a circular dependency in the workflow.");
-        //        }
-        //        visitedNodes.Add(currentNode);
-
-        //        int nodeLevel = nodeMaxLevel[currentNode.Id];
-        //        if (!levelNodes.ContainsKey(nodeLevel))
-        //        {
-        //            levelNodes[nodeLevel] = new List<NodeData>();
-        //        }
-        //        if (!levelNodes[nodeLevel].Contains(currentNode))
-        //        {
-        //            levelNodes[nodeLevel].Add(currentNode);
-        //        }
-
-        //        foreach (var output in currentNode.Outputs)
-        //        {
-        //            foreach (var connection in output.Value.Connections)
-        //            {
-        //                var nextNodeId = connection.Node;
-        //                var nextNode = _workflowData.Drawflow.Home.Data.Values.FirstOrDefault(x => x.Id.ToString() == nextNodeId);
-        //                if (nextNode != null)
-        //                {
-        //                    RecursiveBuild(nextNode, nodeLevel + 1, new HashSet<NodeData>(visitedNodes));
-        //                }
-        //            }
-        //        }
-        //    }
-
-        //    // 构建层级结构
-        //    RecursiveBuild(node, 0, new HashSet<NodeData>());
-
-        //    // 构建结果
-        //    foreach (var kv in levelNodes.OrderBy(kv => kv.Key))
-        //    {
-        //        result.Add(new WorkFlowNodeBuild
-        //        {
-        //            Seq = kv.Key,
-        //            Nodes = kv.Value
-        //        });
-        //    }
-
-        //    return result;
-        //}
-        //private async Task<List<NodeOutput>> ExecuteFlow(List<WorkFlowNodeBuild> builds, string startNodeOutput)
-        //{
-        //    List<NodeOutput> result = new List<NodeOutput>();
-        //    // 对builds按照seq排序，并处理start元素
-        //    builds = builds.OrderBy(x => x.Seq).ToList();
-        //    result.Add(new NodeOutput { NodeName = "start", OutputData = startNodeOutput });
-        //    builds.RemoveAt(0); // 第一个build是"start"，且已处理
-        //    // 按照顺序处理每一个build，但build内部的Nodes可以并行执行
-        //    foreach (var build in builds)
-        //    {
-        //        var tasks = build.Nodes.Select(node => ExecuteNode(node, result)).ToArray();
-        //        // 等待这个build中所有node的处理完成
-        //        var nodeOutputs = await Task.WhenAll(tasks);
-        //        // 添加到总结果中
-        //        result.AddRange(nodeOutputs);
-        //    }
-        //    foreach (var item in _workFlowChargings)
-        //    {
-        //        await _financeService.CreateUseLogAndUpadteMoney(item.Account, item.ModelName, item.InputCount, item.OutputCount, item.IsDraw);
-        //    }
-        //    return result;
-        //}
         private async Task<List<NodeOutput>> ExecuteFlow(string startNodeOutput)
         {
             List<NodeOutput> result = new List<NodeOutput>();
@@ -221,6 +122,7 @@ namespace aibotPro.AppCode
                         }
                     }
                 }
+
                 nextNodes = new List<NodeData>();
                 foreach (var nodeOutput in nodeOutputs)
                 {
@@ -233,12 +135,16 @@ namespace aibotPro.AppCode
                     }
                 }
             }
+
             foreach (var item in _workFlowChargings)
             {
-                await _financeService.CreateUseLogAndUpadteMoney(item.Account, item.ModelName, item.InputCount, item.OutputCount, item.IsDraw);
+                await _financeService.CreateUseLogAndUpadteMoney(item.Account, item.ModelName, item.InputCount,
+                    item.OutputCount, item.IsDraw);
             }
+
             return result;
         }
+
         private async Task<NodeOutput> ExecuteNode(NodeData node, List<NodeOutput> result)
         {
             NodeOutput nodeOutput = new NodeOutput();
@@ -255,6 +161,9 @@ namespace aibotPro.AppCode
                     break;
                 case "javascript":
                     nodeOutput = await ProcessJavaScriptNode(node, result);
+                    break;
+                case "csharp":
+                    nodeOutput = await ProcessCsharpNode(node, result);
                     break;
                 case "http":
                     nodeOutput = await ProcessHttpNode(node, result);
@@ -293,6 +202,7 @@ namespace aibotPro.AppCode
 
             return nodeOutput;
         }
+
         private List<NodeData> FindNextNode(Dictionary<string, NodeConnection> nodeOutput)
         {
             List<NodeData> nextNodes = new List<NodeData>();
@@ -304,19 +214,22 @@ namespace aibotPro.AppCode
                     nodeIds.Add(Convert.ToInt32(items.Node));
                 }
             }
+
             foreach (var item in nodeIds)
             {
                 var nextnode = _workflowData.Drawflow.Home.Data.Values.Where(x => x.Id == item).FirstOrDefault();
                 nextNodes.Add(nextnode);
             }
+
             return nextNodes;
         }
+
         private string RunScript(string functionName, string javaScript)
         {
             //初始化JavaScript引擎
             IServiceCollection services = new ServiceCollection();
             services.AddJsEngineSwitcher(options => options.DefaultEngineName = ChakraCoreJsEngine.EngineName)
-                    .AddChakraCore();
+                .AddChakraCore();
 
             IServiceProvider serviceProvider = services.BuildServiceProvider();
             IJsEngineSwitcher jsEngineSwitcher = serviceProvider.GetRequiredService<IJsEngineSwitcher>();
@@ -327,6 +240,7 @@ namespace aibotPro.AppCode
             string executeResult = jsEngine.CallFunction<string>(functionName);
             return executeResult;
         }
+
         private async Task<NodeOutput> ProcessStartNode(NodeData node, List<NodeOutput> result)
         {
             NodeOutput nodeOutput = new NodeOutput();
@@ -343,21 +257,47 @@ namespace aibotPro.AppCode
             {
                 _nodeCheckCounts[nodeKey] = _checkCount;
             }
+
             if (_nodeCheckCounts[nodeKey] <= 0)
             {
                 throw new Exception($"节点 {nodeKey} 的运行次数超出系统设定的极限, 触发流程引擎死循环保护, 请修正您的 WorkFlow");
             }
+
             NodeOutput nodeOutput = new NodeOutput();
             //获取javascript节点的脚本内容
             var jsData = (JavaScriptData)node.Data;
             //替换脚本中的变量
             jsData.Output.JavaScript = FillScriptWithValues(jsData.Output.JavaScript, result);
-            if (!string.IsNullOrEmpty(_chatId))
+            string prompt =
+                $@"# Carefully analyze the following JavaScript code to determine if there are any infinite loops:
+
+                   **Guidelines**:
+                   
+                   * Examine all loop structures (while, for, do-while, etc.).
+                   * Analyze loop conditions and the code within loop bodies.
+                   * Determine if there are explicit, guaranteed-to-be-reached exit conditions.
+                   * Be aware of edge cases or data type limitations that might cause loops to never terminate.
+                   * Don't be misled by comments or seemingly reasonable code structures.
+                   * Consider all possible execution paths, including exception handling.
+                   
+                   **Result Requirements**:
+                   
+                   * Return true if there's any scenario that could lead to an infinite loop.
+                   * Return false if all loops have clear and guaranteed-to-be-reached exit conditions.
+                   * Provide your reasoning for the judgment.
+                   
+                   # Code:
+                   
+                   ```javascript
+                   {jsData.Output.JavaScript}
+                   ```";
+
+            var (isValid, reason) = await AICodeCheck(prompt);
+            if (isValid)
             {
-                ChatRes chatRes = new ChatRes();
-                chatRes.message = $"👨‍💻\n";
-                await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
+                throw new Exception($"节点 {nodeKey}:{reason}");
             }
+
             string ExecuteResult = RunScript(nodeKey, jsData.Output.JavaScript);
             nodeOutput.NodeName = nodeKey;
             nodeOutput.OutputData = BuilderJson(nodeKey, ExecuteResult);
@@ -366,6 +306,174 @@ namespace aibotPro.AppCode
             return nodeOutput;
         }
 
+        private async Task<NodeOutput> ProcessCsharpNode(NodeData node, List<NodeOutput> result)
+        {
+            var nodeKey = node.Name + node.Id;
+            if (!_nodeCheckCounts.ContainsKey(nodeKey))
+            {
+                _nodeCheckCounts[nodeKey] = _checkCount;
+            }
+
+            if (_nodeCheckCounts[nodeKey] <= 0)
+            {
+                throw new Exception($"节点 {nodeKey} 的运行次数超出系统设定的极限, 触发流程引擎死循环保护, 请修正您的 WorkFlow");
+            }
+
+            NodeOutput nodeOutput = new NodeOutput();
+            //获取csharp节点的脚本内容
+            var csData = (CsharpData)node.Data;
+            //替换脚本中的变量
+            csData.Output.Csharp = FillScriptWithValues(csData.Output.Csharp, result);
+
+            string prompt =
+                $@"# Carefully analyze the following C# code to determine if there are any infinite loops:
+
+                   **Guidelines**:
+   
+                   * Examine all loop structures (while, for, do-while, etc.).
+                   * Analyze loop conditions and the code within loop bodies.
+                   * Determine if there are explicit, guaranteed-to-be-reached exit conditions.
+                   * Be aware of edge cases or data type limitations that might cause loops to never terminate.
+                   * Don't be misled by comments or seemingly reasonable code structures.
+                   * Consider all possible execution paths, including exception handling.
+                   * Evaluate whether loops will end within a reasonable time (about 30 seconds). HTTP request code is not within the scope of consideration, as HTTP request times are not stable.
+                   * Analyze changes in loop variables to ensure they're moving towards termination conditions.
+   
+                   **Result Requirements**:
+   
+                   * Return true if there's any scenario that could lead to an infinite loop or a loop running for an excessively long time (over 30 seconds).
+                   * Return false if all loops have clear and guaranteed-to-be-reached exit conditions and can finish within a reasonable time.
+                   * Provide a concise explanation for your judgment, explaining your analysis process and conclusions.
+   
+                   # Code:
+                   
+                   ```csharp
+                   {csData.Output.Csharp}
+                   ```";
+
+            var (isValid, reason) = await AICodeCheck(prompt);
+            if (isValid)
+            {
+                throw new Exception($"节点 {nodeKey}:{reason}");
+            }
+
+            string ExecuteResult = "Not have Data";
+            try
+            {
+                Assembly asm = null;
+                try
+                {
+                    asm = CSScript.Evaluator.CompileCode(csData.Output.Csharp);
+                }
+                catch (Exception ex)
+                {
+                    ExecuteResult = $"Compilation failed: {ex.Message}";
+                    throw new Exception(ExecuteResult);
+                }
+
+                var scriptType = asm.GetTypes().FirstOrDefault(t => t.FullName.EndsWith("Script"));
+                if (scriptType == null)
+                {
+                    ExecuteResult = "Class 'Script' not found in the compiled assembly.";
+                    throw new Exception(ExecuteResult);
+                }
+
+                var executeMethod = scriptType.GetMethod("Main",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+
+                if (executeMethod != null)
+                {
+                    // 检查方法参数
+                    var parameters = executeMethod.GetParameters();
+                    if (parameters.Length == 0)
+                    {
+                        ExecuteResult = (string)executeMethod.Invoke(null, null);
+                    }
+                    else if (parameters.Length > 0)
+                    {
+                        var parameterValues = new List<object>();
+                        foreach (var param in parameters)
+                        {
+                            var matchingItem = csData.Output.PrItems.FirstOrDefault(item => item.PrName == param.Name);
+                            if (matchingItem != null)
+                            {
+                                object paramValue = ConvertParameter(matchingItem.PrConst, matchingItem.PrType, result);
+                                parameterValues.Add(paramValue);
+                            }
+                            else
+                            {
+                                // 如果没有找到匹配的参数，添加默认值或者null
+                                parameterValues.Add(param.ParameterType.IsValueType
+                                    ? Activator.CreateInstance(param.ParameterType)
+                                    : null);
+                            }
+                        }
+
+                        ExecuteResult = (string)executeMethod.Invoke(null, parameterValues.ToArray());
+                    }
+                    else
+                    {
+                        ExecuteResult = "Main method has unexpected parameters.";
+                        throw new Exception(ExecuteResult);
+                    }
+                }
+                else
+                {
+                    ExecuteResult = "Method 'Main' not found in Script class";
+                    throw new Exception(ExecuteResult);
+                }
+            }
+            catch (Exception ex)
+            {
+                ExecuteResult = $"An error occurred: {ex.Message}\n\nStack Trace: {ex.StackTrace}";
+                if (ex.InnerException != null)
+                {
+                    ExecuteResult +=
+                        $"\n\nInner Exception: {ex.InnerException.Message}\n\nInner Stack Trace: {ex.InnerException.StackTrace}";
+                }
+
+                throw new Exception(ExecuteResult);
+            }
+
+            nodeOutput.NodeName = nodeKey;
+            nodeOutput.OutputData = BuilderJson(nodeKey, ExecuteResult.ToString());
+            nodeOutput.NextNodes = FindNextNode(node.Outputs);
+            _nodeCheckCounts[nodeKey]--;
+            return nodeOutput;
+        }
+
+        private object ConvertParameter(string value, string type, List<NodeOutput> result)
+        {
+            try
+            {
+                value = FillScriptWithValues(value, result);
+                switch (type.ToLower())
+                {
+                    case "string":
+                        return value;
+                    case "json":
+                        return ProcessJsonString(value);
+                    case "int":
+                        return int.Parse(value);
+                    case "bool":
+                        return bool.Parse(value);
+                    case "decimal":
+                        return decimal.Parse(value);
+                    default:
+                        throw new NotSupportedException($"Unsupported parameter type: {type}");
+                }
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Error converting parameter: {e.Message}");
+            }
+        }
+
+        private static string ProcessJsonString(string jsonString)
+        {
+            jsonString = jsonString.Replace("\\n", "\n").Replace("\\t", "\t").Replace("\\r", "\r").Replace("\\\"", "\"");
+            return jsonString;
+        }
         private async Task<NodeOutput> ProcessHttpNode(NodeData node, List<NodeOutput> result)
         {
             var nodeKey = node.Name + node.Id;
@@ -373,22 +481,18 @@ namespace aibotPro.AppCode
             {
                 _nodeCheckCounts[nodeKey] = _checkCount;
             }
+
             if (_nodeCheckCounts[nodeKey] <= 0)
             {
                 throw new Exception($"节点 {nodeKey} 的运行次数超出系统设定的极限, 触发流程引擎死循环保护, 请修正您的 WorkFlow");
             }
+
             NodeOutput nodeOutput = new NodeOutput();
             // 处理 "http" 节点,执行 HTTP 请求,返回 JSON 字符串
             HttpData httpData = (HttpData)node.Data;
             string type = httpData.Output.Type;
             string url = FillScriptWithValues(httpData.Output.RequestUrl, result);
             string body = string.Empty;
-            if (!string.IsNullOrEmpty(_chatId))
-            {
-                ChatRes chatRes = new ChatRes();
-                chatRes.message = $"📎\n";
-                await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
-            }
             Dictionary<string, object> parameters = new Dictionary<string, object>();
             Dictionary<string, string> headers = new Dictionary<string, string>();
             Dictionary<string, string> cookies = new Dictionary<string, string>();
@@ -406,6 +510,7 @@ namespace aibotPro.AppCode
                     body = FillScriptWithValues(httpData.Output.Jsontemplate, result);
                 }
             }
+
             if (httpData.Output.HeadersItems.Count > 0)
             {
                 foreach (var itemHd in httpData.Output.HeadersItems)
@@ -413,6 +518,7 @@ namespace aibotPro.AppCode
                     headers.Add(itemHd.HdKey, itemHd.HdValue);
                 }
             }
+
             if (httpData.Output.CookiesItems.Count > 0)
             {
                 foreach (var itemCk in httpData.Output.CookiesItems)
@@ -420,6 +526,7 @@ namespace aibotPro.AppCode
                     cookies.Add(itemCk.CkKey, itemCk.CkValue);
                 }
             }
+
             string httpResult = string.Empty;
             int maxcount = httpData.Output.HttpMaxcount;
             int httpdelayed = httpData.Output.HttpDelayed;
@@ -440,6 +547,7 @@ namespace aibotPro.AppCode
                     {
                         httpresult = _aiServer.AiPost(url, parameters, headers, cookies, body);
                     }
+
                     return httpresult;
                 });
                 httpScript = FillScriptWithValues(httpScript, result, BuilderJson(nodeKey, httpResult));
@@ -454,8 +562,10 @@ namespace aibotPro.AppCode
                     chatRes.message = ExecuteResult;
                     await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
                 }
+
                 Thread.Sleep(httpdelayed);
             }
+
             nodeOutput.NodeName = nodeKey;
             nodeOutput.OutputData = BuilderJson(nodeKey, httpResult);
             nodeOutput.NextNodes = FindNextNode(node.Outputs);
@@ -470,28 +580,26 @@ namespace aibotPro.AppCode
             {
                 _nodeCheckCounts[nodeKey] = _checkCount;
             }
+
             if (_nodeCheckCounts[nodeKey] <= 0)
             {
                 throw new Exception($"节点 {nodeKey} 的运行次数超出系统设定的极限, 触发流程引擎死循环保护, 请修正您的 WorkFlow");
             }
+
             NodeOutput nodeOutput = new NodeOutput();
             // 处理 "LLM" 节点,执行 LLM 代码,返回 JSON 字符串
             LLMData llmData = (LLMData)node.Data;
             TikToken tikToken = TikToken.GetEncoding("cl100k_base");
             string inputtokens = "";
             string outputtokens = "";
-            if (!string.IsNullOrEmpty(_chatId))
-            {
-                ChatRes chatRes = new ChatRes();
-                chatRes.message = $"🤖\n";
-                await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
-            }
             string aimodel = llmData.Output.AiModel;
             string prompt = FillScriptWithValues(llmData.Output.Prompt, result);
             string airesult = string.Empty; // 初始化为空
             int retryCount = llmData.Output.Retry; // 重试次数
             bool stream = llmData.Output.Stream;
             bool jsonModel = llmData.Output.JsonModel;
+            bool jsonSchema = llmData.Output.JsonSchema;
+            string jsonSchemaInput = llmData.Output.JsonSchemaInput;
             int initialRetryCount = retryCount;
             int maxcount = llmData.Output.LLMMaxcount;
             AiChat aiChat = null;
@@ -501,7 +609,8 @@ namespace aibotPro.AppCode
             {
                 string imgurl = FillScriptWithValues(llmData.Output.ImgUrl, result);
                 if (apiSetting.IsVisionModel.HasValue && apiSetting.IsVisionModel.Value)
-                    visionBody = CreateVisionBody(aimodel, prompt, imgurl, stream, jsonModel);
+                    visionBody = CreateVisionBody(aimodel, prompt, imgurl, stream, jsonModel, jsonSchema,
+                        jsonSchemaInput);
                 else
                 {
                     string imageData = await _systemService.ImgConvertToBase64(imgurl);
@@ -510,13 +619,14 @@ namespace aibotPro.AppCode
                     prompt = @$"# 要求：请你充当图片内容分析师,回答:{prompt}
                                 * 图像中的文字识别结果为：{imgTxt}
                                 * 图像中物体和场景识别结果为：{imgRes}";
-                    aiChat = CreateAiChat(aimodel, prompt, stream, jsonModel);
+                    aiChat = CreateAiChat(aimodel, prompt, stream, jsonModel, jsonSchema, jsonSchemaInput);
                 }
             }
             else
             {
-                aiChat = CreateAiChat(aimodel, prompt, stream, jsonModel);
+                aiChat = CreateAiChat(aimodel, prompt, stream, jsonModel, jsonSchema, jsonSchemaInput);
             }
+
             while (true)
             {
                 if (maxcount < 0)
@@ -533,7 +643,7 @@ namespace aibotPro.AppCode
                         if (!stream || string.IsNullOrEmpty(_chatId))
                         {
                             result = await _aiServer.CallingAINotStream(aiChat, apiSetting, visionBody);
-                            if (!jsonModel)
+                            if (!jsonModel && !jsonSchema)
                                 result = EscapeSpecialCharacters(result);
                             if (!string.IsNullOrEmpty(result))
                             {
@@ -541,36 +651,32 @@ namespace aibotPro.AppCode
                                 break; // 如果结果非空,退出循环
                             }
 
-
-                            // 如果在重试结束后结果仍为空,则抛出异常
-                            if (string.IsNullOrEmpty(result))
-                            {
-                                string failMessage = "❌ 重试失败。LLM处理数据时回复为空,工作流中断,请重试";
-                                if (!string.IsNullOrEmpty(_chatId))
-                                {
-                                    await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, new ChatRes { message = failMessage });
-                                }
-                                throw new Exception(failMessage);
-                            }
                             if (!string.IsNullOrEmpty(_chatId) && currentRetryCount > 0)
                             {
                                 // 计算剩余重试次数
                                 int remainingRetries = currentRetryCount - 1;
-                                string retryMessage = $"🔄 LLM重试 {initialRetryCount - remainingRetries}/{initialRetryCount}...";
+                                string retryMessage =
+                                    $"🔄 LLM重试 {initialRetryCount - remainingRetries}/{initialRetryCount}...";
 
-                                await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, new ChatRes { message = retryMessage });
+                                await _hubContext.Clients.Group(_chatId)
+                                    .SendAsync(_senMethod, new ChatRes { message = retryMessage });
                             }
                         }
                         else
                         {
                             try
                             {
-                                await foreach (var responseContent in _aiServer.CallingAI(aiChat, apiSetting, _chatId, visionBody))
+                                await foreach (var responseContent in _aiServer.CallingAI(aiChat, apiSetting, _chatId,
+                                                   visionBody, _cancellationToken))
                                 {
                                     result += responseContent.Choices[0].Delta.Content;
-                                    await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, new ChatRes { message = responseContent.Choices[0].Delta.Content });
+                                    await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod,
+                                        new ChatRes { message = responseContent.Choices[0].Delta.Content });
                                     outputtokens += responseContent.Choices[0].Delta.Content;
                                 }
+
+                                await _financeService.UsageSaveRedis(_chatId, _account, "assistant", result,
+                                    AIBotProEnum.HashFieldOperationMode.Append);
                                 break;
                             }
                             catch (Exception ex)
@@ -579,31 +685,38 @@ namespace aibotPro.AppCode
                                 {
                                     // 计算剩余重试次数
                                     int remainingRetries = currentRetryCount - 1;
-                                    string retryMessage = $"🔄 LLM请求出错,重试 {initialRetryCount - remainingRetries}/{initialRetryCount}...";
+                                    string retryMessage =
+                                        $"🔄 LLM请求出错,重试 {initialRetryCount - remainingRetries}/{initialRetryCount}...";
 
-                                    await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, new ChatRes { message = retryMessage });
+                                    await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod,
+                                        new ChatRes { message = retryMessage });
                                 }
 
                                 await Task.Delay(500); // 延迟一段时间再重试
                                 continue; // 继续下一次重试
                             }
                         }
+
                         await Task.Delay(500);
                     } while (--currentRetryCount >= 0);
 
+                    // 如果在重试结束后结果仍为空,则抛出异常
+                    if (string.IsNullOrEmpty(result))
+                    {
+                        string failMessage = "❌ 重试失败。LLM处理数据时回复为空,工作流中断,请重试";
+                        if (!string.IsNullOrEmpty(_chatId))
+                        {
+                            await _hubContext.Clients.Group(_chatId)
+                                .SendAsync(_senMethod, new ChatRes { message = failMessage });
+                        }
+
+                        throw new Exception(failMessage);
+                    }
+
                     return result;
                 });
-                var jobject = new JObject
-                {
-                    [$"{node.Name}{node.Id}"] = new JObject
-                    {
-                        ["data"] = airesult
-                    }
-                };
-                // 将JObject转换成JSON字符串
-                string jsonStr = jobject.ToString(Formatting.None);
                 string llmScript = llmData.Output.JudgeScript;
-                llmScript = FillScriptWithValues(llmScript, result, jsonStr);
+                llmScript = FillScriptWithValues(llmScript, result, BuilderJson(nodeKey, airesult));
                 string ExecuteResult = RunScript(nodeKey, llmScript);
                 if (ExecuteResult == "True")
                 {
@@ -621,29 +734,23 @@ namespace aibotPro.AppCode
                     int outputCount = tikToken.Encode(outputtokens).Count;
                     await _financeService.CreateUseLogAndUpadteMoney(_account, aimodel, inputCount, outputCount);
                 }
-
             }
-            var jobjectRes = new JObject
-            {
-                [$"{node.Name}{node.Id}"] = new JObject
-                {
-                    ["data"] = airesult
-                }
-            };
 
-            // 将JObject转换成JSON字符串
-            string jsonStrRes = jsonModel ? BuilderJson(nodeKey, JsonConvert.SerializeObject(JsonConvert.DeserializeObject(airesult))) : jobjectRes.ToString(Formatting.None);
             nodeOutput.NodeName = nodeKey;
-            nodeOutput.OutputData = jsonStrRes;
+            nodeOutput.OutputData = BuilderJson(nodeKey, airesult);
             nodeOutput.NextNodes = FindNextNode(node.Outputs);
             _nodeCheckCounts[nodeKey]--;
             return nodeOutput;
         }
-        private AiChat CreateAiChat(string aimodel, string prompt, bool stream, bool jsonModel)
+
+        private AiChat CreateAiChat(string aimodel, string prompt, bool stream, bool jsonModel, bool jsonSchema,
+            string jsonSchemaInput)
         {
             AiChat aiChat = new AiChat();
             aiChat.Model = aimodel;
             aiChat.Stream = stream;
+
+            // 处理JSON模型
             if (jsonModel)
             {
                 aiChat.ResponseFormat = new ResponseFormat()
@@ -651,6 +758,25 @@ namespace aibotPro.AppCode
                     Type = "json_object"
                 };
             }
+
+            // 处理JSON Schema
+            if (jsonSchema && !string.IsNullOrWhiteSpace(jsonSchemaInput))
+            {
+                JObject schemaObject = JObject.Parse(jsonSchemaInput);
+
+                aiChat.ResponseFormat = new ResponseFormat()
+                {
+                    Type = "json_schema",
+                    JsonSchema = new JsonSchemaWrapper
+                    {
+                        Name = "reply_schema",
+                        Strict = true,
+                        Schema = schemaObject
+                    }
+                };
+            }
+
+            // 创建消息列表
             List<Message> messages = new List<Message>();
             Message message = new Message
             {
@@ -661,11 +787,14 @@ namespace aibotPro.AppCode
             aiChat.Messages = messages;
             return aiChat;
         }
-        private VisionBody CreateVisionBody(string aimodel, string prompt, string imgurl, bool stream, bool jsonModel)
+
+        private VisionBody CreateVisionBody(string aimodel, string prompt, string imgurl, bool stream, bool jsonModel,
+            bool jsonSchema, string jsonSchemaInput)
         {
             VisionBody visionBody = new VisionBody();
             visionBody.model = aimodel;
             visionBody.stream = stream;
+
             if (jsonModel)
             {
                 visionBody.response_format = new ResponseFormat()
@@ -673,8 +802,27 @@ namespace aibotPro.AppCode
                     Type = "json_object"
                 };
             }
+
+            if (jsonSchema && !string.IsNullOrWhiteSpace(jsonSchemaInput))
+            {
+                // 解析jsonSchemaInput为JObject
+                JObject schemaObject = JObject.Parse(jsonSchemaInput);
+
+                visionBody.response_format = new ResponseFormat()
+                {
+                    Type = "json_schema",
+                    JsonSchema = new JsonSchemaWrapper
+                    {
+                        Name = "reply_schema", // 可以自定义通过参数传入或固定命名
+                        Strict = true, // 根据实际需求设置
+                        Schema = schemaObject
+                    }
+                };
+            }
+
             List<VisionChatMesssage> messages = new List<VisionChatMesssage>();
             List<VisionContent> visionContents = new List<VisionContent>();
+
             VisionContent textVisionContent = new VisionContent()
             {
                 type = "text",
@@ -688,16 +836,20 @@ namespace aibotPro.AppCode
                     url = imgurl
                 }
             };
+
             visionContents.Add(textVisionContent);
             visionContents.Add(imgVisionContent);
+
             messages.Add(new VisionChatMesssage
             {
                 role = "user",
                 content = visionContents
             });
+
             visionBody.messages = messages.ToArray();
             return visionBody;
         }
+
         private APISetting CreateAPISetting(string aimodel)
         {
             APISetting apiSetting = new APISetting();
@@ -707,6 +859,7 @@ namespace aibotPro.AppCode
             {
                 throw new Exception("AI模型不存在");
             }
+
             string apiKey = aiModelInfo.ApiKey;
             //标准化baseurl
             string baseUrl = aiModelInfo.BaseUrl;
@@ -721,11 +874,13 @@ namespace aibotPro.AppCode
             {
                 throw e;
             }
+
             apiSetting.ApiKey = apiKey;
             apiSetting.BaseUrl = baseUrl;
             apiSetting.IsVisionModel = aiModelInfo.VisionModel;
             return apiSetting;
         }
+
         private async Task<NodeOutput> ProcessDALLNode(NodeData node, List<NodeOutput> result)
         {
             var nodeKey = node.Name + node.Id;
@@ -733,19 +888,15 @@ namespace aibotPro.AppCode
             {
                 _nodeCheckCounts[nodeKey] = _checkCount;
             }
+
             if (_nodeCheckCounts[nodeKey] <= 0)
             {
                 throw new Exception($"节点 {nodeKey} 的运行次数超出系统设定的极限, 触发流程引擎死循环保护, 请修正您的 WorkFlow");
             }
+
             NodeOutput nodeOutput = new NodeOutput();
             // 处理 "DALL" 节点,执行 DALL 代码,返回 JSON 字符串
             DALLData dallData = (DALLData)node.Data;
-            if (!string.IsNullOrEmpty(_chatId))
-            {
-                ChatRes chatRes = new ChatRes();
-                chatRes.message = $"✍ \n";
-                await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
-            }
             string prompt = FillScriptWithValues(dallData.Output.Prompt, result);
             //获取DALLE3的apikey和baseurl
             var aiModel = _context.AIdraws.AsNoTracking().Where(x => x.ModelName == "DALLE3").FirstOrDefault();
@@ -756,7 +907,8 @@ namespace aibotPro.AppCode
             int initialRetryCount = retryCount;
             do
             {
-                airesult = await _aiServer.CreateDALLdraw(prompt, dallData.Output.Size, dallData.Output.Quality, aiModel.BaseUrl, aiModel.ApiKey);
+                airesult = await _aiServer.CreateDALLdraw(prompt, dallData.Output.Size, dallData.Output.Quality,
+                    aiModel.BaseUrl, aiModel.ApiKey);
                 if (!string.IsNullOrEmpty(airesult)) break; // 如果结果非空，退出循环
                 if (!string.IsNullOrEmpty(_chatId) && retryCount > 0)
                 {
@@ -764,8 +916,10 @@ namespace aibotPro.AppCode
                     int remainingRetries = retryCount - 1;
                     string retryMessage = $"🔄 DALLE3重试 {initialRetryCount - remainingRetries}/{initialRetryCount}...";
 
-                    await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, new ChatRes { message = retryMessage });
+                    await _hubContext.Clients.Group(_chatId)
+                        .SendAsync(_senMethod, new ChatRes { message = retryMessage });
                 }
+
                 await Task.Delay(500);
             } while (--retryCount >= 0);
 
@@ -775,19 +929,15 @@ namespace aibotPro.AppCode
                 string failMessage = "❌ 重试失败。DALLE3绘图失败，工作流中断，请重试";
                 if (!string.IsNullOrEmpty(_chatId))
                 {
-                    await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, new ChatRes { message = failMessage });
+                    await _hubContext.Clients.Group(_chatId)
+                        .SendAsync(_senMethod, new ChatRes { message = failMessage });
                 }
+
                 throw new Exception(failMessage);
             }
-            var jsonBuilder = new StringBuilder();
-            jsonBuilder.Append("{");
-            jsonBuilder.Append($"\"{node.Name + node.Id}\":");
-            jsonBuilder.Append("{");
-            jsonBuilder.Append($"\"data\":");
-            jsonBuilder.Append($"\"{airesult}\"");
-            jsonBuilder.Append("}");
-            jsonBuilder.Append("}");
-            _workFlowChargings.Add(new WorkFlowCharging { Account = _account, ModelName = "DALLE3", InputCount = 0, OutputCount = 0, IsDraw = true });
+
+            _workFlowChargings.Add(new WorkFlowCharging
+            { Account = _account, ModelName = "DALLE3", InputCount = 0, OutputCount = 0, IsDraw = true });
 
             // 在后台启动一个任务下载图片
             string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "");
@@ -804,7 +954,8 @@ namespace aibotPro.AppCode
                     var cosService = scope.ServiceProvider.GetRequiredService<ICOSService>();
                     var systemService = scope.ServiceProvider.GetRequiredService<ISystemService>();
                     await aiSaveService.DownloadImageAsync(airesult, savePath, newFileName);
-                    string thumbSavePath = systemService.CompressImage(Path.Combine(savePath, newFileName + ".png"), 75);
+                    string thumbSavePath =
+                        systemService.CompressImage(Path.Combine(savePath, newFileName + ".png"), 75);
                     //查询是否启用了COS
                     var systemCfg = systemService.GetSystemCfgs();
                     var cos_switch = systemCfg.FirstOrDefault(x => x.CfgKey == "COS_Switch");
@@ -816,16 +967,19 @@ namespace aibotPro.AppCode
                             string coskey = $"dallres/{DateTime.Now.ToString("yyyyMMdd")}/{newFileName}.png";
                             string thumbFileName = System.IO.Path.GetFileName(thumbSavePath);
                             thumbKey = coskey.Replace(System.IO.Path.GetFileName(imgResPath), thumbFileName);
-                            imgResPath = cosService.PutObject(coskey, Path.Combine(savePath, newFileName + ".png"), newFileName + ".png");
+                            imgResPath = cosService.PutObject(coskey, Path.Combine(savePath, newFileName + ".png"),
+                                newFileName + ".png");
                             thumbSavePath = cosService.PutObject(thumbKey, thumbSavePath, thumbFileName);
                             referenceImgPath = coskey;
                         }
                     }
-                    await aiSaveService.SaveAiDrawResult(_account, "DALLE3", imgResPath, prompt, referenceImgPath, thumbSavePath, thumbKey);
+
+                    await aiSaveService.SaveAiDrawResult(_account, "DALLE3", imgResPath, prompt, referenceImgPath,
+                        thumbSavePath, thumbKey);
                 }
             });
             nodeOutput.NodeName = nodeKey;
-            nodeOutput.OutputData = jsonBuilder.ToString();
+            nodeOutput.OutputData = BuilderJson(nodeKey, airesult);
             nodeOutput.NextNodes = FindNextNode(node.Outputs);
             _nodeCheckCounts[nodeKey]--;
             return nodeOutput;
@@ -838,25 +992,22 @@ namespace aibotPro.AppCode
             {
                 _nodeCheckCounts[nodeKey] = _checkCount;
             }
+
             if (_nodeCheckCounts[nodeKey] <= 0)
             {
                 throw new Exception($"节点 {nodeKey} 的运行次数超出系统设定的极限, 触发流程引擎死循环保护, 请修正您的 WorkFlow");
             }
+
             NodeOutput nodeOutput = new NodeOutput();
             DownLoadImg downLoadImageData = (DownLoadImg)node.Data;
             string imageUrl = FillScriptWithValues(downLoadImageData.Output.ImageUrl, result);
             string prompt = FillScriptWithValues(downLoadImageData.Output.Prompt, result);
-            if (!string.IsNullOrEmpty(_chatId))
+            if (string.IsNullOrEmpty(imageUrl))
             {
-                ChatRes chatRes = new ChatRes();
-                chatRes.message = $"📥 \n";
-                await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
-                if (string.IsNullOrEmpty(imageUrl))
-                {
-                    string error = $"❌ 图片链接为空，请重试";
-                    throw new Exception(error);
-                }
+                string error = $"❌ 图片链接为空，请重试";
+                throw new Exception(error);
             }
+
             // 在后台启动一个任务下载图片
             string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "");
             string imgResPath = Path.Combine("/files/workflowdownloadres", _account, newFileName + ".png");
@@ -870,11 +1021,13 @@ namespace aibotPro.AppCode
                 {
                     // 这里做一些后续处理，比如更新数据库记录等
                     string savePath = Path.Combine("wwwroot", "files/workflowdownloadres", _account);
-                    var aiSaveService = scope.ServiceProvider.GetRequiredService<IAiServer>(); // 假设保存记录方法在IAiSaveService中。
+                    var aiSaveService =
+                        scope.ServiceProvider.GetRequiredService<IAiServer>(); // 假设保存记录方法在IAiSaveService中。
                     var cosService = scope.ServiceProvider.GetRequiredService<ICOSService>();
                     var systemService = scope.ServiceProvider.GetRequiredService<ISystemService>();
                     await aiSaveService.DownloadImageAsync(imageUrl, savePath, newFileName);
-                    string thumbSavePath = systemService.CompressImage(Path.Combine(savePath, newFileName + ".png"), 75);
+                    string thumbSavePath =
+                        systemService.CompressImage(Path.Combine(savePath, newFileName + ".png"), 75);
                     //查询是否启用了COS
                     var systemCfg = systemService.GetSystemCfgs();
                     var cos_switch = systemCfg.FirstOrDefault(x => x.CfgKey == "COS_Switch");
@@ -883,27 +1036,23 @@ namespace aibotPro.AppCode
                         string cos_switch_val = cos_switch.CfgValue;
                         if (!string.IsNullOrEmpty(cos_switch_val) && cos_switch_val == "1")
                         {
-                            string coskey = $"workflowdownloadres/{DateTime.Now.ToString("yyyyMMdd")}/{newFileName}.png";
+                            string coskey =
+                                $"workflowdownloadres/{DateTime.Now.ToString("yyyyMMdd")}/{newFileName}.png";
                             string thumbFileName = System.IO.Path.GetFileName(thumbSavePath);
                             thumbKey = coskey.Replace(System.IO.Path.GetFileName(imgResPath), thumbFileName);
-                            imgResPath = cosService.PutObject(coskey, Path.Combine(savePath, newFileName + ".png"), newFileName + ".png");
+                            imgResPath = cosService.PutObject(coskey, Path.Combine(savePath, newFileName + ".png"),
+                                newFileName + ".png");
                             thumbSavePath = cosService.PutObject(thumbKey, thumbSavePath, thumbFileName);
                             referenceImgPath = coskey;
                         }
                     }
-                    await aiSaveService.SaveAiDrawResult(_account, "workflowdownloadres", imgResPath, prompt, prompt, thumbSavePath, thumbKey);
+
+                    await aiSaveService.SaveAiDrawResult(_account, "workflowdownloadres", imgResPath, prompt, prompt,
+                        thumbSavePath, thumbKey);
                 }
             });
-            var jsonBuilder = new StringBuilder();
-            jsonBuilder.Append("{");
-            jsonBuilder.Append($"\"{node.Name + node.Id}\":");
-            jsonBuilder.Append("{");
-            jsonBuilder.Append($"\"data\":");
-            jsonBuilder.Append($"\"{imageUrl}\"");
-            jsonBuilder.Append("}");
-            jsonBuilder.Append("}");
             nodeOutput.NodeName = nodeKey;
-            nodeOutput.OutputData = jsonBuilder.ToString();
+            nodeOutput.OutputData = BuilderJson(nodeKey, imageUrl);
             nodeOutput.NextNodes = FindNextNode(node.Outputs);
             _nodeCheckCounts[nodeKey]--;
             return nodeOutput;
@@ -916,10 +1065,12 @@ namespace aibotPro.AppCode
             {
                 _nodeCheckCounts[nodeKey] = _checkCount;
             }
+
             if (_nodeCheckCounts[nodeKey] <= 0)
             {
                 throw new Exception($"节点 {nodeKey} 的运行次数超出系统设定的极限, 触发流程引擎死循环保护, 请修正您的 WorkFlow");
             }
+
             NodeOutput nodeOutput = new NodeOutput();
             DebugData debugData = (DebugData)node.Data;
             string chatLog = FillScriptWithValues(debugData.Output.ChatLog, result);
@@ -927,18 +1078,13 @@ namespace aibotPro.AppCode
             {
                 ChatRes chatRes = new ChatRes();
                 chatRes.message = $"{chatLog} \n";
+                await _financeService.UsageSaveRedis(_chatId, _account, "assistant", chatRes.message,
+                    AIBotProEnum.HashFieldOperationMode.Append);
                 await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
             }
-            var jsonBuilder = new StringBuilder();
-            jsonBuilder.Append("{");
-            jsonBuilder.Append($"\"{node.Name + node.Id}\":");
-            jsonBuilder.Append("{");
-            jsonBuilder.Append($"\"data\":");
-            jsonBuilder.Append($"\"{chatLog}\"");
-            jsonBuilder.Append("}");
-            jsonBuilder.Append("}");
+
             nodeOutput.NodeName = nodeKey;
-            nodeOutput.OutputData = jsonBuilder.ToString();
+            nodeOutput.OutputData = BuilderJson(nodeKey, chatLog);
             nodeOutput.NextNodes = FindNextNode(node.Outputs);
             _nodeCheckCounts[nodeKey]--;
             return nodeOutput;
@@ -1034,36 +1180,41 @@ namespace aibotPro.AppCode
             {
                 _nodeCheckCounts[nodeKey] = _checkCount;
             }
+
             if (_nodeCheckCounts[nodeKey] <= 0)
             {
                 throw new Exception($"节点 {nodeKey} 的运行次数超出系统设定的极限, 触发流程引擎死循环保护, 请修正您的 WorkFlow");
             }
+
             NodeOutput nodeOutput = new NodeOutput();
             // 处理 "web" 节点,执行 web 代码,返回 JSON 字符串
             WebData webData = (WebData)node.Data;
             string prompt = FillScriptWithValues(webData.Output.Prompt, result);
-            if (!string.IsNullOrEmpty(_chatId))
-            {
-                ChatRes chatRes = new ChatRes();
-                chatRes.message = $"🌐\n";
-                await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
-            }
+            var webjson = webData.Output.WebJson;
             List<SystemCfg> systemConfig = _systemService.GetSystemCfgs();
             string googleSearchApiKey = systemConfig.Find(x => x.CfgKey == "GoogleSearchApiKey").CfgValue;
             string googleSearchEngineId = systemConfig.Find(x => x.CfgKey == "GoogleSearchEngineId").CfgValue;
             var googleSearch = await _aiServer.GetWebSearchResult(prompt, googleSearchApiKey, googleSearchEngineId);
             if (googleSearch.Count == 0)
                 throw new Exception("联网搜索的结果集为空，运行中断，请重试");
-            var airesult = new StringBuilder();
-            for (int i = 0; i < googleSearch.Count; i++)
+            if (webjson.HasValue && webjson.Value)
             {
-                airesult.AppendLine($"# {i + 1}:标题：{googleSearch[i].Title}");
-                airesult.AppendLine($"# 链接地址：{googleSearch[i].Link}");
-                airesult.AppendLine($"# 摘要：{googleSearch[i].Snippet}");
-                airesult.AppendLine();
+                var dataArray = JArray.FromObject(googleSearch);
+                nodeOutput.OutputData = BuilderJson(nodeKey, JsonConvert.SerializeObject(dataArray));
             }
+            else
+            {
+                var airesult = new StringBuilder();
+                for (int i = 0; i < googleSearch.Count; i++)
+                {
+                    airesult.AppendLine($"# {i + 1}:标题：{googleSearch[i].Title}");
+                    airesult.AppendLine($"# 链接地址：{googleSearch[i].Link}");
+                    airesult.AppendLine($"# 摘要：{googleSearch[i].Snippet}");
+                    airesult.AppendLine();
+                }
 
-            var data = $@"I will give you a question or an instruction. Your objective is to answer my question or fulfill my instruction.
+                var data =
+                    $@"I will give you a question or an instruction. Your objective is to answer my question or fulfill my instruction.
 
                         My question or instruction is: {prompt}
 
@@ -1073,16 +1224,15 @@ namespace aibotPro.AppCode
                         {airesult}
                         Reply in 中文";
 
-            var jsonObject = new Dictionary<string, object>
-            {
-                [node.Name + node.Id] = new { data }
-            };
+                nodeOutput.OutputData = BuilderJson(nodeKey, data);
+            }
+
             nodeOutput.NodeName = nodeKey;
-            nodeOutput.OutputData = System.Text.Json.JsonSerializer.Serialize(jsonObject);
             nodeOutput.NextNodes = FindNextNode(node.Outputs);
             _nodeCheckCounts[nodeKey]--;
             return nodeOutput;
         }
+
         private async Task<NodeOutput> ProcessIfElseNode(NodeData node, List<NodeOutput> result)
         {
             var nodeKey = node.Name + node.Id;
@@ -1095,6 +1245,7 @@ namespace aibotPro.AppCode
             {
                 throw new Exception($"节点 {nodeKey} 的运行次数超出系统设定的极限, 触发流程引擎死循环保护, 请修正您的 WorkFlow");
             }
+
             NodeOutput nodeOutput = new NodeOutput();
             List<int> nodeIds = new List<int>();
             IfElseData ifElseData = (IfElseData)node.Data;
@@ -1109,6 +1260,7 @@ namespace aibotPro.AppCode
             {
                 keyValuePairs = node.Outputs.Where(x => x.Key == "output_2").ToDictionary(x => x.Key, x => x.Value);
             }
+
             List<NodeData> nextNodes = new List<NodeData>();
             foreach (var item in keyValuePairs)
             {
@@ -1117,23 +1269,21 @@ namespace aibotPro.AppCode
                     nodeIds.Add(Convert.ToInt32(items.Node));
                 }
             }
+
             foreach (var item in nodeIds)
             {
                 var nextnode = _workflowData.Drawflow.Home.Data.Values.Where(x => x.Id == item).FirstOrDefault();
                 nextNodes.Add(nextnode);
             }
-            var jsonBuilder = new StringBuilder();
-            jsonBuilder.Append("{");
-            jsonBuilder.Append($"\"{node.Name + node.Id}\":");
-            jsonBuilder.Append("{");
-            jsonBuilder.Append($"\"data\":");
-            jsonBuilder.Append($"{bool.Parse(ExecuteResult.ToLower()).ToString().ToLower()}");
-            jsonBuilder.Append("}");
-            jsonBuilder.Append("}");
+
+            var jobject = new JObject
+            {
+                ["data"] = bool.Parse(ExecuteResult.ToLower()).ToString().ToLower()
+            };
             //查找下一个节点
             nodeOutput.NextNodes = nextNodes;
             nodeOutput.NodeName = nodeKey;
-            nodeOutput.OutputData = jsonBuilder.ToString();
+            nodeOutput.OutputData = BuilderJson(nodeKey, JsonConvert.SerializeObject(jobject));
             _nodeCheckCounts[nodeKey]--;
             return nodeOutput;
         }
@@ -1150,42 +1300,50 @@ namespace aibotPro.AppCode
             {
                 throw new Exception($"节点 {nodeKey} 的运行次数超出系统设定的极限, 触发流程引擎死循环保护, 请修正您的 WorkFlow");
             }
+
             NodeOutput nodeOutput = new NodeOutput();
             KnowledgeData knowledgeData = (KnowledgeData)node.Data;
             string prompt = FillScriptWithValues(knowledgeData.Output.Prompt, result);
-            if (!string.IsNullOrEmpty(_chatId))
-            {
-                ChatRes chatRes = new ChatRes();
-                chatRes.message = $"🔎📄\n";
-                await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, chatRes);
-            }
             string airesult = string.Empty;
             int retryCount = knowledgeData.Output.Retry; // 重试次数
             int initialRetryCount = retryCount;
+            bool reranker = knowledgeData.Output.Reranker;
+            int topn = knowledgeData.Output.TopN;
             List<SystemCfg> systemCfgs = _systemService.GetSystemCfgs();
-            var Alibaba_DashVectorApiKey = systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorApiKey")?.CfgValue;
-            var Alibaba_DashVectorEndpoint = systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorEndpoint")?.CfgValue;
-            var Alibaba_DashVectorCollectionName = systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorCollectionName")?.CfgValue;
+            var Alibaba_DashVectorApiKey =
+                systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorApiKey")?.CfgValue;
+            var Alibaba_DashVectorEndpoint =
+                systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorEndpoint")?.CfgValue;
+            var Alibaba_DashVectorCollectionName =
+                systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorCollectionName")?.CfgValue;
             var EmbeddingsUrl = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsUrl")?.CfgValue;
             var EmbeddingsApiKey = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsApiKey")?.CfgValue;
-            VectorHelper vectorHelper = new VectorHelper(_redisService, Alibaba_DashVectorApiKey, Alibaba_DashVectorEndpoint, Alibaba_DashVectorCollectionName, EmbeddingsUrl, EmbeddingsApiKey);
+            var EmbeddingsModel = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsModel")?.CfgValue;
+            VectorHelper vectorHelper = new VectorHelper(_redisService, Alibaba_DashVectorApiKey,
+                Alibaba_DashVectorEndpoint, Alibaba_DashVectorCollectionName, EmbeddingsUrl, EmbeddingsApiKey, EmbeddingsModel);
             List<string> pm = new List<string>();
             pm.Add(prompt);
             List<List<double>> vectorList = new List<List<double>>();
             do
             {
-                vectorList = await vectorHelper.StringToVectorAsync("text-embedding-3-small", pm.Select(s => s.Replace("\r", "").Replace("\n", "")).ToList(), _account);
+                var embeddingModel = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsModel");
+                vectorList = await vectorHelper.StringToVectorAsync(embeddingModel.CfgValue,
+                    pm.Select(s => s.Replace("\r", "").Replace("\n", "")).ToList(), _account);
                 if (vectorList != null && vectorList.Count > 0) break; // 如果结果非空，退出循环
                 if (!string.IsNullOrEmpty(_chatId) && retryCount > 0)
                 {
                     // 计算剩余重试次数
                     int remainingRetries = retryCount - 1;
-                    string retryMessage = $"🔄 Knowledge重试 {initialRetryCount - remainingRetries}/{initialRetryCount}...";
+                    string retryMessage =
+                        $"🔄 Knowledge重试 {initialRetryCount - remainingRetries}/{initialRetryCount}...";
 
-                    await _hubContext.Clients.Group(_chatId).SendAsync(_senMethod, new ChatRes { message = retryMessage });
+                    await _hubContext.Clients.Group(_chatId)
+                        .SendAsync(_senMethod, new ChatRes { message = retryMessage });
                 }
+
                 await Task.Delay(500);
             } while (--retryCount >= 0);
+
             SearchVectorPr searchVectorPr = new SearchVectorPr();
             searchVectorPr.filter = $"account = '{_account}'";
             searchVectorPr.topk = knowledgeData.Output.TopK;
@@ -1196,7 +1354,8 @@ namespace aibotPro.AppCode
             if (typeCode != null && typeCode.Count > 0)
             {
                 List<float> vectorByMilvus = searchVectorPr.vector.ConvertAll(x => (float)x);
-                var resultByMilvus = await _milvusService.SearchVector(vectorByMilvus, _account, typeCode, searchVectorPr.topk);
+                var resultByMilvus =
+                    await _milvusService.SearchVector(vectorByMilvus, _account, typeCode, searchVectorPr.topk);
                 searchVectorResult = new SearchVectorResult
                 {
                     code = resultByMilvus.Code,
@@ -1216,38 +1375,49 @@ namespace aibotPro.AppCode
             }
             else
                 searchVectorResult = vectorHelper.SearchVector(searchVectorPr);
+
             string data = string.Empty;
             if (searchVectorResult.output != null)
             {
+                List<string> docs = new List<string>();
                 for (int i = 0; i < searchVectorResult.output.Count; i++)
                 {
                     Output output = searchVectorResult.output[i];
                     data += $"{i + 1}：{output.fields.knowledge} \n";
+                    docs.Add(output.fields.knowledge);
                 }
-                data = $@"知识库查询结果如下：
+
+                if (reranker)
+                {
+                    var rerankRes =
+                        await _aiServer.RerankerJinaAI(docs, "jina-reranker-v2-base-multilingual", prompt, topn);
+                    if (rerankRes != null && rerankRes.Results.Count > 0)
+                    {
+                        data = string.Empty;
+                        for (int i = 0; i < rerankRes.Results.Count; i++)
+                        {
+                            data += $"{i + 1}：{rerankRes.Results[i].Document.Text} \n";
+                        }
+                    }
+                }
+
+                data = $@"# 知识库查询结果如下：
                                      {data}
-                                     - 保持回答尽可能参考知识库的内容。 
-                                     - 使用 Markdown 语法优化回答格式。
-                                     - 以知识库中的理念和说话风格来解答用户的问题。 
-                                     - 使用与问题相同的语言回答。";
+                                     * 保持回答尽可能参考知识库的内容。 
+                                     * 使用 Markdown 语法优化回答格式。
+                                     * 以知识库中的理念和说话风格来解答用户的问题。 
+                                     * 使用与问题相同的语言回答。";
             }
             else
                 data = "知识库中没有查到关于这个问题的内容,请自行回答";
-            var jobject = new JObject
-            {
-                [$"{node.Name}{node.Id}"] = new JObject
-                {
-                    ["data"] = data
-                }
-            };
-            // 将JObject转换成JSON字符串
-            string jsonStr = jobject.ToString(Formatting.None);
+
             nodeOutput.NodeName = nodeKey;
-            nodeOutput.OutputData = jsonStr;
+            nodeOutput.OutputData = BuilderJson(nodeKey, data);
             nodeOutput.NextNodes = FindNextNode(node.Outputs);
             _nodeCheckCounts[nodeKey]--;
             return nodeOutput;
         }
+
         private async Task<NodeOutput> ProcessEndNode(NodeData node, List<NodeOutput> result)
         {
             NodeOutput nodeOutput = new NodeOutput();
@@ -1264,11 +1434,62 @@ namespace aibotPro.AppCode
                 nodeOutput.NextNodes = FindNextNode(node.Outputs);
                 return nodeOutput;
             }
+
             nodeOutput.NodeName = nodeName;
             nodeOutput.OutputData = jsData;
             nodeOutput.NextNodes = FindNextNode(node.Outputs);
             return nodeOutput;
         }
+
+        /// <summary>
+        /// 使用AI进行脚本代码审查
+        /// </summary>
+        /// <param name="prompt"></param>
+        /// <param name="code"></param>
+        /// <returns></returns>
+        private async Task<(bool result, string cause)> AICodeCheck(string prompt)
+        {
+            string JsonSchemaInput = @"{
+                          ""type"": ""object"",
+                          ""properties"": {
+                            ""judgment_results"": {
+                              ""type"": ""boolean"",
+                              ""description"": ""判断结果""
+                            },
+                            ""judgment_cause"": {
+                              ""type"": ""string"",
+                              ""description"": ""判断原因""
+                            }
+                          },
+                          ""required"": [
+                            ""judgment_results"",
+                            ""judgment_cause""
+                          ],
+                          ""additionalProperties"": false
+                        }";
+            var systemCfg = _systemService.GetSystemCfgs();
+            var aiCodeCheckBaseUrl = systemCfg.FirstOrDefault(x => x.CfgKey == "AICodeCheckBaseUrl");
+            var aiCodeCheckApiKey = systemCfg.FirstOrDefault(x => x.CfgKey == "AICodeCheckApiKey");
+            var aiCodeCheckModel = systemCfg.FirstOrDefault(x => x.CfgKey == "AICodeCheckModel");
+            if (aiCodeCheckBaseUrl == null || aiCodeCheckApiKey == null || aiCodeCheckModel == null)
+                throw new Exception("系统未配置代码检查：AICodeCheckBaseUrl、AICodeCheckApiKey、AICodeCheckModel");
+            AiChat aiChat = CreateAiChat(aiCodeCheckModel.CfgValue, prompt, false, false, true, JsonSchemaInput);
+            APISetting apiSetting = new APISetting
+            {
+                BaseUrl = aiCodeCheckBaseUrl.CfgValue,
+                ApiKey = aiCodeCheckApiKey.CfgValue
+            };
+            string result = await _aiServer.CallingAINotStream(aiChat, apiSetting);
+
+            // Parsing the judgment_results and judgment_cause from the JSON
+            JObject json = JObject.Parse(result);
+            bool judgmentResult = json["judgment_results"].Value<bool>();
+            string judgmentCause = json["judgment_cause"].Value<string>();
+
+            return (judgmentResult, judgmentCause);
+        }
+
+        //------------------------------------------静态函数-----------------------------------------
         private static string EscapeSpecialCharacters(string input)
         {
             // 转义单引号（'）、双引号（"）和反引号（`）
@@ -1280,7 +1501,7 @@ namespace aibotPro.AppCode
                 .Replace("${", "\\${");
         }
 
-        public static string ExtractValueFromPath(string path, string thisJson)
+        private static string ExtractValueFromPath(string path, string thisJson)
         {
             if (!string.IsNullOrEmpty(thisJson))
             {
@@ -1317,14 +1538,14 @@ namespace aibotPro.AppCode
             throw new Exception($"Value for path '{path}' not found in thisJson.");
         }
 
-        public static string ExtractValueFromPath(string path, List<NodeOutput> results)
+        private static string ExtractValueFromPath(string path, List<NodeOutput> results)
         {
             foreach (var result in results)
             {
                 try
                 {
                     var json = JObject.Parse(result.OutputData);
-                    var token = json.SelectToken(path);  // 使用SelectToken提取路径对应的值
+                    var token = json.SelectToken(path); // 使用SelectToken提取路径对应的值
 
                     // 如果找到了对应的值,返回它
                     if (token != null)
@@ -1366,6 +1587,7 @@ namespace aibotPro.AppCode
                     {
                         value = ExtractValueFromPath(path, results);
                     }
+
                     // 替换脚本中的占位符为实际值
                     script = script.Replace(match.Value, value);
                 }
@@ -1375,21 +1597,66 @@ namespace aibotPro.AppCode
                     Console.WriteLine($"Error: {ex.Message}");
                 }
             }
+
             return script;
         }
 
         private static string BuilderJson(string nodeName, string result)
         {
+            JObject jobject;
+
             try
             {
-                JObject json = new JObject();
-                json[nodeName] = JObject.Parse(result);
-                return json.ToString();
+                // 尝试将 result 解析为 JToken
+                JToken jToken = JToken.Parse(result);
+
+                if (jToken is JObject jObject)
+                {
+                    // 如果是 JObject
+                    jobject = new JObject
+                    {
+                        [nodeName] = new JObject
+                        {
+                            ["data"] = jObject
+                        }
+                    };
+                }
+                else if (jToken is JArray jArray)
+                {
+                    // 如果是 JArray
+                    jobject = new JObject
+                    {
+                        [nodeName] = new JObject
+                        {
+                            ["data"] = jArray
+                        }
+                    };
+                }
+                else
+                {
+                    // 如果既不是 JObject 也不是 JArray,视为普通字符串
+                    jobject = new JObject
+                    {
+                        [nodeName] = new JObject
+                        {
+                            ["data"] = result
+                        }
+                    };
+                }
             }
-            catch (Exception)
+            catch (JsonReaderException)
             {
-                throw new Exception($"结果集中出现了一个非Json格式的异常，位置：{nodeName}");
+                // 如果解析失败,将 result 视为普通字符串
+                jobject = new JObject
+                {
+                    [nodeName] = new JObject
+                    {
+                        ["data"] = result
+                    }
+                };
             }
+
+            return JsonConvert.SerializeObject(jobject, Formatting.None);
         }
     }
 }

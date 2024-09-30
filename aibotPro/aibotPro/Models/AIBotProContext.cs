@@ -27,6 +27,7 @@ namespace aibotPro.Models
         public virtual DbSet<AssistantFile> AssistantFiles { get; set; }
         public virtual DbSet<AssistantGPT> AssistantGPTs { get; set; }
         public virtual DbSet<AssistantModelPrice> AssistantModelPrices { get; set; }
+        public virtual DbSet<BindNewApi> BindNewApis { get; set; }
         public virtual DbSet<Card> Cards { get; set; }
         public virtual DbSet<ChatHistory> ChatHistories { get; set; }
         public virtual DbSet<ChatSetting> ChatSettings { get; set; }
@@ -40,7 +41,9 @@ namespace aibotPro.Models
         public virtual DbSet<KnowledgeList> KnowledgeLists { get; set; }
         public virtual DbSet<KnowledgeType> KnowledgeTypes { get; set; }
         public virtual DbSet<ModelPrice> ModelPrices { get; set; }
+        public virtual DbSet<NewApiCollectLog> NewApiCollectLogs { get; set; }
         public virtual DbSet<Notice> Notices { get; set; }
+        public virtual DbSet<NoticeRead> NoticeReads { get; set; }
         public virtual DbSet<OpenAPIModelSetting> OpenAPIModelSettings { get; set; }
         public virtual DbSet<Order> Orders { get; set; }
         public virtual DbSet<Plugin> Plugins { get; set; }
@@ -54,6 +57,7 @@ namespace aibotPro.Models
         public virtual DbSet<Share> Shares { get; set; }
         public virtual DbSet<ShareLog> ShareLogs { get; set; }
         public virtual DbSet<SignIn> SignIns { get; set; }
+        public virtual DbSet<SunoRe> SunoRes { get; set; }
         public virtual DbSet<SystemCfg> SystemCfgs { get; set; }
         public virtual DbSet<SystemLog> SystemLogs { get; set; }
         public virtual DbSet<SystemPlugin> SystemPlugins { get; set; }
@@ -67,13 +71,14 @@ namespace aibotPro.Models
         public virtual DbSet<VIP> VIPs { get; set; }
         public virtual DbSet<WorkFlow> WorkFlows { get; set; }
         public virtual DbSet<WorkShopAIModel> WorkShopAIModels { get; set; }
+        public virtual DbSet<WorkShopModelUserSeq> WorkShopModelUserSeqs { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
             {
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
-                optionsBuilder.UseSqlServer("Data Source=45.137.10.185;Initial Catalog=AIBotPro;Persist Security Info=True;User ID=sa;Password=Qq2424020953@Google.com;Encrypt=True");
+                optionsBuilder.UseSqlServer("Data Source=193.200.152.83;Initial Catalog=AIBotPro;Persist Security Info=True;User ID=sa;Password=Qq2424020953@Google.com;Encrypt=True");
             }
         }
 

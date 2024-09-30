@@ -158,22 +158,43 @@ namespace aibotPro.Service
             });
             return _context.SaveChanges() > 0;
         }
-        public bool SendNotice(string content)
+
+        public bool SendNotice(int id, string title, string content)
         {
-            var notice = _context.Notices;
-            //如果有公告则更新，没有则添加
-            if (notice.Count() > 0)
+            //更新通知
+            if (id > 0)
             {
+                var notice = _context.Notices.Where(x => x.Id == id);
+                notice.FirstOrDefault().NoticeTitle = title;
                 notice.FirstOrDefault().NoticeContent = content;
+                notice.FirstOrDefault().CreateTime = DateTime.Now;
             }
             else
             {
                 _context.Notices.Add(new Notice
                 {
+                    NoticeTitle = title,
                     NoticeContent = content,
+                    CreateTime = DateTime.Now
                 });
             }
             return _context.SaveChanges() > 0;
+        }
+
+        public List<Notice> GetNotices(int page, int size, out int total)
+        {
+            IQueryable<Notice> query = null;
+            query = _context.Notices;
+            // 首先计算总数，此时还未真正运行SQL查询
+            total = query.Count();
+
+            // 然后添加分页逻辑，此处同样是构建查询，没有执行
+            var notices = query.OrderByDescending(x => x.CreateTime) // 这里可以根据需要替换为合适的排序字段
+                .Skip((page - 1) * size)
+                .Take(size)
+                .ToList(); // 直到调用ToList，查询才真正执行
+
+            return notices;
         }
         public bool ApiKeyCheck(string key)
         {

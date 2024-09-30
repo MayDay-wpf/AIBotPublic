@@ -47,7 +47,7 @@ function getRoleList(type) {
                     html += '<h5 class="card-title">' + item.roleName + '</h5>';
                     html += '<p class="card-text" style="max-height: 100px; overflow: auto;">' + item.roleInfo + '</p>';
                     html += '<div class="d-flex justify-content-center">';
-                    html += `<a href="/Role/RoleChat?type=` + item.roleCode + `" class="btn btn-primary"><i data-feather="message-circle"></i> 对话</a>`;
+                    html += `<a href="/Home/Index?type=` + item.roleCode + `" class="btn btn-primary"><i data-feather="message-circle"></i> 对话</a>`;
                     html += `<a href="/Role/CustomRole?code=` + item.roleCode + `" class="btn btn-info"><i data-feather="edit"></i> 编辑</a>`;
                     if (item.canDelete)
                         html += `<button onclick="delRole('${item.roleCode}')" class="btn btn-danger"><i data-feather="trash-2"></i> 删除</button>`;

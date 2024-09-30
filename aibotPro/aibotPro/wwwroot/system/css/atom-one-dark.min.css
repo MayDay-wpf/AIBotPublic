@@ -56,7 +56,30 @@ code.language-vue {
     background-color: #282c34;
     padding: 10px;
 }
+
+code.language-nginx {
+    display: block;
+    background-color: #282c34;
+    padding: 10px;
+}
+
+code.language-pro {
+    display: block;
+    background-color: #282c34;
+    padding: 10px;
+}
+
 code.language-dart {
+    display: block;
+    background-color: #282c34;
+    padding: 10px;
+}
+code.language-log {
+    display: block;
+    background-color: #282c34;
+    padding: 10px;
+}
+code.language-http {
     display: block;
     background-color: #282c34;
     padding: 10px;

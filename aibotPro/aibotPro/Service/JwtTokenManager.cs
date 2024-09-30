@@ -30,15 +30,17 @@ namespace aibotPro.Service
 
             var claims = new[]
             {
-            new Claim(ClaimTypes.Name, username)
-        };
+                new Claim(ClaimTypes.Name, username)
+            };
 
-            var payload = new JwtPayload(_configuration["Jwt:Issuer"], _configuration["Jwt:Audience"], claims, DateTime.Now, DateTime.Now.AddMinutes(Convert.ToDouble(_configuration["Jwt:DurationInMinutes"])));
+            var payload = new JwtPayload(_configuration["Jwt:Issuer"], _configuration["Jwt:Audience"], claims,
+                DateTime.Now, DateTime.Now.AddMinutes(Convert.ToDouble(_configuration["Jwt:DurationInMinutes"])));
 
             var token = new JwtSecurityToken(header, payload);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
         public ClaimsPrincipal ValidateToken(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -47,6 +49,7 @@ namespace aibotPro.Service
             SecurityToken validatedToken;
             return tokenHandler.ValidateToken(token, validationParameters, out validatedToken);
         }
+
         public bool isTokenValid(string token)
         {
             try
@@ -61,13 +64,14 @@ namespace aibotPro.Service
                         using (var scope = _serviceProvider.CreateScope())
                         {
                             var scopedContext = scope.ServiceProvider.GetRequiredService<AIBotProContext>();
-                            var user = scopedContext.Users.Where(x => x.Account == Account && x.IsBan == 0).FirstOrDefault();
+                            var user = scopedContext.Users.Where(x => x.Account == Account && x.IsBan == 0)
+                                .FirstOrDefault();
                             if (user != null)
                                 return true;
                         }
-
                     }
                 }
+
                 return false;
             }
             catch (Exception ex)
@@ -76,6 +80,7 @@ namespace aibotPro.Service
                 return false; // 令牌无效
             }
         }
+
         private TokenValidationParameters GetValidationParameters()
         {
             return new TokenValidationParameters
@@ -89,6 +94,76 @@ namespace aibotPro.Service
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.Zero,
             };
+        }
+
+        public GoogleJWT DecodeGoogleJwtToken(string googleJwt)
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var jsonToken = handler.ReadToken(googleJwt) as JwtSecurityToken;
+
+            var header = new GoogleJwtHeader
+            {
+                alg = jsonToken.Header["alg"].ToString(),
+                kid = jsonToken.Header["kid"].ToString(),
+                typ = jsonToken.Header["typ"].ToString(),
+            };
+
+            var payload = new GoogleJwtPayload
+            {
+                iss = jsonToken.Claims.FirstOrDefault(claim => claim.Type == "iss")?.Value,
+                azp = jsonToken.Claims.FirstOrDefault(claim => claim.Type == "azp")?.Value,
+                aud = jsonToken.Claims.FirstOrDefault(claim => claim.Type == "aud")?.Value,
+                sub = jsonToken.Claims.FirstOrDefault(claim => claim.Type == "sub")?.Value,
+                email = jsonToken.Claims.FirstOrDefault(claim => claim.Type == "email")?.Value,
+                email_verified =
+                    bool.Parse(jsonToken.Claims.FirstOrDefault(claim => claim.Type == "email_verified")?.Value ??
+                               "false"),
+                nbf = long.Parse(jsonToken.Claims.FirstOrDefault(claim => claim.Type == "nbf")?.Value ?? "0"),
+                name = jsonToken.Claims.FirstOrDefault(claim => claim.Type == "name")?.Value,
+                picture = jsonToken.Claims.FirstOrDefault(claim => claim.Type == "picture")?.Value,
+                given_name = jsonToken.Claims.FirstOrDefault(claim => claim.Type == "given_name")?.Value,
+                family_name = jsonToken.Claims.FirstOrDefault(claim => claim.Type == "family_name")?.Value,
+                iat = long.Parse(jsonToken.Claims.FirstOrDefault(claim => claim.Type == "iat")?.Value ?? "0"),
+                exp = long.Parse(jsonToken.Claims.FirstOrDefault(claim => claim.Type == "exp")?.Value ?? "0"),
+                jti = jsonToken.Claims.FirstOrDefault(claim => claim.Type == "jti")?.Value
+            };
+
+            return new GoogleJWT
+            {
+                header = header,
+                payload = payload
+            };
+        }
+
+        public class GoogleJWT
+        {
+            public GoogleJwtHeader header;
+            public GoogleJwtPayload payload;
+        }
+
+        public class GoogleJwtHeader
+        {
+            public string alg { get; set; }
+            public string kid { get; set; }
+            public string typ { get; set; }
+        }
+
+        public class GoogleJwtPayload
+        {
+            public string iss { get; set; }
+            public string azp { get; set; }
+            public string aud { get; set; }
+            public string sub { get; set; }
+            public string email { get; set; }
+            public bool email_verified { get; set; }
+            public long nbf { get; set; }
+            public string name { get; set; }
+            public string picture { get; set; }
+            public string given_name { get; set; }
+            public string family_name { get; set; }
+            public long iat { get; set; }
+            public long exp { get; set; }
+            public string jti { get; set; }
         }
     }
 }

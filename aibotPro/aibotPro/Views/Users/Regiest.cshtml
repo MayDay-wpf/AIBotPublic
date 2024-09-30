@@ -35,7 +35,8 @@
                         <input type="text" class="form-control" placeholder="输入任何文字以表示您的性别，这是您的自由" value="" id="sex">
                     </div>
                     <div class="form-group">
-                        <label>邮箱（只允许使用qq,gmail,163,126邮箱）</label>
+                        <label>邮箱</label>
+                        <p class="text-info" id="restrictStr"></p>
                         <input type="email" class="form-control" placeholder="请输入您的邮箱地址" value="" id="email">
                     </div>
                     <div class="form-group">
@@ -98,8 +99,22 @@
     <script src="/static/js/feather.min.js"></script>
     <script src="/static/js/perfect-scrollbar.min.js"></script>
     @* <script src="~/system/js/captcha_albb.js"></script> *@
-    <script src="~/system/js/users.js?v1.1"></script>
+    <script src="~/system/js/users.js?v1.3"></script>
     <script src="~/system/js/balert.js"></script>
+    <script>
+        $(function () {
+            $.ajax({
+                url: "/Users/GetMailRestrict", type: "post", dataType: "json",//返回对象
+                success: function (res) {
+                    if (res.data != "") {
+                        $("#restrictStr").text(`仅支持${res.data}邮箱`);
+                    }
+                }, error: function (e) {
+                    console.log("失败" + e);
+                }
+            });
+        });
+    </script>
     @* <script>
     initCaptcha('sendCode', 'sendCode', sendCheckCode, disableBtn);
     </script> *@

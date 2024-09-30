@@ -52,6 +52,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[BindNewApi]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[Card]",
          "ObjectType": 0
       },
@@ -100,7 +104,15 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[NewApiCollectLog]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[Notice]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[NoticeRead]",
          "ObjectType": 0
       },
       {
@@ -156,6 +168,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[SunoRes]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[SystemCfg]",
          "ObjectType": 0
       },
@@ -205,6 +221,10 @@
       },
       {
          "Name": "[dbo].[WorkShopAIModel]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[WorkShopModelUserSeq]",
          "ObjectType": 0
       },
       {

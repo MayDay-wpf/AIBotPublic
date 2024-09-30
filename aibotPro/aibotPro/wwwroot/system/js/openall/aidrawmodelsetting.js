@@ -28,6 +28,10 @@ function getDrawSetting() {
                         $('#sd-baseurl').val(data[i].baseUrl);
                         $('#sd-apikey').val(data[i].apiKey);
                     }
+                    if (data[i].modelName == 'Suno') {
+                        $('#suno-baseurl').val(data[i].baseUrl);
+                        $('#suno-apikey').val(data[i].apiKey);
+                    }
                 }
             }
         }
@@ -71,6 +75,18 @@ function saveDrawSetting(type) {
             apiKey = $('#sd-apikey').val();
             channel = $('#sd-channel').val();
             loadingBtn('.savesd');
+        }
+    }
+    if (type == 'Suno') {
+        //非空验证
+        if (removeSpaces($('#suno-baseurl').val()) == "" || removeSpaces($('#suno-apikey').val()) == "") {
+            balert('请填写完整', 'danger', false, 1500, 'top');
+            return;
+        } else {
+            baseUrl = $('#suno-baseurl').val();
+            apiKey = $('#suno-apikey').val();
+            channel = $('#suno-channel').val();
+            loadingBtn('.savesuno');
         }
     }
     //发起请求

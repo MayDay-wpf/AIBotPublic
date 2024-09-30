@@ -84,10 +84,10 @@ namespace aibotPro.Controllers
                 var order = _context.Orders.FirstOrDefault(x => x.OrderCode == out_trade_no && x.OrderStatus == "NO");
                 if (trade_status == "TRADE_SUCCESS" && order != null)
                 {
-                    if (param.Contains("VIP|15") && intomoney == 15)
+                    if (param.Contains("VIP|20") && intomoney == 20)
                     {
-                        var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == username && x.VipType == "VIP|15");
-                        if (vipinfo != null && vipinfo.VipType == "VIP|15")
+                        var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == username && x.VipType == "VIP|20");
+                        if (vipinfo != null && vipinfo.VipType == "VIP|20")
                         {
                             if (vipinfo.EndTime > DateTime.Now)
                             {
@@ -102,7 +102,7 @@ namespace aibotPro.Controllers
                         else
                         {
                             VIP vip = new VIP();
-                            vip.VipType = "VIP|15";
+                            vip.VipType = "VIP|20";
                             vip.Account = username;
                             vip.StartTime = DateTime.Now;
                             vip.EndTime = DateTime.Now.AddDays(30);
@@ -117,10 +117,10 @@ namespace aibotPro.Controllers
                             _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, 15m * 0.15m);
                         }
                     }
-                    else if (param.Contains("VIP|90") && intomoney == 90)
+                    else if (param.Contains("VIP|50") && intomoney == 50)
                     {
-                        var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == username && x.VipType == "VIP|90");
-                        if (vipinfo != null && vipinfo.VipType == "VIP|90")
+                        var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == username && x.VipType == "VIP|50");
+                        if (vipinfo != null && vipinfo.VipType == "VIP|50")
                         {
                             if (vipinfo.EndTime > DateTime.Now)
                             {
@@ -135,7 +135,7 @@ namespace aibotPro.Controllers
                         else
                         {
                             VIP vip = new VIP();
-                            vip.VipType = "VIP|90";
+                            vip.VipType = "VIP|50";
                             vip.Account = username;
                             vip.StartTime = DateTime.Now;
                             vip.EndTime = DateTime.Now.AddDays(30);
@@ -149,7 +149,7 @@ namespace aibotPro.Controllers
                             var parentShareCode = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == shareinfo.ParentAccount);
                             _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, 90m * 0.15m);
                         }
-                        user.Mcoin = user.Mcoin + intomoney + 10;
+                        user.Mcoin = user.Mcoin + intomoney;
                         _context.Users.Update(user);
                     }
                     else if (!string.IsNullOrEmpty(goodCode))
@@ -175,10 +175,10 @@ namespace aibotPro.Controllers
                                 //更新用户余额
                                 user.Mcoin = user.Mcoin + good.Balance;
                             }
-                            if (good.VIPType == "VIP|15")
+                            if (good.VIPType == "VIP|20")
                             {
                                 var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == username);
-                                if (vipinfo != null && vipinfo.VipType == "VIP|15")
+                                if (vipinfo != null && vipinfo.VipType == "VIP|20")
                                 {
                                     if (vipinfo.EndTime > DateTime.Now)
                                     {
@@ -190,10 +190,10 @@ namespace aibotPro.Controllers
                                     }
                                     _context.VIPs.Update(vipinfo);
                                 }
-                                else if (vipinfo != null && vipinfo.VipType == "VIP|90")
+                                else if (vipinfo != null && vipinfo.VipType == "VIP|50")
                                 {
                                     VIP vip = new VIP();
-                                    vip.VipType = "VIP|15";
+                                    vip.VipType = "VIP|50";
                                     vip.Account = username;
                                     vip.StartTime = vipinfo.EndTime;
                                     vip.EndTime = vipinfo.EndTime.Value.AddDays((double)good.VIPDays);
@@ -203,7 +203,7 @@ namespace aibotPro.Controllers
                                 else
                                 {
                                     VIP vip = new VIP();
-                                    vip.VipType = "VIP|15";
+                                    vip.VipType = "VIP|20";
                                     vip.Account = username;
                                     vip.StartTime = DateTime.Now;
                                     vip.EndTime = DateTime.Now.AddDays((double)good.VIPDays);
@@ -211,10 +211,10 @@ namespace aibotPro.Controllers
                                     _context.VIPs.Add(vip);
                                 }
                             }
-                            if (good.VIPType == "VIP|90")
+                            if (good.VIPType == "VIP|50")
                             {
-                                var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == username && x.VipType == "VIP|90");
-                                if (vipinfo != null && vipinfo.VipType == "VIP|90")
+                                var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == username && x.VipType == "VIP|50");
+                                if (vipinfo != null && vipinfo.VipType == "VIP|50")
                                 {
                                     if (vipinfo.EndTime > DateTime.Now)
                                     {
@@ -229,7 +229,7 @@ namespace aibotPro.Controllers
                                 else
                                 {
                                     VIP vip = new VIP();
-                                    vip.VipType = "VIP|90";
+                                    vip.VipType = "VIP|50";
                                     vip.Account = username;
                                     vip.StartTime = DateTime.Now;
                                     vip.EndTime = DateTime.Now.AddDays((double)good.VIPDays);
@@ -311,10 +311,10 @@ namespace aibotPro.Controllers
                 var order = _context.Orders.FirstOrDefault(x => x.OrderCode == out_trade_no && x.OrderStatus == "NO");
                 if (trade_status == "TRADE_SUCCESS" && order != null)
                 {
-                    if (param.Contains("VIP|15") && intomoney == 15)
+                    if (param.Contains("VIP|20") && intomoney == 20)
                     {
-                        var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == username && x.VipType == "VIP|15");
-                        if (vipinfo != null && vipinfo.VipType == "VIP|15")
+                        var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == username && x.VipType == "VIP|20");
+                        if (vipinfo != null && vipinfo.VipType == "VIP|20")
                         {
                             if (vipinfo.EndTime > DateTime.Now)
                             {
@@ -329,7 +329,7 @@ namespace aibotPro.Controllers
                         else
                         {
                             VIP vip = new VIP();
-                            vip.VipType = "VIP|15";
+                            vip.VipType = "VIP|20";
                             vip.Account = username;
                             vip.StartTime = DateTime.Now;
                             vip.EndTime = DateTime.Now.AddDays(30);
@@ -344,10 +344,10 @@ namespace aibotPro.Controllers
                             _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, 15m * 0.15m);
                         }
                     }
-                    else if (param.Contains("VIP|90") && intomoney == 90)
+                    else if (param.Contains("VIP|50") && intomoney == 50)
                     {
-                        var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == username && x.VipType == "VIP|90");
-                        if (vipinfo != null && vipinfo.VipType == "VIP|90")
+                        var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == username && x.VipType == "VIP|50");
+                        if (vipinfo != null && vipinfo.VipType == "VIP|50")
                         {
                             if (vipinfo.EndTime > DateTime.Now)
                             {
@@ -362,7 +362,7 @@ namespace aibotPro.Controllers
                         else
                         {
                             VIP vip = new VIP();
-                            vip.VipType = "VIP|90";
+                            vip.VipType = "VIP|50";
                             vip.Account = username;
                             vip.StartTime = DateTime.Now;
                             vip.EndTime = DateTime.Now.AddDays(30);
@@ -376,7 +376,7 @@ namespace aibotPro.Controllers
                             var parentShareCode = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == shareinfo.ParentAccount);
                             _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, 90m * 0.15m);
                         }
-                        user.Mcoin = user.Mcoin + intomoney + 10;
+                        user.Mcoin = user.Mcoin + intomoney;
                         _context.Users.Update(user);
                     }
                     else if (!string.IsNullOrEmpty(goodCode))
@@ -402,10 +402,10 @@ namespace aibotPro.Controllers
                                 //更新用户余额
                                 user.Mcoin = user.Mcoin + good.Balance;
                             }
-                            if (good.VIPType == "VIP|15")
+                            if (good.VIPType == "VIP|20")
                             {
                                 var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == username);
-                                if (vipinfo != null && vipinfo.VipType == "VIP|15")
+                                if (vipinfo != null && vipinfo.VipType == "VIP|20")
                                 {
                                     if (vipinfo.EndTime > DateTime.Now)
                                     {
@@ -417,10 +417,10 @@ namespace aibotPro.Controllers
                                     }
                                     _context.VIPs.Update(vipinfo);
                                 }
-                                else if (vipinfo != null && vipinfo.VipType == "VIP|90")
+                                else if (vipinfo != null && vipinfo.VipType == "VIP|50")
                                 {
                                     VIP vip = new VIP();
-                                    vip.VipType = "VIP|15";
+                                    vip.VipType = "VIP|20";
                                     vip.Account = username;
                                     vip.StartTime = vipinfo.EndTime;
                                     vip.EndTime = vipinfo.EndTime.Value.AddDays((double)good.VIPDays);
@@ -430,7 +430,7 @@ namespace aibotPro.Controllers
                                 else
                                 {
                                     VIP vip = new VIP();
-                                    vip.VipType = "VIP|15";
+                                    vip.VipType = "VIP|20";
                                     vip.Account = username;
                                     vip.StartTime = DateTime.Now;
                                     vip.EndTime = DateTime.Now.AddDays((double)good.VIPDays);
@@ -438,10 +438,10 @@ namespace aibotPro.Controllers
                                     _context.VIPs.Add(vip);
                                 }
                             }
-                            if (good.VIPType == "VIP|90")
+                            if (good.VIPType == "VIP|50")
                             {
-                                var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == username && x.VipType == "VIP|90");
-                                if (vipinfo != null && vipinfo.VipType == "VIP|90")
+                                var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == username && x.VipType == "VIP|50");
+                                if (vipinfo != null && vipinfo.VipType == "VIP|50")
                                 {
                                     if (vipinfo.EndTime > DateTime.Now)
                                     {
@@ -456,7 +456,7 @@ namespace aibotPro.Controllers
                                 else
                                 {
                                     VIP vip = new VIP();
-                                    vip.VipType = "VIP|90";
+                                    vip.VipType = "VIP|50";
                                     vip.Account = username;
                                     vip.StartTime = DateTime.Now;
                                     vip.EndTime = DateTime.Now.AddDays((double)good.VIPDays);
@@ -524,8 +524,8 @@ namespace aibotPro.Controllers
                 user.Mcoin = user.Mcoin - mcoin;
                 _context.Users.Update(user);
                 //更新VIP
-                var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == username && x.VipType == "VIP|15");
-                if (vipinfo != null && vipinfo.VipType == "VIP|15")
+                var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == username && x.VipType == "VIP|20");
+                if (vipinfo != null && vipinfo.VipType == "VIP|20")
                 {
                     if (vipinfo.EndTime > DateTime.Now)
                     {
@@ -540,7 +540,7 @@ namespace aibotPro.Controllers
                 else
                 {
                     VIP vip = new VIP();
-                    vip.VipType = "VIP|15";
+                    vip.VipType = "VIP|20";
                     vip.Account = username;
                     vip.StartTime = DateTime.Now;
                     vip.EndTime = DateTime.Now.AddDays(30);

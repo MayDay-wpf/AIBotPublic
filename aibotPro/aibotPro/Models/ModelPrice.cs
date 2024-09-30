@@ -23,15 +23,23 @@ namespace aibotPro.Models
         public decimal? VipModelPriceInput { get; set; }
         [Column(TypeName = "money")]
         public decimal? VipModelPriceOutput { get; set; }
+        [Column(TypeName = "money")]
+        public decimal? SvipModelPriceInput { get; set; }
+        [Column(TypeName = "money")]
+        public decimal? SvipModelPriceOutput { get; set; }
         [Column(TypeName = "decimal(18, 2)")]
         public decimal? Rebate { get; set; }
         [Column(TypeName = "decimal(18, 2)")]
         public decimal? VipRebate { get; set; }
+        [Column(TypeName = "decimal(18, 2)")]
+        public decimal? SvipRebate { get; set; }
         [Column(TypeName = "money")]
         public decimal? Maximum { get; set; }
         [Column(TypeName = "money")]
         public decimal? OnceFee { get; set; }
         [Column(TypeName = "money")]
         public decimal? VipOnceFee { get; set; }
+        [Column(TypeName = "money")]
+        public decimal? SvipOnceFee { get; set; }
     }
 }

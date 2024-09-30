@@ -8,6 +8,7 @@ namespace aibotPro.Dtos
         public int TotalChunks { get; set; }
         public string ProcessType { get; set; }
         public string TypeCode { get; set; }
+        public int FixedLength { get; set; } = 1000;
     }
 
     public class MJdrawBody
@@ -15,6 +16,20 @@ namespace aibotPro.Dtos
         public string prompt { get; set; }
         public string botType { get; set; }
         public string[] base64Array { get; set; }
+    }
+    public class MJdrawBodyParam
+    {
+        public string prompt { get; set; }
+        public string botType { get; set; }
+        public string[] base64Array { get; set; }
+        public AccountFilter accountFilter { get; set; }
+    }
+    public class AccountFilter
+    {
+        public string InstanceId { get; set; } = "string";
+        public List<string> Modes { get; set; } = new List<string>();
+        public bool Remix { get; set; } = true;
+        public bool RemixAutoConsidered { get; set; } = true;
     }
     public class DALLdrawBody
     {

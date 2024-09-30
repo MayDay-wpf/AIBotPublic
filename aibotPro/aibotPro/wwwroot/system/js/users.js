@@ -21,10 +21,10 @@ function getUrlParam(name) {
 }
 
 //验证邮箱格式，只允许qq,gmail,163,126,sina,hotmail
-function isEmail(str) {
-    var reg = /^(?:\w+\.?)*\w+@(?:qq|gmail|163|126)\.(?:com|cn|com\.cn)$/;
-    return reg.test(str);
-}
+//function isEmail(str) {
+//    var reg = /^(?:\w+\.?)*\w+@(?:qq|gmail|163|126|outlook)\.(?:com|cn|com\.cn)$/;
+//    return reg.test(str);
+//}
 
 //按钮进入加载状态
 function loadingBtn(dom) {
@@ -72,11 +72,11 @@ function regiest() {
         //    return;
         //}
         //邮箱格式不正确
-        if (!isEmail(email)) {
-            balert('只允许使用qq,gmail,163,126 邮箱', 'danger', true, 2000, "top");
-            unloadingBtn('.regiest');
-            return;
-        }
+        //if (!isEmail(email)) {
+        //    balert('只允许使用qq,gmail,163,126 邮箱', 'danger', true, 2000, "top");
+        //    unloadingBtn('.regiest');
+        //    return;
+        //}
         //var data = {
         //    users: {
         //        //User对象
@@ -493,3 +493,19 @@ function unloadingBtn(dom) {
     $(dom).prop('disabled', false)
     $(dom).find('span').remove();
 }
+var loadingOverlay = {
+    overlay: $('<div class="loading-overlay"></div>'),
+    spinner: $('<div class="loading-spinner"><div class="spinner-border text-primary" role="status"><span class="sr-only">加载中...</span></div></div>'),
+    show: function () {
+        $('body').append(this.overlay).append(this.spinner);
+        this.overlay.fadeIn();
+        this.spinner.fadeIn();
+    },
+    hide: function () {
+        this.overlay.fadeOut();
+        this.spinner.fadeOut(() => {
+            this.overlay.remove();
+            this.spinner.remove();
+        });
+    }
+};

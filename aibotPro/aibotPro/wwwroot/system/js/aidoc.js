@@ -105,7 +105,12 @@ function send(prompt, chatId) {
         "msgid_g": msgid_g,
         "chatgroupid": chatgroupid,
         "ip": IP,
-        "image_path": ''
+        "image_path": [],
+        "file_list": [],
+        "inputCacheKey": "",
+        "stream": true,
+        "system_prompt": '',
+        "useMemory": false
     };
     $("#chatbox").text('稍等一下☀️');
     connection.invoke('SendMessage', data)

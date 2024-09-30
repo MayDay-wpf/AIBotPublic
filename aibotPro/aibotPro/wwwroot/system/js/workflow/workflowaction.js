@@ -8,6 +8,12 @@ var javascriptdata = {
         javascript: ""
     }
 }
+var csharpdata = {
+    output: {
+        csharp: "",
+        prItems: []
+    }
+}
 var httpdata = {
     output: {
         requestUrl: "",
@@ -29,6 +35,8 @@ var LLMdata = {
         retry: 0,
         stream: false,
         jsonmodel: false,
+        jsonschema: false,
+        jsonschemainput: "",
         judgescript: "",
         llmmaxcount: 10
     }
@@ -55,7 +63,8 @@ var downloadimagedata = {
 }
 var webdata = {
     output: {
-        prompt: ""
+        prompt: "",
+        webjson: false
     }
 }
 var enddata = {
@@ -74,7 +83,9 @@ var knowledgedata = {
         prompt: "",
         retry: 0,
         topk: 3,
-        typecode: []
+        typecode: [],
+        reranker: false,
+        topn: 3
     }
 }
 var debug = {
@@ -133,6 +144,42 @@ function saveNodeData() {
             var js = codeeditor.getValue();
             javascriptdata.output.javascript = js;
             editor.updateNodeDataFromId(thisNodeId, javascriptdata);
+            saveNodeDataToCache();
+            return true;
+            break;
+        case 'csharp':
+            var rows = $('.csharppr-table tr');
+            csharpdata = {
+                output: {
+                    csharp: "",
+                    prItems: []
+                }
+            }
+            var csharp = csharpCodeeditor.getValue();
+            csharpdata.output.csharp = csharp;
+            rows.each(function () {
+                var columns = $(this).find('td');
+
+                var PRname = columns.eq(0).find('input').val();
+                var PRtype = columns.eq(1).find('select').val();
+                var PRconstant = columns.eq(2).find('input').val();
+                if (PRname.trim() === '' || PRconstant.trim() === '' || regex.test(PRname) || regex.test(PRconstant)) {
+                    isEmpty = true;
+                    layer.msg('存在空的参数值，请填写完整！', {icon: 2, time: 2500}, function () {
+                        layer.closeAll();
+                        bottomPanel.classList.remove('show');
+                        $('#overlay').hide();
+                    });
+                    return false;
+                }
+                var item = {
+                    "prName": PRname,
+                    "prType": PRtype,
+                    "prConst": PRconstant
+                };
+                csharpdata.output.prItems.push(item);
+            });
+            editor.updateNodeDataFromId(thisNodeId, csharpdata);
             saveNodeDataToCache();
             return true;
             break;
@@ -248,6 +295,8 @@ function saveNodeData() {
                     retry: 0,
                     stream: false,
                     jsonmodel: false,
+                    jsonschema: false,
+                    jsonschemainput: "",
                     judgescript: "",
                     llmmaxcount: 10
                 }
@@ -258,6 +307,8 @@ function saveNodeData() {
             var Retry = $('.retry').val();
             var Stream = $('.stream').val();
             var JsonModel = $('.jsonmodel').val();
+            var JsonSchemaInput = $('.jsonschemaInput').val();
+            var JsonSchema = $('.jsonschema').val();
             LLMdata.output.aimodel = AImodel;
             if (Prompt == "") {
                 layer.msg('请填写提示词', { icon: 2, time: 2500 }, function () {
@@ -273,12 +324,22 @@ function saveNodeData() {
                 });
                 return false;
             }
+            if (JsonSchema == "true" && JsonSchemaInput == "") {
+                layer.msg('JsonSchema输入不能为空', { icon: 2, time: 2500 }, function () {
+                    layer.closeAll();
+                    bottomPanel.classList.remove('show');
+                    $('#overlay').hide();
+                });
+                return false;
+            }
             var js = llmCodeeditor.getValue();
             LLMdata.output.prompt = Prompt;
             LLMdata.output.imgurl = ImgUrl;
             LLMdata.output.retry = Retry;
             LLMdata.output.stream = Stream;
             LLMdata.output.jsonmodel = JsonModel;
+            LLMdata.output.jsonschemainput = JsonSchemaInput;
+            LLMdata.output.jsonschema = JsonSchema;
             LLMdata.output.judgescript = js;
             editor.updateNodeDataFromId(thisNodeId, LLMdata);
             saveNodeDataToCache();
@@ -377,9 +438,10 @@ function saveNodeData() {
             return true;
             break;
         case 'web':
-            DALLdata = {
+            webdata = {
                 output: {
-                    prompt: ""
+                    prompt: "",
+                    webjson: false
                 }
             }
             var Prompt = $('.prompt').val();
@@ -390,15 +452,9 @@ function saveNodeData() {
                 });
                 return false;
             }
-            if (Retry == "") {
-                layer.msg('重试次数填写错误', { icon: 2, time: 2500 }, function () {
-                    layer.closeAll();
-                    bottomPanel.classList.remove('show'); $('#overlay').hide();
-                });
-                return false;
-            }
-            DALLdata.output.prompt = Prompt;
-            editor.updateNodeDataFromId(thisNodeId, DALLdata);
+            webdata.output.prompt = Prompt;
+            webdata.output.webjson = $(".webjson").val();
+            editor.updateNodeDataFromId(thisNodeId, webdata);
             saveNodeDataToCache();
             return true;
             break;
@@ -420,12 +476,16 @@ function saveNodeData() {
                     prompt: "",
                     retry: 0,
                     topk: 3,
-                    typecode: []
+                    typecode: [],
+                    reranker: false,
+                    topn: 3
                 }
             }
             var Prompt = $('.prompt').val();
             var Retry = $('.retry').val();
             var TopK = $('.topk').val();
+            var Reranker = $('.reranker').val();
+            var TopN = $('.topn').val();
             if (Prompt == "") {
                 layer.msg('请填写提示词', { icon: 2, time: 2500 }, function () {
                     layer.closeAll();
@@ -440,8 +500,15 @@ function saveNodeData() {
                 });
                 return false;
             }
-            if (TopK == "" || TopK > 10 || TopK < 3) {
+            if (TopK == "" || TopK > 100 || TopK < 3) {
                 layer.msg('TopK填写错误', { icon: 2, time: 2500 }, function () {
+                    layer.closeAll();
+                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                });
+                return false;
+            }
+            if (TopN > 100 || TopN < 3) {
+                layer.msg('TopN填写错误', { icon: 2, time: 2500 }, function () {
                     layer.closeAll();
                     bottomPanel.classList.remove('show'); $('#overlay').hide();
                 });
@@ -464,6 +531,8 @@ function saveNodeData() {
             knowledgedata.output.prompt = Prompt;
             knowledgedata.output.retry = Retry;
             knowledgedata.output.topk = TopK;
+            knowledgedata.output.reranker = Reranker;
+            knowledgedata.output.topn = TopN;
             editor.updateNodeDataFromId(thisNodeId, knowledgedata);
             saveNodeDataToCache();
             return true;

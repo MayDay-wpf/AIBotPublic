@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "绘画模型管理 (Draw Model)";
+    ViewData["Title"] = "艺术模型管理 (Draw Model)";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <div class="header">
@@ -98,6 +98,35 @@
             </div>
             <div class="form-group">
                 <button type="button" class="btn btn-primary savesd" onclick="saveDrawSetting('SD')">
+                    <i data-feather="save"></i>保存设置
+                </button>
+            </div>
+        </div>
+    </div>
+    <p></p>
+    <div class="card">
+        <div class="card-header">
+            <h6>Suno API</h6>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="suno-baseurl">Base URL:</label>
+                <input type="text" class="form-control" maxlength="500" id="suno-baseurl"
+                       placeholder="自定义请求地址">
+            </div>
+            <div class="form-group">
+                <label for="suno-apikey">API Key:</label>
+                <input type="text" class="form-control" maxlength="500" id="suno-apikey"
+                       placeholder="自定义API KEY">
+            </div>
+            <div class="form-group">
+                <label for="suno-channel">渠道:</label>
+                <select class="form-control w-50" id="suno-channel">
+                    <option value="GoAmz">GoAmz</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <button type="button" class="btn btn-primary savesuno" onclick="saveDrawSetting('Suno')">
                     <i data-feather="save"></i>保存设置
                 </button>
             </div>

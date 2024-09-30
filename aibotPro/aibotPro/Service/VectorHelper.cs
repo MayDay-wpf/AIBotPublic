@@ -15,7 +15,8 @@ namespace aibotPro.Service
         public string collectionName;
         public string embeddingsUrl;
         public string embeddingsapikey;
-        public VectorHelper(IRedisService redisService, string _alibbapikey, string _endpoint, string _collectionName, string _embeddingsUrl, string _embeddingsapikey)
+        public string embeddingsmodel;
+        public VectorHelper(IRedisService redisService, string _alibbapikey, string _endpoint, string _collectionName, string _embeddingsUrl, string _embeddingsapikey, string _embeddingsmodel)
         {
             _redisService = redisService;
             apikey = _alibbapikey;
@@ -23,6 +24,7 @@ namespace aibotPro.Service
             collectionName = _collectionName;
             embeddingsUrl = _embeddingsUrl;
             embeddingsapikey = _embeddingsapikey;
+            embeddingsmodel = _embeddingsmodel;
         }
         public async Task<List<List<double>>> StringToVectorAsync(string model, List<string> inputs, string Account)
         {

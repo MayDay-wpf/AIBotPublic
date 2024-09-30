@@ -195,11 +195,6 @@ function getNotice() {
                     $("#notice-box").html(res.data);
                     $(".speech-bubble-left").html(res.data);
                     noticemsg = res.data;
-                    var pathname = window.location.pathname;
-                    pathname = pathname.toLowerCase();
-                    if (pathname == "/openall/systemnotice") {
-                        $("#content").val(noticemsg);
-                    }
                 }
                 else {
                     noticemsg = "暂无公告";
@@ -335,7 +330,7 @@ function sendMsg_bot() {
         "msgid_g": msgid_g,
         "chatgroupid": chatgroupid,
         "ip": IP,
-        "image_path": "",
+        "image_path": [],
         "isbot": true,
         "system_prompt": `# 今天的公告是：${noticemsg}
 
@@ -348,11 +343,8 @@ function sendMsg_bot() {
                           * AIBot拥有海量的AI对话模型，供用户使用，并且可以无感切换。
                           * 当需要AIBot提供服务时，用户需支付一定的费用，在页面的右下角【计费说明】中有详细描述。
                           * AIBot也提供免费模型，在模型切换时，拥有【🆓】这个emoji标签的代表免费使用，但是需注意，用户余额需要大于0才可以免费使用。
-                          * AIBot有两项会员服务价格分别是【15元】和【90元】，两个会员拥有同样的会员权益，即会员折扣价和会员专属免费模型，在切换模型时，拥有【✨】这个emoji标签的代表是会员会员专属免费模型，15元会员和90元会员都可以免费使用。
+                          * AIBot有两项会员服务价格分别是【15元】和【50元】，拥有会员折扣价和会员专属免费模型，在切换模型时，拥有【✨】这个emoji标签的代表是会员专属免费模型，15元会员和50元会员都可以免费使用,拥有【👑】这个emoji标签的代表是高级会员专属免费模型,只有50元会员可以免费使用。
                           * AIBot的创意工坊有免费模型，按照频率刷新次数，拥有【🕔】这个emoji标签的代表按频率刷新免费使用次数。
-                          * 【15元会员详情】：1、享有免费模型 GPT-3.5等系列（详见模型列表：【VIP免费】模型）2、专项会员折扣3、专属会员功能4、客服优先处理5、无签到奖励6、无余额奖励。
-                          * 【90元会员详情】：1、享有免费模型 GPT-3.5等系列（详见模型列表：【VIP免费】模型）2、专项会员折扣3、专属会员功能4、客服优先处理5、每日签到，随机抽取0.5~1余额6、获得90余额+10赠送余额=100余额。
-                          * 15元和90元会员最大的区别在于90元会员可以获得100余额，且每天可以签到，随机抽取0.5~1余额，而15元会员没有这两项权限，其他都是一致的，包括折扣也是一致的。
                           * 会员充值链接：https://aibotpro.cn/Pay/VIP
                           * AIBot也可以单独充值余额，最低1元起充，充值链接：https://aibotpro.cn/Pay/Balance
                           * AIBot除了海量模型外，还有许多自研功能，例如：自定义插件(创意工坊)、自定义角色、文件助手、知识库创建、OpenAPI、AI中文图表绘制、营销号助手、无边记等，这些特色功能，请在左侧菜单中查看使用。
@@ -370,12 +362,19 @@ function sendMsg_bot() {
                           * AIBot的绘画模型不能对图片进行编辑，即P图，抠图等操作，AI绘画属于创意型绘画，用户上传的参考图只会用于创作时的风格参考和风格范围定义。
                           * 如果需要彻底或者永久关闭【AIBot用户引导助手】可以在左侧菜单中的【设置】，【系统偏好设置】中取消勾选【启用AIBot引导助手】，并保存设置即可。
                           * 引导助手悬浮窗可以【右键最小化】。
-                          * AIBot 系统是开源的，开源地址为：https://github.com/MayDay-wpf/AIBotPublic`
+                          * AIBot 系统是开源的，开源地址为：https://github.com/MayDay-wpf/AIBotPublic`,
+        "inputCacheKey": ""
     };
     $("#botQ").val("");
     $("#botQ").focus();
     var html = `<div class="user-message" id="` + msgid_u + `"></div>`;
     $(".bot-chat-body").append(html);
+    if (msg.length > 1000) {
+        setInputToCache(data, function (responseData) {
+            data.inputCacheKey = responseData;
+            data.msg = "";
+        });
+    }
     $("#" + msgid_u).text(msg);
     var gpthtml = `<div class="bot-message">
                         <div id="`+ msgid_g + `"></div><div class="spinner-grow spinner-grow-sm LDI"></div>
@@ -387,6 +386,7 @@ function sendMsg_bot() {
         })
         .catch(function (err) {
             processOver = true;
+            console.log(err)
         });
 }
 

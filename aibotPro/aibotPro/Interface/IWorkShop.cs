@@ -1,6 +1,7 @@
 ﻿using aibotPro.Dtos;
 using aibotPro.Models;
 using OpenAI.ObjectModels.RequestModels;
+using System.Runtime.CompilerServices;
 using System.Security.Principal;
 
 namespace aibotPro.Interface
@@ -26,7 +27,7 @@ namespace aibotPro.Interface
         bool DeletePlugin(string account, int pluginId, out string errormsg);
 
         //获取插件信息
-        WorkShopPlugin GetPlugin(int pluginId, string account, string pcode = "", string pfunctionName = "");
+        WorkShopPlugin GetPlugin(int pluginId, string account, string pcode = "", string pfunctionName = "", bool running = false);
 
         //获取插件安装列表
         List<PluginDto> GetPluginInstall(string account);
@@ -43,7 +44,7 @@ namespace aibotPro.Interface
         List<PluginCookieDto> GetPluginCookies(int pluginId);
 
         //运行插件
-        Task<PluginResDto> RunPlugin(string account, FunctionCall fn, string chatId = "", string senMethod = "", List<string> typeCode = null);
+        Task<PluginResDto> RunPlugin(string account, FunctionCall fn, string chatId = "", string senMethod = "", List<string> typeCode = null, [EnumeratorCancellation] CancellationToken cancellationToken = default, int topK = 3, bool reranker = false, int topN = 3);
 
         //获取工作流节点数据
         Task<string> GetWorkFlowNodeData(string workflowcode);

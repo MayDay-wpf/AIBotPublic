@@ -4,6 +4,14 @@ var showlog = false;
 var intervalId;
 let thisAiModel = 'gpt-4o-mini';
 let drawmodel = 'fast';
+let blendImages = [];
+let FS = 'imagine';
+let dimensions = 'SQUARE';
+let yourFace = '';
+let starFace = '';
+$('#dimensions').val('SQUARE');
+$('#agreeTerms').prop('checked', false);
+let process = false;
 $(function () {
     $('.nav-sub-link').removeClass('active');
     $('#dpSidebarBody .nav-link').removeClass('active');
@@ -23,6 +31,24 @@ $(function () {
 $(document).ready(function () {
     bindEnglishPromptTranslation("#inputText");
     bindOptimizePrompt("#inputText");
+    // 模式切换功能
+    $('.btn-group .btn').click(function () {
+        var targetId = $(this).data('target');
+        if (targetId != "imagine")
+            $("#pm").hide();
+        else
+            $("#pm").show();
+        // 隐藏所有内容区域
+        $('.mode-content').hide();
+
+        // 显示目标内容区域
+        $('#' + targetId).show();
+
+        // 更新按钮状态
+        $('.btn-group .btn').removeClass('active');
+        $(this).addClass('active');
+        FS = targetId;
+    });
 
     // 更新字符计数的函数
     function updateCharCount() {
@@ -91,54 +117,86 @@ $(document).ready(function () {
 
     $('#createTaskBtn').click(function () {
         var prompt = $('#inputText').val().trim();
-        if (prompt != "") {
-            //禁用按钮
-            loadingBtn('.createTask');
-            //$("#createTaskBtn").prop('disabled', true).addClass('btn-secondary').removeClass('btn-success');
-            //创建任务
-            var formData = new FormData();
-            formData.append('prompt', prompt);
-            formData.append('botType', botType);
-            formData.append('referenceImgPath', referenceImgPath);
-            formData.append('drawmodel', drawmodel);
-            $.ajax({
-                type: "Post",
-                url: "/AIdraw/CreateMJTask",
-                data: formData,
-                contentType: false,
-                processData: false,
-                success: function (res) {
-                    if (res.success) {
-                        balert('任务创建成功,详情请查看日志', 'success', false, 2000, "center");
-                        $('.cancelTask').show();
-                        $('html, body').animate({ scrollTop: $('.content-body').height() }, 1000);
-                        writeDrawLog('信息：任务创建成功，TaskId：' + res.taskId + '——' + getCurrentDateTime());
-                        // 开始查询任务状态
-                        queryTaskStatus(res.taskId, "CREATE");
-                    } else {
-                        balert(res.msg, 'danger', false, 2000, "center");
-                        writeDrawLog('失败：' + res.msg + '——' + getCurrentDateTime());
-                        //恢复按钮
-                        unloadingBtn('.createTask');
-                        //$("#createTaskBtn").prop('disabled', false).addClass('btn-success').removeClass('btn-secondary');
-                        //进度条恢复0
-                        $('#p2').css('width', '0%').attr('aria-valuenow', 0).text('0%');
-                    }
-                    $("#log").show();
-                    $("#TaskLogTitle").html(`<b>任务日志</b> <i data-feather="chevron-down"></i>`);
-                    feather.replace();
-                    showlog = true;
-                    $('html, body').animate({ scrollTop: $('.content-body').height() }, 1000);
-                }, error: function (e) {
-                    unloadingBtn('.createTask');
-                }
-            });
-        } else {
-            balert('请输入绘画提示词', 'danger', false, 1000, "center");
+        if (FS == "imagine" && prompt == "") {
+            balert('请输入绘画提示词', 'warning', false, 1000, "center");
             $('html, body').animate({ scrollTop: 0 }, 'slow');
             //输入框获得焦点
             $('#inputText').focus();
+            return;
         }
+        if (FS == "blend" && blendImages.length < 2) {
+            balert('请上传至少两张图片', 'warning', false, 1000, "center");
+            $('html, body').animate({ scrollTop: 0 }, 'slow');
+            return;
+        }
+        if (FS == "swap" && (yourFace == "" || starFace == "")) {
+            balert('你的头像和明星图请都上传', 'warning', false, 1000, "center");
+            $('html, body').animate({ scrollTop: 0 }, 'slow');
+            return;
+        }
+        if (process) {
+            balert('当前有任务正在进行，请结束后再试', 'warning', false, 1000, "center");
+            return;
+        }
+        //禁用按钮
+        loadingBtn('.createTask');
+        process = true;
+        //$("#createTaskBtn").prop('disabled', true).addClass('btn-secondary').removeClass('btn-success');
+        //创建任务
+        dimensions = $('#dimensions').val();
+        var formData = new FormData();
+        formData.append('prompt', prompt);
+        formData.append('botType', botType);
+        formData.append('referenceImgPath', referenceImgPath);
+        formData.append('drawmodel', drawmodel);
+        blendImages.forEach((image, index) => {
+            formData.append(`blendImages[${index}]`, image);
+        });
+        formData.append('FS', FS);
+        formData.append('dimensions', dimensions)
+        formData.append('yourFace', yourFace)
+        formData.append('starFace', starFace)
+        var agreeTerms = $('#agreeTerms').is(':checked');
+        formData.append('agreeTerms', agreeTerms)
+        $.ajax({
+            type: "Post",
+            url: "/AIdraw/CreateMJTask",
+            data: formData,
+            contentType: false,
+            processData: false,
+            success: function (res) {
+                if (res.success) {
+                    balert('任务创建成功,详情请查看日志', 'success', false, 2000, "center");
+                    $('.cancelTask').show();
+                    writeDrawLog('信息：任务创建成功，TaskId：' + res.taskId + '——' + getCurrentDateTime());
+                    // 开始查询任务状态
+                    if (FS == "imagine" || FS == "blend")
+                        queryTaskStatus(res.taskId, "CREATE");
+                    else
+                        queryTaskStatus(res.taskId, "SWAP");
+                } else {
+                    balert(res.msg, 'danger', false, 2000, "center");
+                    writeDrawLog('失败：' + res.msg + '——' + getCurrentDateTime());
+                    //恢复按钮
+                    unloadingBtn('.createTask');
+                    process = false;
+                    //$("#createTaskBtn").prop('disabled', false).addClass('btn-success').removeClass('btn-secondary');
+                    //进度条恢复0
+                    $('#p2').css('width', '0%').attr('aria-valuenow', 0).text('0%');
+                }
+                $("#log").show();
+                $("#TaskLogTitle").html(`<b>任务日志</b> <i data-feather="chevron-down"></i>`);
+                feather.replace();
+                showlog = true;
+                var element = document.getElementById("createTaskBtn");
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, error: function (e) {
+                unloadingBtn('.createTask');
+                process = false;
+            }
+        });
     });
 
     $('#TaskLogTitle').click(function () {
@@ -169,10 +227,14 @@ function writeDrawLog(str) {
 function queryTaskStatus(taskId, tasktype) {
     writeDrawLog('信息：请求查询绘制结果——' + getCurrentDateTime());
     if (taskId != "") {
+        var agreeTerms = $('#agreeTerms').is(':checked');
         $.ajax({
             type: "Post",
             url: "/AIdraw/GetMJTaskResponse",
-            data: { taskId: taskId },
+            data: {
+                taskId: taskId,
+                agreeTerms: agreeTerms
+            },
             success: function (res) {
                 if (res.success) {
                     //balert('任务状态查询成功', 'success', false, 1000, "center");
@@ -186,6 +248,7 @@ function queryTaskStatus(taskId, tasktype) {
                         //恢复按钮
                         unloadingBtn('.createTask');
                         unloadingBtn('.cancelTask');
+                        process = false;
                         $('.cancelTask').hide();//隐藏停止按钮
                         //$("#createTaskBtn").prop('disabled', false).addClass('btn-success').removeClass('btn-secondary');
                         //进度条恢复0
@@ -193,37 +256,37 @@ function queryTaskStatus(taskId, tasktype) {
                         //显示绘制结果
                         if (tasktype == "CREATE" || tasktype == "VARIATION") {
                             var html = `<div class="card">
-                                            <div class="card-header">
-                                                <h5>任务结果 ID： <span id="taskID">` + taskId + `</span></h5>
-                                            </div>
-                                            <div class="card-body" style="text-align:center;">
-                                                <div id="resBox">
-                                                    <div class="text-center mb-3">
-                                                        <a href="` + res.taskResponse.imageUrl + `" id="resimgurl-a" class="image-popup">
-                                                            <img src="` + res.taskResponse.imageUrl + `" class="img-fluid" style="width:30%;min-width:300px;" alt="任务结果">
-                                                        </a>
-                                                    </div>
-                                                    <div id="actionBtnlst">
-                                                        <div class="text-center mt-3">
-                                                            <button type="button" class="btn btn-primary mr-2" onclick="createActionTask('` + taskId + `','UPSCALE','1')"><i data-feather="zoom-in"></i> 放大 图1</button>
-                                                            <button type="button" class="btn btn-primary mr-2" onclick="createActionTask('` + taskId + `','UPSCALE','2')"><i data-feather="zoom-in"></i> 放大 图2</button>
+                                                <div class="card-header">
+                                                    <h5>任务结果 ID： <span id="taskID">` + taskId + `</span></h5>
+                                                </div>
+                                                <div class="card-body" style="text-align:center;">
+                                                    <div id="resBox">
+                                                        <div class="text-center mb-3">
+                                                            <a href="` + res.taskResponse.imageUrl + `" id="resimgurl-a" class="image-popup">
+                                                                <img src="` + res.taskResponse.imageUrl + `" class="img-fluid" style="width:30%;min-width:300px;" alt="任务结果">
+                                                            </a>
                                                         </div>
-                                                        <div class="text-center mt-3">
-                                                            <button type="button" class="btn btn-primary mr-2" onclick="createActionTask('` + taskId + `','UPSCALE','3')"><i data-feather="zoom-in"></i> 放大 图3</button>
-                                                            <button type="button" class="btn btn-primary mr-2" onclick="createActionTask('` + taskId + `','UPSCALE','4')"><i data-feather="zoom-in"></i> 放大 图4</button>
-                                                        </div>
-                                                        <div class="text-center mt-3">
-                                                            <button type="button" class="btn btn-info mr-2" onclick="createActionTask('` + taskId + `','VARIATION','1')"><i data-feather="edit"></i> 改进 图1</button>
-                                                            <button type="button" class="btn btn-info mr-2" onclick="createActionTask('` + taskId + `','VARIATION','2')"><i data-feather="edit"></i> 改进 图2</button>
-                                                        </div>
-                                                        <div class="text-center mt-3">
-                                                            <button type="button" class="btn btn-info mr-2" onclick="createActionTask('` + taskId + `','VARIATION','3')"><i data-feather="edit"></i> 改进 图3</button>
-                                                            <button type="button" class="btn btn-info mr-2" onclick="createActionTask('` + taskId + `','VARIATION','4')"><i data-feather="edit"></i> 改进 图4</button>
+                                                        <div id="actionBtnlst">
+                                                            <div class="text-center mt-3">
+                                                                <button type="button" class="btn btn-primary mr-2" onclick="createActionTask('` + taskId + `','UPSCALE','1')"><i data-feather="zoom-in"></i> 放大 图1</button>
+                                                                <button type="button" class="btn btn-primary mr-2" onclick="createActionTask('` + taskId + `','UPSCALE','2')"><i data-feather="zoom-in"></i> 放大 图2</button>
+                                                            </div>
+                                                            <div class="text-center mt-3">
+                                                                <button type="button" class="btn btn-primary mr-2" onclick="createActionTask('` + taskId + `','UPSCALE','3')"><i data-feather="zoom-in"></i> 放大 图3</button>
+                                                                <button type="button" class="btn btn-primary mr-2" onclick="createActionTask('` + taskId + `','UPSCALE','4')"><i data-feather="zoom-in"></i> 放大 图4</button>
+                                                            </div>
+                                                            <div class="text-center mt-3">
+                                                                <button type="button" class="btn btn-info mr-2" onclick="createActionTask('` + taskId + `','VARIATION','1')"><i data-feather="edit"></i> 改进 图1</button>
+                                                                <button type="button" class="btn btn-info mr-2" onclick="createActionTask('` + taskId + `','VARIATION','2')"><i data-feather="edit"></i> 改进 图2</button>
+                                                            </div>
+                                                            <div class="text-center mt-3">
+                                                                <button type="button" class="btn btn-info mr-2" onclick="createActionTask('` + taskId + `','VARIATION','3')"><i data-feather="edit"></i> 改进 图3</button>
+                                                                <button type="button" class="btn btn-info mr-2" onclick="createActionTask('` + taskId + `','VARIATION','4')"><i data-feather="edit"></i> 改进 图4</button>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
                                         <p></p>`;
                             $("#STEP").append(html);
                             $('.image-popup').magnificPopup({ type: 'image' });
@@ -235,9 +298,9 @@ function queryTaskStatus(taskId, tasktype) {
                                             <div class="card-body" style="text-align:center;">
                                                 <div id="resBox">
                                                     <div class="text-center mb-3">
-                                                    <a href="` + res.taskResponse.imageUrl + `" id="resimgurl-a" class="image-popup">
-                                                        <img src="` + res.taskResponse.imageUrl + `" class="img-fluid" style="width:30%;min-width:300px;" alt="任务结果">
-                                                    </a>
+                                                        <a href="` + res.taskResponse.imageUrl + `" id="resimgurl-a" class="image-popup">
+                                                            <img src="` + res.taskResponse.imageUrl + `" class="img-fluid" style="width:30%;min-width:300px;" alt="任务结果">
+                                                        </a>
                                                     </div>
                                                 </div>
                                             </div>
@@ -263,6 +326,7 @@ function queryTaskStatus(taskId, tasktype) {
         balert('请输入任务ID', 'danger', false, 1000, "center");
         //恢复按钮
         unloadingBtn('.createTask');
+        process = false;
         $('.cancelTask').hide();
     }
 }
@@ -270,14 +334,20 @@ function queryTaskStatus(taskId, tasktype) {
 function createActionTask(taskId, changetype, changeindex) {
     //清空日志
     $("#log").val('');
-    var element = document.getElementById("fileInput");
+    var element = document.getElementById("createTaskBtn");
     if (element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+    if (process) {
+        balert('当前有任务正在进行，请结束后再试', 'warning', false, 1000, "center");
+        return;
+    }
     //禁用按钮
     loadingBtn('.createTask');
+    process = true;
     //$("#createTaskBtn").prop('disabled', true).addClass('btn-secondary').removeClass('btn-success');
     //发起请求
+    var agreeTerms = $('#agreeTerms').is(':checked');
     $.ajax({
         type: "Post",
         url: "/AIdraw/CreateMJChange",
@@ -285,8 +355,8 @@ function createActionTask(taskId, changetype, changeindex) {
             action: changetype,
             index: changeindex,
             taskId: taskId,
-            drawmodel: drawmodel
-
+            drawmodel: drawmodel,
+            agreeTerms: agreeTerms
         },
         success: function (res) {
             if (res.success) {
@@ -297,6 +367,7 @@ function createActionTask(taskId, changetype, changeindex) {
                 queryTaskStatus(res.taskId, changetype);
             } else {
                 unloadingBtn('.createTask');
+                process = false;
                 balert(res.msg, 'danger', false, 2000, "center");
                 writeDrawLog('失败：' + res.msg + '——' + getCurrentDateTime());
             }
@@ -306,6 +377,7 @@ function createActionTask(taskId, changetype, changeindex) {
             showlog = true;
         }, error: function (e) {
             unloadingBtn('.createTask');
+            process = false;
         }
     });
 }
@@ -392,6 +464,7 @@ function cancelMJtask() {
                     unloadingBtn('.createTask');//恢复创建任务按钮
                     $('#p2').css('width', '0%').attr('aria-valuenow', 0).text('0%');//进度条复位
                     writeDrawLog('信息：任务已被终止，如果是程序问题导致的必须终止，请前往【个人中心->统计】撤销此笔计费' + '——' + getCurrentDateTime());
+                    process = false;
                 }
             }
         });
@@ -465,6 +538,7 @@ connection.on('ReceiveMessage', function (message) {
         $("#inputText").val(sysmsg).trigger('input');
         sysmsg = "";
         unloadingBtn('.greatePrompt');
+        process = false;
     }
 });
 
@@ -489,7 +563,6 @@ function sendMsg() {
         "msgid_g": msgid_g,
         "chatgroupid": chatgroupid,
         "ip": IP,
-        "image_path": '',
         "system_prompt": `As a prompt generator for a generative AI called "Midjourney", you will create image prompts for the AI to visualize. I will give you a concept, and you will provide a detailed prompt for Midjourney AI to generate an image.
                             
                             Please adhere to the structure and formatting below, and follow these guidelines:
@@ -530,6 +603,7 @@ function sendMsg() {
         .catch(function (err) {
             unloadingBtn('.greatePrompt');
             sendExceptionMsg("【Midjourney绘画提示词优化】发送消息时出现了一些未经处理的异常 :-( 原因：" + err);
+            process = false;
             //balert("您的登录令牌似乎已失效，我们将启动账号保护，请稍候，正在前往重新登录...", "danger", false, 3000, "center", function () {
             //    window.location.href = "/Users/Login";
             //});
@@ -553,6 +627,7 @@ function englishPrompt() {
         },
         success: function (data) {
             unloadingBtn('.englishPrompt');
+            process = false;
             if (data.success) {
                 $("#inputText").val(data.data)
             } else {
@@ -561,9 +636,122 @@ function englishPrompt() {
         },
         error: function (err) {
             unloadingBtn('.englishPrompt');
+            process = false;
             balert("转换失败，请重试", "danger", false, 2000);
             sendExceptionMsg("【/AIdraw/EnglishPrompt】出现了一些未经处理的异常 :-( 原因：" + err);
         }
     })
 
 }
+
+$(document).ready(function () {
+
+
+    // 使用事件委托来处理文件输入
+    $('#blendImagePreview').on('change', '#blendFileInput', function (e) {
+        let file = e.target.files[0];
+        if (!file) return;
+
+        if (blendImages.length >= 4) {
+            alert('最多只能上传4张图片');
+            return;
+        }
+
+        let formData = new FormData();
+        formData.append('file', file);
+
+        $.ajax({
+            url: '/AIdraw/ImageUpload',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (response) {
+                if (response.success) {
+                    blendImages.push(response.msg);
+                    updateBlendImagePreview();
+                } else {
+                    alert('上传失败: ' + response.msg);
+                }
+            },
+            error: function () {
+                alert('上传过程中发生错误');
+            }
+        });
+
+        this.value = ''; // 清空input，允许重复选择同一文件
+    });
+
+    function updateBlendImagePreview() {
+        $('#blendImagePreview').empty();
+        blendImages.forEach(function (imagePath, index) {
+            $('#blendImagePreview').append(`
+                <div class="position-relative">
+                    <img src="${imagePath.replace('wwwroot', '')}" class="image-preview" alt="Blend Image ${index + 1}">
+                    <button class="btn btn-sm btn-danger position-absolute" style="top: 0; right: 10px;" onclick="removeBlendImage(${index})">X</button>
+                </div>
+            `);
+        });
+
+        if (blendImages.length < 4) {
+            $('#blendImagePreview').append(`
+                <div id="addImageBtn" class="image-upload-box">
+                    <input type="file" id="blendFileInput" accept="image/*" style="display: none;">
+                    <label for="blendFileInput" class="h-100 w-100 d-flex justify-content-center align-items-center">
+                        <span style="font-size: 40px;">+</span>
+                    </label>
+                </div>
+            `);
+        }
+    }
+
+    window.removeBlendImage = function (index) {
+        blendImages.splice(index, 1);
+        updateBlendImagePreview();
+    };
+
+    // 初始化预览区域
+    updateBlendImagePreview();
+
+
+    function handleFileUpload(inputId, globalVar) {
+        $(`#${inputId}`).on('change', function () {
+            const file = this.files[0];
+            if (file) {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                $.ajax({
+                    url: '/AIdraw/ImageUpload',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function (response) {
+                        if (response.success) {
+                            // 显示预览图
+                            $(`#${inputId}`).parent().html(`<img src="${response.msg.replace('wwwroot', '')}" class="image-preview" alt="Uploaded image">`);
+
+                            // 给全局变量赋值
+                            if (globalVar === 'yourFace') {
+                                yourFace = response.msg;
+                            } else if (globalVar === 'starFace') {
+                                starFace = response.msg;
+                            }
+
+                            console.log(`${globalVar} 已更新:`, response.msg);
+                        } else {
+                            alert('上传失败: ' + response.msg);
+                        }
+                    },
+                    error: function () {
+                        alert('上传过程中发生错误');
+                    }
+                });
+            }
+        });
+    }
+
+    handleFileUpload('yourFaceInput', 'yourFace');
+    handleFileUpload('starFaceInput', 'starFace');
+});

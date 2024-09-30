@@ -247,6 +247,7 @@ namespace aibotPro.Controllers
                         CreateTime = DateTime.Now
                     };
                     _context.WorkFlows.Add(workFlow);
+                    _ = _redisService.DeleteAsync(plugin.WorkFlowCode).Result;
                 }
                 _context.SaveChanges();
                 if (plugin.IsPublic == "yes")
@@ -506,14 +507,27 @@ namespace aibotPro.Controllers
             }
             else
                 aiModel_lst = _systemService.GetWorkShopAImodel();
+            var aiModelSeq = _systemService.GetWorkShopAImodelSeq(username);
+            //如果有设置模型顺序，则按照设置的顺序返回
+            if (aiModelSeq != null && aiModelSeq.Count > 0)
+            {
+                foreach (var item in aiModelSeq)
+                {
+                    var model = aiModel_lst.Find(x => x.ModelName == item.ModelName);
+                    if (model != null)
+                        model.Seq = item.Seq;
+                }
+            }
+
+            //重新排序
+            aiModel_lst.Sort((x, y) => x.Seq.GetValueOrDefault().CompareTo(y.Seq));
             //移除BaseURL和ApiKey
             aiModel_lst.ForEach(x =>
             {
                 x.BaseUrl = string.Empty;
                 x.ApiKey = string.Empty;
             });
-            //根据Seq从小到大顺序排序
-            aiModel_lst = aiModel_lst.OrderBy(x => x.Seq).ToList();
+
             return Json(new
             {
                 success = true,
@@ -639,6 +653,18 @@ namespace aibotPro.Controllers
             {
                 success = true,
                 data = result
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public IActionResult SaveWorkShopModelSeq(List<ChatModelSeq> ChatModelSeq)
+        {
+            var username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            return Json(new
+            {
+                success = _usersService.SaveWorkShopModelSeq(username, ChatModelSeq, out string errormsg),
+                msg = errormsg
             });
         }
 

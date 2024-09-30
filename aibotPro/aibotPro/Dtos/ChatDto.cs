@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace aibotPro.Dtos;
 
@@ -12,22 +13,25 @@ public class ChatDto
     public string msgid_u { get; set; }
     public string msgid_g { get; set; }
     public string chatgroupid { get; set; }
-    public string? image_path { get; set; }
-    public List<string> file_list { get; set; }
+    public List<string> image_path { get; set; } = new List<string>();
+    public List<string> file_list { get; set; } = new List<string>();
     public string? system_prompt { get; set; }
     public bool isbot { get; set; } = false;
     public string threadid { get; set; }
-
     public float temperature { get; set; } = 1;
-
     public int maxtokens { get; set; } = 4095;
-
     //public float topp { get; set; } = 1;
     public float presence { get; set; } = 0;
     public float frequency { get; set; } = 0;
     public bool useMemory { get; set; } = false;
     public string chatfrom { get; set; } = "";
     public bool createAiPrompt { get; set; } = false;
+    public string inputCacheKey { get; set; } = "";
+    public int knowledgetopk { get; set; } = 3;
+    public bool knowledgereranker { get; set; } = false;
+    public int knowledgetopn { get; set; } = 3;
+    public bool stream { get; set; } = true;
+    public bool readingMode { get; set; } = false;
 }
 
 public class ChatRes
@@ -38,6 +42,8 @@ public class ChatRes
     public bool isfinish { get; set; } = false;
     public string threadid { get; set; }
     public string file_id { get; set; }
+    public bool loading { get; set; } = false;
+    public bool isterminal { get; set; } = false;
 }
 
 public class AiChat
@@ -68,7 +74,20 @@ public class AiChat
 
 public class ResponseFormat
 {
-    [JsonProperty("type")] public string Type { get; set; }
+    [JsonProperty("type", NullValueHandling = NullValueHandling.Ignore)]
+    public string Type { get; set; }
+
+    [JsonProperty("json_schema", NullValueHandling = NullValueHandling.Ignore)]
+    public JsonSchemaWrapper JsonSchema { get; set; }
+}
+
+public class JsonSchemaWrapper
+{
+    [JsonProperty("name")] public string Name { get; set; }
+
+    [JsonProperty("strict")] public bool Strict { get; set; }
+
+    [JsonProperty("schema")] public JObject Schema { get; set; } // 使用JObject来代表动态的schema
 }
 
 public class APISetting
@@ -114,6 +133,7 @@ public class Choice
 public class DeltaContent
 {
     [JsonProperty("content")] public string Content { get; set; }
+    [JsonProperty("role")] public string Role { get; set; }
 }
 
 public class VisionBody
@@ -193,4 +213,11 @@ public class TranslationResult
 public class OptimizeResult
 {
     public string OptimizedPrompt { get; set; }
+}
+
+public class LyricsResult
+{
+    public string Title { get; set; }
+    public string Lyrics { get; set; }
+    public string Tags { get; set; }
 }

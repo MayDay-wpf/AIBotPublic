@@ -11,6 +11,7 @@ var savedDarkMode = localStorage.getItem('darkMode');
 var timerIds = {};
 let promptlistPage = 1;
 let promptlistSize = 20;
+var topVipType = "";
 
 $(document).ready(function () {
     let savedScrollPosition = localStorage.getItem('sidebarScrollPosition');
@@ -24,15 +25,16 @@ $(document).ready(function () {
             // 添加 Authorization 头部，携带JWT token
             xhr.setRequestHeader('Authorization', 'Bearer ' + token);
             //token写入cookie
-            Cookies.set('token', token, { expires: 30 });
+            Cookies.set('token', token, {expires: 30});
         } else {
-            window.location.herf = "/Users/Login"
+            window.location.herf = "/Home/Welcome"
         }
     });
     IsLogin();
     getIpInfo();
     isVipExpired();
     getUserSetting();
+    getTopVipType();
     var pathname = window.location.pathname;
     pathname = pathname.toLowerCase();
     if (pathname != "/workshop/workflow") {
@@ -43,7 +45,8 @@ $(document).ready(function () {
         // 创建应用按钮
         var applyBtn = $('<button/>', {
             class: 'btn btn-info apply-btn', html: '<i class="icon ion-quote"></i> 引用', css: {
-                'display': 'none'
+                'display': 'none',
+                'z-index': 1055
             }, click: function () {
                 $(this).hide();
                 copyBtn.hide();
@@ -58,7 +61,8 @@ $(document).ready(function () {
         // 创建复制按钮
         var copyBtn = $('<button/>', {
             class: 'btn btn-success copy-btn-select', html: feather.icons['copy'].toSvg() + ' 复制', css: {
-                'display': 'none'
+                'display': 'none',
+                'z-index': 1055
             }, click: function () {
                 copyText(selectedText);
                 $(this).hide();
@@ -120,6 +124,12 @@ $(document).ready(function () {
                 applyBtn.hide();
                 copyBtn.hide();
                 selectedText = '';
+            }
+            if (!$(e.target).closest('.custom-delete-btn-1, .custom-confirm-delete-1').length) {
+                $('.custom-confirm-delete-1').removeClass('custom-show-1');
+            }
+            if (!$(e.target).closest('.delete-btn-1, .confirm-delete').length) {
+                $('.confirm-delete').hide();
             }
         });
     }
@@ -288,9 +298,9 @@ function addExportButtonToTables() {
             // 将Worksheet添加到Workbook
             XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
             // 将Workbook转换为Excel文件的二进制数据
-            var wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            var wbout = XLSX.write(wb, {bookType: 'xlsx', type: 'array'});
             // 创建Blob对象
-            var blob = new Blob([wbout], { type: 'application/octet-stream' });
+            var blob = new Blob([wbout], {type: 'application/octet-stream'});
             // 创建下载链接
             var url = URL.createObjectURL(blob);
             var link = document.createElement("a");
@@ -448,7 +458,7 @@ function isAdmin() {
                                 对话模型管理 (Chat Model)
                             </a>
                             <a href="/OpenAll/AiDrawModelSetting" class="nav-sub-link" id="aidrawmodel_aisystem_nav">
-                                绘画模型管理 (Draw Model)
+                                艺术模型管理 (Art Model)
                             </a>
                             <a href="/OpenAll/WorkShopModelSetting" class="nav-sub-link" id="workshopmodel_aisystem_nav">
                                 工坊模型管理 (WorkShop Model)
@@ -611,10 +621,10 @@ function IsLogin() {
         url: "/Users/IsLogin", type: "post", dataType: "json",//返回对象
         success: function (res) {
             if (!res.success) {
-                window.location.href = "/Users/Login"
+                window.location.href = "/Home/Welcome"
             }
         }, error: function (err) {
-            window.location.href = "/Users/Login"
+            window.location.href = "/Home/Welcome"
         }
     });
 }
@@ -722,7 +732,7 @@ function customMenu() {
                            友情链接
                     </label>
                   <li class="nav-item" id="ImgHost">
-                    <a href="https://img2anywhere.maymay5.com/" class="nav-link" target="_blank">
+                    <a href="https://img2anywhere-hk.maymay5.com/" class="nav-link" target="_blank">
                         <i data-feather="image">
                         </i>
                         只是图床
@@ -754,6 +764,13 @@ function customMenu() {
                         <i data-feather="coffee">
                         </i>
                         SQL-Truck
+                    </a>
+                  </li>
+                  <li class="nav-item" id="SQLTruck">
+                    <a href="https://pdf.maymay5.com/?lang=zh_CN" class="nav-link" target="_blank">
+                        <i data-feather="type">
+                        </i>
+                        PDF工具
                     </a>
                   </li>
                 </li>
@@ -845,7 +862,7 @@ function isVIP(callback, needQuery = false) {
     const cachedData = localStorage.getItem('vipStatus');
 
     if (cachedData && !needQuery) {
-        const { status, expiry } = JSON.parse(cachedData);
+        const {status, expiry} = JSON.parse(cachedData);
         if (now < expiry) {
             // 缓存有效，直接返回结果
             callback(status);
@@ -869,6 +886,19 @@ function isVIP(callback, needQuery = false) {
         }, error: function (err) {
             console.error("查询VIP状态时出错:", err);
             callback(false); // 出错时默认为非VIP
+        }
+    });
+}
+
+function getTopVipType() {
+    $.ajax({
+        url: "/Users/GetTopVipType", type: "post", dataType: "json",
+        async: false,
+        success: function (res) {
+            if (res.success)
+                topVipType = res.data;
+        }, error: function (err) {
+            console.error("获取VIP状态时出错:", err);
         }
     });
 }
@@ -1079,7 +1109,7 @@ function bindEnglishPromptTranslation(selector) {
                 type: "POST",
                 url: "/AIdraw/EnglishPrompt",
                 dataType: "json",
-                data: { "prompt": textBeforeM },
+                data: {"prompt": textBeforeM},
                 success: function (data) {
                     if (data.success) {
                         // 验证是否仍然包含 'mmmmm'，确保用户在加载时没有修改
@@ -1106,6 +1136,7 @@ function bindEnglishPromptTranslation(selector) {
         }
     });
 }
+
 //AI优化提示词
 function bindOptimizePrompt(selector) {
     // 创建一个固定位置的小型加载指示器
@@ -1152,7 +1183,7 @@ function bindOptimizePrompt(selector) {
                 type: "POST",
                 url: "/Home/OptimizePrompt",
                 dataType: "json",
-                data: { "prompt": textBeforeF },
+                data: {"prompt": textBeforeF},
                 success: function (data) {
                     if (data.success) {
                         // 验证是否仍然包含 'fffff'，确保用户在加载时没有修改
@@ -1179,6 +1210,7 @@ function bindOptimizePrompt(selector) {
         }
     });
 }
+
 //常用题词本
 function bindInputToSidebar(selector) {
     $(selector).on('input', function (e) {
@@ -1217,27 +1249,135 @@ function bindInputToSidebar(selector) {
         }
     });
 }
+
 function showContextMenu(x, y, chatId) {
     // 隐藏任何已显示的右键菜单
     $('.custom-context-menu').remove();
 
-    // 创建并显示右键菜单
+    // 创建菜单HTML
     var menuHtml = `
-        <div class="custom-context-menu" style="top:${y}px; left:${x}px; position:absolute; z-index:1000;">
+        <div class="custom-context-menu" style="position:absolute; z-index:1000;">
             <ul>
                 <li onclick="saveMemory('','${chatId}')"><i data-feather="cpu"></i>&nbsp;存入记忆</li>
+                <li onclick="startEditing('${chatId}')"><i data-feather="edit-3"></i>&nbsp;编辑标题</li>
+                <li onclick="exportChat('${chatId}')"><i data-feather="share"></i>&nbsp;导出记录</li>
+                <li onclick="multipleChoice()"><i data-feather="check-square"></i>&nbsp;多项选择</li>
+                <li class="historyPreview" onclick="showHistoryPreview('${chatId}')"><i data-feather="message-square"></i>&nbsp;预览内容</li>
                 <li onclick="deleteChat('${chatId}')" class="text-danger"><i data-feather="trash-2"></i>&nbsp;删除</li>
             </ul>
         </div>
     `;
 
+    // 添加菜单到body
     $('body').append(menuHtml);
+
+    // 获取菜单元素
+    var $menu = $('.custom-context-menu');
+
+    // 计算菜单的尺寸
+    var menuWidth = $menu.outerWidth();
+    var menuHeight = $menu.outerHeight();
+
+    // 获取窗口尺寸
+    var windowWidth = $(window).width();
+    var windowHeight = $(window).height();
+
+    // 调整X坐标
+    if (x + menuWidth > windowWidth) {
+        x = windowWidth - menuWidth;
+    }
+
+    // 调整Y坐标
+    if (y + menuHeight > windowHeight) {
+        y = y - menuHeight;
+        if (y < 0) y = 0; // 确保菜单不会超出顶部
+    }
+
+    // 设置菜单位置
+    $menu.css({top: y, left: x});
+
     feather.replace();
+
     // 点击其他地方隐藏菜单
     $(document).on('click', function () {
         $('.custom-context-menu').remove();
     });
 }
+
+function startEditing(chatId) {
+    // 使用转义字符直接在选择器中
+    const escapedChatId = chatId.replace(/([ #;?%&,.+*~\':"!^$[\]()=>|\/@])/g, '\\$1');
+
+    // 寻找 txt 元素并使其可编辑
+    const txtElement = $(`#${escapedChatId} txt`);
+    txtElement.attr('contenteditable', 'true').focus();
+
+    // 修改鼠标指针，并自动选择所有文本
+    txtElement.css('cursor', 'text');
+    document.execCommand('selectAll', false, null);
+
+    // 临时移除绑定的 onclick 事件
+    const listItem = $(`#${escapedChatId}`);
+    const originalOnclick = listItem.attr('onclick');
+    listItem.attr('onclick', '');
+
+    // 实时监控文本输入，确保不超过100字符
+    txtElement.on('input', function () {
+        const maxLength = 100;
+        if (this.textContent.length > maxLength) {
+            // 如果输入超出100字符，截断超出的部分
+            this.textContent = this.textContent.substring(0, maxLength);
+            // 将光标移动到文本末尾
+            let range = document.createRange();
+            let sel = window.getSelection();
+            range.selectNodeContents(this);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+    });
+
+    // 监听 blur 和 keydown 事件，用于提交内容和截断显示
+    txtElement.on('blur keydown', function (e) {
+        if (e.type === 'blur' || (e.type === 'keydown' && e.key === 'Enter')) {
+            e.preventDefault();
+
+            let textContent = this.textContent.trim(); // 获取聊天标题原始文本
+            updateChatTitle(chatId, textContent);  // 更新聊天标题
+
+            // 将文本截断后设置回 txt 元素以供显示
+            if (textContent.length > 50) {
+                txtElement.text(textContent.substring(0, 50) + "...");
+            }
+
+            txtElement.attr('contenteditable', 'false').off('input blur keydown');
+
+            // 编辑完成，恢复原始的点击事件
+            listItem.attr('onclick', originalOnclick);
+            // 恢复鼠标指针样式
+            txtElement.css('cursor', '');
+        }
+    });
+}
+
+function updateChatTitle(chatId, chatTitle) {
+    $.ajax({
+        url: "/Home/UpdateChatTitle",
+        type: "post",
+        dataType: "json",
+        data: {
+            chatId: chatId,
+            chatTitle: chatTitle
+        },
+        success: function (res) {
+            if (res.success && chatTitle == "")
+                getHistoryList(1, 20, true, false, "");
+        }, error: function (err) {
+            sendExceptionMsg(`【API：/Home/UpdateChatTitle】:${err}`);
+        }
+    });
+}
+
 function addUserPrompt() {
     var prompt = $('#newPrompt').val().trim();
     if (prompt == "") {
@@ -1261,6 +1401,7 @@ function addUserPrompt() {
         }
     });
 }
+
 function getUserPromptList(type) {
     $.ajax({
         url: "/Home/GetUserPromptList",
@@ -1293,8 +1434,7 @@ function getUserPromptList(type) {
                         promptlistPage--;
                     }
                     $('#promptItems').append(html);
-                }
-                else
+                } else
                     $('#promptItems').html(html);
                 feather.replace();
             }
@@ -1303,6 +1443,12 @@ function getUserPromptList(type) {
         }
     });
 }
+
+function loadmorePromptList() {
+    promptlistPage++;
+    getUserPromptList('loadmore');
+}
+
 function deleteUserPrompt(id) {
     $.ajax({
         url: "/Home/DeleteUserPrompt",
@@ -1327,7 +1473,650 @@ function deleteUserPrompt(id) {
         }
     });
 }
-function loadmorePromptList() {
-    promptlistPage++;
-    getUserPromptList('loadmore');
+
+// 调用函数打开模态框
+function exportChat(chatId) {
+    $('#exportModal').modal('show');
+    showHistoryDetail(chatId);
+    $('#exportMarkdown').off('click').on('click', function () {
+        exportAny(chatId, "markdown");
+        $('#exportModal').modal('hide');
+    });
+
+    $('#exportImage').off('click').on('click', function () {
+        // 调用图片导出逻辑
+        exportAny(chatId, "image");
+        $('#exportModal').modal('hide');
+    });
+
+    $('#exportHTML').off('click').on('click', function () {
+        // 调用HTML导出逻辑
+        exportAny(chatId, "html");
+        $('#exportModal').modal('hide');
+    });
+}
+
+function exportAny(chatId, type) {
+    loadingOverlay.show();
+    if (type === "image") {
+        var element = document.querySelector(".chat-body-main");
+
+        // 获取元素的滚动高度
+        var scrollHeight = element.scrollHeight;
+        var originalHeight = element.style.height;
+
+        // 临时设置元素高度为滚动高度，以显示所有内容
+        element.style.height = scrollHeight + 'px';
+
+        html2canvas(element, {
+            scrollY: -window.scrollY,
+            height: scrollHeight
+        }).then(function (canvas) {
+            // 恢复原始高度
+            element.style.height = originalHeight;
+
+            // 将 canvas 转换为图片 URL
+            var imageURL = canvas.toDataURL("image/png");
+
+            // 创建下载链接
+            var downloadLink = document.createElement('a');
+            downloadLink.href = imageURL;
+            downloadLink.download = `${generateGUID()}.png`;
+
+            // 触发下载
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        });
+        loadingOverlay.hide();
+        return;
+    }
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "/Home/ExportChat", true);
+    xhr.responseType = "blob";
+
+    // 获取 JWT Token
+    var token = localStorage.getItem('aibotpro_userToken');
+
+    if (token) {
+        // 设置 Authorization 头，携带 JWT token
+        xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+    } else {
+        // 如果 token 不存在，跳转到登录页面
+        window.location.href = "/Home/Welcome";
+        return;
+    }
+
+    // 设置请求的 Content-Type
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            // 从 Content-Disposition 头中获取文件名
+            var contentDisposition = xhr.getResponseHeader('Content-Disposition');
+            var filename = chatId;
+
+            if (contentDisposition && contentDisposition.indexOf('attachment') !== -1) {
+                var filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                var matches = filenameRegex.exec(contentDisposition);
+                if (matches !== null && matches[1]) {
+                    filename = matches[1].replace(/['"]/g, '');
+                }
+            }
+
+            var blob = xhr.response;
+            var url = window.URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            loadingOverlay.hide();
+            a.click();
+            setTimeout(function () {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 0);
+        } else {
+            balert("导出失败", "danger", false, 1500, "center");
+            sendExceptionMsg(`【API：/Home/ExportChat】:${xhr.statusText}`);
+        }
+    };
+
+    xhr.onerror = function () {
+        loadingOverlay.hide();
+        balert("导出失败", "danger", false, 1500, "center");
+        sendExceptionMsg(`【API：/Home/ExportChat】:${xhr.statusText}`);
+    };
+
+    var data = `chatId=${encodeURIComponent(chatId)}&type=${encodeURIComponent(type)}`;
+    xhr.send(data);
+}
+
+let previewWindow = null;
+let chatTabs = [];
+
+function showHistoryPreview(chatId) {
+    if (!previewWindow) {
+        createPreviewWindow();
+    }
+
+    let existingTab = chatTabs.find(tab => tab.chatId === chatId);
+    if (existingTab) {
+        activateTab(existingTab.tabId);
+    } else {
+        createNewTab(chatId);
+    }
+
+    previewWindow.show();
+}
+
+function createPreviewWindow() {
+    let windowHtml = `
+        <div id="preview-window" class="preview-window">
+            <div class="preview-header">
+                <span>对话预览</span>
+                <div>
+                    <span class="minimize-btn" style="cursor: pointer; margin-right: 10px; display: inline-block; width: 20px; text-align: center;"><i style="width: 15px;" data-feather="minus"></i></span>
+                    <span class="close-btn" style="cursor: pointer; display: inline-block; width: 20px; text-align: center;"><i style="width: 15px;" data-feather="x"></i></span>
+                </div>
+            </div>
+            <ul class="nav nav-tabs" id="previewTabs" role="tablist"></ul>
+            <div class="tab-content" id="previewTabContent" style="height: calc(100% - 90px); overflow-y: auto; padding: 25px;"></div>
+        </div>
+    `;
+
+    $('body').append(windowHtml);
+    feather.replace();
+    let isMinimized = false;
+    let originalSize = {width: '600px', height: '650px'};
+
+    previewWindow = {
+        element: $('#preview-window'),
+        show: function () {
+            this.element.show();
+        },
+        hide: function () {
+            if (!isMinimized) {
+                originalSize = {
+                    width: this.element.css('width'),
+                    height: this.element.css('height')
+                };
+                this.element.find('.preview-header').nextAll().hide();
+                this.element.css({height: 'auto', width: '300px'});
+                this.element.find('.minimize-btn').html(`<i style="width: 15px;" data-feather="maximize"></i>`);
+                isMinimized = true;
+                feather.replace();
+            }
+        },
+        restore: function () {
+            if (isMinimized) {
+                this.element.find('.preview-header').nextAll().show();
+                this.element.css(originalSize);
+                this.element.find('.minimize-btn').html(`<i style="width: 15px;" data-feather="minus"></i>`);
+                isMinimized = false;
+                feather.replace();
+            }
+        }
+    };
+
+    // 实现拖动功能
+    previewWindow.element.find('.preview-header').on('mousedown', function (e) {
+        let $draggable = $(this).parent();
+        let pos_y = $draggable.offset().top + $draggable.outerHeight() - e.pageY;
+        let pos_x = $draggable.offset().left + $draggable.outerWidth() - e.pageX;
+
+        $(document).on('mousemove', function (e) {
+            $draggable.offset({
+                top: e.pageY + pos_y - $draggable.outerHeight(),
+                left: e.pageX + pos_x - $draggable.outerWidth()
+            });
+        }).on('mouseup', function () {
+            $(document).off('mousemove');
+        });
+        e.preventDefault();
+    });
+
+    // 最小化/恢复功能
+    previewWindow.element.find('.minimize-btn').on('click', function () {
+        if (isMinimized) {
+            previewWindow.restore();
+        } else {
+            previewWindow.hide();
+        }
+    });
+
+    // 关闭功能
+    previewWindow.element.find('.close-btn').on('click', function () {
+        previewWindow.element.remove();
+        previewWindow = null;
+        chatTabs = [];
+    });
+}
+
+function createNewTab(chatId) {
+    let shortId = chatId.substring(0, 8) + '...';
+    let tabId = 'tab-' + chatId;
+
+    let $tab = $(`
+        <li class="nav-item">
+            <a class="nav-link" id="${tabId}-tab" data-toggle="tab" href="#${tabId}" role="tab">
+                <span>${shortId}</span>
+                <button class="close-tab" type="button" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </a>
+        </li>
+    `);
+
+    let $content = $(`
+        <div class="tab-pane fade" id="${tabId}" role="tabpanel">
+            <div class="d-flex justify-content-center align-items-center" style="min-height: 200px;">
+                <div class="spinner-border" role="status">
+                    <span class="sr-only">加载中...</span>
+                </div>
+            </div>
+        </div>
+    `);
+
+    $('#preview-window #previewTabs').append($tab);
+    $('#preview-window #previewTabContent').append($content);
+
+    // 为新的tab添加点击事件
+    $tab.find('a').on('click', function (e) {
+        e.preventDefault();
+        activateTab(tabId);
+    });
+
+    // 为关闭按钮添加点击事件
+    $tab.find('.close-tab').on('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();  // 阻止事件冒泡到tab
+        removeTab(chatId);
+    });
+
+    chatTabs.push({chatId: chatId, tabId: tabId});
+    activateTab(tabId);
+    loadChatContent(chatId, tabId);
+}
+
+function removeTab(chatId) {
+    let tabInfo = chatTabs.find(tab => tab.chatId === chatId);
+    if (tabInfo) {
+        let wasActive = $(`#preview-window [id="${tabInfo.tabId}-tab"]`).hasClass('active');
+
+        $(`#preview-window [id="${tabInfo.tabId}-tab"]`).parent().remove();  // 移除tab
+        $(`#preview-window [id="${tabInfo.tabId}"]`).remove();  // 移除tab内容
+        chatTabs = chatTabs.filter(tab => tab.chatId !== chatId);
+
+        // 如果删除的是当前激活的tab，或者没有激活的tab，则激活另一个tab
+        if (wasActive || $('#preview-window .nav-tabs .active').length === 0) {
+            if (chatTabs.length > 0) {
+                activateTab(chatTabs[0].tabId);
+            }
+        }
+
+        // 如果没有剩余的tab，关闭预览窗口
+        if (chatTabs.length === 0) {
+            if (previewWindow) {
+                previewWindow.element.remove();
+                previewWindow = null;
+            }
+        }
+    }
+}
+
+function activateTab(tabId) {
+    $('#preview-window #previewTabs a').removeClass('active');
+    $('#preview-window .tab-pane').removeClass('show active');
+    $(`#preview-window [id="${tabId}-tab"]`).addClass('active');
+    $(`#preview-window [id="${tabId}"]`).addClass('show active');
+}
+
+
+function loadChatContent(chatId, tabId) {
+    $.ajax({
+        type: "Post",
+        url: "/Home/ShowHistoryDetail",
+        dataType: "json",
+        data: {chatId: chatId},
+        success: function (res) {
+            let html = "";
+            var isvip = false;
+            isVIP(function (status) {
+                isvip = status;
+            });
+            var vipHead = isvip ? `<div class="avatar" style="border:2px solid #FFD43B">
+                                 <img src='${HeadImgPath}'/>
+                                 <i class="fas fa-crown vipicon"></i>
+                             </div>
+                             <div class="nicknamevip">${UserNickText}</div>` : `<div class="avatar">
+                                 <img src='${HeadImgPath}'/>
+                             </div>
+                             <div class="nickname">${UserNickText}</div>`;
+            var imgBox = [];
+            for (var i = 0; i < res.data.length; i++) {
+                var content = res.data[i].chat;
+                var msgclass = "chat-message";
+                if (res.data[i].isDel === 2)
+                    msgclass = "chat-message chatgroup-masked";
+                if (res.data[i].role == "user") {
+                    if (content.indexOf('aee887ee6d5a79fdcmay451ai8042botf1443c04') == -1) {
+                        content = content.replace(/&lt;/g, "&amp;lt;").replace(/&gt;/g, "&amp;gt;");
+                        content = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                        html += `<div class="${msgclass}" data-group="${res.data[i].chatGroupId}">
+                                     <div style="display: flex; align-items: center;">
+                                       ${vipHead}
+                                     </div>
+                                     <div class="chat-message-box">
+                                       <pre id="${res.data[i].chatCode}">${content}</pre>
+                                     </div>
+                                 </div>`;
+                    } else {
+                        var contentarr = content.split("aee887ee6d5a79fdcmay451ai8042botf1443c04");
+                        html += `<div class="${msgclass}" data-group="${res.data[i].chatGroupId}">
+                                   <div style="display: flex; align-items: center;">
+                                      ${vipHead}
+                                   </div>
+                                   <div class="chat-message-box">
+                                     <pre id="${res.data[i].chatCode}">${contentarr[0].replace(/</g, "&lt;").replace(/>/g, "&gt;")}`;
+
+                        contentarr.slice(1).forEach(item => {
+                            if (item.includes('<img ')) {
+                                html += item;
+                            } else {
+                                html += item.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                            }
+                        });
+
+                        html += `</pre></div>
+                                 </div>`;
+                        imgBox.push(res.data[i].chatCode);
+                    }
+                } else {
+                    var item = {
+                        "id": res.data[i].chatCode,
+                        "markdown": content
+                    };
+                    markdownHis.push(item);
+                    var markedcontent = marked(completeMarkdown(content));
+                    var firstTime = '';
+                    var allTime = '';
+                    if (res.data[i].firstTime != "null" && res.data[i].allTime != "null" && res.data[i].firstTime != null && res.data[i].allTime != null) {
+                        firstTime = `<span class="badge badge-pill badge-success">${res.data[i].firstTime}s</span>`;
+                        allTime = `<span class="badge badge-pill badge-dark">${res.data[i].allTime}s</span>`;
+                        if (res.data[i].firstTime > 10) {
+                            firstTime = `<span class="badge badge-pill badge-danger">${res.data[i].firstTime}s</span>`;
+                        } else if (res.data[i].firstTime > 5) {
+                            firstTime = `<span class="badge badge-pill badge-warning">${res.data[i].firstTime}s</span>`;
+                        }
+                    }
+
+                    html += `<div class="${msgclass}" data-group="${res.data[i].chatGroupId}">
+                                 <div style="display: flex; align-items: center;">
+                                    <div class="avatar  gpt-avatar">${roleAvatar}</div>
+                                    <div class="nickname" style="font-weight: bold; color: black;">${roleName}</div>
+                                    <span class="badge badge-info ${res.data[i].model.replace('.', '')}">${res.data[i].model}</span>
+                                    ${firstTime}${allTime}
+                                 </div>
+                                <div class="chat-message-box">
+                                    <div id="${res.data[i].chatCode}">${markedcontent}</div>
+                                </div>
+                            </div>`;
+                }
+            }
+            $(`[id="${tabId}"]`).html(html);
+
+            MathJax.typeset();
+            $(`[id="${tabId}"] .chat-message pre code`).each(function (i, block) {
+                hljs.highlightElement(block);
+            });
+            addLanguageLabels();
+            addCopyBtn();
+            addExportButtonToTables();
+            applyMagnificPopup(`[id="${tabId}"] .chat-message-box`);
+            imgBox.forEach(item => initImageFolding(`#${item}`));
+            createMaskedOverlays();
+        },
+        error: function (err) {
+            $(`[id="${tabId}"]`).html("加载失败，请重试。");
+            balert("获取对话详情失败，请联系管理员：err", "danger", false, 2000, "center");
+        }
+    });
+}
+
+function setInputToCache(data, callback) {
+    $.ajax({
+        url: "/Home/InputToCache",
+        type: "post",
+        dataType: "json",
+        data: {
+            chatDto: data
+        },
+        success: function (res) {
+            callback(res.data);
+        },
+        error: function (err) {
+            balert("系统异常", "danger", false, 1500, "center");
+            sendExceptionMsg(`【API：/Home/InputToCache】:${err}`);
+        }
+    });
+}
+
+function initImageFolding(selector) {
+    const $container = $(selector);
+    const $images = $container.find('img.magnified');
+
+    // 检查是否已经创建过图片容器
+    if ($container.find('.horizontal-image-container').length > 0) {
+        return; // 如果已经创建过,直接返回
+    }
+
+    // 等待所有图片加载完成
+    let loadedImages = 0;
+    $images.on('load', function () {
+        loadedImages++;
+        if (loadedImages === $images.length) {
+            initFolding();
+        }
+    }).each(function () {
+        if (this.complete) $(this).trigger('load');
+    });
+
+    function initFolding() {
+        // 创建一个新的容器来横向排列图片
+        const $horizontalContainer = $('<div>').addClass('horizontal-image-container').css({
+            display: 'flex',
+            overflowX: 'auto',
+            width: '100%',
+            marginTop: '10px' // 为与上方文字内容留出空间
+        });
+
+        $images.each(function (index) {
+            const $img = $(this);
+            const $link = $img.parent('a');
+            const $wrapper = $('<div>').css({
+                width: '100px',
+                height: '100px',
+                border: '1px solid #ccc',
+                borderRadius: '5px',
+                marginRight: '10px',
+                overflow: 'hidden',
+                flexShrink: 0,
+                position: 'relative'
+            });
+
+            // 克隆图片并应用新样式
+            const $clonedImg = $img.clone().css({
+                maxWidth: 'none', // 覆盖行内样式
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'center',
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                transition: 'transform 0.3s ease',
+                cursor: 'pointer'
+            });
+
+            // 创建新的a标签并保留原有的属性
+            const $clonedLink = $link.clone().empty().append($clonedImg).css({
+                display: 'block',
+                width: '100%',
+                height: '100%'
+            });
+            $wrapper.append($clonedLink);
+            $horizontalContainer.append($wrapper);
+
+            // 鼠标悬停事件
+            $wrapper.on('mouseenter', function () {
+                $clonedImg.css('transform', 'translate(-50%, -50%) scale(1.1)');
+            }).on('mouseleave', function () {
+                $clonedImg.css('transform', 'translate(-50%, -50%) scale(1)');
+            });
+
+            // 隐藏原始图片
+            $img.hide();
+        });
+
+        // 找到最后一个非图片元素
+        let $lastNonImageElement = null;
+        $container.contents().each(function () {
+            if (this.nodeType === 1 && !$(this).is('img.magnified') && !$(this).find('img.magnified').length) {
+                $lastNonImageElement = $(this);
+            }
+        });
+
+        // 在最后一个非图片元素后插入新的图片容器
+        if ($lastNonImageElement) {
+            $lastNonImageElement.after($horizontalContainer);
+        } else {
+            // 如果没有找到非图片元素,则添加到容器末尾
+            $container.append($horizontalContainer);
+        }
+
+        // 重新初始化 MagnificPopup
+        $horizontalContainer.magnificPopup({
+            delegate: 'a',
+            type: 'image',
+            gallery: {
+                enabled: true
+            }
+        });
+    }
+}
+
+
+$(document).on('click', '.custom-delete-btn-1', function (e) {
+    e.preventDefault();
+    const chatgroupid = $(this).data('chatgroupid');
+    const $btn = $(this);
+
+    if ($btn.next('.custom-confirm-delete-1').length) {
+        $btn.next('.custom-confirm-delete-1').addClass('custom-show-1');
+        return;
+    }
+
+    const $confirmDialog = $(`
+        <div class="custom-confirm-delete-1">
+            <div class="custom-confirm-delete-content-1">
+                <div class="custom-confirm-delete-arrow-1"></div>
+                <p><i class="fas fa-question-circle"></i> 删除模式选择</p>
+                <button class="btn btn-sm btn-danger mr-2 custom-confirm-1"><i class="far fa-trash-alt"></i> 彻底删除</button>
+                <button class="btn btn-sm btn-warning custom-confirm-2"><i class="fas fa-tag"></i> 标记删除</button>
+            </div>
+        </div>
+    `);
+
+    $btn.after($confirmDialog);
+
+    // 计算尖角位置
+    const btnCenter = $btn.offset().left + $btn.width() / 2;
+    const dialogLeft = $confirmDialog.offset().left;
+    const arrowLeft = btnCenter - dialogLeft - 6; // 6是尖角宽度的一半
+    $confirmDialog.find('.custom-confirm-delete-arrow-1').css('left', `${arrowLeft}px`);
+
+    setTimeout(() => $confirmDialog.addClass('custom-show-1'), 10);
+
+    $confirmDialog.find('.custom-confirm-1').on('click', function () {
+        deleteChatGroup(chatgroupid, 1);
+        $confirmDialog.removeClass('custom-show-1');
+    });
+
+    $confirmDialog.find('.custom-confirm-2').on('click', function () {
+        deleteChatGroup(chatgroupid, 2);
+        const $chatgroup = $(`.chat-message[data-group='${chatgroupid}']`);
+        $chatgroup.addClass('chatgroup-masked');
+        createMaskedOverlays();
+        $confirmDialog.removeClass('custom-show-1');
+    });
+});
+
+function restoreChatGroup(chatgroupid) {
+    loadingOverlay.show();
+    $.ajax({
+        type: "Post",
+        url: "/Home/RestoreChatGroup",
+        dataType: "json",
+        data: {
+            groupId: chatgroupid  // 注意：这里使用传入的 chatgroupid，而不是 id
+        },
+        success: function (res) {
+            loadingOverlay.hide();
+            if (res.success) {
+                // 找到对应的聊天组元素
+                const $chatgroup = $(`.chat-message[data-group='${chatgroupid}']`);
+
+                // 移除遮罩层类
+                $chatgroup.removeClass('chatgroup-masked');
+
+                // 移除遮罩层内容和按钮
+                $chatgroup.find('.chatgroup-masked-content').remove();
+                $chatgroup.find('.chatgroup-masked-buttons').remove();
+
+                balert("上下文已成功恢复", "success", false, 2000, "top");
+            } else {
+                balert("恢复失败: " + (res.message || "未知错误"), "danger", false, 2000, "center");
+            }
+        },
+        error: function (err) {
+            loadingOverlay.hide();
+            balert("恢复失败，错误请联系管理员：" + err.statusText, "danger", false, 2000, "center");
+        }
+    });
+}
+
+function createMaskedOverlays() {
+    $('.chatgroup-masked').each(function () {
+        const $chatgroup = $(this);
+
+        // 检查是否已经有遮罩层内容，如果有则跳过
+        if ($chatgroup.find('.chatgroup-masked-content').length > 0) {
+            return;
+        }
+
+        const chatgroupid = $chatgroup.data('group');
+
+        // 创建遮罩层内容
+        const $maskedContent = $('<div class="chatgroup-masked-content"></div>');
+        const $buttonsContainer = $('<div class="chatgroup-masked-buttons"></div>');
+        const $deleteButton = $('<button class="btn btn-danger btn-sm chatgroup-masked-button delete"><i class="fas fa-trash-alt"></i> 彻底删除</button>');
+        const $restoreButton = $('<button class="btn btn-success btn-sm chatgroup-masked-button restore"><i class="fas fa-undo"></i> 恢复</button>');
+
+        $buttonsContainer.append($deleteButton).append($restoreButton);
+
+        // 添加遮罩层内容到聊天组
+        $chatgroup.append($maskedContent).append($buttonsContainer);
+
+        // 彻底删除按钮事件
+        $deleteButton.on('click', function () {
+            deleteChatGroup(chatgroupid, 1);
+        });
+
+        // 恢复按钮事件
+        $restoreButton.on('click', function () {
+            restoreChatGroup(chatgroupid);
+        });
+    });
 }

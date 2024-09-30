@@ -146,9 +146,16 @@ namespace aibotPro.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateVideo([FromBody] ImgListRequest request)
         {
-            string username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
-            var combinedMp3 = $"wwwroot{request.CombinedMp3}";
-            var outputPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "files", "video", $"output/{DateTime.Now:yyyyMMdd}");
+            // 验证用户的身份
+            string username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+
+            // 音频文件路径
+            var combinedMp3 = Path.Combine("wwwroot", request.CombinedMp3);
+
+            // 视频输出目录
+            var outputPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "files", "video",
+                $"output/{DateTime.Now:yyyyMMdd}");
 
             if (!Directory.Exists(outputPath))
             {
@@ -157,7 +164,7 @@ namespace aibotPro.Controllers
 
             var outputVideoPath = Path.Combine(outputPath, $"{Guid.NewGuid():N}.mp4");
 
-            // 创建临时文件夹以保存重命名的图片列表
+            // 临时图片文件夹，用于放置重命名的图片
             var tempImgDir = Path.Combine(Directory.GetCurrentDirectory(), "TempImages", Guid.NewGuid().ToString());
             Directory.CreateDirectory(tempImgDir);
 
@@ -167,51 +174,68 @@ namespace aibotPro.Controllers
                 int imgIndex = 1;
                 foreach (var img in request.Imglist)
                 {
-                    img.Path = $"wwwroot{img.Path}";
+                    img.Path = Path.Combine("wwwroot", img.Path); // 跨平台拼接路径
                     var imgExtension = Path.GetExtension(img.Path);
                     var tempImgPath = Path.Combine(tempImgDir, $"{imgIndex:D3}{imgExtension}");
                     System.IO.File.Copy(img.Path, tempImgPath);
                     imgIndex++;
                 }
 
-                // 准备将图片转换成视频的 FFmpeg 命令
-                string imagesPathPattern = Path.Combine(tempImgDir, "%03d" + Path.GetExtension(request.Imglist[0].Path)); // 假设所有图片有相同的扩展名
-                //使用音频时长，平均分配图片显示时间
-                FFmpeg.SetExecutablesPath("C:\\ffmpeg\\bin");
-                var audioDuration = await FFmpeg.GetMediaInfo(combinedMp3);
-                var audioDurationSeconds = audioDuration.Duration.TotalSeconds;
+                // 定位ffmpeg执行文件，确保跨平台可以正常工作
+                string ffmpegDirectory = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "ffmpeg-binaries");
+                FFmpeg.SetExecutablesPath(ffmpegDirectory);
+
+                // 获取音频文件信息，计算图片显示时长
+                var audioInfo = await FFmpeg.GetMediaInfo(combinedMp3);
+                var audioDurationSeconds = audioInfo.Duration.TotalSeconds;
                 var imagesCount = request.Imglist.Count;
                 var imageDuration = audioDurationSeconds / imagesCount;
-                string imagesToVideoCommand = $"-framerate 1/{imageDuration} -i {imagesPathPattern} -c:v libx264 -r 25 -pix_fmt yuv420p {outputVideoPath}";
-                // 使用Xabe.FFmpeg 执行生成视频的命令
-                await FFmpeg.Conversions.New().Start(imagesToVideoCommand);
 
-                // 如有必要，将音频添加到视频
+                // 准备生成视频的命令
+                string imagesPattern = Path.Combine(tempImgDir, "%03d" + Path.GetExtension(request.Imglist[0].Path));
+
+                // 开始生成视频
+                var conversion = await FFmpeg.Conversions.New()
+                    .AddParameter($"-framerate 1/{imageDuration}")
+                    .AddParameter($"-i {imagesPattern}")
+                    .SetOutput(outputVideoPath)
+                    .SetOverwriteOutput(true)
+                    .Start();
+
+                // 如果存在音频，则将音频合并到视频
                 if (!string.IsNullOrEmpty(combinedMp3))
                 {
                     var finalOutputPath = Path.Combine(outputPath, $"{Guid.NewGuid():N}.mp4");
-                    var addAudioCommand = $"-i {outputVideoPath} -i {combinedMp3} -c copy -map 0:v:0 -map 1:a:0 {finalOutputPath}";
-                    await FFmpeg.Conversions.New().Start(addAudioCommand);
-                    outputVideoPath = finalOutputPath; // 更新最终视频文件的路径
+                    var addAudioConversion = await FFmpeg.Conversions.New()
+                        .AddParameter($"-i {outputVideoPath}")
+                        .AddParameter($"-i {combinedMp3}")
+                        .AddParameter("-c copy -map 0:v:0 -map 1:a:0")
+                        .SetOutput(finalOutputPath)
+                        .SetOverwriteOutput(true)
+                        .Start();
+
+                    outputVideoPath = finalOutputPath; // 更新最终的视频输出路径
                 }
             }
             catch (Exception ex)
             {
-                await _systemService.WriteLog($"用户{username}创建视频失败: {ex.Message}", Dtos.LogLevel.Error, username);
+                await _systemService.WriteLog($"用户 {username} 创建视频失败: {ex.Message}", Dtos.LogLevel.Error, username);
                 return StatusCode(500, $"创建视频失败: {ex.Message}");
             }
             finally
             {
-                // 清理临时文件夹及其内容
+                // 清理临时图片目录
                 if (Directory.Exists(tempImgDir))
                 {
                     Directory.Delete(tempImgDir, true);
                 }
             }
 
+            // 返回视频的相对路径
             var relativeVideoPath = outputVideoPath.Replace(Directory.GetCurrentDirectory(), "").Replace("\\", "/");
             return Ok(new { videoPath = relativeVideoPath });
         }
+
 
     }
 }

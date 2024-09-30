@@ -507,34 +507,77 @@ function modelPriceInfo(modelName, input, output) {
                     if (data.modelPrice.modelName == "Midjourney" || data.modelPrice.modelName == "UPSCALE" || data.modelPrice.modelName == "VARIATION" || data.modelPrice.modelName == "DALLE3" || data.modelPrice.onceFee > 0 || data.modelPrice.vipOnceFee > 0) {
                         if (data.modelPrice.onceFee > 0) {
                             str = `<p>模型名称：<b>${data.modelPrice.modelName}</b></p>
-                           <p>按次计费模型使用一次价格（普通用户）：<b>${data.modelPrice.onceFee}</b></p>
-                           <p>模型倍率（普通用户）：<b>${data.modelPrice.rebate}</b></p>
-                           <p>按次计费模型使用一次价格（VIP用户）：<b>${data.modelPrice.vipOnceFee}</b></p>
-                           <p>模型倍率（VIP用户）：<b>${data.modelPrice.vipRebate}</b></p>
-                           <p>普通用户应付：<b>${data.modelPrice.onceFee}</b></p>
-                           <p>VIP用户应付：<b>${data.modelPrice.vipOnceFee}</b></p>`;
+                           <div class="priceInfoSVips">
+                               <i class="fas fa-crown" style="color: orangered"> SVIP</i>
+                               <p>按次计费模型使用一次价格：<b>${data.modelPrice.svipOnceFee}</b></p>
+                               <p>模型倍率：<b>${data.modelPrice.svipRebate}</b></p>   
+                               <p>SVIP用户应付：<b>${data.modelPrice.svipOnceFee}</b></p>
+                               <a href="/Pay/VIP"><i class="fas fa-hand-point-right"></i> 点击前往开通 <i class="fas fa-hand-point-left"></i></a>
+                           </div>
+                           <div class="priceInfoVips">
+                               <i class="fab fa-vimeo-v" style="color: goldenrod"> VIP</i>
+                               <p>按次计费模型使用一次价格：<b>${data.modelPrice.vipOnceFee}</b></p>
+                               <p>模型倍率：<b>${data.modelPrice.vipRebate}</b></p>
+                               <p>VIP用户应付：<b>${data.modelPrice.vipOnceFee}</b></p>
+                               <a href="/Pay/VIP"><i class="fas fa-hand-point-right"></i> 点击前往开通 <i class="fas fa-hand-point-left"></i></a>
+                           </div>
+                           <div class="priceInfoUsers">
+                               <i class="fas fa-user" style="color: deepskyblue"> 普通用户</i>
+                               <p>按次计费模型使用一次价格：<b>${data.modelPrice.onceFee}</b></p>
+                               <p>模型倍率：<b>${data.modelPrice.rebate}</b></p>
+                               <p>普通用户应付：<b>${data.modelPrice.onceFee}</b></p>
+                           </div>`;
                         } else {
                             str = `<p> 模型名称：<b>${data.modelPrice.modelName}</b></p>
-                           <p>绘画模型使用一次价格（普通用户）：<b>${data.modelPrice.modelPriceOutput}</b></p>
-                           <p>模型倍率（普通用户）：<b>${data.modelPrice.rebate}</b></p>
-                           <p>绘画模型使用一次价格（VIP用户）：<b>${data.modelPrice.vipModelPriceOutput}</b></p>
-                           <p>模型倍率（VIP用户）：<b>${data.modelPrice.vipRebate}</b></p>
+                           <div class="priceInfoSVips">
+                           <i class="fas fa-crown" style="color: orangered"> SVIP</i>
+                           <p>绘画模型使用一次价格：<b>${data.modelPrice.svipModelPriceOutput}</b></p>
+                           <p>模型倍率：<b>${data.modelPrice.svipRebate}</b></p>
+                           <p>SVIP用户应付：<b>${data.modelPrice.svipModelPriceOutput}</b></p>
+                           <a href="/Pay/VIP"><i class="fas fa-hand-point-right"></i> 点击前往开通 <i class="fas fa-hand-point-left"></i></a>
+                           </div>
+                           <div class="priceInfoVips">
+                           <i class="fab fa-vimeo-v" style="color: goldenrod"> VIP</i>
+                           <p>绘画模型使用一次价格：<b>${data.modelPrice.vipModelPriceOutput}</b></p>
+                           <p>模型倍率：<b>${data.modelPrice.vipRebate}</b></p>
+                           <p>VIP用户应付：<b>${data.modelPrice.vipModelPriceOutput}</b></p>
+                           <a href="/Pay/VIP"><i class="fas fa-hand-point-right"></i> 点击前往开通 <i class="fas fa-hand-point-left"></i></a>
+                           </div>
+                           <div class="priceInfoUsers">
+                           <i class="fas fa-user" style="color: deepskyblue"> 普通用户</i>
+                           <p>绘画模型使用一次价格：<b>${data.modelPrice.modelPriceOutput}</b></p>
+                           <p>模型倍率：<b>${data.modelPrice.rebate}</b></p>
                            <p>普通用户应付：<b>${data.modelPrice.modelPriceOutput}</b></p>
-                           <p>VIP用户应付：<b>${data.modelPrice.vipModelPriceOutput}</b></p>`;
+                           </div>`;
                         }
                     } else {
                         str = `<p> 模型昵称：<b>${data.modelNick}</b></p>
                            <p>模型名称：<b>${data.modelPrice.modelName}</b></p>
-                           <p>模型输入价格/1k tokens（普通用户）：<b>${data.modelPrice.modelPriceInput}</b></p>
-                           <p>模型输出价格/1k tokens（普通用户）：<b>${data.modelPrice.modelPriceOutput}</b></p>
-                           <p>模型倍率（普通用户）：<b>${data.modelPrice.rebate}</b></p>
-                           <p>模型输入价格/1k tokens（VIP用户）：<b>${data.modelPrice.vipModelPriceInput}</b></p>
-                           <p>模型输出价格/1k tokens（VIP用户）：<b>${data.modelPrice.vipModelPriceOutput}</b></p>
-                           <p>模型倍率（VIP用户）：<b>${data.modelPrice.vipRebate}</b></p>
                            <p>当前记录的输入输出tokens数分别为：<b>${input}</b>、<b>${output}</b></p>
-                           <p>根据费用计算公式：<b>计费＝(输入价格+输出价格)*倍率</b> 可得出以下计算结果：</p>
+                           <p>费用计算公式为：<b>计费＝(输入价格+输出价格)*倍率</b></p>
+                           <div class="priceInfoSVips">
+                           <i class="fas fa-crown" style="color: orangered"> SVIP</i>
+                           <p>模型输入价格/1k tokens：<b>${data.modelPrice.svipModelPriceInput}</b></p>
+                           <p>模型输出价格/1k tokens：<b>${data.modelPrice.svipModelPriceOutput}</b></p>
+                           <p>模型倍率：<b>${data.modelPrice.svipRebate}</b></p>
+                           <p>SVIP用户应付：<b>(${input}/1000*${data.modelPrice.svipModelPriceInput}+${output}/1000*${data.modelPrice.svipModelPriceOutput})*${data.modelPrice.svipRebate}＝${calculate(input, output, data.modelPrice.svipModelPriceInput, data.modelPrice.svipModelPriceOutput, data.modelPrice.svipRebate)}</b></p>
+                           <a href="/Pay/VIP"><i class="fas fa-hand-point-right"></i> 点击前往开通 <i class="fas fa-hand-point-left"></i></a>
+                           </div>
+                           <div class="priceInfoVips">
+                           <i class="fab fa-vimeo-v" style="color: goldenrod"> VIP</i>
+                           <p>模型输入价格/1k tokens：<b>${data.modelPrice.vipModelPriceInput}</b></p>
+                           <p>模型输出价格/1k tokens：<b>${data.modelPrice.vipModelPriceOutput}</b></p>
+                           <p>模型倍率：<b>${data.modelPrice.vipRebate}</b></p>
+                           <p>VIP用户应付：<b>(${input}/1000*${data.modelPrice.vipModelPriceInput}+${output}/1000*${data.modelPrice.vipModelPriceOutput})*${data.modelPrice.vipRebate}＝${calculate(input, output, data.modelPrice.vipModelPriceInput, data.modelPrice.vipModelPriceOutput, data.modelPrice.vipRebate)}</b></p>
+                           <a href="/Pay/VIP"><i class="fas fa-hand-point-right"></i> 点击前往开通 <i class="fas fa-hand-point-left"></i></a>
+                           </div>
+                           <div class="priceInfoUsers">
+                           <i class="fas fa-user" style="color: deepskyblue"> 普通用户</i>
+                           <p>模型输入价格/1k tokens：<b>${data.modelPrice.modelPriceInput}</b></p>
+                           <p>模型输出价格/1k tokens：<b>${data.modelPrice.modelPriceOutput}</b></p>
+                           <p>模型倍率：<b>${data.modelPrice.rebate}</b></p>
                            <p>普通用户应付：<b>(${input}/1000*${data.modelPrice.modelPriceInput}+${output}/1000*${data.modelPrice.modelPriceOutput})*${data.modelPrice.rebate}＝${calculate(input, output, data.modelPrice.modelPriceInput, data.modelPrice.modelPriceOutput, data.modelPrice.rebate)}</b></p>
-                           <p>VIP用户应付：<b>(${input}/1000*${data.modelPrice.vipModelPriceInput}+${output}/1000*${data.modelPrice.vipModelPriceOutput})*${data.modelPrice.vipRebate}＝${calculate(input, output, data.modelPrice.vipModelPriceInput, data.modelPrice.vipModelPriceOutput, data.modelPrice.vipRebate)}</b></p>`;
+                           </div>`;
                     }
                 } else {
                     str += '该模型免费使用，使用前提：账户余额>0';

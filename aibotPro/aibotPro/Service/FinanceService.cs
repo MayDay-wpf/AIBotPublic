@@ -10,6 +10,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Newtonsoft.Json;
+using StackExchange.Redis;
+using Order = aibotPro.Models.Order;
 
 namespace aibotPro.Service
 {
@@ -20,13 +22,15 @@ namespace aibotPro.Service
         private readonly IRedisService _redisService;
         private readonly IAiServer _aiServer;
 
-        public FinanceService(AIBotProContext context, ISystemService systemService, IRedisService redisService, IAiServer aiServer)
+        public FinanceService(AIBotProContext context, ISystemService systemService, IRedisService redisService,
+            IAiServer aiServer)
         {
             _context = context;
             _systemService = systemService;
             _redisService = redisService;
             _aiServer = aiServer;
         }
+
         public bool UpdateUserMoney(string account, decimal money, string type, out string errormsg)
         {
             errormsg = string.Empty;
@@ -36,6 +40,7 @@ namespace aibotPro.Service
                 errormsg = "用户不存在";
                 return false;
             }
+
             if (type == "add")
             {
                 user.Mcoin += money;
@@ -48,8 +53,10 @@ namespace aibotPro.Service
                     errormsg = "余额不足";
                     return false;
                 }
+
                 user.Mcoin -= money;
             }
+
             // 保存变更
             try
             {
@@ -64,72 +71,150 @@ namespace aibotPro.Service
                 return false;
             }
         }
-        public async Task<bool> CreateUseLogAndUpadteMoney(string account, string modelName, int inputCount, int outputCount, bool isdraw = false)
+
+        public async Task<bool> CreateUseLogAndUpadteMoney(string account, string modelName, int inputCount,
+    int outputCount, bool isdraw = false)
+        {
+            var lockKey = $"lock-balance-{account}";
+            try
+            {
+                if (!await AcquireLockAsync(lockKey))
+                {
+                    return false; // 未能获取锁，直接退出以避免并发修改
+                }
+
+                using (var transaction = _context.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        var user = _context.Users.SingleOrDefault(x => x.Account == account);
+                        if (user == null)
+                        {
+                            return false;
+                        }
+
+                        decimal? realOutputMoney = 0m;
+                        List<ModelPrice> modelPriceList = await GetModelPriceList();
+                        var modelPrice = modelPriceList.SingleOrDefault(x => x.ModelName == modelName);
+
+                        if (modelPrice != null)
+                        {
+                            bool vip = await IsVip(account);
+                            bool svip = await IsSVip(account);
+                            decimal? onceFee;
+                            decimal? inputMoney = 0;
+                            decimal? outputMoney = 0;
+
+                            if (svip)
+                            {
+                                onceFee = modelPrice.SvipOnceFee;
+                                modelPrice.ModelPriceInput = modelPrice.SvipModelPriceInput;
+                                modelPrice.ModelPriceOutput = modelPrice.SvipModelPriceOutput;
+                                modelPrice.Rebate = modelPrice.SvipRebate;
+                            }
+                            else if (vip)
+                            {
+                                onceFee = modelPrice.VipOnceFee;
+                                modelPrice.ModelPriceInput = modelPrice.VipModelPriceInput;
+                                modelPrice.ModelPriceOutput = modelPrice.VipModelPriceOutput;
+                                modelPrice.Rebate = modelPrice.VipRebate;
+                            }
+                            else
+                            {
+                                onceFee = modelPrice.OnceFee;
+                                // ModelPriceInput and ModelPriceOutput are already set for non-VIP users
+                            }
+
+                            if (onceFee > 0)
+                            {
+                                realOutputMoney = onceFee;
+                            }
+                            else
+                            {
+                                if (isdraw)
+                                {
+                                    realOutputMoney = modelPrice.ModelPriceOutput * modelPrice.Rebate;
+                                }
+                                else
+                                {
+                                    inputMoney = modelPrice.ModelPriceInput * inputCount / 1000;
+                                    outputMoney = modelPrice.ModelPriceOutput * outputCount / 1000;
+                                    realOutputMoney = (inputMoney + outputMoney) * modelPrice.Rebate;
+                                    if (realOutputMoney > modelPrice.Maximum)
+                                    {
+                                        realOutputMoney = modelPrice.Maximum;
+                                    }
+                                }
+                            }
+
+                            user.Mcoin -= realOutputMoney ?? 0;
+                            if (user.Mcoin < 0)
+                            {
+                                user.Mcoin = 0;
+                            }
+
+                            _context.Entry(user).State = EntityState.Modified;
+                        }
+
+                        var log = new UseUpLog
+                        {
+                            Account = account,
+                            InputCount = inputCount,
+                            OutputCount = outputCount,
+                            UseMoney = realOutputMoney,
+                            CreateTime = DateTime.Now,
+                            ModelName = modelName
+                        };
+                        _context.UseUpLogs.Add(log);
+
+                        await _context.SaveChangesAsync();
+                        transaction.Commit();
+                        return true;
+                    }
+                    catch (Exception)
+                    {
+                        transaction.Rollback();
+                        return false;
+                    }
+                }
+            }
+            finally
+            {
+                await ReleaseLockAsync(lockKey);
+            }
+        }
+
+        private async Task<bool> AcquireLockAsync(string key)
+        {
+            var lockValue = Guid.NewGuid().ToString();
+            var expiry = TimeSpan.FromSeconds(30); // 锁过期时间
+
+            // 首先查询 key 是否已经存在
+            var existingValue = await _redisService.GetAsync(key);
+            if (existingValue != null)
+            {
+                return false; // 锁已存在，无法获取
+            }
+
+            // 尝试设置 key
+            await _redisService.SetAsync(key, lockValue, expiry, AIBotProEnum.HashFieldOperationMode.Overwrite);
+
+            // 再次确保在设置后，锁依旧属于我们
+            var finalValue = await _redisService.GetAsync(key);
+            return finalValue == lockValue;
+        }
+
+        private async Task ReleaseLockAsync(string key)
+        {
+            await _redisService.DeleteAsync(key);
+        }
+        public async Task<bool> CreateUseLog(string account, string modelName, int inputCount, int outputCount,
+            decimal realOutputMoney)
         {
             using (var transaction = _context.Database.BeginTransaction())
             {
                 try
                 {
-                    var user = _context.Users.Where(x => x.Account == account).FirstOrDefault();
-                    if (user == null)
-                    {
-                        return false;
-                    }
-                    decimal? realOutputMoney = 0m;
-                    //尝试从缓存中获取模型定价列表
-                    List<ModelPrice> modelPriceList = await GetModelPriceList();
-                    //根据模型名称获取模型定价
-                    var modelPrice = modelPriceList.Where(x => x.ModelName == modelName).FirstOrDefault();
-                    if (modelPrice != null)//如果不存在就是不扣费
-                    {
-                        //查询用户是否是VIP
-                        bool vip = await IsVip(account);
-                        decimal? onceFee = 0;
-                        if (vip)
-                        {
-                            //如果是VIP，使用VIP价格
-                            modelPrice.ModelPriceInput = modelPrice.VipModelPriceInput;
-                            modelPrice.ModelPriceOutput = modelPrice.VipModelPriceOutput;
-                            modelPrice.Rebate = modelPrice.VipRebate;
-                            onceFee = modelPrice.VipOnceFee;
-                        }
-                        else
-                        {
-                            onceFee = modelPrice.OnceFee;
-                        }
-                        //如果是绘画
-                        if (isdraw)
-                        {
-                            if (onceFee > 0)
-                                realOutputMoney = onceFee;
-                            else
-                                realOutputMoney = modelPrice.ModelPriceOutput * modelPrice.Rebate;
-                        }
-                        else
-                        {
-                            if (onceFee > 0)
-                                realOutputMoney = onceFee;
-                            else
-                            {
-                                //更新用户余额,字数要除以1000
-                                var inputMoney = modelPrice.ModelPriceInput * inputCount / 1000;
-                                var outputMoney = modelPrice.ModelPriceOutput * outputCount / 1000;
-                                //根据折扣计算实际扣费
-                                var rebate = modelPrice.Rebate;
-                                realOutputMoney = (inputMoney + outputMoney) * rebate;
-                                if (realOutputMoney > modelPrice.Maximum)
-                                    realOutputMoney = modelPrice.Maximum;
-                            }
-                        }
-                        //扣除用户余额
-                        user.Mcoin -= realOutputMoney;
-                        if (user.Mcoin < 0)
-                        {
-                            user.Mcoin = 0;
-                        }
-                        //标记实体状态为已修改
-                        _context.Entry(user).State = EntityState.Modified;
-                    }
                     var log = new UseUpLog
                     {
                         Account = account,
@@ -153,53 +238,29 @@ namespace aibotPro.Service
             }
         }
 
-        public async Task<bool> CreateUseLog(string account, string modelName, int inputCount, int outputCount, decimal realOutputMoney)
-        {
-            using (var transaction = _context.Database.BeginTransaction())
-            {
-                try
-                {
-                    var log = new UseUpLog
-                    {
-                        Account = account,
-                        InputCount = inputCount,
-                        OutputCount = outputCount,
-                        UseMoney = realOutputMoney,
-                        CreateTime = DateTime.Now,
-                        ModelName = modelName
-                    };
-                    _context.UseUpLogs.Add(log);
-                    //保存变更到数据库
-                    await _context.SaveChangesAsync();
-                    transaction.Commit();
-                    return true;
-                }
-                catch (Exception)
-                {
-                    transaction.Rollback();
-                    return false;
-                }
-            }
-        }
         public async Task<FreePlanDto> CheckFree(string account, string modelName)
         {
             FreePlanDto freePlanDto = new FreePlanDto();
             var systemCfg = _systemService.GetSystemCfgs();
             var workShopFreeModel = systemCfg.Where(x => x.CfgKey == "WorkShop_FreeModel").FirstOrDefault();
-            if (workShopFreeModel != null)//如果有免费模型
+            if (workShopFreeModel != null) //如果有免费模型
             {
                 var workShopFreeModel_list = workShopFreeModel.CfgValue.Split(",");
-                if (workShopFreeModel_list.Contains(modelName))//如果使用模型属于免费模型
+                if (workShopFreeModel_list.Contains(modelName)) //如果使用模型属于免费模型
                 {
-                    string freePlanKey = "FreePlan_" + account;//免费方案Redis Key
+                    string freePlanKey = "FreePlan_" + account; //免费方案Redis Key
                     var freePlan = await _redisService.GetAsync(freePlanKey);
-                    if (freePlan == null)//如果没有免费方案
+                    if (freePlan == null) //如果没有免费方案
                     {
                         bool isVip = await IsVip(account);
-                        var workShopFreeModelUpdateHour = double.Parse(systemCfg.Where(x => x.CfgKey == "WorkShop_FreeModel_UpdateHour").FirstOrDefault().CfgValue.ToString());
+                        var workShopFreeModelUpdateHour = double.Parse(systemCfg
+                            .Where(x => x.CfgKey == "WorkShop_FreeModel_UpdateHour").FirstOrDefault().CfgValue
+                            .ToString());
                         if (isVip)
                         {
-                            var workShopFreeModelCountVip = int.Parse(systemCfg.Where(x => x.CfgKey == "WorkShop_FreeModel_Count_VIP").FirstOrDefault().CfgValue.ToString());
+                            var workShopFreeModelCountVip = int.Parse(systemCfg
+                                .Where(x => x.CfgKey == "WorkShop_FreeModel_Count_VIP").FirstOrDefault().CfgValue
+                                .ToString());
                             freePlanDto.TotalCount = workShopFreeModelCountVip;
                             freePlanDto.UsedCount = 0;
                             freePlanDto.RemainCount = workShopFreeModelCountVip;
@@ -207,14 +268,18 @@ namespace aibotPro.Service
                         }
                         else
                         {
-                            var workShopFreeModelCount = int.Parse(systemCfg.Where(x => x.CfgKey == "WorkShop_FreeModel_Count").FirstOrDefault().CfgValue.ToString());
+                            var workShopFreeModelCount = int.Parse(systemCfg
+                                .Where(x => x.CfgKey == "WorkShop_FreeModel_Count").FirstOrDefault().CfgValue
+                                .ToString());
                             freePlanDto.TotalCount = workShopFreeModelCount;
                             freePlanDto.UsedCount = 0;
                             freePlanDto.RemainCount = workShopFreeModelCount;
                             freePlanDto.ExpireTime = DateTime.Now.AddHours(workShopFreeModelUpdateHour);
                         }
+
                         //免费计划写入缓存
-                        await _redisService.SetAsync(freePlanKey, JsonConvert.SerializeObject(freePlanDto), freePlanDto.ExpireTime - DateTime.Now);
+                        await _redisService.SetAsync(freePlanKey, JsonConvert.SerializeObject(freePlanDto),
+                            freePlanDto.ExpireTime - DateTime.Now);
                     }
                     else
                     {
@@ -222,11 +287,13 @@ namespace aibotPro.Service
                     }
                 }
             }
+
             return freePlanDto;
         }
+
         public async Task<bool> UpdateFree(string account, int deductions = 1)
         {
-            string freePlanKey = "FreePlan_" + account;//免费方案Redis Key
+            string freePlanKey = "FreePlan_" + account; //免费方案Redis Key
             var freePlan = await _redisService.GetAsync(freePlanKey);
             if (freePlan != null)
             {
@@ -236,28 +303,34 @@ namespace aibotPro.Service
                     freePlanDto.RemainCount -= deductions;
                     freePlanDto.UsedCount += deductions;
                     //更新缓存
-                    await _redisService.SetAsync(freePlanKey, JsonConvert.SerializeObject(freePlanDto), freePlanDto.ExpireTime - DateTime.Now);
+                    await _redisService.SetAsync(freePlanKey, JsonConvert.SerializeObject(freePlanDto),
+                        freePlanDto.ExpireTime - DateTime.Now);
                     return true;
                 }
             }
+
             return false;
         }
+
         public async Task<FreePlanDto> GetFreePlan(string account)
         {
             FreePlanDto freePlanDto = new FreePlanDto();
             var systemCfg = _systemService.GetSystemCfgs();
             var workShopFreeModel = systemCfg.Where(x => x.CfgKey == "WorkShop_FreeModel").FirstOrDefault();
-            if (workShopFreeModel != null)//如果有免费模型
+            if (workShopFreeModel != null) //如果有免费模型
             {
-                string freePlanKey = "FreePlan_" + account;//免费方案Redis Key
+                string freePlanKey = "FreePlan_" + account; //免费方案Redis Key
                 var freePlan = await _redisService.GetAsync(freePlanKey);
-                if (freePlan == null)//如果没有免费方案
+                if (freePlan == null) //如果没有免费方案
                 {
                     bool isVip = await IsVip(account);
-                    var workShopFreeModelUpdateHour = double.Parse(systemCfg.Where(x => x.CfgKey == "WorkShop_FreeModel_UpdateHour").FirstOrDefault().CfgValue.ToString());
+                    var workShopFreeModelUpdateHour = double.Parse(systemCfg
+                        .Where(x => x.CfgKey == "WorkShop_FreeModel_UpdateHour").FirstOrDefault().CfgValue.ToString());
                     if (isVip)
                     {
-                        var workShopFreeModelCountVip = int.Parse(systemCfg.Where(x => x.CfgKey == "WorkShop_FreeModel_Count_VIP").FirstOrDefault().CfgValue.ToString());
+                        var workShopFreeModelCountVip = int.Parse(systemCfg
+                            .Where(x => x.CfgKey == "WorkShop_FreeModel_Count_VIP").FirstOrDefault().CfgValue
+                            .ToString());
                         freePlanDto.TotalCount = workShopFreeModelCountVip;
                         freePlanDto.UsedCount = 0;
                         freePlanDto.RemainCount = workShopFreeModelCountVip;
@@ -265,27 +338,51 @@ namespace aibotPro.Service
                     }
                     else
                     {
-                        var workShopFreeModelCount = int.Parse(systemCfg.Where(x => x.CfgKey == "WorkShop_FreeModel_Count").FirstOrDefault().CfgValue.ToString());
+                        var workShopFreeModelCount = int.Parse(systemCfg
+                            .Where(x => x.CfgKey == "WorkShop_FreeModel_Count").FirstOrDefault().CfgValue.ToString());
                         freePlanDto.TotalCount = workShopFreeModelCount;
                         freePlanDto.UsedCount = 0;
                         freePlanDto.RemainCount = workShopFreeModelCount;
                         freePlanDto.ExpireTime = DateTime.Now.AddHours(workShopFreeModelUpdateHour);
                     }
+
                     //将免费方案存入缓存
-                    await _redisService.SetAsync(freePlanKey, JsonConvert.SerializeObject(freePlanDto), freePlanDto.ExpireTime - DateTime.Now);
+                    await _redisService.SetAsync(freePlanKey, JsonConvert.SerializeObject(freePlanDto),
+                        freePlanDto.ExpireTime - DateTime.Now);
                 }
                 else
                 {
                     freePlanDto = JsonConvert.DeserializeObject<FreePlanDto>(freePlan);
                 }
             }
+
             return freePlanDto;
         }
+
         public async Task<bool> IsVip(string account)
         {
             //查询用户是否是VIP
             var vip = await _context.VIPs.Where(x => x.Account == account).ToListAsync();
             //遍历VIP列表，如果有一个VIP未过期，则返回true
+            if (vip.Count == 0)
+            {
+                return false;
+            }
+
+            foreach (var item in vip)
+            {
+                if (item.EndTime > DateTime.Now)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        public async Task<bool> IsSVip(string account)
+        {
+            //查询用户是否是SVIP
+            var vip = await _context.VIPs.Where(x => x.Account == account && (x.VipType == "VIP|50" || x.VipType == "VIP|90")).ToListAsync();
             if (vip.Count == 0)
             {
                 return false;
@@ -297,13 +394,16 @@ namespace aibotPro.Service
                     return true;
                 }
             }
+
             return false;
         }
+
         public async Task<List<VIP>> GetVipData(string account)
         {
             var vip = await _context.VIPs.Where(x => x.Account == account).ToListAsync();
             return vip;
         }
+
         public async Task<VIPDto> VipExceed(string account)
         {
             VIPDto dto = new VIPDto();
@@ -316,6 +416,7 @@ namespace aibotPro.Service
                 dto.Unopened = true;
                 return dto;
             }
+
             //遍历VIP列表
             foreach (var item in vip)
             {
@@ -325,6 +426,7 @@ namespace aibotPro.Service
                     _context.VIPs.Remove(item);
                 }
             }
+
             _context.SaveChanges();
             vip = await _context.VIPs.Where(x => x.Account == account).ToListAsync();
             //更新后再检查该用户会员状态
@@ -334,9 +436,10 @@ namespace aibotPro.Service
                 dto.Exceed = true;
                 dto.Unopened = false;
             }
-            return dto;
 
+            return dto;
         }
+
         public async Task<List<ModelPrice>> GetModelPriceList()
         {
             //尝试从缓存中获取模型定价列表
@@ -353,8 +456,10 @@ namespace aibotPro.Service
             {
                 modelPriceList = JsonConvert.DeserializeObject<List<ModelPrice>>(modelPriceList_str);
             }
+
             return modelPriceList;
         }
+
         public async Task<ModelPrice> ModelPrice(string modelName)
         {
             //尝试从缓存中获取模型定价列表
@@ -371,8 +476,10 @@ namespace aibotPro.Service
             {
                 modelPriceList = JsonConvert.DeserializeObject<List<ModelPrice>>(modelPriceList_str);
             }
+
             return modelPriceList.Where(x => x.ModelName == modelName).FirstOrDefault();
         }
+
         public EasyPaySetting GetEasyPaySetting()
         {
             EasyPaySetting easyPaySetting = null;
@@ -388,8 +495,10 @@ namespace aibotPro.Service
             {
                 easyPaySetting = JsonConvert.DeserializeObject<EasyPaySetting>(payInfo);
             }
+
             return easyPaySetting;
         }
+
         public PayInfoDto PayInfo(string account, int money, string type, string param = null)
         {
             //尝试从缓存中获取支付通道信息
@@ -407,16 +516,16 @@ namespace aibotPro.Service
             param += $"|{_systemService.UrlEncode(account)}";
             string payurl = easyPaySetting.SubmitUrl;
             var parameters = new Dictionary<string, string>
-                {
-                    { "pid",pid.ToString()},
-                    { "type", type },
-                    { "out_trade_no",OrderCode },
-                    { "notify_url", notify_url },
-                    { "return_url", return_url },
-                    { "name", name },
-                    { "param", param},
-                    { "money", money.ToString("F2")}
-                };
+            {
+                { "pid", pid.ToString() },
+                { "type", type },
+                { "out_trade_no", OrderCode },
+                { "notify_url", notify_url },
+                { "return_url", return_url },
+                { "name", name },
+                { "param", param },
+                { "money", money.ToString("F2") }
+            };
             string apikey = easyPaySetting.ApiKey;
             string sign = GenerateSign(parameters, apikey);
             Order order = new Order();
@@ -441,6 +550,7 @@ namespace aibotPro.Service
             payInfoDto.sign_type = "MD5";
             return payInfoDto;
         }
+
         public Task<PayInfoDto> PayTo(string account, string goodCode, string type)
         {
             //尝试从缓存中获取支付通道信息
@@ -459,16 +569,16 @@ namespace aibotPro.Service
             string param = goodCode + $"|{_systemService.UrlEncode(account)}" + "|MALL";
             string payurl = easyPaySetting.SubmitUrl;
             var parameters = new Dictionary<string, string>
-                {
-                    { "pid",pid.ToString()},
-                    { "type", type },
-                    { "out_trade_no",OrderCode },
-                    { "notify_url", notify_url },
-                    { "return_url", return_url },
-                    { "name", good.GoodName },
-                    { "param", param},
-                    { "money", good.GoodPrice.ToString()}
-                };
+            {
+                { "pid", pid.ToString() },
+                { "type", type },
+                { "out_trade_no", OrderCode },
+                { "notify_url", notify_url },
+                { "return_url", return_url },
+                { "name", good.GoodName },
+                { "param", param },
+                { "money", good.GoodPrice.ToString() }
+            };
             string apikey = easyPaySetting.ApiKey;
             string sign = GenerateSign(parameters, apikey);
             Order order = new Order();
@@ -511,6 +621,7 @@ namespace aibotPro.Service
                 {
                     return Task.FromResult(false);
                 }
+
                 //扣除用户余额
                 user.Mcoin -= good.GoodPrice;
                 _context.Entry(user).State = EntityState.Modified;
@@ -528,10 +639,11 @@ namespace aibotPro.Service
                     //更新用户余额
                     user.Mcoin = user.Mcoin + good.Balance;
                 }
-                if (good.VIPType == "VIP|15")
+
+                if (good.VIPType == "VIP|20")
                 {
                     var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == account);
-                    if (vipinfo != null && vipinfo.VipType == "VIP|15")
+                    if (vipinfo != null && vipinfo.VipType == "VIP|20")
                     {
                         if (vipinfo.EndTime > DateTime.Now)
                         {
@@ -541,12 +653,13 @@ namespace aibotPro.Service
                         {
                             vipinfo.EndTime = DateTime.Now.AddDays((double)good.VIPDays);
                         }
+
                         _context.VIPs.Update(vipinfo);
                     }
-                    else if (vipinfo != null && vipinfo.VipType == "VIP|90")
+                    else if (vipinfo != null && vipinfo.VipType == "VIP|50")
                     {
                         VIP vip = new VIP();
-                        vip.VipType = "VIP|15";
+                        vip.VipType = "VIP|20";
                         vip.Account = account;
                         vip.StartTime = vipinfo.EndTime;
                         vip.EndTime = vipinfo.EndTime.Value.AddDays((double)good.VIPDays);
@@ -556,21 +669,22 @@ namespace aibotPro.Service
                     else
                     {
                         VIP vip = new VIP();
-                        vip.VipType = "VIP|15";
+                        vip.VipType = "VIP|20";
                         vip.Account = account;
                         vip.StartTime = DateTime.Now;
                         vip.EndTime = DateTime.Now.AddDays((double)good.VIPDays);
                         vip.CreateTime = DateTime.Now;
                         _context.VIPs.Add(vip);
                     }
+
                     _context.SaveChanges();
                     UpdateGoodsStock(goodCode, 1);
                     return Task.FromResult(true);
                 }
-                else if (good.VIPType == "VIP|90")
+                else if (good.VIPType == "VIP|50")
                 {
                     var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == account);
-                    if (vipinfo != null && vipinfo.VipType == "VIP|90")
+                    if (vipinfo != null && vipinfo.VipType == "VIP|50")
                     {
                         if (vipinfo.EndTime > DateTime.Now)
                         {
@@ -580,12 +694,13 @@ namespace aibotPro.Service
                         {
                             vipinfo.EndTime = DateTime.Now.AddDays((double)good.VIPDays);
                         }
+
                         _context.VIPs.Update(vipinfo);
                     }
-                    else if (vipinfo != null && vipinfo.VipType == "VIP|15")
+                    else if (vipinfo != null && vipinfo.VipType == "VIP|20")
                     {
                         VIP vip = new VIP();
-                        vip.VipType = "VIP|90";
+                        vip.VipType = "VIP|50";
                         vip.Account = account;
                         vip.StartTime = vipinfo.EndTime;
                         vip.EndTime = vipinfo.EndTime.Value.AddDays((double)good.VIPDays);
@@ -595,7 +710,7 @@ namespace aibotPro.Service
                     else
                     {
                         VIP vip = new VIP();
-                        vip.VipType = "VIP|90";
+                        vip.VipType = "VIP|50";
                         vip.Account = account;
                         vip.StartTime = DateTime.Now;
                         vip.EndTime = DateTime.Now.AddDays((double)good.VIPDays);
@@ -603,12 +718,14 @@ namespace aibotPro.Service
                         _context.VIPs.Add(vip);
                     }
                 }
+
                 _context.SaveChanges();
                 return Task.FromResult(true);
             }
             else
                 return Task.FromResult(false);
         }
+
         public PayResultDto PayResult(string out_trade_no)
         {
             EasyPaySetting easyPaySetting = GetEasyPaySetting();
@@ -617,9 +734,11 @@ namespace aibotPro.Service
             pr.Add("pid", easyPaySetting.ShopId.ToString());
             pr.Add("key", easyPaySetting.ApiKey.ToString());
             pr.Add("out_trade_no", out_trade_no);
-            PayResultDto payResultDto = JsonConvert.DeserializeObject<PayResultDto>(_aiServer.AiGet(easyPaySetting.CheckPayUrl, pr));
+            PayResultDto payResultDto =
+                JsonConvert.DeserializeObject<PayResultDto>(_aiServer.AiGet(easyPaySetting.CheckPayUrl, pr));
             return payResultDto;
         }
+
         public List<Order> GetOrders(string account, int page, int size, out int total)
         {
             IQueryable<Order> query = null;
@@ -632,17 +751,19 @@ namespace aibotPro.Service
             {
                 query = _context.Orders.Where(p => p.Account.Contains(account));
             }
+
             // 首先计算总数，此时还未真正运行SQL查询
             total = query.Count();
 
             // 然后添加分页逻辑，此处同样是构建查询，没有执行
             var orders = query.OrderByDescending(x => x.CreateTime) // 这里可以根据需要替换为合适的排序字段
-                                .Skip((page - 1) * size)
-                                .Take(size)
-                                .ToList(); // 直到调用ToList，查询才真正执行
+                .Skip((page - 1) * size)
+                .Take(size)
+                .ToList(); // 直到调用ToList，查询才真正执行
 
             return orders;
         }
+
         public List<UseUpLog> GetLogs(string account, int page, int size, out int total)
         {
             IQueryable<UseUpLog> query = null;
@@ -656,28 +777,34 @@ namespace aibotPro.Service
                 // 利用IQueryable延迟执行，直到真正需要数据的时候才去数据库查询
                 query = _context.UseUpLogs.Where(p => p.Account.Contains(account));
             }
+
             // 首先计算总数，此时还未真正运行SQL查询
             total = query.Count();
 
             // 然后添加分页逻辑，此处同样是构建查询，没有执行
             var logs = query.OrderByDescending(x => x.CreateTime) // 这里可以根据需要替换为合适的排序字段
-                                .Skip((page - 1) * size)
-                                .Take(size)
-                                .ToList(); // 直到调用ToList，查询才真正执行
+                .Skip((page - 1) * size)
+                .Take(size)
+                .ToList(); // 直到调用ToList，查询才真正执行
 
             return logs;
         }
+
         public async Task<List<UseUpLog>> GetUsedData(DateTime startTime, DateTime endTime, string account)
         {
             //如果账号为空，则查询所有用户的消费记录
             if (string.IsNullOrEmpty(account))
             {
-                var usedDataAll = await _context.UseUpLogs.Where(x => x.CreateTime >= startTime && x.CreateTime <= endTime).ToListAsync();
+                var usedDataAll = await _context.UseUpLogs
+                    .Where(x => x.CreateTime >= startTime && x.CreateTime <= endTime).ToListAsync();
                 return usedDataAll;
             }
-            var usedData = await _context.UseUpLogs.Where(x => x.CreateTime >= startTime && x.CreateTime <= endTime && x.Account == account).ToListAsync();
+
+            var usedData = await _context.UseUpLogs
+                .Where(x => x.CreateTime >= startTime && x.CreateTime <= endTime && x.Account == account).ToListAsync();
             return usedData;
         }
+
         public bool CreateTXorder(string account, string aliAccount, decimal money)
         {
             TxOrder txOrder = new TxOrder();
@@ -689,6 +816,7 @@ namespace aibotPro.Service
             _context.TxOrders.Add(txOrder);
             return _context.SaveChanges() > 0;
         }
+
         public bool ReleaseGood(GoodReleaseDto goodReleaseDto)
         {
             bool result = false;
@@ -732,10 +860,12 @@ namespace aibotPro.Service
 
             return result;
         }
+
         public Good GetGood(string goodCode)
         {
             return _context.Goods.Where(x => x.GoodCode == goodCode).FirstOrDefault();
         }
+
         public List<Good> GetGoods(string gname, int pageIndex, int pageSize, bool? onShelves, out int total)
         {
             //分页获取插件
@@ -757,12 +887,13 @@ namespace aibotPro.Service
 
             // 然后添加分页逻辑，此处同样是构建查询，没有执行
             var goods = query.OrderBy(x => x.CreateTime) // 这里可以根据需要替换为合适的排序字段
-                                .Skip((pageIndex - 1) * pageSize)
-                                .Take(pageSize)
-                                .ToList(); // 直到调用ToList，查询才真正执行
+                .Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
+                .ToList(); // 直到调用ToList，查询才真正执行
 
             return goods;
         }
+
         public Task<bool> UpdateGoodsStock(string goodCode, int stock)
         {
             var good = _context.Goods.Where(x => x.GoodCode == goodCode).FirstOrDefault();
@@ -770,10 +901,12 @@ namespace aibotPro.Service
             {
                 return Task.FromResult(false);
             }
+
             good.GoodStock -= stock;
             _context.Entry(good).State = EntityState.Modified;
             return Task.FromResult(_context.SaveChanges() > 0);
         }
+
         public bool CreateErrorBilling(int logId, decimal useMoney, string cause, string account, out string errMsg)
         {
             errMsg = string.Empty;
@@ -803,6 +936,7 @@ namespace aibotPro.Service
 
             return result;
         }
+
         public bool UpdateErrorBilling(int id, int type, string reply, out string errMsg)
         {
             errMsg = string.Empty;
@@ -814,12 +948,13 @@ namespace aibotPro.Service
                     _context.ErrorBillings.Remove(bill);
                     return _context.SaveChanges() > 0;
                 }
+
                 bill.Status = type;
                 bill.Reply = reply;
                 bill.HandlingTime = DateTime.Now;
                 //标记实体状态为已修改
                 _context.Entry(bill).State = EntityState.Modified;
-                if (bill.Status == 1)//恢复用户余额
+                if (bill.Status == 1) //恢复用户余额
                 {
                     var user = _context.Users.Where(x => x.Account == bill.Account).FirstOrDefault();
                     if (user == null)
@@ -827,12 +962,14 @@ namespace aibotPro.Service
                         errMsg = "用户不存在";
                         return false;
                     }
+
                     user.Mcoin += bill.UseMoney;
                     //删除日志
                     var log = _context.UseUpLogs.Where(l => l.Id == bill.LogId).FirstOrDefault();
                     _context.UseUpLogs.Remove(log);
                     _context.Entry(user).State = EntityState.Modified;
                 }
+
                 return _context.SaveChanges() > 0;
             }
             else
@@ -840,6 +977,27 @@ namespace aibotPro.Service
                 errMsg = "记录不存在";
                 return false;
             }
+        }
+
+        public async Task UsageSaveRedis(string chatId, string account, string role, string content,
+            AIBotProEnum.HashFieldOperationMode mode = AIBotProEnum.HashFieldOperationMode.Overwrite)
+        {
+            if (!string.IsNullOrEmpty(content))
+            {
+                await _redisService.SetAsync($"{chatId}_{role}", content, TimeSpan.FromHours(1), mode);
+            }
+        }
+
+        public async Task<string> UsageGetRedis(string chatId, string role)
+        {
+            string key = $"{chatId}_{role}";
+            return await _redisService.GetAsync(key);
+        }
+
+        public async Task<bool> DeleteUsageRedis(string chatId, string role)
+        {
+            string key = $"{chatId}_{role}";
+            return await _redisService.DeleteAsync(key);
         }
         private static string GenerateSign(IDictionary<string, string> parameters, string key)
         {
@@ -870,9 +1028,9 @@ namespace aibotPro.Service
                 {
                     sb.Append(b.ToString("x2"));
                 }
+
                 return sb.ToString();
             }
         }
     }
 }
-

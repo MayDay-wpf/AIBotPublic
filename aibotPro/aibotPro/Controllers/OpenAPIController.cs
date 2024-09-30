@@ -336,13 +336,13 @@ public class OpenAPIController : Controller
                 {
                     completionResult =
                         await _openAPIService.CallERNIE(chatCompletionCreate, openAiOptions, useModel, Account);
-                    output += completionResult.Choices[0].delta.Content;
+                    output += completionResult.Choices[0].message.Content;
                 }
                 else
                 {
                     completionResult =
                         await _openAPIService.CallOpenAI(chatCompletionCreate, openAiService, Account);
-                    output += completionResult.Choices[0].delta.Content;
+                    output += completionResult.Choices[0].message.Content;
                 }
 
                 await _financeService.CreateUseLogAndUpadteMoney(Account, chatSession.Model,

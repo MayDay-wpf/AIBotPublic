@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
 using aibotPro.AppCode;
@@ -25,13 +26,17 @@ public class AiServer : IAiServer
 {
     private readonly ChatCancellationManager _chatCancellationManager;
     private readonly AIBotProContext _context;
+    private readonly ICOSService _cosservice;
     private readonly IHubContext<ChatHub> _hubContext;
     private readonly IMilvusService _milvusService;
     private readonly IRedisService _redis;
+    private readonly IServiceProvider _serviceProvider;
     private readonly ISystemService _systemService;
 
+
     public AiServer(ISystemService systemService, AIBotProContext context, IRedisService redis,
-        IHubContext<ChatHub> hubContext, IMilvusService milvusService, ChatCancellationManager chatCancellationManager)
+        IHubContext<ChatHub> hubContext, IMilvusService milvusService, ChatCancellationManager chatCancellationManager,
+        ICOSService cosservice, IServiceProvider serviceProvider)
     {
         _systemService = systemService;
         _context = context;
@@ -39,6 +44,8 @@ public class AiServer : IAiServer
         _hubContext = hubContext;
         _milvusService = milvusService;
         _chatCancellationManager = chatCancellationManager;
+        _cosservice = cosservice;
+        _serviceProvider = serviceProvider;
     }
 
     //实现接口
@@ -204,6 +211,8 @@ public class AiServer : IAiServer
         }
 
         chatHistories = chatHistories.OrderBy(x => x.CreateTime).ToList();
+        if (historyCount < 0)
+            return chatHistories;
         //使用historyCount截取chatHistories,因为chatHistories是双行的所以要乘以2
         if (historyCount >= 0 && chatHistories.Count > historyCount * 2)
             chatHistories = chatHistories.Skip(chatHistories.Count - historyCount * 2).Take(historyCount * 2).ToList();
@@ -211,13 +220,12 @@ public class AiServer : IAiServer
         return chatHistories;
     }
 
-    public async Task<List<ChatHistory>> GetChatHistoriesList(string account, int pageIndex, int pageSize,
-        string searchKey)
+    public async Task<List<ChatHistory>> GetChatHistoriesList(string account, int pageIndex, int pageSize, string searchKey)
     {
         // 创建一个子查询，选出每个ChatId对应的最小CreateTime值，以此找到Role为"user"的记录
         var subQuery = _context.ChatHistories
             .AsNoTracking()
-            .Where(ch => ch.Account == account && ch.IsDel == 0 && ch.Role == "user")
+            .Where(ch => ch.Account == account && ch.IsDel != 1 && ch.Role == "user")
             .OrderByDescending(ch => ch.CreateTime)
             .GroupBy(ch => ch.ChatId)
             .Select(g => new { ChatId = g.Key, MinCreateTime = g.Min(ch => ch.CreateTime) });
@@ -229,13 +237,73 @@ public class AiServer : IAiServer
                 sub => new { sub.ChatId, CreateTime = sub.MinCreateTime },
                 (ch, sub) => ch)
             .OrderByDescending(ch => ch.CreateTime)
+            .Select(ch => new ChatHistory
+            {
+                ChatId = ch.ChatId,
+                Account = ch.Account,
+                Role = ch.Role,
+                CreateTime = ch.CreateTime,
+                IsDel = ch.IsDel,
+                Chat = ch.Chat,  // Decode the chat text later
+                ChatTitle = ch.ChatTitle
+            })
             .Skip((pageIndex - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
-        chatHistories.ForEach(x => { x.Chat = _systemService.DecodeBase64(x.Chat); });
+
+        // Decode chat text and apply ChatTitle if available
+        chatHistories.ForEach(x =>
+        {
+            x.Chat = _systemService.DecodeBase64(x.Chat);
+
+            // Decode ChatTitle if not null, else fall back to decoded Chat
+            if (!string.IsNullOrEmpty(x.ChatTitle))
+            {
+                x.ChatTitle = _systemService.DecodeBase64(x.ChatTitle);
+                x.Chat = x.ChatTitle;  // Use the decoded ChatTitle
+            }
+        });
+
+        // Filter based on searchKey after applying ChatTitle
         if (!string.IsNullOrEmpty(searchKey))
             chatHistories = chatHistories.Where(x => x.Chat.Contains(searchKey)).ToList();
+
         return chatHistories;
+    }
+    public async Task<bool> UpdateAllChatTitlesByChatIdAsync(string account, string chatId, string chatTitle)
+    {
+        try
+        {
+            // 查询所有与给定 chatId 匹配的记录
+            var chatHistories = await _context.ChatHistories
+                .Where(ch => ch.ChatId == chatId && ch.Account == account && ch.IsDel == 0)
+                .ToListAsync();
+
+            if (chatHistories == null || chatHistories.Count == 0)
+            {
+                // 没有找到任何匹配的记录
+                return false;
+            }
+
+            // 对 newChatTitle 进行 Base64 编码处理
+            string encodedTitle = _systemService.EncodeBase64(chatTitle);
+
+            // 更新所有匹配记录的 ChatTitle
+            foreach (var chatHistory in chatHistories)
+            {
+                chatHistory.ChatTitle = encodedTitle;
+            }
+
+            // 提交更改到数据库
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            // 异常处理（也可以把异常抛出到更高一级的调用者处理）
+            await _systemService.WriteLog($"/AiServer/UpdateAllChatTitlesByChatIdAsync:{ex.Message}", Dtos.LogLevel.Error, "system");
+            return false;
+        }
     }
 
     public bool DelChatHistory(string account, string chatId)
@@ -266,7 +334,7 @@ public class AiServer : IAiServer
         var chatHistories = new List<ChatHistory>();
         //从数据库加载
         chatHistories = _context.ChatHistories
-            .Where(x => x.ChatId == chatId && x.IsDel == 0 && x.Account == account)
+            .Where(x => x.ChatId == chatId && x.IsDel != 1 && x.Account == account)
             .OrderBy(y => y.CreateTime).ToList();
         //写入缓存
         _redis.SetAsync(chatId, JsonConvert.SerializeObject(chatHistories), TimeSpan.FromHours(1));
@@ -275,11 +343,11 @@ public class AiServer : IAiServer
         return chatHistories;
     }
 
-    public bool DelChatGroup(string account, string groupId)
+    public bool DelChatGroup(string account, string groupId, int type)
     {
         var chatHistories = _context.ChatHistories.Where(x => x.Account == account && x.ChatGroupId == groupId)
             .ToList();
-        chatHistories.ForEach(x => { x.IsDel = 1; });
+        chatHistories.ForEach(x => { x.IsDel = type; });
         //清除缓存
         if (chatHistories != null && chatHistories.Count > 0)
             _redis.DeleteAsync(chatHistories[0].ChatId);
@@ -302,10 +370,11 @@ public class AiServer : IAiServer
         var client = new RestClient(baseUrl);
         var request = new RestRequest("", Method.Post);
         request.AddHeader("mj-api-secret", apiKey);
+        request.AddHeader("Authorization", apiKey);
         request.AddHeader("Content-Type", "application/json");
         var mJdrawBody = new MJdrawBody();
         mJdrawBody.prompt = prompt;
-        mJdrawBody.botType = botType;
+        //mJdrawBody.botType = botType;
         mJdrawBody.base64Array = referenceImgPath;
         var body = JsonConvert.SerializeObject(mJdrawBody);
         request.AddParameter("application/json", body, ParameterType.RequestBody);
@@ -320,7 +389,84 @@ public class AiServer : IAiServer
         await _systemService.WriteLog(response.Content, LogLevel.Error, "system");
         return "";
     }
+    public async Task<string> CreateMJdrawByBlend(string botType, List<string> blendImages, string baseUrl, string apiKey, string drawmodel, string dimensions)
+    {
+        try
+        {
+            if (baseUrl.EndsWith("/")) baseUrl = baseUrl.TrimEnd('/');
+        }
+        catch (Exception e)
+        {
+            throw e;
+        }
 
+        baseUrl += $"/mj-{drawmodel}/mj/submit/blend";
+        var client = new RestClient(baseUrl);
+        var request = new RestRequest("", Method.Post);
+        request.AddHeader("mj-api-secret", apiKey);
+        request.AddHeader("Authorization", apiKey);
+        request.AddHeader("Content-Type", "application/json");
+        List<string> base64Array = new List<string>();
+        foreach (var image in blendImages)
+        {
+            base64Array.Add("data:image/jpeg;base64," + await _systemService.ImgConvertToBase64(image));
+        }
+        var mJdrawBody = new
+        {
+            base64Array = base64Array,
+            dimensions = dimensions
+        };
+        var body = JsonConvert.SerializeObject(mJdrawBody);
+        request.AddParameter("application/json", body, ParameterType.RequestBody);
+        var response = await client.ExecuteAsync(request);
+        if (response.IsSuccessful)
+        {
+            var res = JsonConvert.DeserializeObject<dynamic>(response.Content);
+            string taskId = res.result.ToString();
+            return taskId;
+        }
+
+        await _systemService.WriteLog(response.Content, LogLevel.Error, "system");
+        return "";
+    }
+
+    public async Task<string> CreateMJdrawBySwap(string botType, string baseUrl, string apiKey, string drawmodel, string yourFace, string starFace)
+    {
+        try
+        {
+            if (baseUrl.EndsWith("/")) baseUrl = baseUrl.TrimEnd('/');
+        }
+        catch (Exception e)
+        {
+            throw e;
+        }
+
+        baseUrl += $"/mj-{drawmodel}/mj/insight-face/swap";
+        var client = new RestClient(baseUrl);
+        var request = new RestRequest("", Method.Post);
+        request.AddHeader("mj-api-secret", apiKey);
+        request.AddHeader("Authorization", apiKey);
+        request.AddHeader("Content-Type", "application/json");
+        yourFace = "data:image/jpeg;base64," + await _systemService.ImgConvertToBase64(yourFace);
+        starFace = "data:image/jpeg;base64," + await _systemService.ImgConvertToBase64(starFace);
+        var mJdrawBody = new
+        {
+            sourceBase64 = yourFace,
+            targetBase64 = starFace
+        };
+        var body = JsonConvert.SerializeObject(mJdrawBody);
+        request.AddParameter("application/json", body, ParameterType.RequestBody);
+        var response = await client.ExecuteAsync(request);
+        if (response.IsSuccessful)
+        {
+            var res = JsonConvert.DeserializeObject<dynamic>(response.Content);
+            string taskId = res.result.ToString();
+            return taskId;
+        }
+
+        await _systemService.WriteLog(response.Content, LogLevel.Error, "system");
+        return "";
+    }
     public async Task<string> CreateDALLdraw(string prompt, string imgSize, string quality, string baseUrl,
         string apiKey)
     {
@@ -424,7 +570,10 @@ public class AiServer : IAiServer
             var body = JsonConvert.SerializeObject(sDdrawBody);
             request.AddParameter("application/json", body, ParameterType.RequestBody);
             var response = await client.ExecuteAsync(request);
-            if (response.IsSuccessful) sDResponse = JsonConvert.DeserializeObject<SDResponse>(response.Content);
+            if (response.IsSuccessful)
+                sDResponse = JsonConvert.DeserializeObject<SDResponse>(response.Content);
+            else
+                await _systemService.WriteLog("/AiServer/CreateSDdraw" + response.Content, LogLevel.Error, "system");
         }
 
         return sDResponse;
@@ -655,9 +804,11 @@ public class AiServer : IAiServer
         return "请求失败：" + response.StatusCode;
     }
 
-    public async Task<List<AIdrawRe>> GetAIdrawResList(string account, int page, int pageSize)
+    public async Task<List<AIdrawRe>> GetAIdrawResList(string account, int page, int pageSize, string role = "")
     {
         // 利用IQueryable延迟执行，直到真正需要数据的时候才去数据库查询
+        if (!string.IsNullOrEmpty(role))
+            account = "system";
         var query = _context.AIdrawRes.Where(p => p.Account == account);
         // 然后添加分页逻辑，此处同样是构建查询，没有执行
         var aidrawRes = query.OrderByDescending(x => x.CreateTime) // 这里可以根据需要替换为合适的排序字段
@@ -782,46 +933,66 @@ public class AiServer : IAiServer
         CancellationToken cancellationToken)
     {
         var chatRes = new ChatRes();
-
-        async Task StartLoadingIndicator(List<string> emojiList)
-        {
-            var random = new Random();
-            try
-            {
-                while (!cancellationToken.IsCancellationRequested)
-                {
-                    var randomEmoji = emojiList[random.Next(emojiList.Count)];
-                    chatRes.message = $"{randomEmoji}";
-                    await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                    await Task.Delay(1000, cancellationToken);
-                }
-            }
-            catch (TaskCanceledException)
-            {
-                // Handle the task cancellation if needed
-            }
-        }
+        string loadingDOM = @"<div class=""pluginloading-container"">
+                                <div class=""pluginloading-loading-border"">
+                                    <img src=""{0}"" class=""pluginloading-avatar"">
+                                </div>
+                                <div class=""pluginloading-content"">
+                                    <h6 class=""pluginloading-title"">{1}</h6>
+                                </div>
+                            </div>";
+        //async Task StartLoadingIndicator(List<string> emojiList)
+        //{
+        //    var random = new Random();
+        //    try
+        //    {
+        //        while (!cancellationToken.IsCancellationRequested)
+        //        {
+        //            var randomEmoji = emojiList[random.Next(emojiList.Count)];
+        //            chatRes.message = $"{randomEmoji}";
+        //            await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+        //            await Task.Delay(1000, cancellationToken);
+        //        }
+        //    }
+        //    catch (TaskCanceledException)
+        //    {
+        //        // Handle the task cancellation if needed
+        //    }
+        //}
 
         if (fnName == "use_dalle3_withpr")
         {
-            chatRes.message = "使用【DALL·E3】组件执行绘制,这需要大约1-2分钟";
+            chatRes.message = string.Format(loadingDOM, "/system/images/systempluginlogo/dalle3.png", "DALL·E3");
+            chatRes.loading = true;
             await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
-            var emojiList = new List<string> { "🖌", "🎨", "🔧", "🖊", "🖍", "🖼", "🤯" };
-            await StartLoadingIndicator(emojiList);
+            //var emojiList = new List<string> { "🖌", "🎨", "🔧", "🖊", "🖍", "🖼", "🤯" };
+            //await StartLoadingIndicator(emojiList);
         }
         else if (fnName == "search_google_when_gpt_cannot_answer")
         {
-            chatRes.message = "请稍候，让我Google一下";
+            chatRes.message = string.Format(loadingDOM, "/system/images/systempluginlogo/google.png", "Google搜索");
+            chatRes.loading = true;
             await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
-            var emojiList = new List<string> { "🌐" };
-            await StartLoadingIndicator(emojiList);
+            //var emojiList = new List<string> { "🌐" };
+            //await StartLoadingIndicator(emojiList);
         }
         else if (fnName == "search_knowledge_base")
         {
-            chatRes.message = "请稍候，让我尝试检索知识库";
+            chatRes.message = string.Format(loadingDOM, "/system/images/systempluginlogo/knowledge.png", "知识库检索");
+            chatRes.loading = true;
             await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
-            var emojiList = new List<string> { "🔎📄" };
-            await StartLoadingIndicator(emojiList);
+            //var emojiList = new List<string> { "🔎📄" };
+            //await StartLoadingIndicator(emojiList);
+        }
+        else
+        {
+            var plugin = _context.Plugins.Where(p => p.Pfunctionname == fnName).FirstOrDefault();
+            if (plugin != null)
+            {
+                chatRes.message = string.Format(loadingDOM, plugin.Pavatar, plugin.Pnickname);
+                chatRes.loading = true;
+                await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+            }
         }
     }
 
@@ -851,12 +1022,12 @@ public class AiServer : IAiServer
                 chatRes.message = res3;
                 await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
                 Thread.Sleep(200);
-                var res4 = @$"<br>提示词：<b>{pluginResDto.dallprompt}</b>";
+                var res4 = @$"<br><p>提示词：<b>{pluginResDto.dallprompt}</b></p>";
                 chatRes.message = res4;
                 await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
                 Thread.Sleep(200);
                 var res5 =
-                    @$"<br><b>如有需要，您可以前往【个人中心】->【图库】下载此图片，或者</b><a href=""{pluginResDto.result}"" target=""_blank"">【点击这里下载此图片】</a>";
+                    @$"<br><p><b>如有需要，您可以前往【个人中心】->【图库】下载此图片，或者</b><a href=""{pluginResDto.result}"" target=""_blank"">【点击这里下载此图片】</a></p>";
                 chatRes.message = res5;
                 await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
                 res = res1 + res2 + res3 + res4 + res5;
@@ -885,57 +1056,68 @@ public class AiServer : IAiServer
     public async Task<bool> SaveMemory(string aimodel, string account, string chatgroupId, string chatId)
     {
         var result = false;
-        //获取历史记录
+        // 获取历史记录
         var chatList = GetChatHistories(account, chatId, -1);
 
-        // 如果chatgroupId不为空，则进行过滤
+        // 如果 chatgroupId 不为空，则进行过滤
         if (!string.IsNullOrEmpty(chatgroupId))
         {
             chatList = chatList.Where(c => c.ChatGroupId == chatgroupId).ToList();
         }
-        else
-        {
-            chatList = chatList.ToList();
-        }
 
-        var memoryStr = string.Empty;
-        foreach (var item in chatList)
+        // 按照 chatgroupId 分组处理
+        var groupedChatList = chatList.GroupBy(c => c.ChatGroupId).ToList();
+
+        foreach (var group in groupedChatList)
         {
-            if (item.Role == "user")
-                memoryStr += $"[User]:\n {item.Chat} \n";
-            else
-                memoryStr += $"[Assistant]:\n {item.Chat} \n";
-        }
-        //memoryStr = memoryStr.Replace("\r", "").Replace("\n", "");
-        if (!string.IsNullOrEmpty(memoryStr))
-        {
-            var systemCfgs = _systemService.GetSystemCfgs();
-            var embeddingsUrl = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsUrl")?.CfgValue;
-            var embeddingsApiKey = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsApiKey")?.CfgValue;
-            //文本转向量
-            var client = new RestClient(embeddingsUrl);
-            var request = CreateRequest(aimodel, memoryStr, embeddingsApiKey);
-            var response = await client.ExecuteAsync(request);
-            var vector = new List<float>();
-            if (response.IsSuccessful)
+            var memoryStr = string.Empty;
+            foreach (var item in group)
             {
-                var embeddingApiResponseByMilvus =
-                    JsonConvert.DeserializeObject<EmbeddingApiResponseByMilvus>(response.Content);
-                if (embeddingApiResponseByMilvus != null && embeddingApiResponseByMilvus.Data != null &&
-                    embeddingApiResponseByMilvus.Data.Count > 0)
-                    vector = embeddingApiResponseByMilvus.Data[0].Embedding;
-                var milvusDataDtos = new List<MilvusDataDto>
-            {
-                new()
+                if (item.Role == "user")
                 {
-                    Id = Guid.NewGuid().ToString("N"),
-                    Account = account,
-                    Vector = vector,
-                    VectorContent = memoryStr,
-                    Type = $"{account}_memory"
+                    memoryStr += $"[User]:\n {_systemService.DecodeBase64(item.Chat)} \n";
                 }
-            };
-                result = await _milvusService.InsertVector(milvusDataDtos, $"{account}_memory", account);
+                else
+                {
+                    memoryStr += $"[Assistant]:\n {_systemService.DecodeBase64(item.Chat)} \n";
+                }
+            }
+
+            // 如果 memoryStr 不为空，进行向量保存操作
+            if (!string.IsNullOrEmpty(memoryStr))
+            {
+                var systemCfgs = _systemService.GetSystemCfgs();
+                var embeddingsUrl = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsUrl")?.CfgValue;
+                var embeddingsApiKey = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsApiKey")?.CfgValue;
+
+                // 文本转向量
+                var client = new RestClient(embeddingsUrl);
+                var request = CreateRequest(aimodel, memoryStr, embeddingsApiKey);
+                var response = await client.ExecuteAsync(request);
+                var vector = new List<float>();
+
+                if (response.IsSuccessful)
+                {
+                    var embeddingApiResponseByMilvus =
+                        JsonConvert.DeserializeObject<EmbeddingApiResponseByMilvus>(response.Content);
+                    if (embeddingApiResponseByMilvus != null && embeddingApiResponseByMilvus.Data != null &&
+                        embeddingApiResponseByMilvus.Data.Count > 0)
+                    {
+                        vector = embeddingApiResponseByMilvus.Data[0].Embedding;
+                    }
+
+                    var milvusDataDto = new MilvusDataDto
+                    {
+                        Id = Guid.NewGuid().ToString("N"),
+                        Account = account,
+                        Vector = vector,
+                        VectorContent = memoryStr,
+                        Type = $"{account}_memory"
+                    };
+
+                    result = await _milvusService.InsertVector(new List<MilvusDataDto> { milvusDataDto },
+                        $"{account}_memory", account);
+                }
             }
         }
 
@@ -1078,6 +1260,360 @@ public class AiServer : IAiServer
         }
 
         return prompt;
+    }
+
+    public async Task<string> CreateSunoTask(string mode, string gptDescription, string prompt, string tags, string mv,
+        string title, string baseUrl, string apiKey, string account)
+    {
+        var taskId = string.Empty;
+        var data = string.Empty;
+        if (baseUrl.EndsWith("/"))
+            baseUrl = baseUrl.TrimEnd('/');
+        baseUrl = baseUrl + "/suno/v1/music";
+        if (mode == "inspiration") //灵感模式
+        {
+            mv = "chirp-v3-0";
+            tags = "emotional punk";
+            var systemPrompt = @"
+                                    # 你是一个歌曲作词专家。
+                                    # 请根据提供的用户灵感进行创作
+                                    # 输出应该是一个JSON格式的字符串，包含歌词,标题,标签。
+                                    # 输出的JSON格式应当按照以下示例：
+                                    {
+                                        ""title"": ""这里填写根据灵感生成的标题"",
+                                        ""lyrics"": ""这里填写根据灵感生成的歌词"",
+                                        ""tags"": ""这里填写根据灵感生成的标签,标签使用英语"",
+                                    }";
+            var userprompt = $"用户灵感：{gptDescription}";
+            var resultJson = await GPTJsonModel(systemPrompt, userprompt, "gpt-4o-mini", account);
+            if (!string.IsNullOrEmpty(resultJson))
+            {
+                var resultData = JsonConvert.DeserializeObject<LyricsResult>(resultJson);
+                if (resultData != null && !string.IsNullOrEmpty(resultData.Lyrics) &&
+                    !string.IsNullOrEmpty(resultData.Title) && !string.IsNullOrEmpty(resultData.Tags))
+                {
+                    prompt = resultData.Lyrics;
+                    title = resultData.Title;
+                    tags = resultData.Tags;
+                }
+                else
+                {
+                    return taskId;
+                }
+            }
+            else
+            {
+                return taskId;
+            }
+        }
+
+        var dataObj = new
+        {
+            custom_mode = true,
+            input = new
+            {
+                prompt,
+                title,
+                tags,
+                mv
+            }
+        };
+        data = JsonConvert.SerializeObject(dataObj);
+        //发起请求
+        var client = new RestClient(baseUrl);
+        var request = new RestRequest("", Method.Post);
+        request.AddHeader("Content-Type", "application/json");
+        request.AddHeader("Authorization", $"Bearer {apiKey}");
+        request.AddHeader("Accept", "*/*");
+        request.AddHeader("Connection", "keep-alive");
+        request.AddParameter("application/json", data, ParameterType.RequestBody);
+        var response = await client.ExecuteAsync(request);
+        if (response.IsSuccessful)
+        {
+            var sunoResponse = JsonConvert.DeserializeObject<SunoResponse>(response.Content);
+            if (sunoResponse != null && sunoResponse.Data != null && !string.IsNullOrEmpty(sunoResponse.Data.TaskId))
+                taskId = JsonConvert.DeserializeObject<SunoResponse>(response.Content).Data.TaskId;
+        }
+        else
+        {
+            await _systemService.WriteLog("AiServer/CreateSunoTask" + response.Content, LogLevel.Error, "system");
+        }
+
+        if (!string.IsNullOrEmpty(taskId)) await _redis.SetAsync($"{account}-suno", taskId, TimeSpan.FromHours(1));
+        return taskId;
+    }
+
+    public async Task<SunoTaskResponse> GetSunoTask(string taskId, string account, string baseUrl, string apiKey)
+    {
+        var redis_key = $"{account}-suno";
+        var sunoTaskResponse = new SunoTaskResponse();
+        if (baseUrl.EndsWith("/"))
+            baseUrl = baseUrl.TrimEnd('/');
+        baseUrl = baseUrl + "/suno/v1/music/";
+        var client = new RestClient(baseUrl + taskId);
+        var request = new RestRequest("");
+        request.AddHeader("Content-Type", "application/json");
+        request.AddHeader("Authorization", $"Bearer {apiKey}");
+        request.AddHeader("Accept", "*/*");
+        request.AddHeader("Connection", "keep-alive");
+
+        const int maxRetries = 3;
+        var retryCount = 0;
+        RestResponse response = null;
+
+        while (retryCount < maxRetries)
+            try
+            {
+                response = await client.ExecuteAsync(request);
+                if (response.IsSuccessStatusCode) break;
+                retryCount++;
+                if (retryCount < maxRetries)
+                    await Task.Delay(1000 * retryCount); // Wait for 1, 2, 3 seconds before retrying
+            }
+            catch (Exception ex)
+            {
+                await _systemService.WriteLog($"【/AiServer/GetSunoTask】Attempt {retryCount + 1} failed: {ex.Message}",
+                    LogLevel.Error, account);
+                retryCount++;
+                if (retryCount < maxRetries) await Task.Delay(1000 * retryCount);
+            }
+
+        if (response == null || !response.IsSuccessStatusCode)
+        {
+            await _redis.DeleteAsync(redis_key);
+            throw new Exception($"API request failed after {maxRetries} attempts");
+        }
+
+        try
+        {
+            sunoTaskResponse = JsonConvert.DeserializeObject<SunoTaskResponse>(response.Content);
+        }
+        catch (Exception e)
+        {
+            await _systemService.WriteLog($"【/AiServer/GetSunoTask】:{e.Message}", LogLevel.Error, account);
+        }
+
+        if (sunoTaskResponse.Data.Status == "completed")
+        {
+            foreach (var clipKvp in sunoTaskResponse.Data.Clips)
+            {
+                var clip = clipKvp.Value;
+                var sunoRe = new SunoRe
+                {
+                    Account = account,
+                    TaskId = taskId,
+                    SongId = clip.Id,
+                    Prompt = clip.Metadata.Prompt,
+                    CreateTime = DateTime.Now,
+                    Title = clip.Title,
+                    ImageUrl = clip.ImageUrl,
+                    ImageLargeUrl = clip.ImageLargeUrl,
+                    AudioUrl = clip.AudioUrl,
+                    VideoUrl = clip.VideoUrl
+                };
+
+                _context.SunoRes.Add(sunoRe);
+            }
+
+            await _context.SaveChangesAsync();
+            await _redis.DeleteAsync(redis_key);
+
+            // 在后台启动一个任务处理文件下载和可能的COS上传
+            _ = Task.Run(async () =>
+            {
+                using (var scope = _serviceProvider.CreateScope())
+                {
+                    var context = scope.ServiceProvider.GetRequiredService<AIBotProContext>();
+                    var systemService = scope.ServiceProvider.GetRequiredService<ISystemService>();
+                    var cosService = scope.ServiceProvider.GetRequiredService<ICOSService>();
+
+                    var systemCfg = systemService.GetSystemCfgs();
+                    var cos_switch = systemCfg.FirstOrDefault(x => x.CfgKey == "COS_Switch");
+                    var useCOS = cos_switch != null && cos_switch.CfgValue == "1";
+
+                    foreach (var clipKvp in sunoTaskResponse.Data.Clips)
+                    {
+                        var clip = clipKvp.Value;
+                        var newFileName = Guid.NewGuid().ToString().Replace("-", "");
+                        var currentDate = DateTime.Now.ToString("yyyyMMdd");
+                        var baseSavePath = Path.Combine("wwwroot", "files", "sunores", currentDate);
+
+                        var sunoRe = await context.SunoRes.FirstOrDefaultAsync(s => s.SongId == clipKvp.Value.Id);
+
+                        if (sunoRe != null)
+                        {
+                            if (useCOS)
+                            {
+                                var imageResult = await DownloadAndUploadToCOS(clip.ImageUrl, baseSavePath, "image",
+                                    newFileName, account, cosService, systemService);
+                                sunoRe.ImageCosKey = imageResult.CosKey;
+                                sunoRe.ImageUrl = imageResult.CosUrl;
+
+                                var imageLargeResult = await DownloadAndUploadToCOS(clip.ImageLargeUrl, baseSavePath,
+                                    "image", newFileName, account, cosService, systemService);
+                                sunoRe.ImageLargeCosKey = imageLargeResult.CosKey;
+                                sunoRe.ImageLargeUrl = imageLargeResult.CosUrl;
+
+                                var audioResult = await DownloadAndUploadToCOS(clip.AudioUrl, baseSavePath, "audio",
+                                    newFileName, account, cosService, systemService);
+                                sunoRe.AudioCosKey = audioResult.CosKey;
+                                sunoRe.AudioUrl = audioResult.CosUrl;
+
+                                var videoResult = await DownloadAndUploadToCOS(clip.VideoUrl, baseSavePath, "video",
+                                    newFileName, account, cosService, systemService);
+                                sunoRe.VideoCosKey = videoResult.CosKey;
+                                sunoRe.VideoUrl = videoResult.CosUrl;
+                            }
+                            else
+                            {
+                                sunoRe.ImageUrl = await DownloadToLocal(clip.ImageUrl, baseSavePath, "image",
+                                    newFileName, account, systemService);
+                                sunoRe.ImageLargeUrl = await DownloadToLocal(clip.ImageLargeUrl, baseSavePath, "image",
+                                    newFileName, account, systemService);
+                                sunoRe.AudioUrl = await DownloadToLocal(clip.AudioUrl, baseSavePath, "audio",
+                                    newFileName, account, systemService);
+                                sunoRe.VideoUrl = await DownloadToLocal(clip.VideoUrl, baseSavePath, "video",
+                                    newFileName, account, systemService);
+                            }
+
+                            context.SunoRes.Update(sunoRe);
+                            await context.SaveChangesAsync();
+                        }
+                    }
+                }
+            });
+            Thread.Sleep(10000); //等10s控制并发
+        }
+
+        return sunoTaskResponse;
+    }
+    public async Task<TokenizerDetail> TokenizeJinaAI(string content, int maxChunkLength, string tokenizer = "cl100k_base", bool returnChunks = true, bool returnTokens = false)
+    {
+        TokenizerDetail result = new TokenizerDetail();
+        var systemCfgs = _systemService.GetSystemCfgs();
+        var baseUrl = systemCfgs.FirstOrDefault(x => x.CfgKey == "Tokenize_BaseUrl_Jina")?.CfgValue;
+        var apiKey = systemCfgs.FirstOrDefault(x => x.CfgKey == "Tokenize_ApiKey_Jina")?.CfgValue;
+
+        if (string.IsNullOrEmpty(baseUrl))
+        {
+            throw new Exception("Tokenize_BaseUrl_Jina is not configured.");
+        }
+
+        using (var httpClient = new HttpClient())
+        {
+            httpClient.BaseAddress = new Uri(baseUrl);
+
+            if (!string.IsNullOrEmpty(apiKey))
+            {
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+            }
+
+            var requestData = new
+            {
+                content = content,
+                return_chunks = returnChunks.ToString().ToLower(),
+                max_chunk_length = maxChunkLength.ToString(),
+                return_tokens = returnTokens.ToString().ToLower(),
+                tokenizer = tokenizer
+            };
+
+            var jsonContent = JsonConvert.SerializeObject(requestData);
+            var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+            var response = await httpClient.PostAsync("", httpContent);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var responseContent = await response.Content.ReadAsStringAsync();
+                result = JsonConvert.DeserializeObject<TokenizerDetail>(responseContent);
+            }
+            else
+            {
+                throw new Exception($"API request failed with status code: {response.StatusCode}");
+            }
+        }
+
+        return result;
+    }
+
+
+    public async Task<RerankerResponse> RerankerJinaAI(List<string> documents, string model, string query, int topn)
+    {
+        var systemCfgs = _systemService.GetSystemCfgs();
+        var baseUrl = systemCfgs.FirstOrDefault(x => x.CfgKey == "Rerank_BaseUrl_Jina")?.CfgValue;
+        var apiKey = systemCfgs.FirstOrDefault(x => x.CfgKey == "Rerank_ApiKey_Jina")?.CfgValue;
+
+        if (string.IsNullOrEmpty(baseUrl) || string.IsNullOrEmpty(apiKey))
+        {
+            throw new Exception("Rerank configuration is missing.");
+        }
+
+        using (var client = new HttpClient())
+        {
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+
+            var requestBody = new
+            {
+                model,
+                query,
+                top_n = topn,
+                documents
+            };
+
+            var content = new StringContent(JsonConvert.SerializeObject(requestBody), Encoding.UTF8, "application/json");
+
+            var response = await client.PostAsync(baseUrl, content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var responseString = await response.Content.ReadAsStringAsync();
+                return JsonConvert.DeserializeObject<RerankerResponse>(responseString);
+            }
+            else
+            {
+                throw new HttpRequestException($"Error calling Jina AI API: {response.StatusCode}");
+            }
+        }
+    }
+
+
+    //------------------------------------通用私有函数---------------------------------
+
+    private async Task<(string CosKey, string CosUrl)> DownloadAndUploadToCOS(string url, string baseSavePath,
+        string fileType, string newFileName, string account, ICOSService cosService, ISystemService systemService)
+    {
+        if (string.IsNullOrEmpty(url))
+            return (null, null);
+
+        var fileExtension = Path.GetExtension(url);
+        var fileName = $"{newFileName}{fileExtension}";
+        var localFilePath = Path.Combine(baseSavePath, fileType);
+
+        // 下载文件
+        var filePath = await systemService.DownloadFileByUrl(url, localFilePath, account);
+
+        // 上传到COS
+        var cosKey = $"sunores/{DateTime.Now:yyyyMMdd}/{fileType}/{fileName}";
+        var cosUrl = cosService.PutObject(cosKey, filePath, fileName);
+
+        return (cosKey, cosUrl);
+    }
+
+    private async Task<string> DownloadToLocal(string url, string baseSavePath, string fileType, string newFileName,
+        string account, ISystemService systemService)
+    {
+        if (string.IsNullOrEmpty(url))
+            return null;
+
+        var fileExtension = Path.GetExtension(url);
+        var fileName = $"{newFileName}{fileExtension}";
+        var localFilePath = Path.Combine(baseSavePath, fileType);
+
+        // 下载文件
+        await systemService.DownloadFileByUrl(url, localFilePath, account);
+
+        // 返回相对路径
+        return Path.Combine("files", "sunores", DateTime.Now.ToString("yyyyMMdd"), fileType, fileName);
     }
 
     private async Task<bool> IsVip(string account)

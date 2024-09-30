@@ -1,9 +1,11 @@
-﻿using aibotPro.Interface;
+﻿using System.Net.Http.Headers;
+using aibotPro.Interface;
 using aibotPro.Models;
 using aibotPro.Service;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using LogLevel = aibotPro.Dtos.LogLevel;
 
 namespace aibotPro.Controllers;
@@ -72,6 +74,11 @@ public class UsersController : Controller
         return View();
     }
 
+    public IActionResult NewApi()
+    {
+        return View();
+    }
+
     /// <summary>
     ///     注册
     /// </summary>
@@ -118,6 +125,24 @@ public class UsersController : Controller
 
         ViewBag.ErrorMsg = errormsg;
         return Json(new { success = false, msg = errormsg });
+    }
+
+    [HttpPost]
+    public IActionResult GetMailRestrict()
+    {
+        var systemCfg = _systemService.GetSystemCfgs();
+        var mailRestrict = systemCfg.FirstOrDefault(x => x.CfgKey == "RegiestMail");
+        string restrictStr = string.Empty;
+        if (mailRestrict != null && mailRestrict.CfgValue != "0" && mailRestrict.CfgValue.Contains("."))
+        {
+            restrictStr = mailRestrict.CfgValue;
+        }
+
+        return Json(new
+        {
+            success = true,
+            data = restrictStr
+        });
     }
 
     /// <summary>
@@ -208,14 +233,66 @@ public class UsersController : Controller
         var tomail = toemail.ToLower();
         try
         {
-            if (!toemail.Contains("qq.com") && !toemail.Contains("gmail.com") && !toemail.Contains("163.com") &&
-                !toemail.Contains("126.com"))
+            var systemCfg = _systemService.GetSystemCfgs();
+            var mailRestrict = systemCfg.FirstOrDefault(x => x.CfgKey == "RegiestMail");
+            bool isValidEmail = true;
+            string errorMessage = "";
+
+            if (mailRestrict != null)
+            {
+                if (mailRestrict.CfgValue == "0")
+                {
+                    // 如果配置值为"0"，则没有限制
+                }
+                else
+                {
+                    if (!toemail.Contains("@"))
+                    {
+                        isValidEmail = false;
+                        errorMessage = "请输入有效的邮箱地址";
+                    }
+                    else
+                    {
+                        // 过滤并清理域名列表
+                        var allowedDomains = mailRestrict.CfgValue
+                            .Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                            .Select(d => d.Trim())
+                            .Where(d => d.Contains("."))
+                            .ToArray();
+
+                        var emailDomain = toemail.Split('@').LastOrDefault()?.ToLower();
+
+                        if (string.IsNullOrEmpty(emailDomain))
+                        {
+                            isValidEmail = false;
+                            errorMessage = "请输入有效的邮箱地址";
+                        }
+                        else if (!allowedDomains.Any(domain => emailDomain.EndsWith(domain)))
+                        {
+                            if (allowedDomains.Length == 0)
+                            {
+                                errorMessage = "系统配置错误: 未正确设置允许的邮箱后缀";
+                            }
+                            else
+                            {
+                                errorMessage = $"只允许使用{string.Join(", ", allowedDomains)}的邮箱";
+                            }
+
+                            isValidEmail = false;
+                        }
+                    }
+                }
+            }
+
+            if (!isValidEmail)
+            {
                 return Json(new
                 {
                     success = false,
-                    msg = "只允许使用qq,gmail,163,126邮箱"
-                    //captchaVerifyResult = result
+                    msg = errorMessage
                 });
+            }
+
             if (_usersService.SendRegiestEmail(toemail, title, content))
                 return Json(new
                 {
@@ -560,6 +637,55 @@ public class UsersController : Controller
 
     [Authorize]
     [HttpPost]
+    public IActionResult GetTopVipType()
+    {
+        var username = _jwtTokenManager
+            .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+        if (string.IsNullOrEmpty(username))
+            return Json(new
+            {
+                success = false,
+                msg = "账号异常"
+            });
+
+        var currentTime = DateTime.Now;
+        var vipdata = _context.VIPs
+            .Where(x => x.Account == username && x.EndTime > currentTime)
+            .ToList();
+
+        string topVipType = "";
+
+        // 定义VIP类型的优先级
+        var vipPriority = new Dictionary<string, int>
+        {
+            { "VIP|15", 1 },
+            { "VIP|50", 2 },
+            { "VIP|90", 3 } // VIP|90 是最高等级
+        };
+
+        int highestPriority = 0;
+
+        foreach (var vip in vipdata)
+        {
+            if (vipPriority.TryGetValue(vip.VipType, out int priority))
+            {
+                if (priority > highestPriority)
+                {
+                    highestPriority = priority;
+                    topVipType = vip.VipType;
+                }
+            }
+        }
+
+        return Json(new
+        {
+            success = true,
+            data = topVipType
+        });
+    }
+
+    [Authorize]
+    [HttpPost]
     public async Task<IActionResult> VipExceed()
     {
         var username = _jwtTokenManager
@@ -614,11 +740,11 @@ public class UsersController : Controller
                 .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
             var user = _context.Users.FirstOrDefault(x => x.Account == username);
             var intomoney = Convert.ToDecimal(thisorder.OrderMoney);
-            if (thisorder.OrderType.Contains("VIP|15") && intomoney == 15)
+            if (thisorder.OrderType.Contains("VIP|20") && intomoney == 15)
             {
                 var vipinfo = _context.VIPs.AsNoTracking()
-                    .FirstOrDefault(x => x.Account == username && x.VipType == "VIP|15");
-                if (vipinfo != null && vipinfo.VipType == "VIP|15")
+                    .FirstOrDefault(x => x.Account == username && x.VipType == "VIP|20");
+                if (vipinfo != null && vipinfo.VipType == "VIP|20")
                 {
                     if (vipinfo.EndTime > DateTime.Now)
                         vipinfo.EndTime = vipinfo.EndTime.Value.AddDays(30);
@@ -629,7 +755,7 @@ public class UsersController : Controller
                 else
                 {
                     var vip = new VIP();
-                    vip.VipType = "VIP|15";
+                    vip.VipType = "VIP|20";
                     vip.Account = username;
                     vip.StartTime = DateTime.Now;
                     vip.EndTime = DateTime.Now.AddDays(30);
@@ -646,11 +772,11 @@ public class UsersController : Controller
                     _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, 15m * 0.15m);
                 }
             }
-            else if (thisorder.OrderType.Contains("VIP|90") && intomoney == 90)
+            else if (thisorder.OrderType.Contains("VIP|50") && intomoney == 90)
             {
                 var vipinfo = _context.VIPs.AsNoTracking()
-                    .FirstOrDefault(x => x.Account == username && x.VipType == "VIP|90");
-                if (vipinfo != null && vipinfo.VipType == "VIP|90")
+                    .FirstOrDefault(x => x.Account == username && x.VipType == "VIP|50");
+                if (vipinfo != null && vipinfo.VipType == "VIP|50")
                 {
                     if (vipinfo.EndTime > DateTime.Now)
                         vipinfo.EndTime = vipinfo.EndTime.Value.AddDays(30);
@@ -661,7 +787,7 @@ public class UsersController : Controller
                 else
                 {
                     var vip = new VIP();
-                    vip.VipType = "VIP|90";
+                    vip.VipType = "VIP|50";
                     vip.Account = username;
                     vip.StartTime = DateTime.Now;
                     vip.EndTime = DateTime.Now.AddDays(30);
@@ -702,11 +828,11 @@ public class UsersController : Controller
                     if (good.Balance > 0)
                         //更新用户余额
                         user.Mcoin = user.Mcoin + good.Balance;
-                    if (good.VIPType == "VIP|15")
+                    if (good.VIPType == "VIP|20")
                     {
                         var vipinfo = _context.VIPs.AsNoTracking()
-                            .FirstOrDefault(x => x.Account == username && x.VipType == "VIP|15");
-                        if (vipinfo != null && vipinfo.VipType == "VIP|15")
+                            .FirstOrDefault(x => x.Account == username && x.VipType == "VIP|20");
+                        if (vipinfo != null && vipinfo.VipType == "VIP|20")
                         {
                             if (vipinfo.EndTime > DateTime.Now)
                                 vipinfo.EndTime = vipinfo.EndTime.Value.AddDays((double)good.VIPDays);
@@ -717,7 +843,7 @@ public class UsersController : Controller
                         else
                         {
                             var vip = new VIP();
-                            vip.VipType = "VIP|15";
+                            vip.VipType = "VIP|20";
                             vip.Account = username;
                             vip.StartTime = DateTime.Now;
                             vip.EndTime = DateTime.Now.AddDays((double)good.VIPDays);
@@ -726,11 +852,11 @@ public class UsersController : Controller
                         }
                     }
 
-                    if (good.VIPType == "VIP|90")
+                    if (good.VIPType == "VIP|50")
                     {
                         var vipinfo = _context.VIPs.AsNoTracking()
-                            .FirstOrDefault(x => x.Account == username && x.VipType == "VIP|90");
-                        if (vipinfo != null && vipinfo.VipType == "VIP|90")
+                            .FirstOrDefault(x => x.Account == username && x.VipType == "VIP|50");
+                        if (vipinfo != null && vipinfo.VipType == "VIP|50")
                         {
                             if (vipinfo.EndTime > DateTime.Now)
                                 vipinfo.EndTime = vipinfo.EndTime.Value.AddDays((double)good.VIPDays);
@@ -741,7 +867,7 @@ public class UsersController : Controller
                         else
                         {
                             var vip = new VIP();
-                            vip.VipType = "VIP|90";
+                            vip.VipType = "VIP|50";
                             vip.Account = username;
                             vip.StartTime = DateTime.Now;
                             vip.EndTime = DateTime.Now.AddDays((double)good.VIPDays);
@@ -881,8 +1007,8 @@ public class UsersController : Controller
         var username = _jwtTokenManager
             .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
         var vipdata = await _financeService.GetVipData(username);
-        //如果是VIP|90
-        if (vipdata.Where(x => x.VipType == "VIP|90").Count() > 0)
+        //如果是VIP|50
+        if (vipdata.Where(x => x.VipType == "VIP|50" || x.VipType == "VIP|90").Count() > 0)
         {
             //查询今天是否已签到
             var sign = _context.SignIns.AsNoTracking()
@@ -945,11 +1071,11 @@ public class UsersController : Controller
         if (card.Mcoin > 0)
             //更新用户余额
             user.Mcoin = user.Mcoin + card.Mcoin;
-        if (card.VipType == "VIP|15")
+        if (card.VipType == "VIP|20")
         {
             var vipinfo = _context.VIPs.AsNoTracking()
-                .FirstOrDefault(x => x.Account == username && x.VipType == "VIP|15");
-            if (vipinfo != null && vipinfo.VipType == "VIP|15")
+                .FirstOrDefault(x => x.Account == username && x.VipType == "VIP|20");
+            if (vipinfo != null && vipinfo.VipType == "VIP|20")
             {
                 if (vipinfo.EndTime > DateTime.Now)
                     vipinfo.EndTime = vipinfo.EndTime.Value.AddDays((double)card.VipDay);
@@ -960,7 +1086,7 @@ public class UsersController : Controller
             else
             {
                 var vip = new VIP();
-                vip.VipType = "VIP|15";
+                vip.VipType = "VIP|20";
                 vip.Account = username;
                 vip.StartTime = DateTime.Now;
                 vip.EndTime = DateTime.Now.AddDays((double)card.VipDay);
@@ -969,11 +1095,11 @@ public class UsersController : Controller
             }
         }
 
-        if (card.VipType == "VIP|90")
+        if (card.VipType == "VIP|50")
         {
             var vipinfo = _context.VIPs.AsNoTracking()
-                .FirstOrDefault(x => x.Account == username && x.VipType == "VIP|90");
-            if (vipinfo != null && vipinfo.VipType == "VIP|90")
+                .FirstOrDefault(x => x.Account == username && x.VipType == "VIP|50");
+            if (vipinfo != null && vipinfo.VipType == "VIP|50")
             {
                 if (vipinfo.EndTime > DateTime.Now)
                     vipinfo.EndTime = vipinfo.EndTime.Value.AddDays((double)card.VipDay);
@@ -984,7 +1110,7 @@ public class UsersController : Controller
             else
             {
                 var vip = new VIP();
-                vip.VipType = "VIP|90";
+                vip.VipType = "VIP|50";
                 vip.Account = username;
                 vip.StartTime = DateTime.Now;
                 vip.EndTime = DateTime.Now.AddDays((double)card.VipDay);
@@ -1224,6 +1350,208 @@ public class UsersController : Controller
         {
             success = true,
             data = thisMonthList
+        });
+    }
+
+    [HttpGet]
+    public IActionResult InitiateGoogleLogin()
+    {
+        var systemCfgs = _systemService.GetSystemCfgs();
+        var clientId = systemCfgs.FirstOrDefault(x => x.CfgKey == "GoogleClientID")?.CfgValue;
+        var redirectUri = Url.Action("HandleGoogleCallback", "Users", null, Request.Scheme,
+            Request.Host.ToUriComponent());
+
+        var authorizationEndpoint = "https://accounts.google.com/o/oauth2/v2/auth";
+        var scope = "openid email profile";
+
+        var authorizationRequest = new UriBuilder(authorizationEndpoint);
+        authorizationRequest.Query = string.Format(
+            "client_id={0}&redirect_uri={1}&response_type=id_token&scope={2}&nonce={3}",
+            clientId, Uri.EscapeDataString(redirectUri), Uri.EscapeDataString(scope), Guid.NewGuid().ToString());
+
+        return Redirect(authorizationRequest.ToString());
+    }
+
+    [HttpGet]
+    public IActionResult HandleGoogleCallback()
+    {
+        return View();
+    }
+
+    [HttpGet]
+    public IActionResult InitiateGitHubLogin()
+    {
+        var systemCfgs = _systemService.GetSystemCfgs();
+        var clientId = systemCfgs.FirstOrDefault(x => x.CfgKey == "GitHubClientID")?.CfgValue;
+
+        var redirectUri = Url.Action("HandleGitHubCallback", "Users", null, Request.Scheme,
+            Request.Host.ToUriComponent());
+        var scope = "user:email";
+
+        var authorizationEndpoint = "https://github.com/login/oauth/authorize";
+        var authorizationRequest = new UriBuilder(authorizationEndpoint);
+        authorizationRequest.Query = string.Format("client_id={0}&redirect_uri={1}&scope={2}",
+            clientId, Uri.EscapeDataString(redirectUri), Uri.EscapeDataString(scope));
+
+        return Redirect(authorizationRequest.ToString());
+    }
+
+    [HttpGet]
+    public IActionResult HandleGitHubCallback(string code)
+    {
+        return View();
+    }
+    [HttpPost]
+    public IActionResult GoogleOAuth(string JWT, string redirect)
+    {
+        // 解析JWT
+        JwtTokenManager.GoogleJWT googleJwt = _jwtTokenManager.DecodeGoogleJwtToken(JWT);
+        string email = googleJwt.payload.email;
+        string nick = googleJwt.payload.name;
+        string headImg = googleJwt.payload.picture;
+        //检查用户是否存在
+        var user = _context.Users.AsNoTracking().Where(u => u.Account == email).FirstOrDefault();
+        string token = string.Empty;
+        if (user != null)
+        {
+            //直接登录
+            token = _jwtTokenManager.GenerateToken(user.Account);
+            return Json(new { success = true, msg = "登录成功", token });
+        }
+        else
+        {
+            //注册后登录
+            token = _usersService.GetRegisterTokenByAnother(email, nick, headImg);
+        }
+
+        return Json(new { success = string.IsNullOrEmpty(token) ? false : true, token });
+    }
+
+    public async Task<IActionResult> GitHubOAuth(string code)
+    {
+        Dtos.GitHubCallback result = new Dtos.GitHubCallback();
+        if (string.IsNullOrEmpty(code))
+        {
+            result.Token = string.Empty;
+            result.Msg = "授权失败";
+        }
+
+        var systemCfgs = _systemService.GetSystemCfgs();
+        var clientId = systemCfgs.FirstOrDefault(x => x.CfgKey == "GitHubClientID")?.CfgValue;
+        var clientSecret = systemCfgs.FirstOrDefault(x => x.CfgKey == "GitHubSecret")?.CfgValue;
+
+        var tokenEndpoint = "https://github.com/login/oauth/access_token";
+        var content = new FormUrlEncodedContent(new[]
+        {
+            new KeyValuePair<string, string>("client_id", clientId),
+            new KeyValuePair<string, string>("client_secret", clientSecret),
+            new KeyValuePair<string, string>("code", code)
+        });
+
+        var response = await new HttpClient().PostAsync(tokenEndpoint, content);
+        var responseString = await response.Content.ReadAsStringAsync();
+        var responseParams = System.Web.HttpUtility.ParseQueryString(responseString);
+        var accessToken = responseParams["access_token"];
+
+        if (string.IsNullOrEmpty(accessToken))
+        {
+            result.Token = string.Empty;
+            result.Msg = "授权失败";
+        }
+
+        var userInfoEndpoint = "https://api.github.com/user";
+        var httpclient = new HttpClient();
+        httpclient.DefaultRequestHeaders.Add("Authorization", $"token {accessToken}");
+        httpclient.DefaultRequestHeaders.Add("User-Agent", "AIBotPRO");
+        var userInfoResponse = await httpclient.GetAsync(userInfoEndpoint);
+        var userInfo = await userInfoResponse.Content.ReadAsStringAsync();
+        // 解析用户信息
+        var userInfoObj = JsonConvert.DeserializeObject<Dtos.GitHubUserInfo>(userInfo);
+
+        // 获取用户邮箱
+        var emailEndpoint = "https://api.github.com/user/emails";
+        var emailResponse = await httpclient.GetAsync(emailEndpoint);
+        var emailInfo = await emailResponse.Content.ReadAsStringAsync();
+
+        // 解析邮箱信息
+        var emailList = JsonConvert.DeserializeObject<List<Dtos.GitHubEmail>>(emailInfo);
+        var primaryEmail = emailList?.FirstOrDefault(e => e.Primary)?.Email;
+
+        if (string.IsNullOrEmpty(primaryEmail))
+        {
+            result.Token = string.Empty;
+            result.Msg = "获取邮箱失败";
+        }
+
+        // 调用 GitHubOAuth 方法
+        result.Token = GitHubOAuth(primaryEmail, userInfoObj.name ?? userInfoObj.login, userInfoObj.avatar_url);
+
+        if (string.IsNullOrEmpty(result.Token))
+        {
+            result.Token = string.Empty;
+            result.Msg = "系统异常,未生成令牌";
+        }
+
+        // 返回包含 token 的视图
+        return Json(new
+        {
+            success = string.IsNullOrEmpty(result.Token) ? false : true,
+            data = result
+        });
+    }
+
+    private string GitHubOAuth(string email, string nick, string headImg)
+    {
+        var user = _context.Users.AsNoTracking().Where(u => u.Account == email).FirstOrDefault();
+        string token = string.Empty;
+        if (user != null)
+        {
+            //直接登录
+            token = _jwtTokenManager.GenerateToken(user.Account);
+        }
+        else
+        {
+            //注册后登录
+            token = _usersService.GetRegisterTokenByAnother(email, nick, headImg);
+        }
+
+        return token;
+    }
+
+    [Authorize]
+    [HttpPost]
+    public IActionResult EditPassword(string oldPassword, string newPassword)
+    {
+        var username = _jwtTokenManager
+            .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+        string md5OldPassword = _systemService.ConvertToMD5(oldPassword);
+        string md5NewPassword = _systemService.ConvertToMD5(newPassword);
+        var user = _context.Users.Where(u => u.Account == username).FirstOrDefault();
+        if (user != null)
+        {
+            if (user.Password == md5OldPassword)
+            {
+                user.Password = md5NewPassword;
+                _context.SaveChanges();
+                return Json(new
+                {
+                    success = true
+                });
+            }
+            else
+            {
+                return Json(new
+                {
+                    success = false,
+                    msg = "旧密码错误"
+                });
+            }
+        }
+
+        return Json(new
+        {
+            success = false,
+            msg = "用户不存在"
         });
     }
 }

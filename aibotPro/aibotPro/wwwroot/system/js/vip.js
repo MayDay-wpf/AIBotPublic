@@ -13,7 +13,7 @@ function Pay(payMoney, type, param) {
     //});
     //return;
     showConfirmationModal("确认订单", `确认支付【${payMoney}】元吗？`, function () {
-        if (payMoney != 15 && payMoney != 90) {
+        if (payMoney != 20 && payMoney != 50) {
             balert("非法金额", "danger", false, 2000, "center");
             return;
         }

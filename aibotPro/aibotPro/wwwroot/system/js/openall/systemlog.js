@@ -39,16 +39,31 @@ function loadLogs(page, page_size) {
         }
     });
 }
-
+function getLogLevelClass(logLevel) {
+    switch (logLevel) {
+        case "信息":
+            return "log-info";
+        case "警告":
+            return "log-warning";
+        case "错误":
+            return "log-error";
+        case "致命错误":
+            return "log-critical";
+        default:
+            return "log-default";
+    }
+}
 function updateLogList(logs) {
     var $logList = $('#logList');
     $logList.empty(); // 清空现有的列表项
     var str = "";
     for (var i = 0; i < logs.length; i++) {
-        str += `<tr><td>` + logs[i].logLevel + `</td><td>` + logs[i].logTxt + `</td><td>` + logs[i].createAccount + `</td><td>` + logs[i].createTime + `</td></tr>`;
+        var logLevelClass = getLogLevelClass(logs[i].logLevel);
+        str += `<tr><td class="` + logLevelClass + `">` + logs[i].logLevel + `</td><td>` + logs[i].logTxt + `</td><td>` + logs[i].createAccount + `</td><td>` + logs[i].createTime + `</td></tr>`;
     }
     $logList.html(str);
 }
+
 
 // 更新分页
 function updatePagination(currentPage, totalPages) {

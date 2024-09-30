@@ -2,7 +2,7 @@
     ViewData["Title"] = "DALL";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-<link href="~/system/css/dall.css" rel="stylesheet"/>
+<link href="~/system/css/dall.css" rel="stylesheet" />
 <div class="header">
     <div class="header-left">
         <a id="menuMain" href="" class="burger-menu">
@@ -44,8 +44,8 @@
         <div class="card">
             <div class="card-header">
                 <h5>第一步：输入提示词</h5>
-                <button class="btn btn-outline-success greatePrompt" onclick="sendMsg()"><img src="~/system/images/magic_stick.png" style="width:20px;"/>优化提示词</button>
-                <button class="btn btn-outline-info englishPrompt" onclick="englishPrompt()"><img src="~/system/images/translated.png" style="width:20px;"/>转英语提示词</button>
+                <button class="btn btn-outline-success greatePrompt" onclick="sendMsg()"><img src="~/system/images/magic_stick.png" style="width:20px;" />优化提示词</button>
+                <button class="btn btn-outline-info englishPrompt" onclick="englishPrompt()"><img src="~/system/images/translated.png" style="width:20px;" />转英语提示词</button>
             </div>
             <div class="card-body">
                 <div class="textarea-container">
@@ -62,7 +62,7 @@
             <div class="card-header">
                 <h5>
                     第二步：选择绘制尺寸
-                </h5><br/>
+                </h5><br />
                 <div class="form-check mt-3">
                     <input class="form-check-input" type="checkbox" id="qualityCheckbox" onchange="toggleQuality()">
                     <label class="form-check-label" for="qualityCheckbox">高清生成</label>
@@ -110,4 +110,4 @@
 <script src="~/system/js/signalr.min.js"></script>
 <link rel="stylesheet" href="~/system/css/magnific-popup.min.css">
 <script src="~/system/js/jquery.magnific-popup.min.js"></script>
-<script src="~/system/js/dall.js?v1.0.0"></script>
+<script src="~/system/js/dall.js?v1.0.1"></script>

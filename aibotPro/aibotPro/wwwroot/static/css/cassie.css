@@ -5713,6 +5713,7 @@ a.badge-dark.focus {
     padding-left: 0;
     margin-bottom: 0;
     border-radius: 0 0 10px 10px;
+    list-style: none;
 }
 
 .list-group-item-action {
@@ -17656,12 +17657,12 @@ body {
 .header-search {
     display: none;
     align-items: center;
-    margin-left: 10px;
+    margin: 10px;
     padding: 0 7px;
     height: 36px;
     background-color: #fff;
     border: 1px solid #d9dfe7;
-    transition: all .25s
+    transition: all .25s;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -19191,8 +19192,8 @@ body {
     }
 
 .chat-body-content {
-    height: calc(100% - 140px);
-    overflow: scroll;
+    height: calc(100% - 120px);
+    /*overflow: scroll;*/
     position: relative;
     background-color: #fff;
     padding: 10px;
@@ -19580,7 +19581,7 @@ body {
     }
 
     .mail-msg strong {
-        font-weight: 500
+        font-weight: bold;
     }
 
 .mail-compose {
@@ -72995,4 +72996,24 @@ code {
 .wait {
     color: black;
     background-color: white;
+}
+
+.log-info {
+    color: #0098ff; /* 信息级别的日志使用蓝色字体 */
+}
+
+.log-warning {
+    color: orange; /* 警告级别的日志使用橙色字体 */
+}
+
+.log-error {
+    color: red; /* 错误级别的日志使用红色字体 */
+}
+
+.log-critical {
+    color: darkred; /* 致命错误级别的日志使用深红色字体 */
+}
+
+.log-default {
+    color: black; /* 默认 */
 }

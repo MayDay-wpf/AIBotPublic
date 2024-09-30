@@ -33,7 +33,7 @@ function getGoods() {
                         var alipay = payTypes.includes('alipay') ? ` <a href="#" onclick="payTo('alipay','${data[i].goodCode}',${data[i].goodPrice})" class="btn btn-primary"><img src="/system/images/alipay.png" class="payimg" /> 支付宝支付</a>` : '';
                         var balancePay = payTypes.includes('balancepay') ? ` <a href="#" onclick="payTo('balancepay','${data[i].goodCode}',${data[i].goodPrice})" class="btn btn-info"><i data-feather="dollar-sign"></i> 余额支付</a>` : '';
                         //商品已售罄
-                        if (data[i].goodStock == 0) {
+                        if (data[i].goodStock <= 0) {
                             payBtns = `<a href="#" class="btn btn-secondary disabled"><i data-feather="slash"></i> 已售罄</a>`;
                         } else {
                             payBtns = wechatPay + alipay + balancePay;
@@ -82,7 +82,7 @@ function payTo(type, goodCode, money) {
                         balert("支付失败", "danger", false, 2000, "center");
                 },
                 error: function (e) {
-                    loadingOverlay.hide();
+                    balert(e, "danger", false, 2000, "center", loadingOverlay.hide());
                     console.log("失败" + e);
                 }
             });
@@ -173,7 +173,7 @@ function payTo(type, goodCode, money) {
                         balert("发起支付失败，请重试", "danger", false, 2000, "center", loadingOverlay.hide());
                 },
                 error: function (e) {
-                    loadingOverlay.hide();
+                    balert(e, "danger", false, 2000, "center", loadingOverlay.hide());
                     console.log("失败" + e);
                 }
             });

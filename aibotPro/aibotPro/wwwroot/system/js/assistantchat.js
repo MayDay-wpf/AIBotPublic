@@ -340,8 +340,9 @@ function sendMsg(retryCount = 3) {
         "msgid_g": msgid_g,
         "chatgroupid": chatgroupid,
         "ip": IP,
-        "image_path": "",
-        "threadid": threadId
+        "image_path": [],
+        "threadid": threadId,
+        "inputCacheKey": ""
     };
     max_textarea = true;
     max_textarea_Q();
@@ -375,6 +376,12 @@ function sendMsg(retryCount = 3) {
                 </div>`;
     $(".chat-body-content").append(html);
     $("#" + msgid_u).text(msg);
+    if (msg.length > 1000) {
+        setInputToCache(data, function (responseData) {
+            data.inputCacheKey = responseData;
+            data.msg = "";
+        });
+    }
     var gpthtml = `<div class="chat-message" data-group="` + chatgroupid + `">
                     <div style="display: flex; align-items: center;">
                        <div class="avatar gpt-avatar">A</div>

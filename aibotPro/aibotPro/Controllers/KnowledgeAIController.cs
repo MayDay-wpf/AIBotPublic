@@ -84,9 +84,14 @@ namespace aibotPro.Controllers
             knowledge.FileName = request.FileName;
             knowledge.FilePath = path.Replace("wwwroot", "");
             knowledge.CreateTime = DateTime.Now;
+            var systemCfg = _systemService.GetSystemCfgs();
+            var embeddingModel = systemCfg.FirstOrDefault(x => x.CfgKey == "EmbeddingsModel");
+            var qaModel = systemCfg.FirstOrDefault(x => x.CfgKey == "QAmodel");
+            if (embeddingModel == null || qaModel == null)
+                throw new Exception("嵌入模型和QA模型不存在");
             //开始处理文件
             await _redisService.SetAsync($"{username}_wikiuploadlog", $"开始处理文件{request.FileName}");
-            await _knowledgeService.UploadKnowledgeToVector("text-embedding-3-small", request.ProcessType, "gpt-4o-mini", path, knowledge.FileCode, "", username);
+            await _knowledgeService.UploadKnowledgeToVector(embeddingModel.CfgValue, request.ProcessType, qaModel.CfgValue, path, knowledge.FileCode, "", username);
             _knowledgeService.SaveKnowledgeFile(knowledge);
             return Ok(new
             {
@@ -262,15 +267,21 @@ namespace aibotPro.Controllers
             knowledge.CreateTime = DateTime.Now;
             knowledge.TypeCode = request.TypeCode;
             _knowledgeService.SaveKnowledgeFile(knowledge);
+            var systemCfg = _systemService.GetSystemCfgs();
+            var embeddingModel = systemCfg.FirstOrDefault(x => x.CfgKey == "EmbeddingsModel");
+            var qaModel = systemCfg.FirstOrDefault(x => x.CfgKey == "QAmodel");
             await _redisService.SetAsync($"knowledge_{knowledge.FileCode}", "0", TimeSpan.FromHours(1));
-            Task.Run(async () =>
+            _ = Task.Run(async () =>
             {
                 try
                 {
                     using (var scope = _serviceProvider.CreateScope())
                     {
                         var milvusService = scope.ServiceProvider.GetRequiredService<IMilvusService>();
-                        List<MilvusDataDto> milvusDataDtos = await _knowledgeService.CreateMilvusList(username, path, "text-embedding-3-small", request.ProcessType, "gpt-4o-mini", request.TypeCode, knowledge.FileCode);
+                        var knowledgeService = scope.ServiceProvider.GetRequiredService<IKnowledgeService>();
+                        List<MilvusDataDto> milvusDataDtos = await knowledgeService.CreateMilvusList(username, path,
+                            embeddingModel.CfgValue, request.ProcessType, qaModel.CfgValue, request.TypeCode,
+                            knowledge.FileCode, request.FixedLength);
                         await milvusService.InsertVector(milvusDataDtos, knowledge.FileCode, username);
                     }
 
@@ -332,7 +343,7 @@ namespace aibotPro.Controllers
         public async Task<IActionResult> CutFile(string text, string regular)
         {
             var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
-            var result = await _knowledgeService.CutFile(text, regular, username, "", "");
+            var result = await _knowledgeService.CutFile(text, regular, username, "", "", 1000);
             return Ok(new
             {
                 data = result
@@ -355,6 +366,20 @@ namespace aibotPro.Controllers
             {
                 success = true,
                 data = dic
+            });
+        }
+
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> StopBuild(string fileCode)
+        {
+            var result = await _redisService.GetAsync($"knowledge_{fileCode}");
+            if (result != null)
+                _redisService.DeleteAsync($"knowledge_{fileCode}");
+            return Ok(new
+            {
+                success = true,
+                data = "已取消"
             });
         }
     }

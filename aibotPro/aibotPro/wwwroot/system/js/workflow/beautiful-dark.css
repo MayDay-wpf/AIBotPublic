@@ -4,6 +4,20 @@ html.dark {
     transition: all .5s;
 }
 
+    html.dark ::-webkit-scrollbar-track {
+        background: #1e1e1e;
+        border-radius: 2px;
+    }
+
+    html.dark ::-webkit-scrollbar-thumb {
+        background-color: dimgrey;
+        border-radius: 10px;
+    }
+
+        html.dark ::-webkit-scrollbar-thumb:hover {
+            background: lightgray;
+        }
+
     html.dark .wrapper .col {
         background-color: #000000;
         border-right-color: #2e2e2e;
@@ -33,7 +47,7 @@ html.dark {
             }
 
     html.dark #drawflow {
-        background-color: #000000;
+        background-color: #313131;
         background-image: linear-gradient(to right, #0e0d0d 1px, transparent 1px), linear-gradient(to bottom, #0e0d0d 1px, transparent 1px);
         transition: all .5s;
     }
@@ -43,7 +57,7 @@ html.dark {
     }
 
     html.dark .drawflow-node .title-box {
-        background-color: #555555;
+        background-color: #2b2b2b;
         color: lightgray;
     }
 
@@ -122,6 +136,32 @@ html.dark {
         color: antiquewhite;
     }
 
-    html.dark .drawflow-delete {
-        background: black;
+    html.dark .layui-layer {
+        background-color: #1e1e1e;
     }
+
+    html.dark .layui-layer-title {
+        background-color: #3b3b3b;
+        color: lightgray;
+        border-color: #3b3b3b;
+    }
+
+    html.dark .custom-modal {
+        background-color: #1e1e1e;
+        color: lightgray;
+    }
+
+        html.dark .custom-modal input {
+            background-color: black;
+            color: lightgray;
+        }
+
+        html.dark .custom-modal select {
+            background-color: black;
+            color: lightgray;
+        }
+
+            html.dark .custom-modal select option {
+                background-color: black;
+                color: lightgray;
+            }

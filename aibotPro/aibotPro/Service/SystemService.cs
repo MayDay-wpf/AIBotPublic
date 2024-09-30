@@ -50,18 +50,17 @@ public class SystemService : ISystemService
 
     public bool SendEmail(string toemail, string title, string content)
     {
-        var client = new SmtpClient("smtp.qq.com", 587);
-        client.EnableSsl = true;
-        client.UseDefaultCredentials = false;
         //获取系统配置
         var systemConfig = GetSystemCfgs();
         //var systemConfig = _httpContextAccessor.HttpContext?.Items["SystemConfig"] as List<SystemCfg>;
         var fromEmail = string.Empty;
         var mailPwd = string.Empty;
+        var smtpServer = string.Empty;
         if (systemConfig != null)
         {
             fromEmail = systemConfig.Find(x => x.CfgKey == "Mail").CfgValue;
             mailPwd = systemConfig.Find(x => x.CfgKey == "MailPwd").CfgValue;
+            smtpServer = systemConfig.Find(x => x.CfgKey == "SMTP_Server").CfgValue;
         }
         else
         {
@@ -69,6 +68,9 @@ public class SystemService : ISystemService
             return false;
         }
 
+        var client = new SmtpClient(smtpServer, 587);
+        client.EnableSsl = true;
+        client.UseDefaultCredentials = false;
         client.Credentials = new NetworkCredential(fromEmail, mailPwd);
         // 创建电子邮件
         var mailMessage = new MailMessage(fromEmail, toemail, title, content);
@@ -221,6 +223,28 @@ public class SystemService : ISystemService
         return aiModelSeq_lst;
     }
 
+    public List<WorkShopModelUserSeq> GetWorkShopAImodelSeq(string account)
+    {
+        //尝试从Redis中获取AI模型序列
+        var workAiModelSeq = _redis.GetAsync(account + "_workshopmodelSeq").Result;
+        var workAiModelSeq_lst = new List<WorkShopModelUserSeq>();
+        //如果Redis中没有AI模型序列信息，则从数据库加载AI模型序列信息
+        if (string.IsNullOrEmpty(workAiModelSeq))
+        {
+            // 从数据库加载AI模型序列信息
+            workAiModelSeq_lst = _context.WorkShopModelUserSeqs.Where(x => x.Account == account).ToList();
+            // 将配置信息存入Redis以便后续使用
+            _redis.SetAsync(account + "_workshopmodelSeq", JsonConvert.SerializeObject(workAiModelSeq_lst));
+        }
+        else
+        {
+            // 将配置信息从Redis中取出并反序列化
+            workAiModelSeq_lst = JsonConvert.DeserializeObject<List<WorkShopModelUserSeq>>(workAiModelSeq);
+        }
+
+        return workAiModelSeq_lst;
+    }
+
     public List<WorkShopAIModel> GetWorkShopAImodel()
     {
         var aiModel = _redis.GetAsync("WorkShopAImodel").Result;
@@ -280,40 +304,45 @@ public class SystemService : ISystemService
         return savePath;
     }
 
-    public async Task<string> UploadFileToImageHosting(IFormFile file, string Account = "")
+    public async Task<string> UploadFileToImageHosting(IFormFile file, string account = "")
     {
-        Account = string.IsNullOrEmpty(Account) ? "system" : Account;
+        account = string.IsNullOrEmpty(account) ? "system" : account;
         var systemConfig = GetSystemCfgs();
-        var imgHost = systemConfig.Where(s => s.CfgKey == "ImageHosting").FirstOrDefault();
+        var imgHost = systemConfig.FirstOrDefault(s => s.CfgKey == "ImageHosting");
+
         if (imgHost == null)
-            throw new Exception("未配置“只是图床”服务");
+            throw new Exception("未配置“图床”服务");
+
         var imgHostUrl = imgHost.CfgValue;
         var client = new RestClient(imgHostUrl);
         var request = new RestRequest("", Method.Post);
         request.AddHeader("Accept", "*/*");
         request.AddHeader("Connection", "keep-alive");
-        // Content-Type will be set by AddFile automatically
+
+        string newFileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName); // 用GUID重命名文件
+
         using (var memoryStream = new MemoryStream())
         {
             await file.CopyToAsync(memoryStream);
-            request.AddFile("file", memoryStream.ToArray(), file.FileName, file.ContentType);
+            request.AddFile("file", memoryStream.ToArray(), newFileName, file.ContentType); // 使用新文件名上传
         }
 
         var response = await client.ExecuteAsync(request);
         if (response.IsSuccessful)
         {
-            await WriteLog($"文件{file.FileName}上传成功--图床", LogLevel.Info, Account);
+            await WriteLog($"文件{file.FileName}上传成功--图床", LogLevel.Info, account);
             var responseContent = response.Content;
             var json = JsonDocument.Parse(responseContent);
 
             if (json.RootElement.TryGetProperty("code", out var codeElement) && codeElement.GetInt32() == 200)
             {
-                if (json.RootElement.TryGetProperty("url", out var fileUrlElement)) return fileUrlElement.GetString();
+                if (json.RootElement.TryGetProperty("url", out var fileUrlElement))
+                    return fileUrlElement.GetString();
             }
             else if (json.RootElement.TryGetProperty("msg", out var msgElement))
             {
                 var errorMsg = msgElement.GetString();
-                Debug.WriteLine($"File upload failed: {errorMsg}");
+                Debug.WriteLine($"文件上传失败: {errorMsg}");
             }
         }
 
@@ -450,44 +479,77 @@ public class SystemService : ISystemService
         if (fileType == ".txt") return await File.ReadAllTextAsync(path);
         //如果是pdf文件
         if (fileType == ".pdf")
-            using (var reader = new PdfReader(path))
+        {
+            try
             {
-                var markdownContent = new StringBuilder();
-                for (var i = 1; i <= reader.NumberOfPages; i++)
+                using (var reader = new PdfReader(path))
                 {
-                    // Extract text
-                    markdownContent.Append(PdfTextExtractor.GetTextFromPage(reader, i));
-
-                    // Extract images
-                    var pdfDictionary = reader.GetPageN(i);
-                    var resources = pdfDictionary.GetAsDict(PdfName.RESOURCES);
-                    var xObject = resources.GetAsDict(PdfName.XOBJECT);
-                    if (xObject != null)
-                        foreach (var name in xObject.Keys)
+                    var markdownContent = new StringBuilder();
+                    for (var i = 1; i <= reader.NumberOfPages; i++)
+                    {
+                        try
                         {
-                            var obj = xObject.GetAsStream(name);
-                            if (obj.GetAsName(PdfName.SUBTYPE).Equals(PdfName.IMAGE))
+                            // Extract text
+                            string pageText = PdfTextExtractor.GetTextFromPage(reader, i);
+                            markdownContent.AppendLine(pageText);
+                            markdownContent.AppendLine(); // Add a blank line between pages
+                            // Extract images
+                            var pdfDictionary = reader.GetPageN(i);
+                            var resources = pdfDictionary?.GetAsDict(PdfName.RESOURCES);
+                            var xObject = resources?.GetAsDict(PdfName.XOBJECT);
+                            if (xObject != null)
                             {
-                                var imgBytes = PdfReader.GetStreamBytesRaw((PRStream)obj);
-                                using (var ms = new MemoryStream(imgBytes))
+                                foreach (var name in xObject.Keys)
                                 {
-                                    ms.Position = 0; // 重置流位置
-                                    // Assume image is a form file (you might need to adjust this part)
-                                    var formFile = new FormFile(ms, 0, ms.Length, "file",
-                                        $"{Guid.NewGuid().ToString()}.jpg")
+                                    try
                                     {
-                                        Headers = new HeaderDictionary(),
-                                        ContentType = "image/jpeg"
-                                    };
-                                    var imageUrl = await UploadFileToImageHosting(formFile);
-                                    if (imageUrl != null) markdownContent.AppendLine($"\n ![Image]({imageUrl}) \n");
+                                        var obj = xObject.GetAsStream(name);
+                                        if (obj != null)
+                                        {
+                                            var subtype = obj.GetAsName(PdfName.SUBTYPE);
+                                            if (subtype != null && subtype.Equals(PdfName.IMAGE))
+                                            {
+                                                var imgBytes = PdfReader.GetStreamBytesRaw((PRStream)obj);
+                                                using (var ms = new MemoryStream(imgBytes))
+                                                {
+                                                    ms.Position = 0;
+                                                    var formFile = new FormFile(ms, 0, ms.Length, "file",
+                                                        $"{Guid.NewGuid().ToString()}.jpg")
+                                                    {
+                                                        Headers = new HeaderDictionary(),
+                                                        ContentType = "image/jpeg"
+                                                    };
+                                                    var imageUrl = await UploadFileToImageHosting(formFile);
+                                                    if (!string.IsNullOrEmpty(imageUrl))
+                                                    {
+                                                        markdownContent.AppendLine($"\n![Image]({imageUrl})\n");
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        await WriteLog(
+                                            $"/SystemServer/GetFileText:Error processing XObject: {ex.Message}",
+                                            Dtos.LogLevel.Error, "system");
+                                    }
                                 }
                             }
                         }
-                }
+                        catch (Exception ex)
+                        {
+                        }
+                    }
 
-                return markdownContent.ToString();
+                    return markdownContent.ToString();
+                }
             }
+            catch (Exception ex)
+            {
+            }
+        }
+
 
         // 如果是Excel文件
         if (fileType == ".xlsx" || fileType == ".xls")
@@ -534,13 +596,13 @@ public class SystemService : ISystemService
                     // 遍历文档中的每张幻灯片
                     foreach (ISlide slide in presentation.Slides)
                         // 遍历每张幻灯片中的每个形状
-                        foreach (IShape shape in slide.Shapes)
-                            // 检查形状是否为IAutoShape类型
-                            if (shape is IAutoShape autoShape)
-                                // 以每种形状遍历所有段落
-                                foreach (TextParagraph tp in autoShape.TextFrame.Paragraphs)
-                                    // 提取文本并保存到StringBuilder实例中
-                                    sb.AppendLine(tp.Text);
+                    foreach (IShape shape in slide.Shapes)
+                        // 检查形状是否为IAutoShape类型
+                        if (shape is IAutoShape autoShape)
+                            // 以每种形状遍历所有段落
+                            foreach (TextParagraph tp in autoShape.TextFrame.Paragraphs)
+                                // 提取文本并保存到StringBuilder实例中
+                                sb.AppendLine(tp.Text);
 
                     // 返回提取的文本
                     return sb.ToString();
@@ -567,9 +629,9 @@ public class SystemService : ISystemService
 
                     // 遍历文档中的段落
                     foreach (Section section in document.Sections)
-                        foreach (Paragraph paragraph in section.Paragraphs)
-                            // 提取段落中的文本
-                            sb.AppendLine(paragraph.Text);
+                    foreach (Paragraph paragraph in section.Paragraphs)
+                        // 提取段落中的文本
+                        sb.AppendLine(paragraph.Text);
 
                     // 将提取的文本转换为字符串
                     extractedText = sb.ToString();
@@ -694,12 +756,26 @@ public class SystemService : ISystemService
             CfgCode = "MailPwd",
             CfgValue = "After"
         };
+        var SMTP_Server = new SystemCfg
+        {
+            CfgName = "SMTP服务器地址",
+            CfgKey = "SMTP_Server",
+            CfgCode = "SMTP_Server",
+            CfgValue = "smtp.googlemail.com"
+        };
         var RegiestMcoin = new SystemCfg
         {
             CfgName = "注册赠送M币",
             CfgKey = "RegiestMcoin",
             CfgCode = "RegiestMcoin",
             CfgValue = "3"
+        };
+        var RegiestMail = new SystemCfg
+        {
+            CfgName = "注册邮箱后缀限制，删除或输入0则不限制，以逗号分隔",
+            CfgKey = "RegiestMail",
+            CfgCode = "RegiestMail",
+            CfgValue = "qq.com,gmail.com,163.com,126.com,outlook.com"
         };
         var Baidu_TXT_AK = new SystemCfg
         {
@@ -792,12 +868,33 @@ public class SystemService : ISystemService
             CfgCode = "EmbeddingsApiKey",
             CfgValue = "After"
         };
+        var EmbeddingsModel = new SystemCfg
+        {
+            CfgName = "嵌入模型",
+            CfgKey = "EmbeddingsModel",
+            CfgCode = "EmbeddingsModel",
+            CfgValue = "text-embedding-3-small"
+        };
         var QAurl = new SystemCfg
         {
-            CfgName = "(gpt3.5)数据清洗AI模型BaseUrl",
+            CfgName = "数据清洗AI模型BaseUrl",
             CfgKey = "QAurl",
             CfgCode = "QAurl",
             CfgValue = "After"
+        };
+        var QAapiKey = new SystemCfg
+        {
+            CfgName = "数据清洗AI模型ApiKey",
+            CfgKey = "QAapiKey",
+            CfgCode = "QAapiKey",
+            CfgValue = "After"
+        };
+        var QAmodel = new SystemCfg
+        {
+            CfgName = "QA清洗模型",
+            CfgKey = "QAmodel",
+            CfgCode = "QAmodel",
+            CfgValue = "gpt-4o-mini"
         };
         var ShareMcoin = new SystemCfg
         {
@@ -890,9 +987,95 @@ public class SystemService : ISystemService
             CfgCode = "History_Prompt_Keep_Quantity",
             CfgValue = "1"
         };
+        var Tokenize_BaseUrl_Jina = new SystemCfg
+        {
+            CfgName = "JinaAI分词器API地址",
+            CfgKey = "Tokenize_BaseUrl_Jina",
+            CfgCode = "Tokenize_BaseUrl_Jina",
+            CfgValue = "https://tokenize.jina.ai"
+        };
+        var Tokenize_ApiKey_Jina = new SystemCfg
+        {
+            CfgName = "JinaAI分词器APIKEY(非必填，不填有RPM限制)",
+            CfgKey = "Tokenize_ApiKey_Jina",
+            CfgCode = "Tokenize_ApiKey_Jina",
+            CfgValue = ""
+        };
+        var Rerank_BaseUrl_Jina = new SystemCfg
+        {
+            CfgName = "JinaAI重排器API地址",
+            CfgKey = "Rerank_BaseUrl_Jina",
+            CfgCode = "Rerank_BaseUrl_Jina",
+            CfgValue = "https://api.jina.ai/v1/rerank"
+        };
+        var Rerank_ApiKey_Jina = new SystemCfg
+        {
+            CfgName = "JinaAI重排器APIKEY",
+            CfgKey = "Rerank_ApiKey_Jina",
+            CfgCode = "Rerank_ApiKey_Jina",
+            CfgValue = ""
+        };
+        var AICodeCheckBaseUrl = new SystemCfg
+        {
+            CfgName = "Workflow代码检查模型URL（仅支持OpenAI API 且需要支持Jsonschema）",
+            CfgKey = "AICodeCheckBaseUrl",
+            CfgCode = "AICodeCheckBaseUrl",
+            CfgValue = "https://api.openai.com"
+        };
+        var AICodeCheckApiKey = new SystemCfg
+        {
+            CfgName = "Workflow代码检查模型ApiKey（仅支持OpenAI API 且需要支持Jsonschema）",
+            CfgKey = "AICodeCheckApiKey",
+            CfgCode = "AICodeCheckApiKey",
+            CfgValue = "openai apikey"
+        };
+        var AICodeCheckModel = new SystemCfg
+        {
+            CfgName = "Workflow代码检查模型Model（仅支持OpenAI API 且需要支持Jsonschema）",
+            CfgKey = "AICodeCheckModel",
+            CfgCode = "AICodeCheckModel",
+            CfgValue = "gpt-4o-mini-2024-08-06"
+        };
+        var ReadingModelChunkLength = new SystemCfg
+        {
+            CfgName = "阅读模式下的最大文本字符数，超出将切片（该功能使用JinaAI分词器，最大64k）",
+            CfgKey = "ReadingModelChunkLength",
+            CfgCode = "ReadingModelChunkLength",
+            CfgValue = "60000"
+        };
+        var ReadingModelMaxChunk = new SystemCfg
+        {
+            CfgName = "阅读模式允许的最大切片数（建议300）",
+            CfgKey = "ReadingModelMaxChunk",
+            CfgCode = "ReadingModelMaxChunk",
+            CfgValue = "300"
+        };
+        var NewApiAccessToken = new SystemCfg
+        {
+            CfgName = "NewAPI Access Token",
+            CfgKey = "NewApiAccessToken",
+            CfgCode = "NewApiAccessToken",
+            CfgValue = "After"
+        };
+        var NewApiUrl = new SystemCfg
+        {
+            CfgName = "NewAPI地址（含http或https请求头）",
+            CfgKey = "NewApiUrl",
+            CfgCode = "NewApiUrl",
+            CfgValue = "After"
+        };
+        var GoogleClientID = new SystemCfg
+        {
+            CfgName = "Google登录客户端ID",
+            CfgKey = "GoogleClientID",
+            CfgCode = "GoogleClientID",
+            CfgValue = "After"
+        };
         _context.SystemCfgs.Add(Mail);
         _context.SystemCfgs.Add(MailPwd);
+        _context.SystemCfgs.Add(SMTP_Server);
         _context.SystemCfgs.Add(RegiestMcoin);
+        _context.SystemCfgs.Add(RegiestMail);
         _context.SystemCfgs.Add(Baidu_TXT_AK);
         _context.SystemCfgs.Add(Baidu_TXT_SK);
         _context.SystemCfgs.Add(GoogleSearchApiKey);
@@ -906,7 +1089,10 @@ public class SystemService : ISystemService
         _context.SystemCfgs.Add(Alibaba_DashVectorCollectionName);
         _context.SystemCfgs.Add(EmbeddingsUrl);
         _context.SystemCfgs.Add(EmbeddingsApiKey);
+        _context.SystemCfgs.Add(EmbeddingsModel);
         _context.SystemCfgs.Add(QAurl);
+        _context.SystemCfgs.Add(QAapiKey);
+        _context.SystemCfgs.Add(QAmodel);
         _context.SystemCfgs.Add(ShareMcoin);
         _context.SystemCfgs.Add(Baidu_OBJ_AK);
         _context.SystemCfgs.Add(Baidu_OBJ_SK);
@@ -920,6 +1106,18 @@ public class SystemService : ISystemService
         _context.SystemCfgs.Add(History_Prompt_AIModel);
         _context.SystemCfgs.Add(History_Prompt_Start_Compress);
         _context.SystemCfgs.Add(History_Prompt_Keep_Quantity);
+        _context.SystemCfgs.Add(Tokenize_BaseUrl_Jina);
+        _context.SystemCfgs.Add(Tokenize_ApiKey_Jina);
+        _context.SystemCfgs.Add(Rerank_BaseUrl_Jina);
+        _context.SystemCfgs.Add(Rerank_ApiKey_Jina);
+        _context.SystemCfgs.Add(AICodeCheckBaseUrl);
+        _context.SystemCfgs.Add(AICodeCheckApiKey);
+        _context.SystemCfgs.Add(AICodeCheckModel);
+        _context.SystemCfgs.Add(ReadingModelChunkLength);
+        _context.SystemCfgs.Add(ReadingModelMaxChunk);
+        _context.SystemCfgs.Add(NewApiAccessToken);
+        _context.SystemCfgs.Add(NewApiUrl);
+        _context.SystemCfgs.Add(GoogleClientID);
 
 
         if (_context.SaveChanges() > 0)
@@ -1047,6 +1245,63 @@ public class SystemService : ISystemService
 
         // 返回格式化的字符串
         return seconds;
+    }
+
+    public async Task<string> DownloadFileByUrl(string url, string savePath, string account)
+    {
+        try
+        {
+            using (var httpClient = new HttpClient(new HttpClientHandler { AllowAutoRedirect = true }))
+            {
+                // 添加用户代理
+                httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
+
+                // 添加授权头
+                // httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "Your-Token-Here");
+
+                var response = await httpClient.GetAsync(url);
+
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    await WriteLog($"Error response content: {content}", Dtos.LogLevel.Error, account);
+                    return null;
+                }
+
+                string fileName = Path.GetFileName(new Uri(url).LocalPath);
+                if (string.IsNullOrEmpty(fileName))
+                {
+                    fileName = "downloadedFile_" + Guid.NewGuid().ToString("N");
+                }
+
+                string fullPath = Path.Combine(savePath, fileName);
+                Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+
+                using (var fileStream = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    await response.Content.CopyToAsync(fileStream);
+                }
+
+                return fullPath;
+            }
+        }
+        catch (HttpRequestException e)
+        {
+            await WriteLog($"HTTP Request Error: {e.Message}", Dtos.LogLevel.Error, account);
+            return null;
+        }
+        catch (IOException e)
+        {
+            await WriteLog($"File I/O Error: {e.Message}", Dtos.LogLevel.Error, account);
+            return null;
+        }
+        catch (Exception e)
+        {
+            await WriteLog($"An error occurred: {e.Message}", Dtos.LogLevel.Error, account);
+            return null;
+        }
     }
 
     private string SaveImage(Stream stream, string fileName, string savePath)

@@ -65,8 +65,7 @@ namespace aibotPro.Dtos
         [JsonPropertyName("system_fingerprint")]
         public string system_fingerprint { get; set; }
 
-        [JsonPropertyName("choices")]
-        public List<Choices> Choices { get; set; }
+        [JsonPropertyName("choices")] public List<ChoicesUnStream> Choices { get; set; }
         public Usage Usage { get; set; }
     }
     public class Choices
@@ -83,6 +82,17 @@ namespace aibotPro.Dtos
         [JsonProperty("finish_reason")]
         public object finish_reason { get; set; } // 使用 object 类型因为它是 null
     }
+
+    public class ChoicesUnStream
+    {
+        [JsonProperty("index")] public int index { get; set; }
+
+        [JsonProperty("message")] public DeltaContent message { get; set; }
+
+        [JsonProperty("logprobs")] public object logprobs { get; set; } // 使用 object 类型因为它是 null
+
+        [JsonProperty("finish_reason")] public object finish_reason { get; set; } // 使用 object 类型因为它是 null
+    }
     public class EmbeddingsBody
     {
 
@@ -90,5 +100,19 @@ namespace aibotPro.Dtos
         public string Model { get; set; }
         [JsonProperty("input")]
         public string Input { get; set; }
+    }
+    public class SunoResponse
+    {
+        [JsonProperty("code")]
+        public string Code { get; set; }
+        [JsonProperty("message")]
+        public string Message { get; set; }
+        [JsonProperty("data")]
+        public SunoData Data { get; set; }
+    }
+    public class SunoData
+    {
+        [JsonProperty("task_id")]
+        public string TaskId { get; set; }
     }
 }

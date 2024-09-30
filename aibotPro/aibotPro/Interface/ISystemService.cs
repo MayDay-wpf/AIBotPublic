@@ -18,6 +18,7 @@ namespace aibotPro.Interface
         bool SaveIP(string ip, string address);//保存IP地址
         List<AImodel> GetAImodel();//获取AI模型
         List<AImodelsUserSeq> GetAImodelSeq(string account);//获取AI模型序列
+        List<WorkShopModelUserSeq> GetWorkShopAImodelSeq(string account);//获取工坊AI模型序列
         List<WorkShopAIModel> GetWorkShopAImodel();//获取插件基底模型
         string SaveFiles(string path, IFormFile file, string Account = ""); //保存文件到指定路径,返回图片路径
         Task<string> UploadFileToImageHosting(IFormFile file, string Account = "");//图片上传到“只是图床”
@@ -40,5 +41,6 @@ namespace aibotPro.Interface
         void CopyPropertiesTo<T, TU>(T source, TU dest);//反射赋值
         string CompressImage(string inputFile, int quality);//压缩图片质量，不改变尺寸
         double CalculateTimeDifference(DateTime startTime, DateTime endTime);
+        Task<string> DownloadFileByUrl(string url, string savePath, string account);//根据链接下载文件
     }
 }

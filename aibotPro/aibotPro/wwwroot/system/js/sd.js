@@ -301,7 +301,6 @@ function sendMsg() {
         "msgid_g": msgid_g,
         "chatgroupid": chatgroupid,
         "ip": IP,
-        "image_path": '',
         "system_prompt": `As a prompt generator for a generative AI called "Stable Diffusion", you will create image prompts for the AI to visualize. I will give you a concept, and you will provide a detailed prompt for DALL-E3 to generate an image.
                             
                             Please adhere to the structure and formatting below, and follow these guidelines:

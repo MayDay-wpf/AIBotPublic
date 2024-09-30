@@ -393,3 +393,59 @@ function exchangeCard() {
         }
     });
 }
+
+function editPassword() {
+    $('#passwordModal').modal('show'); // 显示模态窗口
+
+    // 修改密码事件处理
+    $('#passwordForm').on('submit', function (e) {
+        e.preventDefault(); // 阻止默认表单提交
+        var oldPassword = $('#oldPassword').val();
+        var newPassword = $('#newPassword').val();
+        var confirmPassword = $('#confirmPassword').val();
+        if (newPassword.length < 6) {
+            balert('密码长度至少为6位', 'warning', false, 1500, 'center');
+            return;
+        }
+        // 检查新密码和重复新密码是否一致
+        if (newPassword !== confirmPassword) {
+            balert('两次新密码输入不一致，请重新输入', 'warning', false, 1500, 'center');
+            return;
+        }
+
+        // 确保三个密码字段都已填写
+        if (!oldPassword || !newPassword || !confirmPassword) {
+            balert('请完整填写所有字段', 'warning', false, 1500, 'center');
+            return;
+        }
+        loadingBtn('.editpwd');
+        // 发起 AJAX 请求到指定的接口
+        $.ajax({
+            url: '/Users/EditPassword',
+            method: 'POST',
+            dataType: 'json',
+            data: {
+                oldPassword: oldPassword,
+                newPassword: newPassword
+            },
+            success: function (response) {
+                unloadingBtn('.editpwd');
+                if (response.success) {
+                    balert('密码修改成功！', 'success', false, 1000, 'center', function () {
+                        shutDown();
+                    });
+                    $('#passwordModal').modal('hide');
+                    $('#oldPassword').val('');  // 清空表单
+                    $('#newPassword').val('');
+                    $('#confirmPassword').val('');
+                } else {
+                    balert('密码修改失败：' + response.msg, 'warning', false, 1500, 'center');
+                }
+            },
+            error: function (xhr, status, error) {
+                unloadingBtn('.editpwd');
+                balert('网络错误或服务器错误：' + error, 'warning', false, 1500, 'center');
+            }
+        });
+    });
+}

@@ -2,6 +2,36 @@
     ViewData["Title"] = "价格管理 (Price)";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+<style>
+    #modelPriceTable {
+        width: auto; /* 改为 auto，让表格宽度由内容决定 */
+        table-layout: fixed;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    #modelPriceTable td {
+        position: relative;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    #modelPriceTable td .ui-resizable-handle {
+        width: 8px;
+        cursor: col-resize;
+        position: absolute;
+        right: -4px;
+        top: 0;
+        bottom: 0;
+        z-index: 2;
+    }
+    #modelPriceTable input {
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .ui-resizable-resizing {
+        z-index: 90;
+    }
+</style>
 <div class="header">
     <div class="header-left">
         <a id="menuMain" href="" class="burger-menu">
@@ -25,22 +55,26 @@
             </h6>
         </div>
         <div class="card-body">
-            <div class="form-group">
-                <table class="form-table">
+            <div class="form-group" style="width: 100%; overflow: scroll;">
+                <table class="form-table" id="modelPriceTable">
                     <thead>
-                        <tr>
-                            <td>模型名称</td>
-                            <td>用户输入价格</td>
-                            <td>用户输出价格</td>
-                            <td>VIP输入价格</td>
-                            <td>VIP输出价格</td>
-                            <td>用户倍率</td>
-                            <td>VIP倍率</td>
-                            <td>单次最大消耗</td>
-                            <td>按次计费</td>
-                            <td>VIP按次计费</td>
-                            <td>删除</td>
-                        </tr>
+                    <tr>
+                        <td id="col1">模型名称</td>
+                        <td id="col2">用户输入价格</td>
+                        <td id="col3">用户输出价格</td>
+                        <td id="col4">VIP输入价格</td>
+                        <td id="col5">VIP输出价格</td>
+                        <td id="col6">SVIP输入价格</td>
+                        <td id="col7">SVIP输出价格</td>
+                        <td id="col8">用户倍率</td>
+                        <td id="col9">VIP倍率</td>
+                        <td id="col10">SVIP倍率</td>
+                        <td id="col11">单次最大消耗</td>
+                        <td id="col12">按次计费</td>
+                        <td id="col13">VIP按次计费</td>
+                        <td id="col14">SVIP按次计费</td>
+                        <td id="col15">删除</td>
+                    </tr>
                     </thead>
                     <tbody id="AddSt">
                     </tbody>
@@ -52,4 +86,4 @@
         </div>
     </div>
 </div>
-<script src="~/system/js/openall/modelpricesetting.js"></script>
+<script src="~/system/js/openall/modelpricesetting.js?1.0.0"></script>

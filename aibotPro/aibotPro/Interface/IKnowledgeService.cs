@@ -12,9 +12,9 @@ namespace aibotPro.Interface
         Task UploadKnowledgeToVector(string embModel, string processType, string aiModel, string filePath, string fileCode, string chunkLength, string account);//上传文件库文件到向量库
         bool DeleteVector(DelRoot delRoot);//删除向量库文件
         Task<string> SearchSchedule(string key);//查询进度
-        Task<List<MilvusDataDto>> CreateMilvusList(string account, string filePath, string embModel, string processType, string aiModel, string type, string fileCode);//创建复合要求的Milvus集合
+        Task<List<MilvusDataDto>> CreateMilvusList(string account, string filePath, string embModel, string processType, string aiModel, string type, string fileCode, int fixedlength);//创建符合要求的Milvus集合
         bool CreateKnowledgeType(string typeName, string typeCode, string account);
         List<KnowledgeType> GetKnowledgeType(int page, int pageSize, string name, out int total, string account = "");
-        Task<List<string>> CutFile(string content, string processType, string account, string aiModel, string fileCode);
+        Task<List<string>> CutFile(string content, string processType, string account, string aiModel, string fileCode, int fixedlength);
     }
 }

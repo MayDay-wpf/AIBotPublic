@@ -351,10 +351,12 @@ public class OpenAPIService : IOpenAPIService
         {
             var chatChoiceResponse = new Choices();
             chatChoiceResponse.index = item.Index.Value;
+            chatChoiceResponse.finish_reason = item.FinishReason;
             var delta = new DeltaContent();
             if (item.Delta != null)
             {
                 delta.Content = item.Delta.Content;
+                delta.Role = item.Delta.Role;
                 chatChoiceResponse.delta = delta;
             }
 
@@ -405,13 +407,13 @@ public class OpenAPIService : IOpenAPIService
         chatCompletionResponse.Object = responseContent.Object;
         chatCompletionResponse.Created = responseContent.Created;
         chatCompletionResponse.system_fingerprint = responseContent.Id;
-        var chatChoices = new List<Choices>
+        var chatChoices = new List<ChoicesUnStream>
         {
             new()
             {
                 logprobs = null,
                 finish_reason = null,
-                delta = new DeltaContent
+                message = new DeltaContent
                 {
                     Content = responseContent.Result
                 }
@@ -435,16 +437,18 @@ public class OpenAPIService : IOpenAPIService
         chatCompletionResponse.Created = responseContent.CreatedAt;
         chatCompletionResponse.Model = responseContent.Model;
         chatCompletionResponse.system_fingerprint = responseContent.SystemFingerPrint;
-        var chatChoices = new List<Choices>();
+        var chatChoices = new List<ChoicesUnStream>();
         foreach (var item in responseContent.Choices)
         {
-            var chatChoiceResponse = new Choices();
+            var chatChoiceResponse = new ChoicesUnStream();
             chatChoiceResponse.index = item.Index.Value;
+            chatChoiceResponse.finish_reason = item.FinishReason;
             var delta = new DeltaContent();
-            if (item.Delta != null)
+            if (item.Message != null)
             {
-                delta.Content = item.Delta.Content;
-                chatChoiceResponse.delta = delta;
+                delta.Content = item.Message.Content;
+                delta.Role = item.Message.Role;
+                chatChoiceResponse.message = delta;
             }
 
             chatChoices.Add(chatChoiceResponse);

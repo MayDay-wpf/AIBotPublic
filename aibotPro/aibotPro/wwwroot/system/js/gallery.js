@@ -1,5 +1,5 @@
 ﻿let page = 1;
-let pageSize = 12;
+let pageSize = 30;
 let loading = false;
 let noMoreData = false;
 $grid = $('#masonry-layout').masonry({
@@ -175,7 +175,7 @@ function getAIdrawResList(type) {
                                              <p class="prompt">${item.prompt}</p>
                                              <div class="btn-group">
                                                  <a href="${item.imgSavePath}" class="btn btn-primary btn-sm" download onclick="event.stopPropagation();"><i data-feather="download-cloud"></i> 下载</a>
-                                                 <button class="btn btn-success btn-sm" onclick="event.stopPropagation();copyText(decodeURIComponent('${encodeURIComponent(item.prompt)}'))"><i data-feather="copy"></i> 复制提示词</button>
+                                                 <button class="btn btn-success btn-sm"  data-prompt="${encodeURIComponent(item.prompt)}" onclick="event.stopPropagation();handleClick(this)"><i data-feather="copy"></i> 复制提示词</button>
                                                  <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteImg(${item.id})"><i data-feather="trash-2"></i> 删除</button>
                                              </div>
                                          </div>
@@ -235,4 +235,9 @@ function deleteImg(id) {
             }
         });
     });
+}
+function handleClick(btn) {
+    const encodedPrompt = btn.getAttribute('data-prompt');
+    const prompt = decodeURIComponent(encodedPrompt);
+    copyText(prompt);
 }

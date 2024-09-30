@@ -9,6 +9,7 @@ using StackExchange.Redis;
 using System.Collections;
 using System.Security.Policy;
 using System.Security.Principal;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace aibotPro.Service
@@ -19,12 +20,14 @@ namespace aibotPro.Service
         private readonly AIBotProContext _context;
         private readonly IRedisService _redisService;
         private readonly IMilvusService _milvusService;
-        public KnowledgeService(ISystemService systemService, AIBotProContext context, IRedisService redisService, IMilvusService milvusService)
+        private readonly IAiServer _aiServer;
+        public KnowledgeService(ISystemService systemService, AIBotProContext context, IRedisService redisService, IMilvusService milvusService, IAiServer aiServer)
         {
             _systemService = systemService;
             _context = context;
             _redisService = redisService;
             _milvusService = milvusService;
+            _aiServer = aiServer;
         }
         public bool SaveKnowledgeFile(Knowledge knowledge)
         {
@@ -87,10 +90,13 @@ namespace aibotPro.Service
             var Alibaba_DashVectorCollectionName = systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorCollectionName")?.CfgValue;
             var EmbeddingsUrl = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsUrl")?.CfgValue;
             var EmbeddingsApiKey = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsApiKey")?.CfgValue;
+            var EmbeddingsModel = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsModel")?.CfgValue;
             var QAurl = systemCfgs.FirstOrDefault(x => x.CfgKey == "QAurl")?.CfgValue;
+            var QAapikey = systemCfgs.FirstOrDefault(x => x.CfgKey == "QAapiKey")?.CfgValue;
+            var QAmodel = systemCfgs.FirstOrDefault(x => x.CfgKey == "QAmodel")?.CfgValue;
             if (processType == "unwash")//不清洗切片
             {
-                VectorHelper vectorHelper = new VectorHelper(_redisService, Alibaba_DashVectorApiKey, Alibaba_DashVectorEndpoint, Alibaba_DashVectorCollectionName, EmbeddingsUrl, EmbeddingsApiKey);
+                VectorHelper vectorHelper = new VectorHelper(_redisService, Alibaba_DashVectorApiKey, Alibaba_DashVectorEndpoint, Alibaba_DashVectorCollectionName, EmbeddingsUrl, EmbeddingsApiKey, EmbeddingsModel);
                 //取出文件内容
                 string content = await _systemService.GetFileText(filePath);
                 //去除换行\n \r
@@ -106,7 +112,7 @@ namespace aibotPro.Service
             {
                 try
                 {
-                    VectorHelper vectorHelper = new VectorHelper(_redisService, Alibaba_DashVectorApiKey, Alibaba_DashVectorEndpoint, Alibaba_DashVectorCollectionName, QAurl, EmbeddingsApiKey);
+                    VectorHelper vectorHelper = new VectorHelper(_redisService, Alibaba_DashVectorApiKey, Alibaba_DashVectorEndpoint, Alibaba_DashVectorCollectionName, QAurl, QAapikey, QAmodel);
                     //取出文件内容
                     string content = await _systemService.GetFileText(filePath);
                     //去除换行\n \r
@@ -130,7 +136,7 @@ namespace aibotPro.Service
                         qaChunkList.Add(qa.Replace("\r", "").Replace("\n", "").Replace("\"", "“"));
                     }
                     vectorHelper.embeddingsUrl = EmbeddingsUrl;
-                    List<List<double>> vectorList = await vectorHelper.StringToVectorAsync("text-embedding-3-small", qaChunkList, account);
+                    List<List<double>> vectorList = await vectorHelper.StringToVectorAsync(EmbeddingsModel, qaChunkList, account);
                     await ChunkSave(vectorList, qaChunkList, account, fileCode, vectorHelper);
                 }
                 catch (Exception e)
@@ -144,32 +150,59 @@ namespace aibotPro.Service
 
         }
         //文件切片
+        private static readonly Regex SpecialTextRegex = new Regex(
+        @"(!?\[.*?\]\(.*?\))|(<.*?>)|(https?://\S+)|(www\.\S+)",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase
+    );
+
         public static List<string> SplitIntoBlocks(string text, int blockSize, int overlapSize)
         {
-            List<string> blocks = new List<string>();
-            if (blockSize <= overlapSize)
+            if (blockSize <= overlapSize || text.Length <= blockSize)
             {
-                // 当blockSize小于或等于overlapSize时，直接将整个文本作为一个分片
-                blocks.Add(text);
-                return blocks;
+                return new List<string> { text };
             }
 
-            for (int i = 0; i < text.Length; i += blockSize - overlapSize)
+            // 提取特殊文本
+            var specialTexts = SpecialTextRegex.Matches(text)
+                .Cast<Match>()
+                .Select(m => m.Value)
+                .ToList();
+
+            // 移除特殊文本，得到纯文本
+            string pureText = SpecialTextRegex.Replace(text, "");
+
+            // 分割纯文本
+            List<string> blocks = SplitPureText(pureText, blockSize, overlapSize);
+
+            // 将特殊文本添加到对应的块末尾
+            for (int i = 0; i < blocks.Count; i++)
             {
-                if (i == 0)
+                if (i < specialTexts.Count)
                 {
-                    // 第一个分片不包含重叠部分
-                    blocks.Add(text.Substring(0, Math.Min(blockSize, text.Length)));
+                    blocks[i] += " " + specialTexts[i];
                 }
-                else
+                else if (i == blocks.Count - 1)
                 {
-                    int start = i - overlapSize;
-                    int length = Math.Min(blockSize + overlapSize, text.Length - start);
-                    blocks.Add(text.Substring(start, length));
+                    // 如果是最后一个块，添加所有剩余的特殊文本
+                    blocks[i] += " " + string.Join(" ", specialTexts.Skip(blocks.Count - 1));
                 }
             }
 
             return blocks;
+        }
+
+        private static List<string> SplitPureText(string text, int blockSize, int overlapSize)
+        {
+            int totalBlocks = (int)Math.Ceiling((double)(text.Length - overlapSize) / (blockSize - overlapSize));
+
+            return Enumerable.Range(0, totalBlocks)
+                .Select(i =>
+                {
+                    int start = i * (blockSize - overlapSize);
+                    int length = Math.Min(blockSize, text.Length - start);
+                    return text.Substring(start, length);
+                })
+                .ToList();
         }
         public bool DeleteVector(DelRoot delRoot)
         {
@@ -240,16 +273,15 @@ namespace aibotPro.Service
 
         //---------------------------------------------Milvus----------------------------------------------
 
-        public async Task<List<MilvusDataDto>> CreateMilvusList(string account, string filePath, string embModel, string processType, string aiModel, string type, string fileCode)
+        public async Task<List<MilvusDataDto>> CreateMilvusList(string account, string filePath, string embModel, string processType, string aiModel, string type, string fileCode, int fixedlength)
         {
             List<MilvusDataDto> milvusDataDtos = new List<MilvusDataDto>();
             List<SystemCfg> systemCfgs = _systemService.GetSystemCfgs();
             var EmbeddingsUrl = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsUrl")?.CfgValue;
             var EmbeddingsApiKey = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsApiKey")?.CfgValue;
-            var QAurl = systemCfgs.FirstOrDefault(x => x.CfgKey == "QAurl")?.CfgValue;
             string content = await _systemService.GetFileText(filePath);
             List<Dictionary<List<float>, string>> vectorList = new List<Dictionary<List<float>, string>>();
-            List<string> chunkList = await CutFile(content, processType, account, aiModel, fileCode);
+            List<string> chunkList = await CutFile(content, processType, account, aiModel, fileCode, fixedlength);
             vectorList = await StringToVectorByMilvusAsync(embModel, chunkList, account, EmbeddingsUrl, EmbeddingsApiKey, fileCode);
             foreach (var item in vectorList)
             {
@@ -268,7 +300,7 @@ namespace aibotPro.Service
             }
             return milvusDataDtos;
         }
-        public async Task<List<string>> CutFile(string content, string processType, string account, string aiModel, string fileCode)
+        public async Task<List<string>> CutFile(string content, string processType, string account, string aiModel, string fileCode, int fixedlength)
         {
             try
             {
@@ -276,8 +308,13 @@ namespace aibotPro.Service
                 if (processType == "Fixedlength")//定长切片
                 {
                     content = content.Replace("\r", "").Replace("\n", "").Replace("\"", "“");
-                    chunkList = SplitIntoBlocks(content, 2000, 200);//切片
+                    chunkList = SplitIntoBlocks(content, fixedlength, 200);//切片
                     chunkList.RemoveAll(s => string.IsNullOrWhiteSpace(s));//去除空行
+                }
+                else if (processType == "FixedlengthByJina")//智能定长切片
+                {
+                    TokenizerDetail result = await _aiServer.TokenizeJinaAI(content, fixedlength);
+                    chunkList = result.Chunks.Select(c => c.Replace("\r", "").Replace("\n", "").Replace("\"", "“")).ToList();
                 }
                 else if (processType == "QA")//QA清洗
                 {

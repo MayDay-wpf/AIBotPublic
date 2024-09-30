@@ -327,6 +327,11 @@ namespace aibotPro.Controllers
             }
             user.IsBan = type;
             _context.Users.Update(user);
+            var apikey = _context.APIKEYs.FirstOrDefault(x => x.Account == user.Account);
+            if (apikey != null)
+            {
+                _context.APIKEYs.Remove(apikey);
+            }
             _context.SaveChanges();
             return Json(new
             {
@@ -362,10 +367,10 @@ namespace aibotPro.Controllers
         public async Task<IActionResult> RechargeVip(string account, string viptype)
         {
             var user = _context.Users.FirstOrDefault(x => x.Account == account);
-            if (viptype == "VIP|15")
+            if (viptype == "VIP|20")
             {
-                var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == account && x.VipType == "VIP|15");
-                if (vipinfo != null && vipinfo.VipType == "VIP|15")
+                var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == account && x.VipType == "VIP|20");
+                if (vipinfo != null && vipinfo.VipType == "VIP|20")
                 {
                     if (vipinfo.EndTime > DateTime.Now)
                     {
@@ -380,7 +385,7 @@ namespace aibotPro.Controllers
                 else
                 {
                     VIP vip = new VIP();
-                    vip.VipType = "VIP|15";
+                    vip.VipType = "VIP|20";
                     vip.Account = account;
                     vip.StartTime = DateTime.Now;
                     vip.EndTime = DateTime.Now.AddDays(30);
@@ -388,12 +393,12 @@ namespace aibotPro.Controllers
                     _context.VIPs.Add(vip);
                 }
                 _context.SaveChanges();
-                await _systemService.WriteLog("管理员充值VIP|15", Dtos.LogLevel.Info, account);
+                await _systemService.WriteLog("管理员充值VIP|20", Dtos.LogLevel.Info, account);
             }
-            else if (viptype == "VIP|90")
+            else if (viptype == "VIP|50")
             {
-                var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == account && x.VipType == "VIP|90");
-                if (vipinfo != null && vipinfo.VipType == "VIP|90")
+                var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == account && x.VipType == "VIP|50");
+                if (vipinfo != null && vipinfo.VipType == "VIP|50")
                 {
                     if (vipinfo.EndTime > DateTime.Now)
                     {
@@ -408,7 +413,7 @@ namespace aibotPro.Controllers
                 else
                 {
                     VIP vip = new VIP();
-                    vip.VipType = "VIP|90";
+                    vip.VipType = "VIP|50";
                     vip.Account = account;
                     vip.StartTime = DateTime.Now;
                     vip.EndTime = DateTime.Now.AddDays(30);
@@ -418,7 +423,7 @@ namespace aibotPro.Controllers
                 //user.Mcoin = user.Mcoin + 100;
                 _context.Users.Update(user);
                 _context.SaveChanges();
-                await _systemService.WriteLog("管理员充值VIP|90", Dtos.LogLevel.Info, account);
+                await _systemService.WriteLog("管理员充值VIP|50", Dtos.LogLevel.Info, account);
             }
             else
             {
@@ -852,9 +857,9 @@ namespace aibotPro.Controllers
         }
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
-        public IActionResult SendSystemNotice(string content)
+        public IActionResult SendSystemNotice(int id, string title, string content)
         {
-            var result = _adminsService.SendNotice(content);
+            var result = _adminsService.SendNotice(id, title, content);
             if (result)
             {
                 return Json(new
@@ -872,6 +877,47 @@ namespace aibotPro.Controllers
                 });
             }
         }
+
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public IActionResult GetSystemNoticeList(int page, int page_size)
+        {
+            int total = 0;
+            var notices = _adminsService.GetNotices(page, page_size, out total);
+            return Json(new
+            {
+                success = true,
+                msg = "获取成功",
+                data = notices,
+                total = total
+            });
+        }
+
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public IActionResult DeleteNotice(int id)
+        {
+            var notice = _context.Notices.Where(x => x.Id == id).FirstOrDefault();
+            if (notice != null)
+            {
+                _context.Notices.Remove(notice);
+                _context.SaveChanges();
+                return Json(new
+                {
+                    success = true,
+                    msg = "删除成功"
+                });
+            }
+            else
+            {
+                return Json(new
+                {
+                    success = false,
+                    msg = "删除失败"
+                });
+            }
+        }
+        
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult CreateCards(string account, decimal mcoin, string viptype, int vipdays, int count)

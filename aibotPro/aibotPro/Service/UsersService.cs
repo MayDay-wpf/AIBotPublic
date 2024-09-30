@@ -18,8 +18,11 @@ namespace aibotPro.Service
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IFinanceService _financeService;
         private readonly IHubContext<ChatHub> _hubContext;
+        private readonly JwtTokenManager _jwtTokenManager;
 
-        public UsersService(AIBotProContext context, ISystemService systemService, IRedisService redis, IHttpContextAccessor httpContextAccessor, IFinanceService financeService, IHubContext<ChatHub> hubContext)
+        public UsersService(AIBotProContext context, ISystemService systemService, IRedisService redis,
+            IHttpContextAccessor httpContextAccessor, IFinanceService financeService, IHubContext<ChatHub> hubContext,
+            JwtTokenManager jwtTokenManager)
         {
             _context = context;
             _systemService = systemService;
@@ -27,6 +30,7 @@ namespace aibotPro.Service
             _httpContextAccessor = httpContextAccessor;
             _financeService = financeService;
             _hubContext = hubContext;
+            _jwtTokenManager = jwtTokenManager;
         }
         public bool Regiest(User users, string checkCode, string shareCode, out string errormsg)
         {
@@ -458,6 +462,52 @@ namespace aibotPro.Service
             _redis.SetAsync(account + "_modelSeq", JsonConvert.SerializeObject(chatModelSeq));
             return _context.SaveChanges() > 0;
         }
+        public bool SaveWorkShopModelSeq(string account, List<ChatModelSeq> chatModelSeq, out string errormsg)
+        {
+            errormsg = "保存成功";
+            var user = _context.Users.AsNoTracking().Where(x => x.Account == account).FirstOrDefault();
+            if (user == null)
+            {
+                errormsg = "用户不存在";
+                return false;
+            }
+            var modelSeq = _context.WorkShopModelUserSeqs.Where(x => x.Account == account).FirstOrDefault();
+            //有则更新,没有则创建
+            if (modelSeq == null)
+            {
+                foreach (var item in chatModelSeq)
+                {
+                    var workShopModelSeq = new WorkShopModelUserSeq()
+                    {
+                        Account = account,
+                        ModelNick = item.ModelNick,
+                        ModelName = item.ModelName,
+                        Seq = item.Seq
+                    };
+                    _context.WorkShopModelUserSeqs.Add(workShopModelSeq);
+                }
+            }
+            else
+            {
+                //删除原有的
+                _context.WorkShopModelUserSeqs.RemoveRange(_context.WorkShopModelUserSeqs.Where(x => x.Account == account));
+                //添加新的
+                foreach (var item in chatModelSeq)
+                {
+                    var workShopModelSeq = new WorkShopModelUserSeq()
+                    {
+                        Account = account,
+                        ModelNick = item.ModelNick,
+                        ModelName = item.ModelName,
+                        Seq = item.Seq
+                    };
+                    _context.WorkShopModelUserSeqs.Add(workShopModelSeq);
+                }
+            }
+            //刷新缓存
+            _redis.SetAsync(account + "_workshopmodelSeq", JsonConvert.SerializeObject(chatModelSeq));
+            return _context.SaveChanges() > 0;
+        }
         public async Task<bool> ChatHubBeforeCheck(ChatDto chatDto, string account, string senMethod, string chatId)
         {
             bool result = true;
@@ -465,12 +515,14 @@ namespace aibotPro.Service
             var user = GetUserData(account);
             var modelPrice = await _financeService.ModelPrice(chatDto.aiModel);
             bool isVip = await _financeService.IsVip(account);
+            bool isSVip = await _financeService.IsSVip(account);
             bool shouldCharge = modelPrice != null && (
-                        (!isVip && modelPrice.ModelPriceOutput > 0) || // 非VIP用户，且模型有非VIP价格
-                        (isVip && modelPrice.VipModelPriceInput > 0)); // VIP用户，且模型对VIP也有价格
+                (!isVip && !isSVip && (modelPrice.ModelPriceInput > 0 || modelPrice.ModelPriceOutput > 0)) ||
+                (isVip && !isSVip && (modelPrice.VipModelPriceInput > 0 || modelPrice.VipModelPriceOutput > 0)) ||
+                (isSVip && (modelPrice.SvipModelPriceInput > 0 || modelPrice.SvipModelPriceOutput > 0)));
 
-            //不是会员且余额为0时不提供服务
-            if (!isVip && user.Mcoin <= 0)
+            // 不是会员且余额为0时不提供服务
+            if (!isVip && !isSVip && user.Mcoin <= 0)
             {
                 chatRes.message = "本站已停止向【非会员且余额为0】的用户提供服务，您可以<a href='/Pay/Balance'>点击这里</a>前往充值1元及以上，长期使用本站的免费服务";
                 await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
@@ -482,7 +534,7 @@ namespace aibotPro.Service
             // 检查用户余额是否不足，只有在需要收费时检查
             if (shouldCharge && user.Mcoin <= 0)
             {
-                chatRes.message = "余额不足，请充值后再使用，您可以<a href='/Pay/Balance'>点击这里</a>前往充值";
+                chatRes.message = $"余额不足。请充值后再使用，您可以<a href='/Pay/Balance'>点击这里</a>前往充值";
                 await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
                 chatRes.message = "";
                 chatRes.isfinish = true;
@@ -524,7 +576,7 @@ namespace aibotPro.Service
         }
         public bool IsSupperVIP(string account)
         {
-            var vipInfo = _context.VIPs.AsNoTracking().Where(v => v.Account == account && v.VipType == "VIP|90" && v.EndTime >= DateTime.Now).FirstOrDefault();
+            var vipInfo = _context.VIPs.AsNoTracking().Where(v => v.Account == account && (v.VipType == "VIP|50" || v.VipType == "VIP|90") && v.EndTime >= DateTime.Now).FirstOrDefault();
             if (vipInfo != null)
             {
                 return true;
@@ -587,6 +639,88 @@ namespace aibotPro.Service
                 return true;
             }
             return false;
+        }
+
+        public string GetRegisterTokenByAnother(string email, string nick, string headImg)
+        {
+            //注册后登录
+            List<SystemCfg> systemConfig = _systemService.GetSystemCfgs();
+            if (systemConfig != null)
+            {
+                User newUser = new User();
+                var startMcoin = Convert.ToDecimal(systemConfig.Find(x => x.CfgKey == "RegiestMcoin").CfgValue);
+                string password = _systemService.GenerateCode(8);
+                newUser.Account = email;
+                newUser.Nick = nick;
+                newUser.HeadImg = headImg;
+                newUser.Sex = "保密";
+                newUser.Mcoin = startMcoin;
+                newUser.CreateTime = DateTime.Now;
+                newUser.UserCode = Guid.NewGuid().ToString().Replace("-", "");
+                newUser.Password = _systemService.ConvertToMD5(password);
+                newUser.IsBan = 0;
+                //添加用户
+                _context.Users.Add(newUser);
+                //设置用户默认设置
+                UserSetting userSetting = new UserSetting();
+                userSetting.Account = newUser.Account;
+                userSetting.UseHistory = 1;
+                userSetting.GoodHistory = 1;
+                userSetting.HistoryCount = 5;
+                userSetting.Scrolling = 1;
+                _context.UserSettings.Add(userSetting);
+                _context.SaveChanges();
+                var title = "【欢迎使用AIBot——您的初始密码】";
+                var content = @"
+                                <!DOCTYPE html>
+                                <html lang='en'>
+                                <head>
+                                <meta charset='UTF-8'>
+                                <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+                                <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                                <title>验证码</title>
+                                <style>
+                                    body {
+                                        background-color: #f0f7ff;
+                                        font-family: Arial, sans-serif;
+                                        text-align: center;
+                                    }
+                                    .container {
+                                        max-width: 600px;
+                                        margin: 50px auto;
+                                        padding: 20px;
+                                        border: 1px solid #bdd8eb;
+                                        border-radius: 5px;
+                                        background-color: #e1edf7;
+                                    }
+                                    h1 {
+                                        color: #336699;
+                                    }
+                                    p {
+                                        color: #333;
+                                    }
+                                </style>
+                                </head>
+                                <body>
+                                    <div class='container'>
+                                        <h1>您的初始密码：" + password + @"</h1>
+                                        <p>
+                                          感谢您使用AIBot，您可以前往【个人中心】修改密码
+                                        </p>
+                                    </div>
+                                </body>
+                                </html>
+                            ";
+                _systemService.SendEmail(newUser.Account, title, content);
+                //登录
+                var token = _jwtTokenManager.GenerateToken(newUser.Account);
+                return token;
+            }
+            else
+            {
+                _systemService.WriteLogUnAsync("系统配置表为空", Dtos.LogLevel.Error, "system");
+                return "";
+            }
         }
     }
 

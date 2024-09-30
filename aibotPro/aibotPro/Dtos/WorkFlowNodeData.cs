@@ -43,6 +43,9 @@ namespace aibotPro.Dtos
                 case "javascript":
                     Data = RawData.ToObject<JavaScriptData>();
                     break;
+                case "csharp":
+                    Data = RawData.ToObject<CsharpData>();
+                    break;
                 case "http":
                     Data = RawData.ToObject<HttpData>();
                     break;
@@ -160,6 +163,13 @@ namespace aibotPro.Dtos
         public override object GetOutput() => Output;
     }
 
+    //Csharp派生类
+    public class CsharpData : NodeSpecificData
+    {
+        [JsonProperty("output")] public new CsharpOutput Output { get; set; }
+        public override object GetOutput() => Output;
+    }
+
     // Http派生类
     public class HttpData : NodeSpecificData
     {
@@ -243,6 +253,12 @@ namespace aibotPro.Dtos
         public string JavaScript { get; set; }
     }
 
+    public class CsharpOutput
+    {
+        [JsonProperty("csharp")] public string Csharp { get; set; }
+        [JsonProperty("prItems")] public List<ProcessingItem> PrItems { get; set; }
+    }
+
     public class HttpOutput
     {
         [JsonProperty("type")]
@@ -283,6 +299,10 @@ namespace aibotPro.Dtos
         public bool Stream { get; set; }
         [JsonProperty("jsonmodel")]
         public bool JsonModel { get; set; }
+        [JsonProperty("jsonschema")]
+        public bool JsonSchema { get; set; }
+        [JsonProperty("jsonschemainput")]
+        public string JsonSchemaInput { get; set; }
         [JsonProperty("judgescript")]
         public string JudgeScript { get; set; }
         [JsonProperty("llmmaxcount")]
@@ -323,6 +343,8 @@ namespace aibotPro.Dtos
     {
         [JsonProperty("prompt")]
         public string Prompt { get; set; }
+        [JsonProperty("webjson")]
+        public bool? WebJson { get; set; }
     }
     public class IfElse
     {
@@ -339,6 +361,10 @@ namespace aibotPro.Dtos
         public int TopK { get; set; }
         [JsonProperty("typecode")]
         public List<string> TypeCode { get; set; }
+        [JsonProperty("reranker")]
+        public bool Reranker { get; set; }
+        [JsonProperty("topn")]
+        public int TopN { get; set; }
     }
     public class EndOutput
     {

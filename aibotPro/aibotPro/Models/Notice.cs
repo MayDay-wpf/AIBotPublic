@@ -13,6 +13,10 @@ namespace aibotPro.Models
     {
         [Key]
         public int Id { get; set; }
+        [StringLength(3000)]
+        public string NoticeTitle { get; set; }
         public string NoticeContent { get; set; }
+        [Column(TypeName = "datetime")]
+        public DateTime? CreateTime { get; set; }
     }
 }

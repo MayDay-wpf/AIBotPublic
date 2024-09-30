@@ -1,16 +1,16 @@
 ﻿var workflowcode = '';
 var plugincode = '';
-var jsonmodelAI = ['gpt-3.5-turbo', 'gpt-3.5-turbo-0125', 'gpt-4o-mini', 'gpt-4o-mini-openai', 'gpt-4-0125-preview', 'gpt-4-0125-preview-openai', 'deepseek-chat', 'deepseek-coder'];
+var jsonmodelAI = ['gpt-3.5-turbo', 'gpt-3.5-turbo-0125', 'gpt-4o', 'gpt-4o-openai', 'gpt-4o-mini', 'gpt-4o-mini-openai', 'gpt-4-0125-preview', 'gpt-4-0125-preview-openai', 'deepseek-chat', 'deepseek-coder', 'chatgpt-4o-latest', 'chatgpt-4o-latest-openai'];
+var jsonschemaAI = ['gpt-4o-mini', 'gpt-4o-mini-openai', 'gpt-4o', 'gpt-4o-openai', 'chatgpt-4o-latest', 'chatgpt-4o-latest-openai'];
 let pageIndex_k = 1;
 let pageSize_k = 20;
 $(function () {
     //changeMode('lock');
     workflowcode = getUrlParam('workflowcode');
     plugincode = getUrlParam('plugincode');
-    if (workflowcode == '' || plugincode == '')
-        layer.msg("未经许可的访问方式", { icon: 2, time: 1500 }, function () {
-            window.location.href = "/Home/Index";
-        });
+    if (workflowcode == '' || plugincode == '') layer.msg("未经许可的访问方式", { icon: 2, time: 1500 }, function () {
+        window.location.href = "/Home/Index";
+    });
     else
         getWorkFlowNodeData(workflowcode);
     const savedDarkMode = localStorage.getItem('darkMode');
@@ -45,6 +45,9 @@ $(document).ready(function () {
         // 检查选中的选项值
         if ($(this).val() == 'true') {
             $('.jsonmodel').val('false');
+            $('.jsonschema').val('false');
+            $('.jsonschemaBox').hide();
+            $('.editJsonschema').hide();
         }
     });
     $('.configure').on('change', '.jsonmodel', function () {
@@ -57,6 +60,29 @@ $(document).ready(function () {
                 return;
             }
             $('.stream').val('false');
+            $('.jsonschema').val('false');
+            $('.jsonschemaBox').hide();
+            $('.editJsonschema').hide();
+        }
+    });
+    $('.configure').on('change', '.jsonschema', function () {
+        // 检查选中的选项值
+        if ($(this).val() == 'true') {
+            var thisAIModel = $('.aimodel').val();
+            if (jsonschemaAI.indexOf(thisAIModel) == -1) {
+                $(this).val('false');
+                layer.msg('当前模型不支持JsonSchema', { icon: 2, time: 2500 });
+                $('.jsonschemaBox').hide();
+                $('.editJsonschema').hide();
+                return;
+            }
+            $('.stream').val('false');
+            $('.jsonmodel').val('false');
+            $('.jsonschemaBox').show();
+            $('.editJsonschema').show();
+        } else {
+            $('.jsonschemaBox').hide();
+            $('.editJsonschema').hide();
         }
     });
     $('.configure').on('input', '.retry', function () {
@@ -83,6 +109,14 @@ $(document).ready(function () {
             $(this).val(10000);
         }
     });
+    $('.configure').on('change', '.reranker', function () {
+        var value = $(this).val();
+        if (value == 'true') {
+            $('.tpn').show();
+        } else {
+            $('.tpn').hide();
+        }
+    });
 
     // 监听'EndAction'下拉选择改变事件
     $('.configure').on('change', '.endAction', function () {
@@ -91,11 +125,35 @@ $(document).ready(function () {
 
     // 默认情况下隐藏代码编辑器
     toggleCodeEditor();
+
+    let jsonschemaeditor;
+    $('.configure').on('click', '.editJsonschema', function (e) {
+        e.preventDefault();
+        const jsonschemaInput = $(this).siblings('.jsonschemaBox').find('.jsonschemaInput');
+        const editorContainer = document.createElement('div');
+
+        jsonschemaeditor = JsonSchemaEditor.create($(editorContainer), {
+            schema: jsonschemaInput.val(), onSave: function (schema) {
+                jsonschemaInput.val(schema);
+                modal.close();
+            }
+        });
+
+        const modal = new CustomModal({
+            title: '编辑JSONSchema', onSave: function () {
+                const schema = jsonschemaeditor.getSchema();
+                jsonschemaInput.val(schema);
+            }
+        });
+
+        modal.setContent(editorContainer);
+        modal.open();
+    });
 });
 
 function toggleCodeEditor() {
     const selectedValue = $('.endAction').val();
-    if (selectedValue === 'ai') {
+    if (selectedValue === 'unhand') {
         $('#codeBox').hide();
     } else {
         $('#codeBox').show();
@@ -108,7 +166,6 @@ var functionName = '';
 let isNodeBeingDeleted = false;
 
 function initCodeEditor(code) {
-    //if (!myTextarea) {
     myTextarea = document.getElementById("myTextarea");
     codeeditor = CodeMirror.fromTextArea(myTextarea, {
         lineNumbers: true,
@@ -116,6 +173,19 @@ function initCodeEditor(code) {
         theme: "3024-night"
     });
     codeEditorSetOption(codeeditor, code);
+}
+
+var csharpTextarea;
+var csharpCodeeditor;
+
+function initCsharpCodeEditor(code) {
+    csharpTextarea = document.getElementById("csharpTextarea");
+    csharpCodeeditor = CodeMirror.fromTextArea(csharpTextarea, {
+        lineNumbers: true,
+        mode: "text/x-csharp",
+        theme: "3024-night"
+    });
+    codeEditorSetOption(csharpCodeeditor, code);
 }
 
 var endTextarea;
@@ -339,10 +409,11 @@ editor.on('nodeSelected', function (id) {
                                </button>
                             </div>
                         </div>
-                        <p class="nodeinfo">
-                            <span><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></span><br>
-                            当下级节点需要获取start的参数时，使用{{start.参数名}}获取，例如{{start.city}}
-                        </p>`;
+                        <br>
+                        <div class="nodeinfo">
+                            <p><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></p>
+                            <p>当下级节点需要获取start的参数时，使用{{start.参数名}}获取，例如{{start.city}}</p>
+                        </div>`;
             $('.configure').html(html);
             //查询这个节点是否有data
             if (node && node.data && Object.entries(node.data).length > 0) {
@@ -370,14 +441,21 @@ editor.on('nodeSelected', function (id) {
         case 'javascript':
             html = ` <label>编写脚本：</label>
                          <textarea id="myTextarea"></textarea>
-                     <p class="nodeinfo">
-                     <span><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></span><br>
-                          javascript节点必须return一个规范的json字符串，例如：<br>
-                            function javascript2(){<br>
-                                return '{ "data": {"code":200,"status":true}}'<br>
-                            }<br>
-                         当下级节点需要获取json中的数据时使用{{javascript+节点Id.data}}获取，例如获取上文中code，{{javascript2.data.code}} 可获取到值：200
-                      </p>`;
+                     <div class="nodeinfo">
+                     <p><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></p>
+                          <p>javascript节点可以返回纯字符串或Json字符串</p>
+<pre><code>
+//Json字符串示例
+function javascript2(){
+    return '{"code":200,"status":true}'
+}
+//纯字符串示例
+function javascript2(){
+    return 'Hello'
+}
+</pre></code>
+                        <p>当下级节点需要获取返回值的非JSON数据时使用{{javascript+节点Id.data}}获取，返回Json字符串时，例如获取上文中code，{{javascript2.data.code}} 可获取到值：200</p>
+                      </div>`;
             $('.configure').html(html);
             var code = `function javascript${id}(){
 
@@ -390,6 +468,75 @@ editor.on('nodeSelected', function (id) {
                 }
             }
             initCodeEditor(code);
+            break;
+        case 'csharp':
+            html = ` <p>编写脚本：</p>
+                     <textarea id="csharpTextarea"></textarea>
+                     <p>Main函数参数赋值：</p>
+                     <div class="box">
+                        <div>
+                           <table class="csharppr-table">
+                           </table>
+                           <button class="btn btn-info" onclick="addCsharpPrRow(this)">
+                               新增一行
+                           </button>
+                        </div>
+                     </div>
+                     <br>
+                     <div class="nodeinfo">
+                     <p><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></p>
+                          <p>csharp节点可以运行任意C#代码，可以返回纯字符串或Json字符串</p>
+                          <p>1、 请勿修改：Script类名，Main函数名</p>
+                          <p>2、 请勿使用异步</p>
+                          <p>3、 允许您在Script类中定义其他函数</p>
+                          <p>4、 您必须使用static函数</p>
+                          <p>5、 依旧支持模板语法{{参数}}</p>
+                          <p>6、 当下级节点需要获取非JSON数据时使用{{csharp+节点Id.data}}获取，返回Json字符串时，例如：返回JOSN {"success":true,"code":200} 获取code，{{csharp+节点Id.data.code}} 可获取到值：200</p>
+                          <p>7、 当您的Main函数入参数选择json类型，后端会尝试帮您去除转义，非json类型不会去除可能是Json数据的转义符</p>
+                      </div>`;
+            $('.configure').html(html);
+            var code = `using System;
+
+public static class Script
+{
+    public static string Main(string[] args = null)
+    {
+        try
+        {
+            return "Hello World!";
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"An error occurred: {ex.Message}");
+            Console.Error.WriteLine(ex.StackTrace);
+            return $"Error: {ex.Message}";
+        }
+    }
+}`;
+            if (node && node.data && Object.entries(node.data).length > 0) {
+                //回写
+                var data = node.data;
+                if (data.output.csharp) {
+                    code = data.output.csharp;
+                }
+                if (data.output.prItems && data.output.prItems.length > 0) {
+                    var rows = '';
+                    const options = ['string', 'json', 'bool', 'int', 'decimal'];
+                    data.output.prItems.forEach(item => {
+                        const selectOptions = options.map(option =>
+                            `<option ${item.prType === option ? 'selected' : ''}>${option}</option>`
+                        ).join('');
+                        rows += `<tr>
+                                    <td><input value="${item.prName}" placeholder="参数名"  /></td>
+                                    <td><select>${selectOptions}</select></td>
+                                    <td><input value="${item.prConst}" placeholder="赋值"  /></td>
+                                    <td><button class="delete-btn" onclick="deleteRow(this)">删除</button></td>
+                                </tr>`;
+                    });
+                    $(".csharppr-table").html(rows);
+                }
+            }
+            initCsharpCodeEditor(code);
             break;
         case 'http':
             html = `<div class="box">
@@ -436,17 +583,18 @@ editor.on('nodeSelected', function (id) {
                     <p>循环极限次数（≤20）：</p>
                     <input type="number" class="httpmaxcount" value="10" max="20" min="0" />
                     <p>循环调用延时（≤10000ms）：</p>
-                    <input type="number" class="httpdelayed" value="0" max="10000" min="0" />ms
+                    <input type="number" class="httpdelayed" value="0" max="10000" min="0" /> ms
                     <p>循环条件脚本：</p>
                     <textarea id="httpTextarea"></textarea>
-                    <p class="nodeinfo">
-                    <span><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></span><br>
-                      * 当Http请求节点有返回值时，必须是一个Json对象，例如请求返回值为{"data":{"code":200,"status":true}}，使用{{http+节点Id.json结构值}}获取，例如{{http1.data.status}} 可获取到值：true<br><br>
-                      * 当需要循环执行时，return true;代表结束循环<br><br>
-                      * return false;将持续循环<br><br>
-                      * retuen 其他时将调用即时通讯将原文响应客户端<br><br>
-                      * 当需要获取当前节点的数据作为参数时可以使用 {{this.http+节点Id.返回值json结构}}获取<br><br>
-                    </p>`;
+                    <br>
+                    <div class="nodeinfo">
+                    <p><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></p>
+                      <p>1、 当Http请求节点有返回值时，必须是一个Json对象，例如请求返回值为{"data":{"code":200,"status":true}}，使用{{http+节点Id.json结构值}}获取，例如{{http1.data.status}} 可获取到值：true</p>
+                      <p>2、 当需要循环执行时，return true;代表结束循环</p>
+                      <p>3、 return false;将持续循环</p>
+                      <p>4、 retuen 其他时将调用即时通讯将原文响应客户端</p>
+                      <p>5、 当需要获取当前节点的数据作为参数时可以使用 {{this.http+节点Id.返回值json结构}}获取</p>
+                    </div>`;
             $('.configure').html(html);
             //查询这个节点是否有data
             if (node && node.data && Object.entries(node.data).length > 0) {
@@ -535,18 +683,24 @@ editor.on('nodeSelected', function (id) {
                     <select class="stream"><option checked="checked">false</option><option>true</option></select>
                     <p>JsonModel：</p>
                     <select class="jsonmodel"><option checked="checked">false</option><option>true</option></select>
+                    <p>JsonSchema：</p>
+                    <select class="jsonschema"><option checked="checked">false</option><option>true</option></select>
+                    <button class="btn btn-info editJsonschema"><i class="far fa-edit"></i> 编辑</button>
+                    <div class="jsonschemaBox">
+                       <textarea placeholder="输入预期的JsonSchema,或点击编辑按钮，可视化编辑" rows="20" class="jsonschemaInput"></textarea>
+                    </div>
                     <p>循环极限次数（≤20）：</p>
                     <input type="number" class="llmmaxcount" value="10" max="20" min="0" />
                     <p>循环条件脚本：</p>
                     <textarea id="llmTextarea"></textarea>
-                    <p></p>
+                    <br>
                     <div class="nodeinfo">
-                    <span><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></span><br>
-                      * 当下级节点需要获取AI处理的返回数据时，使用{{LLM+节点Id.data}}获取，例如{{LLM1.data}}<br><br>
-                      * 当Stream选择true时 API会中途返回LLM响应至客户端<br><br>
-                      * 当需要循环执行时，return true;代表结束循环，return 其他时，会以返回值作为prompt继续提交给LLM<br><br>
-                      * 当需要获取当前节点的数据作为参数时可以使用 {{this.LLM+节点Id.data}}获取<br><br>
-                      * 当使用JsonModel时，最终Json合成格式为：LLM+节点Id+Json,例如：<br>
+                    <p><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></p>
+                      <p>1、 当下级节点需要获取AI处理的返回数据时，使用{{LLM+节点Id.data}}获取，例如{{LLM1.data}}</p>
+                      <p>2、 当Stream选择true时 API会中途返回LLM响应至客户端</p>
+                      <p>3、 当需要循环执行时，return true;代表结束循环，return 其他时，会以返回值作为prompt继续提交给LLM</p>
+                      <p>4、 当需要获取当前节点的数据作为参数时可以使用 {{this.LLM+节点Id.data}}获取</p>
+                      <p>5、 当使用<b>JsonModel</b>和<b>JsonSchema</b>时，最终Json合成格式为：LLM+节点Id+Json，不可使用LLM.data例如：</p>
                       要求AI生成的Json为：
 <pre><code>
 {
@@ -557,14 +711,15 @@ editor.on('nodeSelected', function (id) {
 系统最终合成的Json为：
 <pre><code>
 {
-  "LLM2": {
-    "oldprompt": "aaaaa",
-    "newprompt": "bbbbb"
-  }
+  "LLM2":{
+      "data":{
+        "oldprompt": "aaaaa",
+        "newprompt": "bbbbb"
+      }
+  } 
 }
 </code></pre>
-取值方式：{{LLM2.newprompt}}
-  <br><br>
+取值方式：{{LLM2.data.newprompt}}
 </div>`
             $('.configure').html(html);
             getAIModelList(function () {
@@ -590,6 +745,17 @@ editor.on('nodeSelected', function (id) {
                     }
                     if (data.output.jsonmodel) {
                         $(".jsonmodel").val(data.output.jsonmodel);
+                    }
+                    if (data.output.jsonschema) {
+                        $(".jsonschema").val(data.output.jsonschema);
+                        if (data.output.jsonschema == "true") {
+                            $(".jsonschemaInput").val(data.output.jsonschemainput);
+                            $(".jsonschemaBox").show();
+                            $(".editJsonschema").show();
+                        } else {
+                            $(".jsonschemaBox").hide();
+                            $(".editJsonschema").hide();
+                        }
                     }
                     if (data.output.judgescript) {
                         code = data.output.judgescript;
@@ -623,10 +789,11 @@ editor.on('nodeSelected', function (id) {
                     <textarea class="prompt" style="width:100%;height:150px;"></textarea>
                     <p>失败重试次数（≤5）：</p>
                     <input type="number" class="retry" value="0" max="5" min="0" />
-                    <p class="nodeinfo">
-                    <span><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></span><br>
-                    当下级节点需要获取绘画图片链接时，使用{{DALL+节点Id.data}}获取，例如{{DALL1.data}}
-                    </p>`
+                    <br><br>
+                    <div class="nodeinfo">
+                    <p><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></p>
+                    <p>当下级节点需要获取绘画图片链接时，使用{{DALL+节点Id.data}}获取，例如{{DALL1.data}}</p>
+                    </div>`
             $('.configure').html(html);
             if (node && node.data && Object.entries(node.data).length > 0) {
                 var data = node.data;
@@ -671,12 +838,13 @@ editor.on('nodeSelected', function (id) {
                     <input type="text" placeholder="请输入图片链接" class="imageUrl"  />
                     <p>图片描述（模板示例{{参数}}，选填）：</p>
                     <input type="text" placeholder="请输入图片描述" class="downloadImgPrompt"  />
-                    <p class="nodeinfo">
-                    <span><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></span><br>
-                      * 此节点作用于将【线上图片链接】转存至【图库】<br><br>
-                      * 此节点可使用{{downloadimg+节点Id.data}}获取返回值，例如{{downloadimg1.data}}<br><br>
-                      * 此节点返回值为原样返回您需要下载的图片链接
-                    </p>`
+                    <br><br>
+                    <div class="nodeinfo">
+                    <p><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></p>
+                      <p>1、 此节点作用于将【线上图片链接】转存至【图库】</p>
+                      <p>2、 此节点可使用{{downloadimg+节点Id.data}}获取返回值，例如{{downloadimg1.data}}</p>
+                      <p>3、 此节点返回值为原样返回您需要下载的图片链接</p>
+                    </div>`
             $('.configure').html(html);
             if (node && node.data && Object.entries(node.data).length > 0) {
                 var data = node.data;
@@ -691,30 +859,64 @@ editor.on('nodeSelected', function (id) {
         case 'web':
             html = `<p>搜索关键词（模板示例{{参数}}，必填）：</p>
                     <textarea class="prompt" style="width:100%;height:150px;" placeholder="请输入搜索关键词"></textarea>
-                    <p class="nodeinfo">
-                    <span><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></span><br>
-                    注意：此节点只充当搜索引擎，请不要输入自然语言，否则会影响搜索结果<br>
-                    当下级节点需要获取搜索结果时，使用{{web+节点Id.data}}获取，例如{{web1.data}}
-                    </p>`
+                    <div class="custom-select">
+                       <p>返回原Json：</p>
+                       <select class="webjson">
+                         <option value="false" selected>false</option>
+                         <option value="true">true</option>
+                       </select>
+                    <div>
+                    <br>
+                    <div class="nodeinfo">
+                    <p><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></p>
+                    <p>此节点只充当搜索引擎，请不要输入自然语言，否则会影响搜索结果</p>
+                    <p>1、 当您使用返回原Json==false时，系统会自动拼接检索结果生成Prompt，当下级节点需要获取搜索结果时，使用{{web+节点Id.data}}获取，例如{{web1.data}}</p>
+                    <p>2、 当您使用返回原Json==true时，返回结果示例：</p>
+<pre>
+{
+   web+节点Id:{
+       data:[
+               {
+                   Title:标题1,
+                   Link:链接1,
+                   Snippet:摘要1
+               },
+               {
+                   Title:标题2,
+                   Link:链接2,
+                   Snippet:摘要2
+               }
+       ]
+   }
+}
+</pre>
+<p>取值方法示例：{{web1.data[0].Snippet}}</p>
+                    </div>`
             $('.configure').html(html);
             if (node && node.data && Object.entries(node.data).length > 0) {
                 var data = node.data;
                 if (data.output.prompt) {
                     $(".prompt").val(data.output.prompt);
                 }
+                if (data.output.webjson) {
+                    $(".webjson").val(data.output.webjson);
+                }
             }
             break;
         case 'ifelse':
             html = ` <label>编写脚本：</label>
                          <textarea id="ifelseTextarea"></textarea>
-                     <p class="nodeinfo">
-                     <span><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></span><br>
-                          ifelse节点必须return一个布尔值，流程会根据布尔值的结果决定走向<br>
-                            function ifelse2(){<br>
-                                return 1>2<br>
-                            }<br>
-                         当下级节点需要获取json中的数据时使用{{ifelse+节点Id.data}}获取
-                      </p>`;
+                         <br>
+                     <div class="nodeinfo">
+                     <p><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></p>
+                          <p>ifelse节点必须return一个布尔值，流程会根据布尔值的结果决定走向</p>
+<pre><code>
+function ifelse2(){
+    return 1>2
+}
+</code></pre>
+                         <p>当下级节点需要获取json中的数据时使用{{ifelse+节点Id.data}}获取</p>
+                      </div>`;
             $('.configure').html(html);
             var code = `function ifelse${id}(){
 
@@ -733,14 +935,26 @@ editor.on('nodeSelected', function (id) {
                     <textarea class="prompt" style="width:100%;height:150px;"></textarea>
                     <p>失败重试次数（≤5）：</p>
                     <input type="number" class="retry" value="0" max="5" min="0" />
-                    <p>topK（3≤topK≤10）：</p>
-                    <input type="number" class="topk" value="3" max="10" min="3" />
+                    <p>topK（3≤topK≤100）：</p>
+                    <input type="number" class="topk" value="3" max="100" min="3" />
+                    <div class="custom-select">
+                       <p>结果重排序：</p>
+                       <select class="reranker">
+                         <option value="false" selected>false</option>
+                         <option value="true">true</option>
+                       </select>
+                    <div>
+                    <div class="tpn" style="display:none">
+                      <p>topN（3≤topK≤100）：</p>
+                      <input type="number" class="topn" value="3" max="100" min="3" />
+                    </div>
                     <p>知识库选用：</p>
                     <div id="onknowledgeitem">加载中...</div>
-                    <p class="nodeinfo">
-                    <span><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></span><br>
-                    当下级节点需要获取知识库检索结果时，使用{{knowledge+节点Id.data}}获取，例如{{knowledge1.data}}
-                    </p>`
+                    <br>
+                    <div class="nodeinfo">
+                    <p><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></p>
+                    <p>当下级节点需要获取知识库检索结果时，使用{{knowledge+节点Id.data}}获取，例如{{knowledge1.data}}</p>
+                    </div>`
             $('.configure').html(html);
             getKonwLedgeTypeByMilvus("init", function () {
                 if (node && node.data && Object.entries(node.data).length > 0) {
@@ -754,6 +968,15 @@ editor.on('nodeSelected', function (id) {
                     }
                     if (data.output.topk) {
                         $(".topk").val(data.output.topk);
+                    }
+                    if (data.output.reranker) {
+                        $(".reranker").val(data.output.reranker);
+                        $(".tpn").show();
+                        if (data.output.topn) {
+                            $(".topn").val(data.output.topn);
+                        }
+                    } else {
+                        $(".tpn").hide();
                     }
                     $('#onknowledgeitem input[type="checkbox"]').each(function () {
                         var typecode = $(this).val();
@@ -770,13 +993,14 @@ editor.on('nodeSelected', function (id) {
         case 'debug':
             html = `<p>需要向聊天窗口发送的内容（模板示例{{参数}}，必填）：</p>
                     <textarea placeholder="输入需要发送的内容" class="chatlog"></textarea>
-                    <p class="nodeinfo">
-                    <span><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></span><br>
-                      * 此节点用于调试，方式为：向Chat推送任意消息,支持markdown<br><br>
-                      * 此节点在Open API中不生效<br><br>
-                      * 此节点可使用{{debug+节点Id.data}}获取返回值，例如{{debug1.data}}<br><br>
-                      * 此节点返回值为原样返回您需要发送的内容
-                    </p>`
+                    <br><br>
+                    <div class="nodeinfo">
+                    <p><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></p>
+                      <p>1、 此节点用于调试，方式为：向Chat推送任意消息,支持markdown、html,也可以作为消息推送节点使用</p>
+                      <p>2、 此节点在Open API中不生效</p>
+                      <p>3、 此节点可使用{{debug+节点Id.data}}获取返回值，例如{{debug1.data}}</p>
+                      <p>4、 此节点返回值为原样返回您需要发送的内容</p>
+                    </div>`
             $('.configure').html(html);
             if (node && node.data && Object.entries(node.data).length > 0) {
                 var data = node.data;
@@ -792,7 +1016,8 @@ editor.on('nodeSelected', function (id) {
                            <select class="endAction">
                               <option value="ai" selected>AI再次处理</option>
                               <option value="html">直接渲染Html</option>
-                              <option value="js">执行前端任意脚本</option>
+                              <option value="js">前端执行脚本</option>
+                              <option value="unhand">无操作</option>
                            </select>
                        </div>
                        <div id="codeBox">
@@ -995,6 +1220,28 @@ function addCkRow(element) {
     cell3.appendChild(deleteBtn);
 }
 
+function addCsharpPrRow(element) {
+    var table = element.closest('.box').querySelector('.csharppr-table');
+    var newRow = table.insertRow(-1);
+    var cell1 = newRow.insertCell(0);
+    var cell2 = newRow.insertCell(1);
+    var cell3 = newRow.insertCell(2);
+    var cell4 = newRow.insertCell(3);
+
+    cell1.innerHTML = '<input placeholder="参数名" />';
+    cell2.innerHTML = '<select><option checked="checked">string</option><option>json</option><option>bool</option><option>int</option><option>decimal</option></select>';
+    cell3.innerHTML = '<input placeholder="赋值" />';
+
+    var deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "删除";
+    deleteBtn.classList.add("delete-btn");
+    deleteBtn.onclick = function () {
+        deleteRow(this);
+    };
+
+    cell4.appendChild(deleteBtn);
+}
+
 function deleteRow(btn) {
     var row = btn.parentNode.parentNode; // 通过按钮找到所在的行
     row.parentNode.removeChild(row); // 从其父元素（表格）中删除该行
@@ -1031,6 +1278,19 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
                     javascript: ""
                 }
             }, javascript);
+            break;
+        case 'csharp':
+            var csharp = `
+            <div>
+              <div class="title-box"> <i class="fas fa-code"></i> <span class="nodeText">脚本(csharp)<span></div>
+            </div>
+            `;
+            editor.addNode('csharp', 1, 1, pos_x, pos_y, 'csharp', {
+                output: {
+                    csharp: "",
+                    prItems: []
+                }
+            }, csharp);
             break;
         case 'http':
             var http = `
@@ -1116,7 +1376,8 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
             </div>`;
             editor.addNode('web', 1, 1, pos_x, pos_y, 'web', {
                 output: {
-                    prompt: ""
+                    prompt: "",
+                    webjson: false
                 }
             }, web);
             break;
@@ -1228,8 +1489,9 @@ function exportDrawFlow() {
     layer.open({
         title: '预览Json',
         area: ['90%', '80%'],
-        content: `<pre>${escapeHtml(jsonString)}</pre>`
+        content: `<pre><code class="language-json" id="jsonCode">${escapeHtml(jsonString)}</code></pre>`
     });
+    hljs.highlightAll();
 }
 
 let toolsHide = false;
@@ -1431,7 +1693,11 @@ connection.on('ReceiveWorkShopMessage', function (message) {
     if (!message.isfinish) {
         if (jishuqi == 0) {
             chatid = message.chatid;
-        } else {
+        }
+        else if (message.loading) {
+            $("#pluginloading").html(message.message);
+        }
+        else {
             if (message.message != null) {
                 sysmsg += message.message;
                 $("#" + assistansBoxId).html(md.render(sysmsg));
@@ -1459,6 +1725,7 @@ connection.on('ReceiveWorkShopMessage', function (message) {
         sysmsg = "";
         jishuqi = 0;
         $('.LDI').remove();
+        $("#pluginloading").remove();
     }
     if (message.jscode != null && message.jscode != "") {
         (function () {
@@ -1494,15 +1761,26 @@ function sendMsg() {
         "msgid_g": msgid_g,
         "chatgroupid": chatgroupid,
         "ip": IP,
-        "image_path": "",
-        "chatfrom": plugincode
+        "image_path": [],
+        "chatfrom": plugincode,
+        "inputCacheKey": ""
     };
     $("#Q").val("");
     $("#Q").focus();
     var html = `<div class="chat-message user"><pre id="` + msgid_u + `"></pre></div>`;
     $(".bottom-panel-content").append(html);
+    if (msg.length > 1000) {
+        setInputToCache(data, function (responseData) {
+            data.inputCacheKey = responseData;
+            data.msg = "";
+        });
+    }
     $("#" + msgid_u).text(msg);
-    var gpthtml = `<div class="chat-message system"><div id="` + msgid_g + `"></div><div class="spinner-grow spinner-grow-sm LDI"></div></div>`;
+    var gpthtml = `<div class="chat-message system">
+                     <div id="pluginloading"></div>
+                     <div id="` + msgid_g + `"></div>
+                     <div class="spinner-grow spinner-grow-sm LDI"></div>
+                   </div>`;
     $(".bottom-panel-content").append(gpthtml);
     chatBody.animate({
         scrollTop: chatBody.prop("scrollHeight")
@@ -1622,6 +1900,7 @@ function getWorkShopAIModelList(callback) {
 function goBack() {
     window.location.href = `/WorkShop/MyWork?plugincode=${plugincode}&id=1393&type=edit`;
 }
+
 function darkModel() {
     const isDarkMode = $('html').hasClass('dark');
     const newMode = !isDarkMode;

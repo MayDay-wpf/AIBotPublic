@@ -4,6 +4,7 @@ let page = 1;
 let pageSize = 12;
 let thisTypeCode = '';
 let knowledgecreatemodel = 'Fixedlength';
+let fixedlength = 1000;
 let checkFileCode = [];
 let processFileCode = [];
 $(function () {
@@ -130,6 +131,7 @@ function getProcessFileCode() {
     if (checkFileCode.length === 0) {
         $(".deletefile").show();
         $(".processBox").hide();
+        $(".stopBuild").hide();
         clearInterval(timer);
         timer = null;
         return;
@@ -186,6 +188,7 @@ function getProcessFileCode() {
                         } else {
                             // 创建新的进度条并添加到页面中
                             var progressBarHtml =
+                                `<a href="#" class="btn btn-danger ${processFileCode[i].key} stopBuild" style="margin-right:10px;" onclick="stopBuild('${processFileCode[i].key}')">停止构建</a><br>` +
                                 '<div class="progress">' +
                                 '<div class="progress-bar" role="progressbar" style="width: ' + progressValue + '%" aria-valuenow="' + progressValue + '" aria-valuemin="0" aria-valuemax="100">' +
                                 progressValue + '%' +
@@ -199,6 +202,7 @@ function getProcessFileCode() {
                     checkFileCode = [];
                     $(".deletefile").show();
                     $(".processBox").hide();
+                    $(".stopBuild").hide();
                 }
 
             }
@@ -214,6 +218,8 @@ timer = setInterval(getProcessFileCode, 3000);
 
 function getFiles(type, typeCode) {
     closeModal();
+    $('#fileList').empty();
+    $('#fileInput').val('');
     var name = $('#searchKey-knowledgefile').val();
     if (type == 'init') {
         thisTypeCode = typeCode;
@@ -321,6 +327,30 @@ function deleteFiles(fileCode, typeCode) {
         });
     })
 }
+
+function stopBuild(fileCode) {
+    showConfirmationModal('确认停止构建？', '停止构建会提前结束知识库创建，您需要手动删除已构建完成的部分内容并重新开始', function () {
+        //发送请求
+        loadingOverlay.show();
+        $.ajax({
+            type: 'Post',
+            url: '/KnowledgeAI/StopBuild',
+            data: {
+                fileCode: fileCode
+            },
+            success: function (res) {
+                loadingOverlay.hide();
+                if (res.success) {
+                    $(".deletefile").show();
+                    $(".processBox").hide();
+                    $(".stopBuild").hide();
+                    checkFileCode = checkFileCode.filter(value => value !== fileCode);
+                    balert('停止成功', "success", false, 1500);
+                }
+            }
+        })
+    })
+}
 function getKnowledgeTypeInfo(typeCode) {
     $("#knowledge-types").hide();
     $("#knowledge-file").show();
@@ -375,7 +405,7 @@ $(document).ready(function () {
     var CHUNK_SIZE = 100 * 1024; // 切片大小，例如100KB
     var uploadPaused = false; // 上传暂停标志
 
-    $('#fileInput').change(function () {
+    $(document).on('change', '#fileInput', function () {
         var modelhtml = `<ul id="fileList" class="list-group"></ul>`;
         openModal('开始前检查', modelhtml);
         var fileList = $('#fileList');
@@ -395,7 +425,7 @@ $(document).ready(function () {
                     balert('仅支持上传 Word、PPT、Excel、txt 和 PDF 文件，已为您移除不支持的文件', 'info', false, 2000, 'center');
                     notifiedUnsupported = true;
                 }
-                var fileInput = document.getElementById('fileInput'); // 或者使用 $('#fileInput')[0] 如果你喜欢jQuery
+                var fileInput = document.getElementById('fileInput');
                 var newFiles = Array.from(fileInput.files).filter((_, index) => index !== i);
 
                 // 创建一个新的 DataTransfer 对象
@@ -409,6 +439,7 @@ $(document).ready(function () {
                     notifiedfilesOverCount = true;
                     closeModal();
                     $('#fileList').empty();
+                    $('#fileInput').val('');
                     balert('最多同时创建3个文件的进程', 'info', false, 2000, 'center');
                 }
                 var fileSize = (file.size / 1024).toFixed(2) + ' KB';
@@ -428,8 +459,11 @@ $(document).ready(function () {
                     newFiles.forEach(file => dataTransfer.items.add(file)); // 添加剩余文件
                     // 替换文件输入的文件列表
                     fileInput.files = dataTransfer.files;
-                    if (dataTransfer.files.length == 0)
+                    if (dataTransfer.files.length == 0) {
                         closeModal();
+                        $('#fileList').empty();
+                        $('#fileInput').val('');
+                    }
                 });
             }
         });
@@ -440,6 +474,7 @@ $(document).ready(function () {
             '<h6 style="margin-bottom: 10px;"><b>选择知识库生成模式：</b></h6>' +
             '<select class="custom-select" id="processType">' +
             '<option value="Fixedlength">定长切片</option>' +
+            '<option value="FixedlengthByJina">智能定长切片-JinaAI</option>' +
             '<option value="QA">Q/A清洗</option>' +
             '<option value="Newline">单换行符切片</option>' +
             '<option value="DoubleNewline">双换行符切片</option>' +
@@ -449,21 +484,36 @@ $(document).ready(function () {
             '<input type="text" id="regular" placeholder="请输入正则表达式" class="form-control" style="display:none; width: auto; flex: 1; margin-right: 10px;" />' +
             '<a href="#" style="display:none;" onclick="regularInfo()"><i data-feather="help-circle"></i></a>' +
             '</div>' +
+            '<div id="sliceSize" style="margin-top: 15px;">' +
+            '<label for="sliceSizeRange">切片大小：<span id="sliceSizeValue">1000</span></label>' +
+            '<input type="range" class="custom-range" id="sliceSizeRange" min="500" max="2000" step="100" value="1000">' +
+            '</div>' +
             '</div>');
 
         processType.find('#processType').on('change', function () {
             var selectedValue = $(this).val();
             var regexInput = processType.find('#regular');
             var helpIcon = processType.find('a');
+            var sliceSizeDiv = processType.find('#sliceSize');
 
             if (selectedValue === 'regex') {
                 feather.replace();
                 regexInput.show();
-                helpIcon.css('display', 'inline-block'); // 设置为行内块，保持在同一行
+                helpIcon.css('display', 'inline-block');
+                sliceSizeDiv.hide();
+            } else if (selectedValue === 'Fixedlength' || selectedValue === 'FixedlengthByJina') {
+                regexInput.hide();
+                helpIcon.hide();
+                sliceSizeDiv.show();
             } else {
                 regexInput.hide();
                 helpIcon.hide();
+                sliceSizeDiv.hide();
             }
+        });
+
+        processType.find('#sliceSizeRange').on('input', function () {
+            processType.find('#sliceSizeValue').text($(this).val());
         });
         function getSelectedValue() {
             var selectedValue = processType.find('#processType').val();
@@ -500,11 +550,13 @@ $(document).ready(function () {
             uploadPaused = false;
             uploadButton.hide();
             knowledgecreatemodel = selectedValue;
+            fixedlength = $('#sliceSizeRange').val();
             startUpload();
         });
         cancelButton.click(function () {
             closeModal();
             $('#fileList').empty();
+            $('#fileInput').val('');
         });
     });
     function startUpload() {
@@ -567,7 +619,8 @@ $(document).ready(function () {
                 FileName: fileName,
                 TotalChunks: totalChunks,
                 ProcessType: knowledgecreatemodel,
-                TypeCode: thisTypeCode
+                TypeCode: thisTypeCode,
+                FixedLength: fixedlength
             }),
             success: function (response) {
                 console.log('文件合并成功', response);

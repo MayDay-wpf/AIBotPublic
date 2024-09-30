@@ -17,7 +17,8 @@ namespace aibotPro.Interface
         List<SystemLog> GetSystemLogs(int page, int size, out int total);//获取系统日志
         List<Admin> GetAdminList(int page, int size, out int total);//获取管理员列表
         bool CreateAccount(string account, string password);//创建账号
-        bool SendNotice(string content);//发送公告
+        bool SendNotice(int id, string title, string content); //发送公告
+        List<Notice> GetNotices(int page, int size, out int total); //获取公告列表
         bool ApiKeyCheck(string key);//API Key验证
     }
 }

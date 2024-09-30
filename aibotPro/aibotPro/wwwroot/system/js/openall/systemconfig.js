@@ -31,7 +31,7 @@ function saveSystemConfig() {
         var cfgvalue = $(row).find("input").eq(2).val();
 
         if (!removeSpaces(cfgcode) || !removeSpaces(cfgkey) || !removeSpaces(cfgvalue)) {
-            balert('请将空的【自定义对话模型】输入行删除，或填写完整', 'danger', false, 1500, 'top');
+            balert('请将空的【系统设置】输入行删除，或填写完整', 'danger', false, 1500, 'top');
             issave = false;
             return;
         } else {

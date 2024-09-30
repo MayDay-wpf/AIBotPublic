@@ -19,6 +19,8 @@ namespace aibotPro.Models
         public string ChatCode { get; set; }
         [StringLength(100)]
         public string ChatGroupId { get; set; }
+        [StringLength(3000)]
+        public string ChatTitle { get; set; }
         public string Chat { get; set; }
         [StringLength(50)]
         public string Role { get; set; }
