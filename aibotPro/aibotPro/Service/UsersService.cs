@@ -517,9 +517,9 @@ namespace aibotPro.Service
             bool isVip = await _financeService.IsVip(account);
             bool isSVip = await _financeService.IsSVip(account);
             bool shouldCharge = modelPrice != null && (
-                (!isVip && !isSVip && (modelPrice.ModelPriceInput > 0 || modelPrice.ModelPriceOutput > 0)) ||
-                (isVip && !isSVip && (modelPrice.VipModelPriceInput > 0 || modelPrice.VipModelPriceOutput > 0)) ||
-                (isSVip && (modelPrice.SvipModelPriceInput > 0 || modelPrice.SvipModelPriceOutput > 0)));
+                (!isVip && !isSVip && (modelPrice.ModelPriceInput > 0 || modelPrice.ModelPriceOutput > 0 || modelPrice.OnceFee > 0)) ||
+                (isVip && !isSVip && (modelPrice.VipModelPriceInput > 0 || modelPrice.VipModelPriceOutput > 0 || modelPrice.VipOnceFee > 0)) ||
+                (isSVip && (modelPrice.SvipModelPriceInput > 0 || modelPrice.SvipModelPriceOutput > 0 || modelPrice.SvipOnceFee > 0)));
 
             // 不是会员且余额为0时不提供服务
             if (!isVip && !isSVip && user.Mcoin <= 0)

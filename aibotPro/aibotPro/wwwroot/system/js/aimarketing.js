@@ -1,9 +1,9 @@
 ﻿$(function () {
     $('.nav-sub-link').removeClass('active');
     $('.nav-link').removeClass('active');
-    $("#product-main-menu").addClass('active');
-    $("#product-main-menu").parent().toggleClass('show');
-    $("#product-main-menu").parent().siblings().removeClass('show');
+    $("#ai-main-menu").addClass('active');
+    $("#ai-main-menu").parent().toggleClass('show');
+    $("#ai-main-menu").parent().siblings().removeClass('show');
     $("#aimarketing-product-nav").addClass('active');
     $("#alloy").prop("checked", true);
 });

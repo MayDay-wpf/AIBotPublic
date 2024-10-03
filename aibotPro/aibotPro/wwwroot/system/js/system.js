@@ -647,11 +647,6 @@ function getUISetting() {
         url: '/Home/GetUISetting', type: 'Post', success: function (res) {
             //loadingOverlay.hide();
             if (res.success) {
-                if (res.data.systemName != null) {
-                    $('.sidebar-logo span').text(res.data.systemName);
-                } else {
-                    $('.sidebar-logo span').text('Mufasa');
-                }
                 if (res.data.menuTransparency != null) {
                     $('.sidebar').css('opacity', res.data.menuTransparency);
                 } else {
@@ -693,7 +688,7 @@ function aboutus() {
 }
 
 function customMenu() {
-    $("#systemNAME").html('Mufasa');
+    //$("#systemNAME").html('Mufasa');
     //检查#custommenu 下是否存在#QQ #ABOUTUS #GITHUB
     if ($("#custommenu #QQ").length > 0 || $("#custommenu #ABOUTUS").length > 0 || $("#custommenu #GITHUB").length > 0) {
         return;
@@ -761,7 +756,7 @@ function customMenu() {
                   </li>
                   <li class="nav-item" id="SQLTruck">
                     <a href="https://sql.aibotpro.cn/" class="nav-link" target="_blank">
-                        <i data-feather="coffee">
+                        <i data-feather="truck">
                         </i>
                         SQL-Truck
                     </a>

@@ -181,12 +181,12 @@ function todayIsCheckIn() {
 }
 
 function createCard() {
-    loadingBtn("#generateBtn")
     var generateAmount = $("#generateAmount").val();
     if (generateAmount == "") {
         balert("请输入要生成的金额", "danger", true, 2000, "top");
         return;
     }
+    loadingBtn("#generateBtn")
     $.ajax({
         url: "/NewApi/CreateCard",
         type: "post",

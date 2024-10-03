@@ -865,8 +865,8 @@
         <_ContentIncludedByDefault Remove="wwwroot\system\js\highlight\core.min.js" />
         <_ContentIncludedByDefault Remove="wwwroot\system\js\highlight\highlight.js" />
         <_ContentIncludedByDefault Remove="wwwroot\system\js\highlight\highlight.min.js" />
-        <_ContentIncludedByDefault Remove="wwwroot\ffmpeg-binaries\ffmpeg"/>
-        <_ContentIncludedByDefault Remove="wwwroot\ffmpeg-binaries\ffmpeg.exe"/>
+        <_ContentIncludedByDefault Remove="wwwroot\ffmpeg-binaries\ffmpeg" />
+        <_ContentIncludedByDefault Remove="wwwroot\ffmpeg-binaries\ffmpeg.exe" />
     </ItemGroup>
 
     <ItemGroup>

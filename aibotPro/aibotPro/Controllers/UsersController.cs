@@ -772,7 +772,7 @@ public class UsersController : Controller
                     _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, 15m * 0.15m);
                 }
             }
-            else if (thisorder.OrderType.Contains("VIP|50") && intomoney == 90)
+            else if (thisorder.OrderType.Contains("VIP|50") && intomoney == 50)
             {
                 var vipinfo = _context.VIPs.AsNoTracking()
                     .FirstOrDefault(x => x.Account == username && x.VipType == "VIP|50");
@@ -804,7 +804,7 @@ public class UsersController : Controller
                     _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, 90m * 0.15m);
                 }
 
-                user.Mcoin = user.Mcoin + intomoney + 10;
+                user.Mcoin = user.Mcoin + intomoney;
                 _context.Users.Update(user);
             }
             else if (thisorder.OrderType.Contains("MALL"))

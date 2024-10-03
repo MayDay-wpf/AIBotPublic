@@ -594,6 +594,8 @@ public class ChatHub : Hub
             if (!isVisionModel)
                 visionBody = null;
             var sysmsg = string.Empty;
+            int usageInput = 0;
+            int usageOutput = 0;
             try
             {
                 if (chatDto.stream)
@@ -618,7 +620,12 @@ public class ChatHub : Hub
                 }
                 else
                 {
-                    sysmsg = await _aiServer.CallingAINotStream(aiChat, apiSetting, visionBody);
+                    string jsonResponse = await _aiServer.CallingAINotStream(aiChat, apiSetting, visionBody, true);
+                    ChatCompletionResponseUnStream response =
+                        JsonConvert.DeserializeObject<ChatCompletionResponseUnStream>(jsonResponse);
+                    sysmsg = response.Choices[0].message.Content;
+                    usageInput = response.Usage.prompt_tokens;
+                    usageOutput = response.Usage.completion_tokens;
                     firstTime = _systemService.CalculateTimeDifference(startTime, DateTime.Now).ToString("F1");
                     chatRes.message = sysmsg;
                     Thread.Sleep(delay);
@@ -675,7 +682,8 @@ public class ChatHub : Hub
                     "assistant", chatDto.aiModel, firstTime, allTime);
                 if (!string.IsNullOrEmpty(output) && !useMyKey)
                     await _financeService.CreateUseLogAndUpadteMoney(Account, chatDto.aiModel,
-                        tikToken.Encode(input).Count, tikToken.Encode(output).Count);
+                        usageInput > 0 ? usageInput : tikToken.Encode(input).Count,
+                        usageOutput > 0 ? usageOutput : tikToken.Encode(output).Count);
             }
         }
         catch (Exception e)
@@ -784,6 +792,7 @@ public class ChatHub : Hub
             {
                 aImodels = _systemService.GetWorkShopAImodel();
             }
+
             var openAiOptions = new OpenAiOptions();
             var channel = "OpenAI";
             if (aImodels != null)

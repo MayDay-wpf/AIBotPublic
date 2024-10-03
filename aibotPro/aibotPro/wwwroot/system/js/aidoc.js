@@ -1,9 +1,9 @@
 ﻿$(function () {
     $('.nav-sub-link').removeClass('active');
     $('.nav-link').removeClass('active');
-    $("#product-main-menu").addClass('active');
-    $("#product-main-menu").parent().toggleClass('show');
-    $("#product-main-menu").parent().siblings().removeClass('show');
+    $("#ai-main-menu").addClass('active');
+    $("#ai-main-menu").parent().toggleClass('show');
+    $("#ai-main-menu").parent().siblings().removeClass('show');
     $("#aidoc-product-nav").addClass('active');
     if (isMobile()) {
         balert("请在电脑上使用本功能", "danger", false, 2000, 'center', function () {

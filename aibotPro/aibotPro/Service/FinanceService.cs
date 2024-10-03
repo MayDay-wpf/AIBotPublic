@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using aibotPro.Dtos;
@@ -20,7 +21,6 @@ namespace aibotPro.Service
         private readonly AIBotProContext _context;
         private readonly ISystemService _systemService;
         private readonly IRedisService _redisService;
-        private readonly IAiServer _aiServer;
 
         public FinanceService(AIBotProContext context, ISystemService systemService, IRedisService redisService,
             IAiServer aiServer)
@@ -28,7 +28,6 @@ namespace aibotPro.Service
             _context = context;
             _systemService = systemService;
             _redisService = redisService;
-            _aiServer = aiServer;
         }
 
         public bool UpdateUserMoney(string account, decimal money, string type, out string errormsg)
@@ -735,8 +734,60 @@ namespace aibotPro.Service
             pr.Add("key", easyPaySetting.ApiKey.ToString());
             pr.Add("out_trade_no", out_trade_no);
             PayResultDto payResultDto =
-                JsonConvert.DeserializeObject<PayResultDto>(_aiServer.AiGet(easyPaySetting.CheckPayUrl, pr));
+                JsonConvert.DeserializeObject<PayResultDto>(GetResult(easyPaySetting.CheckPayUrl, pr));
             return payResultDto;
+        }
+        private string GetResult(string url, Dictionary<string, object> dic, Dictionary<string, string> headers = null,
+    Dictionary<string, string> cookies = null)
+        {
+            var result = "";
+            var builder = new StringBuilder();
+            builder.Append(url);
+            if (dic.Count > 0)
+            {
+                builder.Append("?");
+                var i = 0;
+                foreach (var item in dic)
+                {
+                    if (i > 0)
+                        builder.Append("&");
+                    builder.AppendFormat("{0}={1}", item.Key, item.Value);
+                    i++;
+                }
+            }
+
+            //如果headers有值，则加入到request头部
+            var req = (HttpWebRequest)WebRequest.Create(builder.ToString());
+            if (headers != null)
+                foreach (var item in headers)
+                    req.Headers.Add(item.Key, item.Value);
+
+            //如果cookies有值，则加入到request的Cookie容器
+            if (cookies != null)
+            {
+                var cookieContainer = new CookieContainer();
+                foreach (var item in cookies)
+                    cookieContainer.Add(new Cookie(item.Key, item.Value, "/", req.RequestUri.Host));
+                req.CookieContainer = cookieContainer;
+            }
+
+            //添加参数
+            var resp = (HttpWebResponse)req.GetResponse();
+            var stream = resp.GetResponseStream();
+            try
+            {
+                //获取内容
+                using (var reader = new StreamReader(stream))
+                {
+                    result = reader.ReadToEnd();
+                }
+            }
+            finally
+            {
+                stream.Close();
+            }
+
+            return result;
         }
 
         public List<Order> GetOrders(string account, int page, int size, out int total)

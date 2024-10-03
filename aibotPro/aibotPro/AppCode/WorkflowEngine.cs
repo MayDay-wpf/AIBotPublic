@@ -604,12 +604,12 @@ namespace aibotPro.AppCode
             int maxcount = llmData.Output.LLMMaxcount;
             AiChat aiChat = null;
             VisionBody visionBody = null;
-            APISetting apiSetting = CreateAPISetting(aimodel);
+            APISetting apiSetting = _aiServer.CreateAPISetting(aimodel);
             if (!string.IsNullOrEmpty(llmData.Output.ImgUrl))
             {
                 string imgurl = FillScriptWithValues(llmData.Output.ImgUrl, result);
                 if (apiSetting.IsVisionModel.HasValue && apiSetting.IsVisionModel.Value)
-                    visionBody = CreateVisionBody(aimodel, prompt, imgurl, stream, jsonModel, jsonSchema,
+                    visionBody = _aiServer.CreateVisionBody(aimodel, prompt, imgurl, stream, jsonModel, jsonSchema,
                         jsonSchemaInput);
                 else
                 {
@@ -619,12 +619,12 @@ namespace aibotPro.AppCode
                     prompt = @$"# 要求：请你充当图片内容分析师,回答:{prompt}
                                 * 图像中的文字识别结果为：{imgTxt}
                                 * 图像中物体和场景识别结果为：{imgRes}";
-                    aiChat = CreateAiChat(aimodel, prompt, stream, jsonModel, jsonSchema, jsonSchemaInput);
+                    aiChat = _aiServer.CreateAiChat(aimodel, prompt, stream, jsonModel, jsonSchema, jsonSchemaInput);
                 }
             }
             else
             {
-                aiChat = CreateAiChat(aimodel, prompt, stream, jsonModel, jsonSchema, jsonSchemaInput);
+                aiChat = _aiServer.CreateAiChat(aimodel, prompt, stream, jsonModel, jsonSchema, jsonSchemaInput);
             }
 
             while (true)
@@ -741,144 +741,6 @@ namespace aibotPro.AppCode
             nodeOutput.NextNodes = FindNextNode(node.Outputs);
             _nodeCheckCounts[nodeKey]--;
             return nodeOutput;
-        }
-
-        private AiChat CreateAiChat(string aimodel, string prompt, bool stream, bool jsonModel, bool jsonSchema,
-            string jsonSchemaInput)
-        {
-            AiChat aiChat = new AiChat();
-            aiChat.Model = aimodel;
-            aiChat.Stream = stream;
-
-            // 处理JSON模型
-            if (jsonModel)
-            {
-                aiChat.ResponseFormat = new ResponseFormat()
-                {
-                    Type = "json_object"
-                };
-            }
-
-            // 处理JSON Schema
-            if (jsonSchema && !string.IsNullOrWhiteSpace(jsonSchemaInput))
-            {
-                JObject schemaObject = JObject.Parse(jsonSchemaInput);
-
-                aiChat.ResponseFormat = new ResponseFormat()
-                {
-                    Type = "json_schema",
-                    JsonSchema = new JsonSchemaWrapper
-                    {
-                        Name = "reply_schema",
-                        Strict = true,
-                        Schema = schemaObject
-                    }
-                };
-            }
-
-            // 创建消息列表
-            List<Message> messages = new List<Message>();
-            Message message = new Message
-            {
-                Role = "user",
-                Content = prompt
-            };
-            messages.Add(message);
-            aiChat.Messages = messages;
-            return aiChat;
-        }
-
-        private VisionBody CreateVisionBody(string aimodel, string prompt, string imgurl, bool stream, bool jsonModel,
-            bool jsonSchema, string jsonSchemaInput)
-        {
-            VisionBody visionBody = new VisionBody();
-            visionBody.model = aimodel;
-            visionBody.stream = stream;
-
-            if (jsonModel)
-            {
-                visionBody.response_format = new ResponseFormat()
-                {
-                    Type = "json_object"
-                };
-            }
-
-            if (jsonSchema && !string.IsNullOrWhiteSpace(jsonSchemaInput))
-            {
-                // 解析jsonSchemaInput为JObject
-                JObject schemaObject = JObject.Parse(jsonSchemaInput);
-
-                visionBody.response_format = new ResponseFormat()
-                {
-                    Type = "json_schema",
-                    JsonSchema = new JsonSchemaWrapper
-                    {
-                        Name = "reply_schema", // 可以自定义通过参数传入或固定命名
-                        Strict = true, // 根据实际需求设置
-                        Schema = schemaObject
-                    }
-                };
-            }
-
-            List<VisionChatMesssage> messages = new List<VisionChatMesssage>();
-            List<VisionContent> visionContents = new List<VisionContent>();
-
-            VisionContent textVisionContent = new VisionContent()
-            {
-                type = "text",
-                text = prompt
-            };
-            VisionContent imgVisionContent = new VisionContent()
-            {
-                type = "image_url",
-                image_url = new VisionImg
-                {
-                    url = imgurl
-                }
-            };
-
-            visionContents.Add(textVisionContent);
-            visionContents.Add(imgVisionContent);
-
-            messages.Add(new VisionChatMesssage
-            {
-                role = "user",
-                content = visionContents
-            });
-
-            visionBody.messages = messages.ToArray();
-            return visionBody;
-        }
-
-        private APISetting CreateAPISetting(string aimodel)
-        {
-            APISetting apiSetting = new APISetting();
-            var aImodels = _systemService.GetAImodel();
-            AImodel aiModelInfo = aImodels.Where(x => x.ModelName == aimodel).FirstOrDefault();
-            if (aiModelInfo == null)
-            {
-                throw new Exception("AI模型不存在");
-            }
-
-            string apiKey = aiModelInfo.ApiKey;
-            //标准化baseurl
-            string baseUrl = aiModelInfo.BaseUrl;
-            try
-            {
-                if (baseUrl.EndsWith("/"))
-                {
-                    baseUrl = baseUrl.TrimEnd('/');
-                }
-            }
-            catch (Exception e)
-            {
-                throw e;
-            }
-
-            apiSetting.ApiKey = apiKey;
-            apiSetting.BaseUrl = baseUrl;
-            apiSetting.IsVisionModel = aiModelInfo.VisionModel;
-            return apiSetting;
         }
 
         private async Task<NodeOutput> ProcessDALLNode(NodeData node, List<NodeOutput> result)
@@ -1473,7 +1335,7 @@ namespace aibotPro.AppCode
             var aiCodeCheckModel = systemCfg.FirstOrDefault(x => x.CfgKey == "AICodeCheckModel");
             if (aiCodeCheckBaseUrl == null || aiCodeCheckApiKey == null || aiCodeCheckModel == null)
                 throw new Exception("系统未配置代码检查：AICodeCheckBaseUrl、AICodeCheckApiKey、AICodeCheckModel");
-            AiChat aiChat = CreateAiChat(aiCodeCheckModel.CfgValue, prompt, false, false, true, JsonSchemaInput);
+            AiChat aiChat = _aiServer.CreateAiChat(aiCodeCheckModel.CfgValue, prompt, false, false, true, JsonSchemaInput);
             APISetting apiSetting = new APISetting
             {
                 BaseUrl = aiCodeCheckBaseUrl.CfgValue,

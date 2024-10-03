@@ -897,7 +897,7 @@ function sendMsg(retryCount = 3) {
     }
     var maxtokensText = $('#maxTokensValue').text();
     var maxtokens = parseInt(maxtokensText);
-    if (isNaN(frequency)) {
+    if (isNaN(maxtokens)) {
         maxtokens = 4095;
     }
     var shortcutSystemPrompt = $("#shortcutSystemPrompt").val() === "" ? systemPrompt : $("#shortcutSystemPrompt").val();

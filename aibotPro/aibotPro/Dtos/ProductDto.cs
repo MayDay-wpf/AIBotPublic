@@ -25,4 +25,8 @@
         public List<DrawImgRes> Imglist { get; set; }
         public string CombinedMp3 { get; set; }
     }
+    public class QuestionList
+    {
+        public List<string> Questions { get; set; }
+    }
 }

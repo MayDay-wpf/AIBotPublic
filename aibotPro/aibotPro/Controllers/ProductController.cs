@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using TiktokenSharp;
 using Xabe.FFmpeg;
 using static Google.Apis.Requests.BatchRequest;
 
@@ -34,6 +35,10 @@ namespace aibotPro.Controllers
             return View();
         }
         public IActionResult AiDoc()
+        {
+            return View();
+        }
+        public IActionResult ChatPDF()
         {
             return View();
         }
@@ -236,6 +241,60 @@ namespace aibotPro.Controllers
             return Ok(new { videoPath = relativeVideoPath });
         }
 
+        #region ChatPDF
+        public async Task<IActionResult> CreateQuestion(string content)
+        {
+            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var user = _usersService.GetUserData(username);
+            if (user.Mcoin <= 0)
+            {
+                return Json(new
+                {
+                    success = false,
+                    msg = "余额不足"
+                });
+            }
+            var question = new Dtos.QuestionList();
+            bool success = false;
+            string prompt = @$"# Role: Please act as a question creator. \n
+                               * Requirements: Based on the following text, generate 4 questions. Note that only 4 are needed. \n
+                               * Please ask your questions in Chinese. \n
+                               * The content of the document is as follows: \n
+                               * {content}";
+            string schema = @"{
+                                ""type"": ""object"",
+                                ""properties"": {
+                                  ""questions"": {
+                                    ""type"": ""array"",
+                                    ""description"": ""List of question"",
+                                    ""items"": {
+                                      ""type"": ""string""
+                                    }
+                                  }
+                                },
+                                ""required"": [
+                                  ""questions""
+                                ],
+                                ""additionalProperties"": false
+                              }";
+            var systemCfgs = _systemService.GetSystemCfgs();
+            string model = systemCfgs.FirstOrDefault(x => x.CfgKey == "AICodeCheckModel")?.CfgValue;
+            var result = await _aiServer.GPTJsonSchema(prompt, schema, model, username);
+            question = JsonConvert.DeserializeObject<Dtos.QuestionList>(result);
+            if (!string.IsNullOrEmpty(result))
+            {
+                success = true;
+                var tikToken = TikToken.GetEncoding("cl100k_base");
+                await _financeService.CreateUseLogAndUpadteMoney(username, model, tikToken.Encode(prompt + schema).Count, tikToken.Encode(result).Count);
+            }
+            return Json(new
+            {
+                success = success,
+                data = question.Questions
+            });
+        }
+
+        #endregion
 
     }
 }

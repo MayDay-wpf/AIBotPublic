@@ -13,7 +13,8 @@ namespace aibotPro.Interface
             [EnumeratorCancellation] CancellationToken cancellationToken = default); //调用AI接口（流式）
 
         Task<string>
-            CallingAINotStream(AiChat aiChat, APISetting apiSetting, VisionBody visionBody = null); //调用AI接口（非流式）
+            CallingAINotStream(AiChat aiChat, APISetting apiSetting, VisionBody visionBody = null,
+                bool returnObject = false); //调用AI接口（非流式）
 
         Task<bool> SaveChatHistory(string account, string chatId, string content, string chatCode, string chatGroupId,
             string role, string model, string firstTime = "", string allTime = ""); //AI对话记录入库
@@ -69,7 +70,15 @@ namespace aibotPro.Interface
         Task<List<AIdrawRe>> GetAIdrawResList(string account, int page, int pageSize, string role = ""); //获取AI画图结果列表
 
         Task<string> GPTJsonModel(string systemprompt, string prompt, string model, string account); //JsonModel-GPT
+        Task<string> GPTJsonSchema(string prompt, string schema, string model, string account); //JsonSchema-GPT
 
+        public AiChat CreateAiChat(string aimodel, string prompt, bool stream, bool jsonModel, bool jsonSchema,
+            string jsonSchemaInput); //创建AI对话请求体
+
+        public VisionBody CreateVisionBody(string aimodel, string prompt, string imgurl, bool stream, bool jsonModel,
+            bool jsonSchema, string jsonSchemaInput); //创建多模态AI对话请求体
+
+        APISetting CreateAPISetting(string aimodel); //创建AI对话请求头
         Task<string> TTS(string text, string model, string voice); //TTS
 
         Task ExecuteFunctionWithLoadingIndicators(string fnName, string chatId, string senMethod,

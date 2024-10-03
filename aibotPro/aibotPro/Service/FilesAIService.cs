@@ -171,7 +171,7 @@ public class FilesAIService : IFilesAIService
                                   $"```" +
                                   $"* 已确认有效的文本分片\n" +
                                   $"{UseChunkMerge(result)}";
-                AiChat aiChat = CreateAiChat(aiCodeCheckModel.CfgValue, question, false, false, true, jsonschema);
+                AiChat aiChat = _aiServer.CreateAiChat(aiCodeCheckModel.CfgValue, question, false, false, true, jsonschema);
                 string res = await _aiServer.CallingAINotStream(aiChat, apiSetting);
                 await _financeService.CreateUseLogAndUpadteMoney(account, aiCodeCheckModel.CfgValue,
                     tikToken.Encode(question).Count, tikToken.Encode(res).Count);
@@ -198,51 +198,6 @@ public class FilesAIService : IFilesAIService
         }
 
         return result;
-    }
-
-    private AiChat CreateAiChat(string aimodel, string prompt, bool stream, bool jsonModel, bool jsonSchema,
-        string jsonSchemaInput)
-    {
-        AiChat aiChat = new AiChat();
-        aiChat.Model = aimodel;
-        aiChat.Stream = stream;
-
-        // 处理JSON模型
-        if (jsonModel)
-        {
-            aiChat.ResponseFormat = new ResponseFormat()
-            {
-                Type = "json_object"
-            };
-        }
-
-        // 处理JSON Schema
-        if (jsonSchema && !string.IsNullOrWhiteSpace(jsonSchemaInput))
-        {
-            JObject schemaObject = JObject.Parse(jsonSchemaInput);
-
-            aiChat.ResponseFormat = new ResponseFormat()
-            {
-                Type = "json_schema",
-                JsonSchema = new JsonSchemaWrapper
-                {
-                    Name = "reply_schema",
-                    Strict = true,
-                    Schema = schemaObject
-                }
-            };
-        }
-
-        // 创建消息列表
-        List<Message> messages = new List<Message>();
-        Message message = new Message
-        {
-            Role = "user",
-            Content = prompt
-        };
-        messages.Add(message);
-        aiChat.Messages = messages;
-        return aiChat;
     }
     private List<string> MergeChunks(List<string> originalChunks, int maxChunkCount)
     {

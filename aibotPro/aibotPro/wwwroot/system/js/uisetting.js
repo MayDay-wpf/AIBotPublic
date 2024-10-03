@@ -7,6 +7,7 @@
     $("#uisetting-nav").addClass('active');
     getUISetting();
 })
+
 function getUISetting() {
     loadingOverlay.show();
     $.ajax({
@@ -15,13 +16,13 @@ function getUISetting() {
         success: function (res) {
             loadingOverlay.hide();
             if (res.success) {
-                if (res.data.systemName != null) {
-                    $('#systemName').val(res.data.systemName);
-                    $('.sidebar-logo span').text(res.data.systemName);
-                } else {
-                    $('#systemName').val('Mufasa');
-                    $('.sidebar-logo span').text('Mufasa');
-                }
+                // if (res.data.systemName != null) {
+                //     $('#systemName').val(res.data.systemName);
+                //     $('.sidebar-logo span').text(res.data.systemName);
+                // } else {
+                //     $('#systemName').val('Mufasa');
+                //     $('.sidebar-logo span').text('Mufasa');
+                // }
                 if (res.data.menuTransparency != null) {
                     $('#menuTransparency').val(res.data.menuTransparency);
                     $('#menuTransparencyValue').text(res.data.menuTransparency);
@@ -69,8 +70,7 @@ function getUISetting() {
                     $('#backImg').attr('src', '/system/images/addflow.png');
                     backgroundImg = '';
                 }
-            }
-            else {
+            } else {
                 //balert(res.msg, 'danger', false, 1500, 'center');
             }
         }, errr: function () {
@@ -78,6 +78,7 @@ function getUISetting() {
         }
     });
 }
+
 $(document).ready(function () {
     $('#systemName').on('input', function () {
         $('.sidebar-logo span').text($(this).val());
@@ -101,6 +102,7 @@ $(document).ready(function () {
             $('body').css('text-shadow', 'none');
     });
 });
+
 function loadImage(event) {
     var input = event.target;
     if (input.files && input.files[0]) {
@@ -138,14 +140,14 @@ function loadImage(event) {
                 loadingOverlay.hide();
                 if (res.success) {
                     backgroundImg = res.filePath.replace('wwwroot', '');
-                }
-                else {
+                } else {
                     balert(res.msg, 'danger', false, 1500, 'center');
                 }
             }
         });
     }
 }
+
 function saveUISetting(type) {
     var systemName = $('#systemName').val();
     var menuTransparency = $('#menuTransparency').val();
@@ -153,7 +155,7 @@ function saveUISetting(type) {
     var colorPicker = $('#colorPicker').val();
     var shadowSize = $('#shadowSize').val();
     var formData = new FormData();
-    formData.append('SystemName', systemName);
+    // formData.append('SystemName', systemName);
     formData.append('MenuTransparency', menuTransparency);
     formData.append('ContentTransparency', contentTransparency);
     formData.append('ColorPicker', colorPicker);
@@ -176,15 +178,15 @@ function saveUISetting(type) {
                 unloadingBtn('.savesetting');
             if (res.success) {
                 balert('保存成功', 'success', false, 1500, 'center');
-            }
-            else {
+            } else {
                 balert(res.msg, 'danger', false, 1500, 'center');
             }
         }
     });
 }
+
 function defaultUISetting() {
-    $('#systemName').val('Mufasa');
+    // $('#systemName').val('Mufasa');
     $('.sidebar-logo span').text('Mufasa');
     $('#menuTransparency').val(1);
     $('#menuTransparencyValue').text(1);

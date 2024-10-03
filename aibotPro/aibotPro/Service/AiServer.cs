@@ -12,6 +12,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RestSharp;
 using SixLabors.ImageSharp;
+using Spire.Presentation.Charts;
 using TiktokenSharp;
 using Image = SixLabors.ImageSharp.Image;
 using JsonSerializer = System.Text.Json.JsonSerializer;
@@ -124,7 +125,8 @@ public class AiServer : IAiServer
     }
 
 
-    public async Task<string> CallingAINotStream(AiChat aiChat, APISetting apiSetting, VisionBody visionBody = null)
+    public async Task<string> CallingAINotStream(AiChat aiChat, APISetting apiSetting, VisionBody visionBody = null,
+        bool returnObject = false)
     {
         var baseUrl = apiSetting.BaseUrl;
         if (baseUrl.EndsWith("/")) baseUrl = baseUrl.TrimEnd('/');
@@ -156,6 +158,8 @@ public class AiServer : IAiServer
         if (response.IsSuccessful)
         {
             var jsonResponse = JObject.Parse(response.Content);
+            if (returnObject)
+                return jsonResponse.ToString();
             var messageContent = jsonResponse["choices"]?[0]?["message"]?["content"];
 
             if (messageContent != null)
@@ -220,7 +224,8 @@ public class AiServer : IAiServer
         return chatHistories;
     }
 
-    public async Task<List<ChatHistory>> GetChatHistoriesList(string account, int pageIndex, int pageSize, string searchKey)
+    public async Task<List<ChatHistory>> GetChatHistoriesList(string account, int pageIndex, int pageSize,
+        string searchKey)
     {
         // 创建一个子查询，选出每个ChatId对应的最小CreateTime值，以此找到Role为"user"的记录
         var subQuery = _context.ChatHistories
@@ -244,7 +249,7 @@ public class AiServer : IAiServer
                 Role = ch.Role,
                 CreateTime = ch.CreateTime,
                 IsDel = ch.IsDel,
-                Chat = ch.Chat,  // Decode the chat text later
+                Chat = ch.Chat, // Decode the chat text later
                 ChatTitle = ch.ChatTitle
             })
             .Skip((pageIndex - 1) * pageSize)
@@ -260,7 +265,7 @@ public class AiServer : IAiServer
             if (!string.IsNullOrEmpty(x.ChatTitle))
             {
                 x.ChatTitle = _systemService.DecodeBase64(x.ChatTitle);
-                x.Chat = x.ChatTitle;  // Use the decoded ChatTitle
+                x.Chat = x.ChatTitle; // Use the decoded ChatTitle
             }
         });
 
@@ -270,6 +275,7 @@ public class AiServer : IAiServer
 
         return chatHistories;
     }
+
     public async Task<bool> UpdateAllChatTitlesByChatIdAsync(string account, string chatId, string chatTitle)
     {
         try
@@ -301,7 +307,8 @@ public class AiServer : IAiServer
         catch (Exception ex)
         {
             // 异常处理（也可以把异常抛出到更高一级的调用者处理）
-            await _systemService.WriteLog($"/AiServer/UpdateAllChatTitlesByChatIdAsync:{ex.Message}", Dtos.LogLevel.Error, "system");
+            await _systemService.WriteLog($"/AiServer/UpdateAllChatTitlesByChatIdAsync:{ex.Message}",
+                Dtos.LogLevel.Error, "system");
             return false;
         }
     }
@@ -389,7 +396,9 @@ public class AiServer : IAiServer
         await _systemService.WriteLog(response.Content, LogLevel.Error, "system");
         return "";
     }
-    public async Task<string> CreateMJdrawByBlend(string botType, List<string> blendImages, string baseUrl, string apiKey, string drawmodel, string dimensions)
+
+    public async Task<string> CreateMJdrawByBlend(string botType, List<string> blendImages, string baseUrl,
+        string apiKey, string drawmodel, string dimensions)
     {
         try
         {
@@ -411,6 +420,7 @@ public class AiServer : IAiServer
         {
             base64Array.Add("data:image/jpeg;base64," + await _systemService.ImgConvertToBase64(image));
         }
+
         var mJdrawBody = new
         {
             base64Array = base64Array,
@@ -430,7 +440,8 @@ public class AiServer : IAiServer
         return "";
     }
 
-    public async Task<string> CreateMJdrawBySwap(string botType, string baseUrl, string apiKey, string drawmodel, string yourFace, string starFace)
+    public async Task<string> CreateMJdrawBySwap(string botType, string baseUrl, string apiKey, string drawmodel,
+        string yourFace, string starFace)
     {
         try
         {
@@ -467,6 +478,7 @@ public class AiServer : IAiServer
         await _systemService.WriteLog(response.Content, LogLevel.Error, "system");
         return "";
     }
+
     public async Task<string> CreateDALLdraw(string prompt, string imgSize, string quality, string baseUrl,
         string apiKey)
     {
@@ -876,6 +888,121 @@ public class AiServer : IAiServer
         }
 
         return "";
+    }
+
+    public async Task<string> GPTJsonSchema(string prompt, string schema, string model, string account)
+    {
+        var aiChat = CreateAiChat(model, prompt, false, false, true, schema);
+        var apiSetting = CreateAPISetting(model);
+        var result = await CallingAINotStream(aiChat, apiSetting, null);
+        return result;
+    }
+
+    public AiChat CreateAiChat(string aimodel, string prompt, bool stream, bool jsonModel, bool jsonSchema,
+        string jsonSchemaInput)
+    {
+        AiChat aiChat = new AiChat();
+        aiChat.Model = aimodel;
+        aiChat.Stream = stream;
+
+        // 处理JSON模型
+        if (jsonModel)
+        {
+            aiChat.ResponseFormat = new ResponseFormat()
+            {
+                Type = "json_object"
+            };
+        }
+
+        // 处理JSON Schema
+        if (jsonSchema && !string.IsNullOrWhiteSpace(jsonSchemaInput))
+        {
+            JObject schemaObject = JObject.Parse(jsonSchemaInput);
+
+            aiChat.ResponseFormat = new ResponseFormat()
+            {
+                Type = "json_schema",
+                JsonSchema = new JsonSchemaWrapper
+                {
+                    Name = "reply_schema",
+                    Strict = true,
+                    Schema = schemaObject
+                }
+            };
+        }
+
+        // 创建消息列表
+        List<Message> messages = new List<Message>();
+        Message message = new Message
+        {
+            Role = "user",
+            Content = prompt
+        };
+        messages.Add(message);
+        aiChat.Messages = messages;
+        return aiChat;
+    }
+
+    public VisionBody CreateVisionBody(string aimodel, string prompt, string imgurl, bool stream, bool jsonModel,
+        bool jsonSchema, string jsonSchemaInput)
+    {
+        VisionBody visionBody = new VisionBody();
+        visionBody.model = aimodel;
+        visionBody.stream = stream;
+
+        if (jsonModel)
+        {
+            visionBody.response_format = new ResponseFormat()
+            {
+                Type = "json_object"
+            };
+        }
+
+        if (jsonSchema && !string.IsNullOrWhiteSpace(jsonSchemaInput))
+        {
+            // 解析jsonSchemaInput为JObject
+            JObject schemaObject = JObject.Parse(jsonSchemaInput);
+
+            visionBody.response_format = new ResponseFormat()
+            {
+                Type = "json_schema",
+                JsonSchema = new JsonSchemaWrapper
+                {
+                    Name = "reply_schema", // 可以自定义通过参数传入或固定命名
+                    Strict = true, // 根据实际需求设置
+                    Schema = schemaObject
+                }
+            };
+        }
+
+        List<VisionChatMesssage> messages = new List<VisionChatMesssage>();
+        List<VisionContent> visionContents = new List<VisionContent>();
+
+        VisionContent textVisionContent = new VisionContent()
+        {
+            type = "text",
+            text = prompt
+        };
+        VisionContent imgVisionContent = new VisionContent()
+        {
+            type = "image_url",
+            image_url = new VisionImg
+            {
+                url = imgurl
+            }
+        };
+
+        visionContents.Add(textVisionContent);
+        visionContents.Add(imgVisionContent);
+
+        messages.Add(new VisionChatMesssage
+        {
+            role = "user",
+            content = visionContents
+        });
+
+        visionBody.messages = messages.ToArray();
+        return visionBody;
     }
 
     public async Task<string> TTS(string text, string model, string voice)
@@ -1487,7 +1614,9 @@ public class AiServer : IAiServer
 
         return sunoTaskResponse;
     }
-    public async Task<TokenizerDetail> TokenizeJinaAI(string content, int maxChunkLength, string tokenizer = "cl100k_base", bool returnChunks = true, bool returnTokens = false)
+
+    public async Task<TokenizerDetail> TokenizeJinaAI(string content, int maxChunkLength,
+        string tokenizer = "cl100k_base", bool returnChunks = true, bool returnTokens = false)
     {
         TokenizerDetail result = new TokenizerDetail();
         var systemCfgs = _systemService.GetSystemCfgs();
@@ -1560,7 +1689,8 @@ public class AiServer : IAiServer
                 documents
             };
 
-            var content = new StringContent(JsonConvert.SerializeObject(requestBody), Encoding.UTF8, "application/json");
+            var content = new StringContent(JsonConvert.SerializeObject(requestBody), Encoding.UTF8,
+                "application/json");
 
             var response = await client.PostAsync(baseUrl, content);
 
@@ -1706,7 +1836,7 @@ public class AiServer : IAiServer
         return await _context.SaveChangesAsync() > 0;
     }
 
-    private APISetting CreateAPISetting(string aimodel)
+    public APISetting CreateAPISetting(string aimodel)
     {
         var apiSetting = new APISetting();
         var aImodels = _systemService.GetAImodel();

@@ -19,7 +19,7 @@
         }
     };
 </script>
-<link href="~/system/css/chat.css?v3.5" rel="stylesheet"/>
+<link href="~/system/css/chat.css?v3.5" rel="stylesheet" />
 <script src="~/system/js/markdown-it.min.js"></script>
 <script src="~/system/js/tex-chtml.js"></script>
 <div class="header header-chat">
@@ -94,32 +94,32 @@
     </div>
 </div>
 <div class="content-body content-body-chat">
-<div class="chat-panel">
-<div class="chat-sidebar">
-    <div class="chat-sidebar-header">
-        <h6 class="tx-14 tx-color-01 mg-b-0">
-            欢迎回家 <i data-feather="smile"></i>
-        </h6>
-        <div>
-            @* <a href="" data-toggle="tooltip" title="New Conversation">
+    <div class="chat-panel">
+        <div class="chat-sidebar">
+            <div class="chat-sidebar-header">
+                <h6 class="tx-14 tx-color-01 mg-b-0">
+                    欢迎回家 <i data-feather="smile"></i>
+                </h6>
+                <div>
+                    @* <a href="" data-toggle="tooltip" title="New Conversation">
                     <i data-feather="user-plus">
                     </i>
                     </a> *@
-            <button type="button" class="btn btn-info" onclick="newChat()"><i data-feather="plus"></i> 新建会话</button>
-        </div>
-    </div>
-    <div class="chat-sidebar-body">
-        <div class="header-search">
-            <i data-feather="search">
-            </i>
-            <input type="search" class="form-control" placeholder="输入对话记录关键词，回车搜索" id="searchKey">
-        </div>
-        <ul class="chat-list no-select">
-        </ul>
-    </div>
-    <div class="chat-sidebar-footer">
-        <button type="button" class="btn btn-primary" style="width:100%" id="loadMoreBtn" onclick="loadMoreHistory()"><i data-feather="loader" style="width:20px;"></i> 加载更多</button>
-        @* <div class="avatar avatar-sm avatar-online">
+                    <button type="button" class="btn btn-info" onclick="newChat()"><i data-feather="plus"></i> 新建会话</button>
+                </div>
+            </div>
+            <div class="chat-sidebar-body">
+                <div class="header-search">
+                    <i data-feather="search">
+                    </i>
+                    <input type="search" class="form-control" placeholder="输入对话记录关键词，回车搜索" id="searchKey">
+                </div>
+                <ul class="chat-list no-select">
+                </ul>
+            </div>
+            <div class="chat-sidebar-footer">
+                <button type="button" class="btn btn-primary" style="width:100%" id="loadMoreBtn" onclick="loadMoreHistory()"><i data-feather="loader" style="width:20px;"></i> 加载更多</button>
+                @* <div class="avatar avatar-sm avatar-online">
                 <img src="static/picture/fff.png" class="rounded-circle" alt="">
                 </div>
                 <h6 class="chat-loggeduser">
@@ -138,205 +138,205 @@
                 </i>
                 </a>
                 </div> *@
-    </div>
-</div>
-<div class="chat-body">
-<div class="chat-body-header">
-    <div class="avatar avatar-xs">
-        <span class="avatar-initial rounded-circle bg-dark" data-toggle="tooltip" onclick="hideHistoary()" style="cursor:pointer">
-            <i data-feather="chevron-left" id="hidehis" style="width:15px;cursor:pointer"></i>
-        </span>
-    </div>
-    <div class="dropdown" style="text-align:center;width:auto;float:left" data-toggle="tooltip">
-        <a href="#" class="tx-14 tx-color-01 mg-b-0 mg-l-10" id="chatDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            <span id="firstModel">---</span>
-            <i data-feather="chevron-down" style="width:20px;"></i>
-        </a>
-        <div class="dropdown-menu dropdown-menu-left" aria-labelledby="chatDropdown" style="max-height: 505px;overflow-y:scroll;overflow-x:hidden;" id="AIModel">
-            <div id="searchIcon" style="cursor:pointer;margin:5px;color:gray;">
-                <i data-feather="search" style="width: 20px;"></i>
-                <span>点击搜索,下方拖动排序</span>
             </div>
-            <input type="text" id="modelSearch" class="form-control searchModel" placeholder="搜索模型..." onkeyup="filterModels()" style="display:none;">
-            <div id="modelList"></div>
         </div>
-    </div>
-    &nbsp;&nbsp;
-    <a href="#" data-toggle="tooltip" title="新建会话" onclick="newChat()">
-        <i data-feather="plus">
-        </i>
-    </a>
-    &nbsp;&nbsp;
-    <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#settingsModal">
-        <i data-feather="settings" class="chat-settings"></i> 设置
-    </button>
-    <a href="javascript:void(0)" onclick="darkModel()" class="dkmodel" id="dkbtn">
-        <i data-feather="moon"></i>
-    </a>
-    <div class="modal fade" id="settingsModal" tabindex="-1" role="dialog" aria-labelledby="settingsModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="settingsModalLabel">设置</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+        <div class="chat-body">
+            <div class="chat-body-header">
+                <div class="avatar avatar-xs">
+                    <span class="avatar-initial rounded-circle bg-dark" data-toggle="tooltip" onclick="hideHistoary()" style="cursor:pointer">
+                        <i data-feather="chevron-left" id="hidehis" style="width:15px;cursor:pointer"></i>
+                    </span>
                 </div>
-                <div class="modal-body">
-                    <ul class="nav nav-tabs" id="settingsTabs" role="tablist">
-                        <li class="nav-item">
-                            <a class="nav-link active" id="basic-tab" data-toggle="tab" href="#basic" role="tab" aria-controls="basic" aria-selected="true">基础设置</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" id="advanced-tab" data-toggle="tab" href="#advanced" role="tab" aria-controls="advanced" aria-selected="false">高级设置</a>
-                        </li>
-                    </ul>
-                    <div class="tab-content" id="settingsTabContent">
-                        <div class="tab-pane fade show active" id="basic" role="tabpanel" aria-labelledby="basic-tab">
-                            <div class="form-group mt-3">
-                                <label class="aibot-switch aibot-switch-sm aibot-switch-success">
-                                    <input type="checkbox" class="aibot-switch-input useMemory" value="useMemory" name="options">
-                                    <span class="aibot-switch-label"></span>
-                                </label>
-                                <span><i class="fas fa-memory"></i> 启用记忆体</span>
-                                <p class="small font-weight-light text-danger">开启后将检索记忆体中的内容,如果没有历史记忆查询需求,请不要轻易使用此功能</p>
-                            </div>
-                            <div class="form-group" id="pureBox">
-                                <label class="aibot-switch aibot-switch-sm aibot-switch-success">
-                                    <input type="checkbox" class="aibot-switch-input pure" value="pure" name="options">
-                                    <span class="aibot-switch-label"></span>
-                                </label>
-                                <span><i class="fas fa-tint"></i> 纯净模式</span>
-                                <p class="small font-weight-light text-danger">开启后只保留对话窗口,沉浸式对话体验</p>
-                            </div>
-                            <div class="form-group" id="modelGrouping">
-                                <label class="aibot-switch aibot-switch-sm aibot-switch-success">
-                                    <input type="checkbox" class="aibot-switch-input modelGrouping" value="Grouping" name="options">
-                                    <span class="aibot-switch-label"></span>
-                                </label>
-                                <span><i class="fas fa-object-group"></i> 模型分组</span>
-                                <p class="small font-weight-light text-danger">开启后模型列表按照组别显示</p>
-                            </div>
-                            <div class="form-group" id="createAiPrompt">
-                                <label class="aibot-switch aibot-switch-sm aibot-switch-success">
-                                    <input type="checkbox" class="aibot-switch-input createAiPrompt" value="createAiPrompt" name="options">
-                                    <span class="aibot-switch-label"></span>
-                                </label>
-                                <span><i class="fas fa-file-archive"></i> 历史记录智能压缩</span>
-                                <p class="small font-weight-light text-danger">开启后会对过长的历史记录进行压缩,节约成本,丢失一小部分回复质量</p>
-                            </div>
-                            <div class="form-group" id="readingMode">
-                                <label class="aibot-switch aibot-switch-sm aibot-switch-success">
-                                    <input type="checkbox" class="aibot-switch-input readingMode" value="readingMode" name="options">
-                                    <span class="aibot-switch-label"></span>
-                                </label>
-                                <span><i class="fas fa-book-reader"></i> 文件阅读模式</span>
-                                <p class="small font-weight-light text-danger">开启后当存在文件时,将使用多轮对话仔细阅读文件,token消耗非常大,非必要不建议使用</p>
-                            </div>
-                            <div class="form-group" id="autoChange">
-                                <label class="aibot-switch aibot-switch-sm aibot-switch-success">
-                                    <input type="checkbox" class="aibot-switch-input autoChange" value="autoChange" name="options">
-                                    <span class="aibot-switch-label"></span>
-                                </label>
-                                <span><i class="fas fa-exchange-alt"></i> 模型自动切换</span>
-                                <p class="small font-weight-light text-danger">开启后,将根据上下文的模型进行自动切换</p>
-                            </div>
-                            <div class="form-group">
-                                <label for="shortcutSystemPrompt">快捷系统提示词</label>
-                                <textarea type="text" class="form-control" id="shortcutSystemPrompt" placeholder="系统提示词"></textarea>
-                            </div>
+                <div class="dropdown" style="text-align:center;width:auto;float:left" data-toggle="tooltip">
+                    <a href="#" class="tx-14 tx-color-01 mg-b-0 mg-l-10" id="chatDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <span id="firstModel">---</span>
+                        <i data-feather="chevron-down" style="width:20px;"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-left" aria-labelledby="chatDropdown" style="max-height: 505px;overflow-y:scroll;overflow-x:hidden;" id="AIModel">
+                        <div id="searchIcon" style="cursor:pointer;margin:5px;color:gray;">
+                            <i data-feather="search" style="width: 20px;"></i>
+                            <span>点击搜索,下方拖动排序</span>
                         </div>
-                        <div class="tab-pane fade" id="advanced" role="tabpanel" aria-labelledby="advanced-tab">
-                            <div class="form-group mt-3" id="shortcuts">
-                                <label class="aibot-switch aibot-switch-sm aibot-switch-success">
-                                    <input type="checkbox" class="aibot-switch-input shortcuts" value="shortcuts" name="options">
-                                    <span class="aibot-switch-label"></span>
-                                </label>
-                                <span><i class="fas fa-keyboard"></i> 快捷键</span>
-                                <p class="small font-weight-light text-danger">开启后提问框连续输入5个m 'mmmmm'将提示词转英语,提问框连续输入5个f 'fffff' 使用LLM优化提示词</p>
+                        <input type="text" id="modelSearch" class="form-control searchModel" placeholder="搜索模型..." onkeyup="filterModels()" style="display:none;">
+                        <div id="modelList"></div>
+                    </div>
+                </div>
+                &nbsp;&nbsp;
+                <a href="#" data-toggle="tooltip" title="新建会话" onclick="newChat()">
+                    <i data-feather="plus">
+                    </i>
+                </a>
+                &nbsp;&nbsp;
+                <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#settingsModal">
+                    <i data-feather="settings" class="chat-settings"></i> 设置
+                </button>
+                <a href="javascript:void(0)" onclick="darkModel()" class="dkmodel" id="dkbtn">
+                    <i data-feather="moon"></i>
+                </a>
+                <div class="modal fade" id="settingsModal" tabindex="-1" role="dialog" aria-labelledby="settingsModalLabel" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="settingsModalLabel">设置</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
                             </div>
-                            <div class="form-group mt-3" id="stream">
-                                <label class="aibot-switch aibot-switch-sm aibot-switch-success">
-                                    <input type="checkbox" class="aibot-switch-input stream" value="stream" name="options">
-                                    <span class="aibot-switch-label"></span>
-                                </label>
-                                <span><i class="fas fa-stream"></i> 流式输出</span>
-                                <p class="small font-weight-light text-danger">关闭后将一次性输出所有回复</p>
-                            </div>
-                            <div class="form-group mt-3" id="seniorSetting">
-                                <label class="aibot-switch aibot-switch-sm aibot-switch-success">
-                                    <input type="checkbox" class="aibot-switch-input seniorSetting" value="seniorSetting" name="options">
-                                    <span class="aibot-switch-label"></span>
-                                </label>
-                                <span><i class="fab fa-dev"></i> 参数调节</span>
-                                <span class="badge badge-pill badge-info seniorSettingReset" style="cursor: pointer;display: none" onclick="defaultSeniorSetting()">恢复默认</span>
-                            </div>
-                            <div id="seniorSettingItems" style="display: none;">
-                                <div class="slider-container">
-                                    <div class="row align-items-center">
-                                        <div class="col-sm-4">
-                                            <span><i class="fas fa-temperature-low"></i> Temperature</span>
+                            <div class="modal-body">
+                                <ul class="nav nav-tabs" id="settingsTabs" role="tablist">
+                                    <li class="nav-item">
+                                        <a class="nav-link active" id="basic-tab" data-toggle="tab" href="#basic" role="tab" aria-controls="basic" aria-selected="true">基础设置</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="advanced-tab" data-toggle="tab" href="#advanced" role="tab" aria-controls="advanced" aria-selected="false">高级设置</a>
+                                    </li>
+                                </ul>
+                                <div class="tab-content" id="settingsTabContent">
+                                    <div class="tab-pane fade show active" id="basic" role="tabpanel" aria-labelledby="basic-tab">
+                                        <div class="form-group mt-3">
+                                            <label class="aibot-switch aibot-switch-sm aibot-switch-success">
+                                                <input type="checkbox" class="aibot-switch-input useMemory" value="useMemory" name="options">
+                                                <span class="aibot-switch-label"></span>
+                                            </label>
+                                            <span><i class="fas fa-memory"></i> 启用记忆体</span>
+                                            <p class="small font-weight-light text-danger">开启后将检索记忆体中的内容,如果没有历史记忆查询需求,请不要轻易使用此功能</p>
                                         </div>
-                                        <div class="col-sm-6">
-                                            <input type="range" class="form-control-range slider-custom" min="0" max="2" step="0.01" value="1" id="temperatureSlider">
+                                        <div class="form-group" id="pureBox">
+                                            <label class="aibot-switch aibot-switch-sm aibot-switch-success">
+                                                <input type="checkbox" class="aibot-switch-input pure" value="pure" name="options">
+                                                <span class="aibot-switch-label"></span>
+                                            </label>
+                                            <span><i class="fas fa-tint"></i> 纯净模式</span>
+                                            <p class="small font-weight-light text-danger">开启后只保留对话窗口,沉浸式对话体验</p>
                                         </div>
-                                        <div class="col-sm-2">
-                                            <span id="temperatureValue">1.00</span>
+                                        <div class="form-group" id="modelGrouping">
+                                            <label class="aibot-switch aibot-switch-sm aibot-switch-success">
+                                                <input type="checkbox" class="aibot-switch-input modelGrouping" value="Grouping" name="options">
+                                                <span class="aibot-switch-label"></span>
+                                            </label>
+                                            <span><i class="fas fa-object-group"></i> 模型分组</span>
+                                            <p class="small font-weight-light text-danger">开启后模型列表按照组别显示</p>
                                         </div>
-                                    </div>
-                                    <p class="small font-weight-light text-danger">调整生成文本的随机性,更高的值代表更大的随机性</p>
-                                </div>
-                                <div class="slider-container">
-                                    <div class="row align-items-center">
-                                        <div class="col-sm-4">
-                                            <span><i class="fas fa-ban"></i> Frequency Penalty</span>
+                                        <div class="form-group" id="createAiPrompt">
+                                            <label class="aibot-switch aibot-switch-sm aibot-switch-success">
+                                                <input type="checkbox" class="aibot-switch-input createAiPrompt" value="createAiPrompt" name="options">
+                                                <span class="aibot-switch-label"></span>
+                                            </label>
+                                            <span><i class="fas fa-file-archive"></i> 历史记录智能压缩</span>
+                                            <p class="small font-weight-light text-danger">开启后会对过长的历史记录进行压缩,节约成本,丢失一小部分回复质量</p>
                                         </div>
-                                        <div class="col-sm-6">
-                                            <input type="range" class="form-control-range slider-custom" min="0" max="2" step="0.01" value="0" id="frequencyPenaltySlider">
+                                        <div class="form-group" id="readingMode">
+                                            <label class="aibot-switch aibot-switch-sm aibot-switch-success">
+                                                <input type="checkbox" class="aibot-switch-input readingMode" value="readingMode" name="options">
+                                                <span class="aibot-switch-label"></span>
+                                            </label>
+                                            <span><i class="fas fa-book-reader"></i> 文件阅读模式</span>
+                                            <p class="small font-weight-light text-danger">开启后当存在文件时,将使用多轮对话仔细阅读文件,token消耗非常大,非必要不建议使用</p>
                                         </div>
-                                        <div class="col-sm-2">
-                                            <span id="frequencyPenaltyValue">0.00</span>
+                                        <div class="form-group" id="autoChange">
+                                            <label class="aibot-switch aibot-switch-sm aibot-switch-success">
+                                                <input type="checkbox" class="aibot-switch-input autoChange" value="autoChange" name="options">
+                                                <span class="aibot-switch-label"></span>
+                                            </label>
+                                            <span><i class="fas fa-exchange-alt"></i> 模型自动切换</span>
+                                            <p class="small font-weight-light text-danger">开启后,将根据上下文的模型进行自动切换</p>
                                         </div>
-                                    </div>
-                                    <p class="small font-weight-light text-danger">减少重复词汇的出现频率,提升对话多样性</p>
-                                </div>
-                                <div class="slider-container">
-                                    <div class="row align-items-center">
-                                        <div class="col-sm-4">
-                                            <span><i class="fas fa-user-times"></i> Presence Penalty</span>
-                                        </div>
-                                        <div class="col-sm-6">
-                                            <input type="range" class="form-control-range slider-custom" min="0" max="2" step="0.01" value="0" id="presencePenaltySlider">
-                                        </div>
-                                        <div class="col-sm-2">
-                                            <span id="presencePenaltyValue">0.00</span>
-                                        </div>
-                                    </div>
-                                    <p class="small font-weight-light text-danger">降低之前已提及的话题的出现频率,增加对话的广度</p>
-                                </div>
-                                <div class="slider-container">
-                                    <div class="row align-items-center">
-                                        <div class="col-sm-4">
-                                            <span><i class="fas fa-ruler-horizontal"></i> Max Tokens</span>
-                                        </div>
-                                        <div class="col-sm-6">
-                                            <input type="range" class="form-control-range slider-custom" min="10" max="16000" step="1" value="4095" id="maxTokensSlider">
-                                        </div>
-                                        <div class="col-sm-2">
-                                            <span id="maxTokensValue">4095</span>
+                                        <div class="form-group">
+                                            <label for="shortcutSystemPrompt">快捷系统提示词</label>
+                                            <textarea type="text" class="form-control" id="shortcutSystemPrompt" placeholder="系统提示词"></textarea>
                                         </div>
                                     </div>
-                                    <p class="small font-weight-light text-danger">调整生成文本的最大字符量,增加或减少根据需要的内容长度。（注意：大多数模型限制最大字符数为4095，超出此限制可能会导致模型崩溃不回复）</p>
+                                    <div class="tab-pane fade" id="advanced" role="tabpanel" aria-labelledby="advanced-tab">
+                                        <div class="form-group mt-3" id="shortcuts">
+                                            <label class="aibot-switch aibot-switch-sm aibot-switch-success">
+                                                <input type="checkbox" class="aibot-switch-input shortcuts" value="shortcuts" name="options">
+                                                <span class="aibot-switch-label"></span>
+                                            </label>
+                                            <span><i class="fas fa-keyboard"></i> 快捷键</span>
+                                            <p class="small font-weight-light text-danger">开启后提问框连续输入5个m 'mmmmm'将提示词转英语,提问框连续输入5个f 'fffff' 使用LLM优化提示词</p>
+                                        </div>
+                                        <div class="form-group mt-3" id="stream">
+                                            <label class="aibot-switch aibot-switch-sm aibot-switch-success">
+                                                <input type="checkbox" class="aibot-switch-input stream" value="stream" name="options">
+                                                <span class="aibot-switch-label"></span>
+                                            </label>
+                                            <span><i class="fas fa-stream"></i> 流式输出</span>
+                                            <p class="small font-weight-light text-danger">关闭后将一次性输出所有回复</p>
+                                        </div>
+                                        <div class="form-group mt-3" id="seniorSetting">
+                                            <label class="aibot-switch aibot-switch-sm aibot-switch-success">
+                                                <input type="checkbox" class="aibot-switch-input seniorSetting" value="seniorSetting" name="options">
+                                                <span class="aibot-switch-label"></span>
+                                            </label>
+                                            <span><i class="fab fa-dev"></i> 参数调节</span>
+                                            <span class="badge badge-pill badge-info seniorSettingReset" style="cursor: pointer;display: none" onclick="defaultSeniorSetting()">恢复默认</span>
+                                        </div>
+                                        <div id="seniorSettingItems" style="display: none;">
+                                            <div class="slider-container">
+                                                <div class="row align-items-center">
+                                                    <div class="col-sm-4">
+                                                        <span><i class="fas fa-temperature-low"></i> Temperature</span>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <input type="range" class="form-control-range slider-custom" min="0" max="2" step="0.01" value="1" id="temperatureSlider">
+                                                    </div>
+                                                    <div class="col-sm-2">
+                                                        <span id="temperatureValue">1.00</span>
+                                                    </div>
+                                                </div>
+                                                <p class="small font-weight-light text-danger">调整生成文本的随机性,更高的值代表更大的随机性</p>
+                                            </div>
+                                            <div class="slider-container">
+                                                <div class="row align-items-center">
+                                                    <div class="col-sm-4">
+                                                        <span><i class="fas fa-ban"></i> Frequency Penalty</span>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <input type="range" class="form-control-range slider-custom" min="0" max="2" step="0.01" value="0" id="frequencyPenaltySlider">
+                                                    </div>
+                                                    <div class="col-sm-2">
+                                                        <span id="frequencyPenaltyValue">0.00</span>
+                                                    </div>
+                                                </div>
+                                                <p class="small font-weight-light text-danger">减少重复词汇的出现频率,提升对话多样性</p>
+                                            </div>
+                                            <div class="slider-container">
+                                                <div class="row align-items-center">
+                                                    <div class="col-sm-4">
+                                                        <span><i class="fas fa-user-times"></i> Presence Penalty</span>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <input type="range" class="form-control-range slider-custom" min="0" max="2" step="0.01" value="0" id="presencePenaltySlider">
+                                                    </div>
+                                                    <div class="col-sm-2">
+                                                        <span id="presencePenaltyValue">0.00</span>
+                                                    </div>
+                                                </div>
+                                                <p class="small font-weight-light text-danger">降低之前已提及的话题的出现频率,增加对话的广度</p>
+                                            </div>
+                                            <div class="slider-container">
+                                                <div class="row align-items-center">
+                                                    <div class="col-sm-4">
+                                                        <span><i class="fas fa-ruler-horizontal"></i> Max Tokens</span>
+                                                    </div>
+                                                    <div class="col-sm-6">
+                                                        <input type="range" class="form-control-range slider-custom" min="10" max="16000" step="1" value="4095" id="maxTokensSlider">
+                                                    </div>
+                                                    <div class="col-sm-2">
+                                                        <span id="maxTokensValue">4095</span>
+                                                    </div>
+                                                </div>
+                                                <p class="small font-weight-light text-danger">调整生成文本的最大字符量,增加或减少根据需要的内容长度。（注意：大多数模型限制最大字符数为4095，超出此限制可能会导致模型崩溃不回复）</p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    @* <div class="chat-body-options">
+                @* <div class="chat-body-options">
                 <a href="" data-toggle="tooltip" title="Search messages">
                 <i data-feather="search">
                 </i>
@@ -355,13 +355,13 @@
                 </i>
                 </a>
                 </div> *@
-</div>
+            </div>
 
-@* <li class="divider-text">
+            @* <li class="divider-text">
             加载中...
             </li> *@
-<div class="chat-body-content">
-    @* <div class="chat-message">
+            <div class="chat-body-content">
+                @* <div class="chat-message">
                 <div class="avatar">U</div>
                 <div style="width:100%">
                 <pre style="display:inline">Hello!Hello!Hello!Hello!Hello!Hello!Hello!</pre>
@@ -376,31 +376,31 @@
                 </svg>
                 </div>
                 </div> *@
-    <div class="chat-body-main">
-        <div class="model-icons-container">
-            <h3 class="model-icons-title">
-                <span class="gradient-text">模型标签说明</span>
-            </h3>
-            <div class="model-icons-wrapper">
-                <div class="model-icon">
-                    <span class="model-emoji">🆓</span>
-                    <span class="label">免费</span>
-                </div>
-                <div class="model-icon">
-                    <span class="model-emoji">✨</span>
-                    <span class="label">VIP免费</span>
-                </div>
-                <div class="model-icon">
-                    <span class="model-emoji">👑</span>
-                    <span class="label">SVIP免费</span>
-                </div>
-                <div class="model-icon">
-                    <span class="model-emoji">🖼️</span>
-                    <span class="label">支持AI识图</span>
-                </div>
-            </div>
-        </div>
-        @* <div class="history-list-info">
+                <div class="chat-body-main">
+                    <div class="model-icons-container">
+                        <h3 class="model-icons-title">
+                            <span class="gradient-text">模型标签说明</span>
+                        </h3>
+                        <div class="model-icons-wrapper">
+                            <div class="model-icon">
+                                <span class="model-emoji">🆓</span>
+                                <span class="label">免费</span>
+                            </div>
+                            <div class="model-icon">
+                                <span class="model-emoji">✨</span>
+                                <span class="label">VIP免费</span>
+                            </div>
+                            <div class="model-icon">
+                                <span class="model-emoji">👑</span>
+                                <span class="label">SVIP免费</span>
+                            </div>
+                            <div class="model-icon">
+                                <span class="model-emoji">🖼️</span>
+                                <span class="label">支持AI识图</span>
+                            </div>
+                        </div>
+                    </div>
+                    @* <div class="history-list-info">
                     <span class="model-emoji">👈</span>
                     <p>左侧的模型列表,支持鼠标右键</p>
                     <p>或在移动端长按,查看更多操作菜单</p>
@@ -410,40 +410,40 @@
                     <p>上方下拉框切换模型</p>
                     <p>可拖动排序</p>
                     </div> *@
-    </div>
-    <div class="toolbar">
-        <div id="priceInfo" style="margin-bottom:5px;display:inline;">
-        </div>
-        @* <span class="badge badge-pill badge-dark">余额：<b id="balance"></b></span> *@
-    </div>
-</div>
-@*<div style="position:absolute;bottom:10%;margin-left:10px;">
+                </div>
+                <div class="toolbar">
+                    <div id="priceInfo" style="margin-bottom:5px;display:inline;">
+                    </div>
+                    @* <span class="badge badge-pill badge-dark">余额：<b id="balance"></b></span> *@
+                </div>
+            </div>
+            @*<div style="position:absolute;bottom:10%;margin-left:10px;">
             <input type="text" class="form-control" value="Amsterdam,Washington,Sydney,Beijing,Cairo" data-role="tagsinput">
             </div>*@
-<div class="chat-body-footer">
-    <div class="chat-body-options">
-        <a href="#" data-toggle="tooltip" title="🖼️ 图片上传" onclick="showCameraMenu()" id="openCamera">
-            <i data-feather="camera">
-            </i>
-            <span class="image-upload-count" id="imageCount">0</span>
-        </a>
-        <a href="#" data-toggle="tooltip" title="📎文件上传" onclick="showUploadFileMenu()" style="position: relative;">
-            <i data-feather="paperclip">
-            </i>
-            <span class="file-upload-count" id="fileCount">0</span>
-        </a>
+            <div class="chat-body-footer">
+                <div class="chat-body-options">
+                    <a href="#" data-toggle="tooltip" title="🖼️ 图片上传" onclick="showCameraMenu()" id="openCamera">
+                        <i data-feather="camera">
+                        </i>
+                        <span class="image-upload-count" id="imageCount">0</span>
+                    </a>
+                    <a href="#" data-toggle="tooltip" title="📎文件上传" onclick="showUploadFileMenu()" style="position: relative;">
+                        <i data-feather="paperclip">
+                        </i>
+                        <span class="file-upload-count" id="fileCount">0</span>
+                    </a>
+                </div>
+                <div class="form-group" style="position: relative;padding: 15px">
+                    <i data-feather="maximize-2" class="maximize-2" style="width:15px;right:0;cursor:pointer;position: absolute;" onclick="max_textarea_Q()"></i>
+                    <textarea type="text" class="form-control" placeholder="输入问题，Enter发送，Ctrl+Enter或Shift+Enter换行，首字符输入 / 打开提词本" id="Q" style="max-height:200px;"></textarea>
+                </div>
+                <button class="btn btn-icon" data-toggle="tooltip" title="发送" id="sendBtn">
+                    <i data-feather="send"></i>
+                </button>
+            </div>
+            @* <button type="button" class="btn btn-danger" style="width:120px" id="stopBtn" onclick="stopGenerate()"><i data-feather="stop-circle"></i> 停止生成</button> *@
+        </div>
     </div>
-    <div class="form-group" style="position: relative;padding: 15px">
-        <i data-feather="maximize-2" class="maximize-2" style="width:15px;right:0;cursor:pointer;position: absolute;" onclick="max_textarea_Q()"></i>
-        <textarea type="text" class="form-control" placeholder="输入问题，Enter发送，Ctrl+Enter或Shift+Enter换行，首字符输入 / 打开提词本" id="Q" style="max-height:200px;"></textarea>
-    </div>
-    <button class="btn btn-icon" data-toggle="tooltip" title="发送" id="sendBtn">
-        <i data-feather="send"></i>
-    </button>
-</div>
-@* <button type="button" class="btn btn-danger" style="width:120px" id="stopBtn" onclick="stopGenerate()"><i data-feather="stop-circle"></i> 停止生成</button> *@
-</div>
-</div>
 </div>
 
 <script>
@@ -528,10 +528,10 @@
 </script>
 <script src="~/system/js/signalr.min.js"></script>
 <script src="~/system/js/marked.min.js"></script>
-<link href="~/system/css/atom-one-dark.min.css?v1" rel="stylesheet"/>
+<link href="~/system/css/atom-one-dark.min.css?v1" rel="stylesheet" />
 <script src="~/system/js/highlight.min.js"></script>
 <script src="~/system/js/dart.js"></script>
 <script src="~/system/js/rolechat.js?v1.0.0"></script>
 <script src="~/system/js/personalsettings.js?v1.0.0"></script>
-<script src="~/system/js/chat.js?v19.1"></script>
+<script src="~/system/js/chat.js?v19.2"></script>
 <script src="~/system/js/fileschat.js?v1.0.1"></script>

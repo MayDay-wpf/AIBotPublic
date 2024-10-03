@@ -12,7 +12,7 @@
             width: 100%;
         }
 </style>
-<script src="~/system/js/uisetting.js"></script>
+<script src="~/system/js/uisetting.js?v1.0.0"></script>
 <div class="header">
     <div class="header-left">
         <a id="menuMain" href="" class="burger-menu">
@@ -39,14 +39,14 @@
             </h6>
         </div>
         <div class="card-body">
-            <div class="form-group">
-                <label>系统名称：</label>
-                <input type="text" class="form-control" maxlength="50" id="systemName" value="Mufasa" placeholder="系统名称">
-            </div>
+            @* <div class="form-group"> *@
+            @*     <label>系统名称：</label> *@
+            @*     <input type="text" class="form-control" maxlength="50" id="systemName" value="Mufasa" placeholder="系统名称"> *@
+            @* </div> *@
             <div class="form-group">
                 <label>系统背景图上传（点击更换）：</label>
                 <div class="backgroundImg" onclick="document.getElementById('backgroundImg').click()">
-                    <img src="~/system/images/addflow.png" id="backImg" />
+                    <img src="~/system/images/addflow.png" id="backImg"/>
                     <input type="file" id="backgroundImg" style="display: none;" accept="image/*" onchange="loadImage(event)">
                 </div>
             </div>
@@ -81,4 +81,3 @@
         </div>
     </div>
 </div>
-

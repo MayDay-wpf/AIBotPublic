@@ -15,8 +15,8 @@
     <link rel="canonical" href="https://aibotpro.cn">
     <link href="~/static/css/all.min.css" rel="stylesheet">
     <link href="~/static/css/ionicons.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="~/static/css/cassie.css?v4.7">
-    <link href="~/static/css/cassie-dark.css?v3.0" rel="stylesheet"/>
+    <link rel="stylesheet" href="~/static/css/cassie.css?v4.8">
+    <link href="~/static/css/cassie-dark.css?v3.1" rel="stylesheet"/>
     <link href="~/static/css/bootstrap-tagsinput.css" rel="stylesheet"/>
     <link href="~/system/css/robot.css?v1.1" rel="stylesheet"/>
     <link href="~/lib/jquery/dist/jquery-ui.css" rel="stylesheet"/>
@@ -30,7 +30,7 @@
     <script src="~/static/js/cassie.js?v3.3"></script>
     <script src="~/system/js/xlsx.full.min.js"></script>
     <script src="~/system/js/html2canvas.min.js"></script>
-    <script src="~/system/js/system.js?v12.9"></script>
+    <script src="~/system/js/system.js?v13.0"></script>
     <script src="~/system/js/balert.js?v2"></script>
     <script src="~/system/js/markdown-it.min.js"></script>
     <script src="~/lib/jquery/dist/jquery-ui.js"></script>
@@ -231,14 +231,15 @@
 <div class="sidebar">
 <div class="sidebar-header">
     <div>
-        <a href="#" class="sidebar-logo">
-            <span id="systemNAME">
-
-            </span>
-        </a>
-        <small class="sidebar-logo-headline">
-            AIBot Pro System
-        </small>
+        @* <a href="#" class="sidebar-logo"> *@
+        @*     <span id="systemNAME"> *@
+        @* *@
+        @*     </span> *@
+        @* </a> *@
+        @* <small class="sidebar-logo-headline"> *@
+        @*     AIBot Pro System *@
+        @* </small> *@
+        <img src="/static/image/aibotprologo.png" class="sidebar-logo"/>
     </div>
     <div class="robotSM" onclick="showRobot()">
         <img src="~/system/images/robot_sm.png"/>
@@ -267,12 +268,26 @@
             <a href="/Home/StableDiffusion" class="nav-sub-link" id="sd-nav">
                 绘画（StableDiffusion）
             </a>
+            <hr class="mg-t-10 mg-b-10">
             <a href="/Home/SystemGallery" class="nav-sub-link" id="systemgallery-nav">
                 画廊（SystemGallery）
             </a>
             <a href="/Home/Suno" class="nav-sub-link" id="suno-nav">
                 音乐生成🎵（Suno）
             </a>
+            <a href="/Product/ChatGrid" class="nav-sub-link" id="chatgrid-product-nav">
+                图表绘制（ChatGrid）
+            </a>
+            <a href="/Product/AiMarketing" class="nav-sub-link" id="aimarketing-product-nav">
+                文字转语音（AiMarketing）
+            </a>
+            <a href="/Product/AiDoc" class="nav-sub-link" id="aidoc-product-nav">
+                无边记（AiDoc）
+            </a>
+            <a href="/Product/ChatPDF" class="nav-sub-link" id="chatpdf-product-nav">
+                沉浸式PDF（ChatPDF）
+            </a>
+            <hr class="mg-t-10 mg-b-10">
             <a href="/Home/ChatSetting" class="nav-sub-link" id="chatsetting-nav">
                 设置（Setting）
             </a>
@@ -282,6 +297,7 @@
             <a href="/Home/Memory" class="nav-sub-link" id="memory-nav">
                 记忆体（Memory）
             </a>
+            <hr class="mg-t-10 mg-b-10">
         </nav>
     </li>
     <li class="nav-item">
@@ -374,24 +390,6 @@
             </a>
             <a href="/AssistantGPT/AssistantSetting" class="nav-sub-link" id="setting-assistant-nav">
                 助理配置 (Setting)
-            </a>
-        </nav>
-    </li>
-    <li class="nav-item">
-        <a href="" class="nav-link with-sub" id="product-main-menu">
-            <i data-feather="package">
-            </i>
-            产品中心 (Product)
-        </a>
-        <nav class="nav nav-sub">
-            <a href="/Product/ChatGrid" class="nav-sub-link" id="chatgrid-product-nav">
-                图表绘制（ChatGrid）
-            </a>
-            <a href="/Product/AiMarketing" class="nav-sub-link" id="aimarketing-product-nav">
-                文字转语音（AiMarketing）
-            </a>
-            <a href="/Product/AiDoc" class="nav-sub-link" id="aidoc-product-nav">
-                无边记（AiDoc）
             </a>
         </nav>
     </li>

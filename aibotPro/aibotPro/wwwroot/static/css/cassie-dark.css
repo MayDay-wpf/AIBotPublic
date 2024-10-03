@@ -358,6 +358,12 @@ html.dark #myTabContent {
 
 html.dark label {
     color: greenyellow;
+    background-color: #1e1e1e
+}
+
+html.dark label::after {
+    background-color: #1e1e1e;
+    border: none;
 }
 
 html.dark table {
@@ -912,4 +918,22 @@ html.dark #preview-window .nav-link {
 html.dark #preview-window .nav-link.active {
     background-color: dodgerblue;
     color: lightgray;
+}
+
+html.dark .suggested-question {
+    background-color: #1e1e1e;
+    color: aliceblue;
+    border-color: gray;
+}
+
+html.dark .suggested-question:hover {
+    background-color: #2e2e2e;
+}
+
+html.dark #chat-container {
+    background-color: #1e1e1e;
+}
+
+html.dark .sidebar-logo[src="/static/image/aibotprologo.png"] {
+    content: url("/static/image/aibotprologo-dark.png");
 }

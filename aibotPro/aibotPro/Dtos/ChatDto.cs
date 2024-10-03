@@ -19,7 +19,9 @@ public class ChatDto
     public bool isbot { get; set; } = false;
     public string threadid { get; set; }
     public float temperature { get; set; } = 1;
+
     public int maxtokens { get; set; } = 4095;
+
     //public float topp { get; set; } = 1;
     public float presence { get; set; } = 0;
     public float frequency { get; set; } = 0;
