@@ -52,6 +52,12 @@
 ## 多文件并行处理的文件 AI
 ![4](https://i.mij.rip/2024/02/27/a1681df1f0ea887d74beacf72adff1a6.png)
 
+## WorkFlow（AI流程引擎）可运行javascript 和 csharp 脚本
+![image](https://github.com/user-attachments/assets/e7e40bb0-c32e-4808-866c-c660a97b2291)
+
+## 沉浸式PDF阅读
+![image](https://github.com/user-attachments/assets/60f47f52-d756-407d-a30d-8efb133e67b3)
+
 ## 个人中心直观的消耗统计
 ![5](https://i.mij.rip/2024/02/27/ea673cde87609b7b053eaa30a93c7860.png)
 
@@ -66,9 +72,6 @@
 
 ## [硅基流动](https://siliconflow.cn/) 的stable-diffusion-3-medium
 ![image](https://github.com/user-attachments/assets/26261552-394c-433d-bbc5-009a380729e2)
-
-## WorkFlow（AI流程引擎）
-![QQ_1720746603275](https://github.com/user-attachments/assets/2a6fd3b6-b916-4f4c-bb9f-f1077f45b3ee)
 
 ## 商品管理，可自行配置支付和库存以及商品内容
 ![image](https://github.com/MayDay-wpf/AIBotPublic/assets/58774414/d27420c9-6ec4-4a23-996b-d183af4a823d)
