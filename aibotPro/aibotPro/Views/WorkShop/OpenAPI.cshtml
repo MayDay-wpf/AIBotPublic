@@ -1,0 +1,197 @@
+﻿@{
+    ViewData["Title"] = "Open API 开放平台";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        @* <a href="#" class="header-help-link" onclick="DALLinfo()">
+        <i data-feather="help-circle">
+        </i>
+        </a> *@
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px;">
+    <div class="content-header">
+        <div>
+            <h4 class="content-title content-title-sm">
+                <b style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105));
+    -webkit-background-clip: text;
+    color: transparent;">Open API 开放平台</b>
+            </h4>
+            <span>您可以在本站外部调用创意工坊的内容🛅🔢🔣</span>
+            <p></p>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <h5>创建一个API KEY</h5>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="apiurl">API Key</label>
+                <input type="text" class="form-control" maxlength="200" id="apikey"
+                       placeholder="暂无apikey，请点击下方创建" readonly="readonly">
+            </div>
+            <button class="btn btn-success" onclick="createApiKey()"><i data-feather="plus-circle"></i> 创建</button>
+            <button class="btn btn-info" onclick="copyText($('#apikey').val())">
+                <i data-feather="copy"></i> 复制
+            </button>
+        </div>
+    </div>
+    <p></p>
+    <div class="card">
+        <div class="card-header">
+            <h5>系统插件选用</h5>
+        </div>
+        <div class="card-body">
+            <div class="form-group mg-b-30">
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="search_google_when_gpt_cannot_answer">
+                    <label class="custom-control-label tx-sm" for="search_google_when_gpt_cannot_answer">
+                        联网搜索
+                    </label>
+                </div>
+            </div>
+            <div class="form-group mg-b-30">
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="use_dalle3_withpr">
+                    <label class="custom-control-label tx-sm" for="use_dalle3_withpr">
+                        DALL-E3绘画
+                    </label>
+                </div>
+            </div>
+            <div class="form-group mg-b-30">
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="search_knowledge_base">
+                    <label class="custom-control-label tx-sm" for="search_knowledge_base">
+                        知识库检索
+                    </label>
+                </div>
+            </div>
+            <p class="tx-info">
+                第三方插件请前往<a href="/WorkShop/WorkShopMarket">【插件市场】</a>安装即可生效，同理卸载即失效
+            </p>
+        </div>
+    </div>
+    <p></p>
+    <div class="card">
+        <div class="card-header">
+            <h5>
+                自定义模型名
+                <a style="cursor:pointer;color:rgb(68,69,253)" class="header-help-link" onclick="openapisettinginfo()">
+                    <i data-feather="help-circle">
+                    </i>
+                </a>
+            </h5>
+            <button type="button" class="btn btn-primary save" onclick="saveOpenAPISetting()">
+                <i data-feather="save"></i>保存定义
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <table id="AddSt" class="form-table">
+                </table>
+                <button type="button" class="btn btn-success" onclick="addStLine()">
+                    <i data-feather="plus"></i>新增一行
+                </button>
+            </div>
+        </div>
+    </div>
+    <p></p>
+    <div class="card">
+        <div class="card-header">
+            <h5>说明文档</h5>
+            <p class="font-weight-bold">
+                完全遵循OpenAI请求方式，您可以使用OpenAI
+                SDK进行调用，请参考下方说明文档
+            </p>
+            <p class="font-weight-bold text-danger">
+                1、工坊API不支持高并发，请勿高并发调用，否则将被封禁账号。
+            </p>
+            <p class="font-weight-bold text-danger">
+                2、如对API有高并发场景需求，请前往 [个人中心——>中转API] 了解详情。
+            </p>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="apiurl">请求地址：https://aibotpro.cn/v1/chat/completions</label>
+            </div>
+            <div class="form-group">
+                <label for="apiurl">API Key 填写在 Headers 的Authorization 注意 需要添加Bearer</label>
+            </div>
+            <div class="form-group">
+                <i data-feather="flag" class="text-success"></i> <label for="apiurl">创意工坊可选模型（点击复制）：<b id="canUseModel">--</b></label>
+            </div>
+            <div class="form-group">
+                <i data-feather="flag" class="text-info"></i> <label for="apiurl">基础对话可选模型（点击复制）：<b id="defaultCanUseModel">--</b></label>
+            </div>
+            <div class="form-group">
+                <label>
+                    <i class="fas fa-question-circle" style="color:#689e38"></i> <b>两种模型区别</b>
+                </label><br>
+                <label>工坊模型可以根据账号安装的插件进行自动调用，基础对话模型不支持插件调用。</label>
+            </div>
+            <div class="form-group">
+                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link active" id="curl-tab" data-toggle="tab" href="#curl" role="tab">
+                            cURL
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="python-tab" data-toggle="tab" href="#python" role="tab">
+                            Python
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="csharp-tab" data-toggle="tab" href="#csharp" role="tab">
+                            C#
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="java-tab" data-toggle="tab" href="#java" role="tab">
+                            Java
+                        </a>
+                    </li>
+                </ul>
+                <div class="tab-content mt-3" id="myTabContent">
+                    <div class="tab-pane fade show active" id="curl" role="tabpanel">
+                        <h4>
+                            <label>cURL示例</label>
+                        </h4>
+                        <pre><code class="language-bash" id="curlCode"></code></pre>
+                    </div>
+                    <div class="tab-pane fade" id="python" role="tabpanel">
+                        <h4>
+                            <label>Python示例</label>
+                        </h4>
+                        <pre><code class="language-python" id="pythonCode"></code></pre>
+                    </div>
+                    <div class="tab-pane fade" id="csharp" role="tabpanel">
+                        <h4>
+                            <label>C#示例</label>
+                        </h4>
+                        <pre><code class="language-csharp" id="csharpCode"></code></pre>
+                    </div>
+                    <div class="tab-pane fade" id="java" role="tabpanel">
+                        <h4>
+                            <label>Java示例</label>
+                        </h4>
+                        <pre><code class="language-java" id="javaCode"></code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/system/js/markdown-it.min.js"></script>
+<script src="~/system/js/highlight.min.js"></script>
+<script src="~/system/js/openapi.js?v1.1"></script>

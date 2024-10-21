@@ -1,0 +1,75 @@
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub 登录</title>
+    <link href="/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="/static/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f8f9fa;
+        }
+        .login-container {
+            text-align: center;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+<div class="login-container">
+    <h1 class="mb-4"><i class="fab fa-github"></i> GitHub 登录</h1>
+    <div id="loading" class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <div id="message" class="alert mt-3" style="display: none;"></div>
+</div>
+
+<script src="/static/js/jquery.min.js"></script>
+<script src="/lib/bootstrap/dist/js/bootstrap.min.js"></script>
+<script>
+    $(document).ready(function() {
+        var urlParams = new URLSearchParams(window.location.search);
+        var code = urlParams.get('code');
+        if (code) {
+            $.ajax({
+                url: '/Users/GitHubOAuth',
+                type: 'POST',
+                data: { code: code },
+                success: function(response) {
+                    if (response.success && response.data.token) {
+                        localStorage.setItem('aibotpro_userToken', response.data.token);
+                        var expirationTime = new Date().getTime() + (24 * 60 * 60 * 1000);
+                        localStorage.setItem('aibotpro_userToken_Expiration', expirationTime);
+                        window.location.href = '/Home/Index';
+                    } else {
+                        showMessage(response.msg || '登录失败', 'danger');
+                    }
+                },
+                error: function() {
+                    showMessage('登录过程中发生错误', 'danger');
+                }
+            });
+        } else {
+            showMessage('未收到授权码', 'danger');
+        }
+    });
+
+    function showMessage(message, type) {
+        $('#loading').hide();
+        $('#message').text(message).removeClass().addClass('alert mt-3 alert-' + type).show();
+    }
+</script>
+</body>
+</html>

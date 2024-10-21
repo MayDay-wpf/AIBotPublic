@@ -1,0 +1,191 @@
+﻿@{
+    ViewData["Title"] = "工作流（WorkFlow）";
+}
+<title>工作流（WorkFlow）</title>
+<link href="~/system/js/workflow/drawflow.min.css?v1" rel="stylesheet" />
+<link href="~/system/js/workflow/beautiful.css?v1.9" rel="stylesheet" />
+<link href="~/system/js/workflow/beautiful-dark.css?v1.0" rel="stylesheet" />
+<link href="~/system/js/workflow/all.min.css" rel="stylesheet" />
+<link href="~/system/js/workflow/worknode.css?v2.5" rel="stylesheet" />
+<link rel="stylesheet" href="~/system/js/codemirror5/codemirror.min.css">
+<link rel="stylesheet" href="~/system/js/codemirror5/3024-night.min.css">
+<link rel="stylesheet" href="~/system/js/workflow/custom-modal.css" />
+<link href="~/system/css/pluginloading.css" rel="stylesheet" />
+<script src="~/system/js/codemirror5/codemirror.min.js"></script>
+<script src="~/system/js/codemirror5/clike.js"></script>
+<script src="~/system/js/codemirror5/javascript.min.js"></script>
+<!-- 引入显示提示的插件和样式 -->
+<link rel="stylesheet" href="~/system/js/codemirror5/show-hint.min.css">
+<script src="~/system/js/codemirror5/show-hint.min.js"></script>
+<script src="~/system/js/codemirror5/anyword-hint.js"></script>
+<!-- 引入JavaScript代码提示 -->
+<script src="~/system/js/codemirror5/javascript-hint.min.js"></script>
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/system/js/workflow/drawflow.min.js"></script>
+<script src="~/system/js/workflow/all.min.js"></script>
+<script src="~/system/js/workflow/micromodal.min.js"></script>
+<script src="~/static/js/js.cookie.js"></script>
+<script src="~/system/js/system.js?v1.0"></script>
+<script src="~/system/js/workflow/layer.js"></script>
+<style>
+
+    .pluginloading-loading-border::before {
+        content: '';
+        position: absolute;
+        top: -5px;
+        left: -5px;
+        width: 32px;
+        height: 32px;
+        border: 4px solid transparent;
+        border-top-color: #502ca7;
+        border-radius: 50%;
+        animation: pluginloading-spin 1s linear infinite;
+    }
+</style>
+<script>
+    MathJax = {
+        tex: {
+            inlineMath: [['$', '$'], ['[', ']']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]'], ['[', ']']]
+        },
+        processHtmlClass: "bottom-panel-content",
+        options: {
+            skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code", "a", "b"]
+        }
+    };
+    initDarkMode();
+</script>
+<script src="~/system/js/markdown-it.min.js"></script>
+<script src="~/system/js/tex-chtml.js"></script>
+<div class="content-body">
+    <div class="side-panel-container">
+        <div id="sidePanel" class="side-panel">
+            <!-- 标题和关闭按钮 -->
+            <div class="panel-header">
+                <span onclick="optionMax()" style="cursor:pointer">
+                    <i id="togglePanelIcon" class="fas fa-chevron-left"></i>
+                    <span class="panel-title">属性面板</span>
+                </span>
+                <a href="javascript:void(0)" class="close-btn" id="closePanelBtn">&times;</a>
+            </div>
+            <!-- 内容 -->
+            <div class="panel-content">
+                <div class="configure"></div>
+            </div>
+            <div class="panel-footer">
+                <button class="btn btn-info" onclick="saveNodeData()">
+                    <i class="far fa-save"></i> 点击保存 <span class="savebtninfo"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="overlay" class="overlay"></div>
+    <div id="bottomPanel" class="bottom-panel">
+        <div class="bottom-panel-header">
+            <span class="bottom-panel-title"><i class="fas fa-terminal"></i> 测试聊天窗口</span>
+            <select id="modelSelect" class="model-select aimodelCYGF">
+            </select>
+            <button class="btn btn-info" onclick="newChat()"><i class="fas fa-plus"></i> 新建会话</button>
+            <a href="javascript:void(0)" class="close-btn" id="debugerclosePanelBtn">&times;</a>
+        </div>
+        <div class="bottom-panel-content">
+            @* <div class="chat-message user">用户: 你好</div>
+            <div class="chat-message system">系统: 你好，有什么可以帮你的吗？</div> *@
+        </div>
+        <div class="bottom-panel-footer">
+            <input type="text" class="bottom-input-box" id="Q" placeholder="输入消息，Enter发送..." />
+            <button class="bottom-send-btn" id="sendBtn">发送</button>
+        </div>
+    </div>
+
+    <div class="wrapper">
+        <div class="col">
+            <div class="tools-title">
+                <i class="fas fa-tools"></i> 拖拽控件到右侧工作台 <i class="fas fa-hand-point-right"></i>
+            </div>
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="start">
+                <i class="far fa-play-circle"></i><span> 开始（start）</span>
+            </div>
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="javascript">
+                <i class="fab fa-js"></i><span> 脚本（javascript）</span>
+            </div>
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="csharp">
+                <i class="fas fa-code"></i><span> 脚本（csharp）</span>
+            </div>
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="http">
+                <i class="fas fa-paper-plane"></i><span> Http请求（http）</span>
+            </div>
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="LLM">
+                <i class="fas fa-robot"></i><span> LLM（LLM）</span>
+            </div>
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="DALL">
+                <i class="fas fa-paint-brush"></i><span> DALL·E3（DALL）</span>
+            </div>
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="downloadimg">
+                <i class="far fa-image"></i><span> 图片下载（downloadImg）</span>
+            </div>
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="web">
+                <i class="fas fa-globe"></i><span> 联网搜索（web）</span>
+            </div>
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="ifelse">
+                <i class="fas fa-question-circle"></i><span> if-else（ifelse）</span>
+            </div>
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="knowledge">
+                <i class="fas fa-database"></i><span> 知识库查询（knowledge）</span>
+            </div>
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="debug">
+                <i class="fas fa-bug"></i><span> Debug/Message（debug）</span>
+            </div>
+            <div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="end">
+                <i class="fas fa-stop-circle"></i><span> 结束（end）</span>
+            </div>
+        </div>
+        <div class="col-right">
+            <div class="menu">
+                <ul>
+                    @* <li onclick="editor.changeModule('Home'); changeModule(event);" class="selected"></li> *@
+                    @* <li onclick="editor.changeModule('Other'); changeModule(event);">Other Module</li> *@
+                    @* <li onclick="hideTools()"><i class="fas fa-bars" style="font-size:20px;"></i></li>
+                    <li><button class="btn btn-danger" onclick="editor.clearModuleSelected()">清空</button></li>
+                    <li><button class="btn btn-info" onclick="window.location.href='/WorkShop/MyPlugins'">返回插件列表</button></li>
+                    <li><button class="btn btn-info" onclick="exportDrawFlow()">预览Json</button></li>
+                    <li><button class="btn btn-info" onclick="saveNodeDataToCache()">保存</button></li>
+                    <li><button class="btn btn-info" onclick="pushtoPlugin()">发布至插件</button></li> *@
+                    <li onclick="hideTools()">
+                        <i class="fas fa-bars" style="font-size:20px;"></i>
+                    </li>
+                    <li onclick="goBack()" class="goback"><i class="fas fa-chevron-left"></i> 返回</li>
+                    <li onclick="editor.clearModuleSelected()" class="clear"><i class="fas fa-trash-alt"></i> 清空</li>
+                    <li onclick="exportDrawFlow()" class="reviewJson"><i class="fas fa-eye"></i> 预览Json</li>
+                    <li onclick="debugWorkFlow()" class="testFlow"><i class="fas fa-terminal"></i> 测试</li>
+                    <li onclick="saveNodeDataToCache()" class="saveFlow"><i class="fas fa-save"></i> 保存</li>
+                    <li onclick="pushtoPlugin()" class="uploadFlow"><i class="fas fa-upload"></i> 发布至插件</li>
+                    <li class="dkmodel" onclick="darkModel()">
+                        <i class="fas fa-moon"></i>
+                    </li>
+                </ul>
+                <span class="infotext"></span>
+            </div>
+            <div id="drawflow" ondrop="drop(event)" ondragover="allowDrop(event)">
+                @* <div class="btn-lock">
+                <i id="lock" class="fas fa-lock" onclick="editor.editor_mode='edit'; changeMode('lock');"></i>
+                <i id="unlock" class="fas fa-lock-open" onclick="editor.editor_mode='fixed'; changeMode('unlock');" style="display:none;"></i>
+                </div> *@
+                <div class="bar-zoom">
+                    <i class="fas fa-search-minus" onclick="editor.zoom_out()"></i>
+                    <i class="fas fa-search" onclick="editor.zoom_reset()"></i>
+                    <i class="fas fa-search-plus" onclick="editor.zoom_in()"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/system/js/signalr.min.js"></script>
+<script src="~/system/js/workflow/custom-modal.js"></script>
+<script src="~/system/js/workflow/jsonschemaEditor.js?v1.0.1"></script>
+<script src="~/system/js/workflow/workflow.js?v3.7"></script>
+<script src="~/system/js/workflow/workflowaction.js?v4.1"></script>
+<script src="~/system/js/marked.min.js"></script>
+<link href="~/system/css/atom-one-dark.min.css" rel="stylesheet" />
+<script src="~/system/js/highlight.min.js"></script>
+<script src="~/system/js/dart.js"></script>

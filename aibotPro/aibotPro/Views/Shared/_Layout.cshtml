@@ -1,0 +1,546 @@
+﻿<!DOCTYPE html>
+
+<html>
+
+<head>
+    <title>@ViewBag.Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+    <meta name="description" content="Responsive Bootstrap 4 Dashboard and Admin Template">
+    <meta name="author" content="ThemePixels">
+    <meta name="description" content="探索ChatGPT、GPT4等最新AI技术,使用MJ、SD等AI画图工具释放创意。免费访问全面的AI服务和知识库,加速您的学习与应用。立即开始您的AI之旅!">
+    <meta name="keywords" content="AI技术,ChatGPT,GPT4,Claude,Gemini,AI画图(MJ绘画,SD绘画,Midjourney,DALL-E3),免费AI工具,AI文件处理,AI知识库,GPT使用">
+    <meta property="og:title" content="AIBotPRO - 探索AI技术的最佳平台">
+    <meta property="og:description" content="发现最新AI技术,使用专业AI工具,访问全面的AI知识库。免费开启您的AI探索之旅!">
+    <meta property="og:image" content="https://maymay5.com/image/vipchatgptlogo.png">
+    <link rel="canonical" href="https://aibotpro.cn">
+    <link href="~/static/css/all.min.css" rel="stylesheet">
+    <link href="~/static/css/ionicons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/static/css/cassie.css?v4.8">
+    <link href="~/static/css/cassie-dark.css?v3.1" rel="stylesheet"/>
+    <link href="~/static/css/bootstrap-tagsinput.css" rel="stylesheet"/>
+    <link href="~/system/css/robot.css?v1.1" rel="stylesheet"/>
+    <link href="~/lib/jquery/dist/jquery-ui.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="~/system/css/magnific-popup.min.css">
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/static/js/bootstrap-tagsinput.min.js"></script>
+    <script src="~/static/js/bootstrap.bundle.min.js"></script>
+    <script src="~/static/js/feather.min.js"></script>
+    @*<script src="~/static/js/perfect-scrollbar.min.js"></script>*@
+    <script src="~/static/js/js.cookie.js"></script>
+    <script src="~/static/js/cassie.js?v3.3"></script>
+    <script src="~/system/js/xlsx.full.min.js"></script>
+    <script src="~/system/js/html2canvas.min.js"></script>
+    <script src="~/system/js/system.js?v13.0"></script>
+    <script src="~/system/js/balert.js?v2"></script>
+    <script src="~/system/js/markdown-it.min.js"></script>
+    <script src="~/lib/jquery/dist/jquery-ui.js"></script>
+    <script src="~/system/js/aidoc/lazyload.min.js"></script>
+    <style>
+        .drag-handle {
+            cursor: move;
+            text-align: center;
+            color: #333;
+        }
+
+        .dragging {
+            background-color: #f0f0f0;
+            border: 2px dashed #ccc;
+            opacity: 0.8;
+            transition: background-color 0.3s ease;
+        }
+
+        .drag-placeholder {
+            background-color: #eee;
+            border: 2px dashed #ccc;
+            height: 40px;
+            margin-bottom: 5px;
+        }
+        /* 纯净模式样式 */
+        body.pure-mode .sidebar,
+        body.pure-mode .header {
+            display: none;
+        }
+
+        body.pure-mode .content-body {
+            height: 100vh;
+            padding: 0;
+        }
+
+        body.pure-mode .chat-body-content {
+            padding: 10px 15% 10px 15%;
+        }
+    </style>
+    <script>
+        initDarkMode();
+        $(function () {
+            const savedDarkMode = localStorage.getItem('darkMode');
+            const dkmodelBtn = $('.dkmodel');
+            if (savedDarkMode === 'true') {
+                dkmodelBtn.html(`<i data-feather="sun" style="color:#ffcd42"></i>`);
+            } else {
+                dkmodelBtn.html(`<i data-feather="moon"></i>`);
+            }
+            // 页面加载完成后恢复滚动位置
+            let savedScrollPosition = localStorage.getItem('sidebarScrollPosition');
+            if (savedScrollPosition) {
+                $('#dpSidebarBody').scrollTop(savedScrollPosition);
+            }
+        })
+        $(document).on('click', '.nav-link', function () {
+            let currentScrollPosition = $('#dpSidebarBody').scrollTop();
+            localStorage.setItem('sidebarScrollPosition', currentScrollPosition);
+        });
+        $(document).on('click', '.nav-link, .nav-sub-link', function () {
+            let currentScrollPosition = $('#dpSidebarBody').scrollTop();
+            localStorage.setItem('sidebarScrollPosition', currentScrollPosition);
+        });
+        function clearCacheAndReload() {
+            // 清除浏览器缓存
+            if (window.location.search) {
+                window.location.search += '&nocache=' + Math.random();
+            } else {
+                window.location.search += '?nocache=' + Math.random();
+            }
+            localStorage.removeItem('xPosition');
+            localStorage.removeItem('yPosition');
+            localStorage.removeItem('timestamp');
+            localStorage.removeItem('robotSMtimespan');
+            localStorage.removeItem('robotSM');
+            localStorage.removeItem('vipStatus');
+            // 刷新页面
+            window.location.reload(true);
+        }
+
+    </script>
+</head>
+
+<body>
+<!-- 相机按钮点击弹窗 -->
+<div class="modal fade" id="cameraModel" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true" style="z-index:999">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <!-- 弹窗头部 -->
+            <div class="modal-header">
+                <p class="modal-title" id="modalLabel">拍照&上传</p>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <!-- 弹窗主体内容 -->
+            <div class="modal-body" style="display: flex; justify-content: center; align-items: center;">
+                <div style="text-align:center; margin-right: 50px;" class="popup-item" data-type="camera">
+                    <i data-feather="camera" style="width:100%;height:60px;cursor:pointer;"></i>
+                    <p>拍照</p>
+                </div>
+
+                <div style="text-align:center;" class="popup-item" data-type="upload">
+                    <i data-feather="upload" style="width:100%;height:60px;cursor:pointer;"></i>
+                    <p>上传</p>
+                </div>
+                <input type="file" id="uploadImg" accept="image/*" multiple style="display:none"/>
+            </div>
+            <!-- 弹窗底部 -->
+            <div class="modal-footer">
+                <div class="imgViewBox">
+                    <div class="img-grid">
+                        <div class="img-container">
+                            <img src="" class="preview-img"/>
+                            <button class="delete-btn">&times;</button>
+                        </div>
+                        <div class="img-container">
+                            <img src="" class="preview-img"/>
+                            <button class="delete-btn">&times;</button>
+                        </div>
+                        <div class="img-container">
+                            <img src="" class="preview-img"/>
+                            <button class="delete-btn">&times;</button>
+                        </div>
+                        <div class="img-container">
+                            <img src="" class="preview-img"/>
+                            <button class="delete-btn">&times;</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-info" onclick="ClearImg()"><i data-feather="x"></i> 清除所有图片</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 文件选取 -->
+<div class="modal fade" id="uploadFileModel" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <!-- 弹窗头部 -->
+            <div class="modal-header">
+                <p class="modal-title" id="modalLabel">上传&素材选取</p>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <!-- 弹窗主体内容 -->
+            <div class="modal-body" style="display: flex; justify-content: center; align-items: center;">
+                <div style="text-align:center;" class="popup-item" data-type="uploadFile">
+                    <i data-feather="upload" style="width:100%;height:60px;cursor:pointer;"></i>
+                    <p>上传</p>
+                </div>
+            </div>
+            <div id="filelibs" style="text-align:center;">
+                <b style="color:deepskyblue">可以勾选下方素材库文件,自动生效</b>
+                <ul class="list-group" id="fileslibsitem" style="max-height:500px;overflow-y:scroll;text-align:center;">
+                    <li>
+                        加载中...
+                    </li>
+                    <!-- 可添加更多列表项 -->
+                </ul>
+                <button class="btn btn-primary btn-sm" id="loadMoreBtn" style="display:none;">加载更多</button>
+                <p></p>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 导出模式 -->
+<div class="modal fade" id="exportModal" tabindex="-1" role="dialog" aria-labelledby="exportModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exportModalLabel">选择导出方案</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>请选择您想要的导出方案：</p>
+                <div class="list-group">
+                    <button type="button" class="list-group-item list-group-item-action" id="exportMarkdown">
+                        <i class="fas fa-file-alt"></i> 导出为 Markdown
+                    </button>
+                    <button type="button" class="list-group-item list-group-item-action" id="exportHTML">
+                        <i class="fas fa-code"></i> 导出为 HTML
+                    </button>
+                    <button type="button" class="list-group-item list-group-item-action" id="exportImage">
+                        <i class="fas fa-image"></i> 导出为图片（截图,请先点开记录再导出）
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="sidebar">
+<div class="sidebar-header">
+    <div>
+        @* <a href="#" class="sidebar-logo"> *@
+        @*     <span id="systemNAME"> *@
+        @* *@
+        @*     </span> *@
+        @* </a> *@
+        @* <small class="sidebar-logo-headline"> *@
+        @*     AIBot Pro System *@
+        @* </small> *@
+        <img src="/static/image/aibotprologo.png" class="sidebar-logo"/>
+    </div>
+    <div class="robotSM" onclick="showRobot()">
+        <img src="~/system/images/robot_sm.png"/>
+    </div>
+</div>
+<div id="dpSidebarBody" class="sidebar-body">
+<ul class="nav nav-sidebar" id="system-menu">
+    <li class="nav-item">
+        <a href="" class="nav-link with-sub" id="ai-main-menu">
+            <i data-feather="cpu"></i>
+            AI
+        </a>
+        <nav class="nav nav-sub">
+            @*<a href="app-calendar.html" class="nav-sub-link">
+                        Calendar
+                        </a>*@
+            <a href="/Home/Index" class="nav-sub-link active" id="aichat-nav">
+                对话（Chat）
+            </a>
+            <a href="/Home/Midjourney" class="nav-sub-link" id="midjourney-nav">
+                绘画（Midjourney）
+            </a>
+            <a href="/Home/DALL" class="nav-sub-link" id="dall-nav">
+                绘画（DALL-E3）
+            </a>
+            <a href="/Home/StableDiffusion" class="nav-sub-link" id="sd-nav">
+                绘画（StableDiffusion）
+            </a>
+            <hr class="mg-t-10 mg-b-10">
+            <a href="/Home/SystemGallery" class="nav-sub-link" id="systemgallery-nav">
+                画廊（SystemGallery）
+            </a>
+            <a href="/Home/Suno" class="nav-sub-link" id="suno-nav">
+                音乐生成🎵（Suno）
+            </a>
+            <a href="/Product/ChatGrid" class="nav-sub-link" id="chatgrid-product-nav">
+                图表绘制（ChatGrid）
+            </a>
+            <a href="/Product/AiMarketing" class="nav-sub-link" id="aimarketing-product-nav">
+                文字转语音（AiMarketing）
+            </a>
+            <a href="/Product/AiDoc" class="nav-sub-link" id="aidoc-product-nav">
+                无边记（AiDoc）
+            </a>
+            <a href="/Product/ChatPDF" class="nav-sub-link" id="chatpdf-product-nav">
+                沉浸式PDF（ChatPDF）
+            </a>
+            <hr class="mg-t-10 mg-b-10">
+            <a href="/Home/ChatSetting" class="nav-sub-link" id="chatsetting-nav">
+                设置（Setting）
+            </a>
+            <a href="/Home/UISetting" class="nav-sub-link" id="uisetting-nav">
+                UI设置（UI Setting）
+            </a>
+            <a href="/Home/Memory" class="nav-sub-link" id="memory-nav">
+                记忆体（Memory）
+            </a>
+            <hr class="mg-t-10 mg-b-10">
+        </nav>
+    </li>
+    <li class="nav-item">
+        <a href="" class="nav-link with-sub" id="cygf-main-menu">
+            <i data-feather="box">
+            </i>
+            创意工坊 (WorkShop)
+        </a>
+        <nav class="nav nav-sub">
+            <a href="/WorkShop/WorkShopChat" class="nav-sub-link" id="chat-cygf-nav">
+                对话（Chat by 创意工坊）
+            </a>
+            <a href="/WorkShop/WorkShopMarket" class="nav-sub-link" id="workshopmarket-cygf-nav">
+                插件市场（Market）
+            </a>
+            <a href="/WorkShop/MyWork" class="nav-sub-link" id="mywork-cygf-nav">
+                我的工作台（My Workbench）
+            </a>
+            <a href="/WorkShop/MyPlugins" class="nav-sub-link" id="myplugins-cygf-nav">
+                我的插件（My Plugins）
+            </a>
+            <a href="/WorkShop/OpenAPI" class="nav-sub-link" id="openapi-cygf-nav">
+                开放平台（Open API）
+            </a>
+            @* <a href="/WorkShop/WorkFlow" class="nav-sub-link" id="workflow-cygf-nav" target="_blank">
+                        工作流（WorkFlow）
+                        </a> *@
+        </nav>
+    </li>
+    <li class="nav-item">
+        <a href="" class="nav-link with-sub" id="role-main-menu">
+            <i data-feather="users">
+            </i>
+            角色扮演 (Role Play)
+        </a>
+        <nav class="nav nav-sub">
+            <a href="/Role/RoleList" class="nav-sub-link" id="list-role-nav">
+                角色列表（Role List）
+            </a>
+            <a href="/Role/CustomRole" class="nav-sub-link" id="custom-role-nav">
+                自定义角色（Custom Role）
+            </a>
+        </nav>
+    </li>
+    <li class="nav-item">
+        <a href="" class="nav-link with-sub" id="files-main-menu">
+            <i data-feather="file-text">
+            </i>
+            文件管理 (File Manage)
+        </a>
+        <nav class="nav nav-sub">
+            <a href="/FilesAI/FilesLib" class="nav-sub-link" id="lib-files-nav">
+                素材库（Material Library）
+            </a>
+        </nav>
+    </li>
+    <li class="nav-item">
+        <a href="" class="nav-link with-sub" id="knowledge-main-menu">
+            <i data-feather="database">
+            </i>
+            知识库 (Knowledge Base)
+        </a>
+        <nav class="nav nav-sub">
+            <a href="/KnowledgeAI/KnowledgeChat" class="nav-sub-link" id="chat-knowledge-nav">
+                对话 （Chat by 知识库）
+            </a>
+            @*<a href="/KnowledgeAI/KnowledgeManagement" class="nav-sub-link" id="management-knowledge-nav">
+                        知识库管理（Management）
+                        </a>
+                        <a href="/KnowledgeAI/KnowledgeBuild" class="nav-sub-link" id="build-knowledge-nav">
+                        知识库构建（Build）
+                        </a>*@
+            <a href="/KnowledgeAI/KnowledgeAllInMilvus" class="nav-sub-link" id="milvus-knowledge-nav">
+                Milvus知识库构建（Milvus）
+            </a>
+            <a href="/KnowledgeAI/CutFileTest" class="nav-sub-link" id="cuttest-knowledge-nav">
+                正则切片测试（Test）
+            </a>
+        </nav>
+    </li>
+    <li class="nav-item">
+        <a href="" class="nav-link with-sub" id="assistant-main-menu">
+            <i data-feather="cpu">
+            </i>
+            助理GPT (Assistant GPT)
+        </a>
+        <nav class="nav nav-sub">
+            <a href="/AssistantGPT/AssistantChat" class="nav-sub-link" id="chat-assistant-nav">
+                对话 （Chat by 助理GPT）
+            </a>
+            <a href="/AssistantGPT/AssistantSetting" class="nav-sub-link" id="setting-assistant-nav">
+                助理配置 (Setting)
+            </a>
+        </nav>
+    </li>
+    <li class="nav-item">
+        <a href="" class="nav-link with-sub" id="pay-main-menu">
+            <b style="color:deepskyblue">
+                <i data-feather="dollar-sign">
+                </i>
+                充值中心 (Recharge)
+            </b>
+        </a>
+        <nav class="nav nav-sub">
+            <a href="/Pay/Balance" class="nav-sub-link" id="balance-pay-nav">
+                余额充值（Recharge）
+            </a>
+            <a href="/Pay/VIP" class="nav-sub-link" id="vip-pay-nav">
+                会员开通（VIP）
+            </a>
+            <a href="/Pay/Mall" class="nav-sub-link" id="mall-pay-nav">
+                商城（Mall）
+            </a>
+        </nav>
+    </li>
+    <li class="nav-item">
+        <a href="" class="nav-link with-sub" id="usercenter-main-menu">
+            <i data-feather="user">
+            </i>
+            个人中心 (Personal)
+        </a>
+        <nav class="nav nav-sub">
+            <a href="/Users/UserInfo" class="nav-sub-link" id="user_usercenter_nav">
+                我的（My Profile）
+            </a>
+            <a href="/Users/Statistics" class="nav-sub-link" id="statistics_usercenter_nav">
+                统计 (Statistics)
+            </a>
+            <a href="/Users/Gallery" class="nav-sub-link" id="gallery_usercenter_nav">
+                图库（Gallery）
+            </a>
+            <a href="/Users/Share" class="nav-sub-link" id="user_share_nav">
+                分享共盈（Share）
+            </a>
+            <a href="/Users/NewApi" class="nav-sub-link" id="user_newapi_nav">
+                中转API（New API）
+            </a>
+        </nav>
+    </li>
+
+</ul>
+<hr class="mg-t-30 mg-b-25">
+<ul class="nav nav-sidebar" id="custommenu">
+    <li class="nav-item">
+        <a href="#" class="nav-link" style="color:purple" onclick="clearCacheAndReload()">
+            <i data-feather="refresh-cw">
+            </i>
+            清除缓存刷新 (Refurbish)
+        </a>
+    </li>
+    <li class="nav-item">
+        <a href="#" class="nav-link" style="color:red" onclick="shutDown()">
+            <i data-feather="log-out">
+            </i>
+            退出登录 (Shut Down)
+        </a>
+    </li>
+    <li class="nav-item">
+        <a href="#" onclick="price()" class="nav-link">
+            <i data-feather="help-circle">
+            </i>
+            计费说明 (Price)
+        </a>
+    </li>
+    @*<li class="nav-item">
+                <a href="index.html" class="nav-link">
+                <i data-feather="help-circle">
+                </i>
+                文档 (Document)
+                </a>
+                </li>
+                <li class="nav-item">
+                <a href="themes.html" class="nav-link">
+                <i data-feather="github">
+                </i>
+                GitHub
+                </a>
+                </li>
+                <li class="nav-item">
+                <a href="themes.html" class="nav-link">
+                <i data-feather="edit">
+                </i>
+                意见&反馈 (Feedback)
+                </a>
+                </li>*@
+</ul>
+</div>
+</div>
+<div class="robot-container" style="display:none">
+    <div class="robot">
+        <div class="robot__head">
+            <div class="robot__head__ears"></div>
+            <div class="robot__head__mask"></div>
+            <div class="robot__head__eye--right"></div>
+            <div class="robot__head__eye--left"></div>
+            <div class="robot__head__mouth"></div>
+        </div>
+        <div class="robot__body">
+            <div class="robot__body__hand--right"></div>
+            <div class="robot__body__hand--left"></div>
+        </div>
+        <div class="robot__shadow"></div>
+    </div>
+    <div class="speech-bubble">我是AIBot,右键最小化😘<br/>双击我，可以跟我交流😉<br/>在设置中可以关闭我🥺</div>
+    <div class="speech-bubble-left">加载系统通知中...</div>
+</div>
+<div class="bot-chat-window">
+    <div class="bot-chat-header">
+        AIBot用户引导助手
+        <span class="bot-close-btn">&times;</span>
+    </div>
+    <div class="bot-chat-body">
+        <div class="bot-message">Hi~有什么我可以帮助你的？关于AIBot的问题，你可以随时问我😉</div>
+    </div>
+    <input type="text" id="botQ" class="bot-chat-input" placeholder="输入提问，回车发送">
+</div>
+<div class="content">
+    @RenderBody()
+</div>
+<div id="offCanvas1" class="off-canvas off-canvas-overlay off-canvas-right">
+    <div class="pd-10 ht-100p d-flex flex-column" id="promptList">
+        <div class="sticky-top pb-3">
+            <h5 class="tx-semibold mg-b-25"><i class="fas fa-info-circle"></i> 常用提示词</h5>
+
+            <div id="addPromptForm" class="mg-b-20">
+                <div class="form-group">
+                    <textarea class="form-control" style="border-radius:5px" id="newPrompt" rows="3" placeholder="输入新的提示词"></textarea>
+                </div>
+                <button class="btn btn-primary btn-block" onclick="addUserPrompt()"><i data-feather="plus-circle"></i> 添加提示词</button>
+            </div>
+        </div>
+
+        <!-- 提示词列表 -->
+        <ul class="list-group prompt-items-container" id="promptItems">
+            <span class="text-info">加载中...</span>
+        </ul>
+        <button class="btn btn-info" onclick="loadmorePromptList()"><i data-feather="chevrons-down"></i> 加载更多</button>
+    </div>
+</div>
+<script src="~/system/js/signalr.min.js"></script>
+<script src="~/system/js/robot.js?v2.2"></script>
+<script src="~/system/js/marked.min.js"></script>
+<link href="~/system/css/atom-one-dark.min.css" rel="stylesheet"/>
+<script src="~/system/js/jquery.magnific-popup.min.js"></script>
+</body>
+</html>

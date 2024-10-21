@@ -1,0 +1,85 @@
+﻿@{
+    ViewData["Title"] = "商城（Mall）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    .col-md-3 {
+        margin-bottom: 10px;
+    }
+
+    .price {
+        color: #ff0000;
+        font-weight: bold;
+    }
+
+    .goodInfo {
+        font-size: 15px;
+        text-align: left;
+        overflow-y: scroll;
+        height: 80px;
+        padding: 5px;
+    }
+
+    .goodName {
+        color: dodgerblue;
+        font-size: 20px;
+        font-weight: bold;
+    }
+
+    .card-img-top {
+        width: 100%; /* 设定宽度为容器的100% */
+        height: 250px; /* 设定固定高度 */
+        object-fit: cover; /* 图片会覆盖整个容器区域，可能裁剪图片的边缘部分 */
+    }
+</style>
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        @* <a href="#" class="header-help-link" onclick="DALLinfo()">
+        <i data-feather="help-circle">
+        </i>
+        </a> *@
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px">
+    <div class="content-header">
+        <div>
+            <h4 class="content-title content-title-sm">
+                <b style="background-image: linear-gradient(to right, rgb(0, 176, 240), rgb(255, 233, 0));
+    -webkit-background-clip: text;
+    color: transparent;">商城（Mall）</b>
+            </h4>
+            <span>今天想买点什么？🧐🏪🛍️</span>
+        </div>
+    </div>
+</div>
+<div class="content-main text-center">
+    <div class="row" id="goods">
+        加载中...
+        <!-- 商品1 -->
+        @* <div class="col-md-3">
+        <div class="card">
+        <!-- 使用Bootstrap的在线占位图服务 -->
+        <img src="https://via.placeholder.com/350x250" class="card-img-top" alt="商品1">
+        <div class="card-body">
+        <p class="card-text goodName">商品XXXXX</p>
+        <p class="card-text goodInfo">商品1的详细描述。商品1的详细描述。</p>
+        <h5 class="card-title price">¥ 199.00</h5>
+        <p class="card-text"><small class="text-muted">库存：20件</small></p>
+        <a href="#" class="btn btn-success">微信支付</a>
+        <a href="#" class="btn btn-primary">支付宝支付</a>
+        <a href="#" class="btn btn-info">余额支付</a>
+        </div>
+        </div>
+        </div> *@
+        <!-- 更多商品卡片可以通过复制上述结构来添加 -->
+    </div>
+</div>
+<script src="~/system/js/mall.js?v1.3"></script>

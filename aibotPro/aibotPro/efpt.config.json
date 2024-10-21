@@ -1,0 +1,258 @@
+﻿{
+   "CodeGenerationMode": 2,
+   "ContextClassName": "AIBotProContext",
+   "ContextNamespace": null,
+   "DefaultDacpacSchema": null,
+   "FilterSchemas": false,
+   "IncludeConnectionString": true,
+   "ModelNamespace": null,
+   "OutputContextPath": null,
+   "OutputPath": "Models",
+   "PreserveCasingWithRegex": true,
+   "ProjectRootNamespace": "aibotPro",
+   "Schemas": null,
+   "SelectedHandlebarsLanguage": 0,
+   "SelectedToBeGenerated": 0,
+   "T4TemplatePath": null,
+   "Tables": [
+      {
+         "Name": "[dbo].[Admins]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[AIdraw]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[AIdrawRes]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[AImodels]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[AImodelsUserSeq]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[APIKEY]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[AssistantFiles]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[AssistantGPT]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[AssistantModelPrice]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[BindNewApi]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Card]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ChatHistory]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ChatSetting]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[EasyPaySetting]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ErrorBilling]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[FilesLib]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Goods]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[IPlook]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Knowledge]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[KnowledgeList]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[KnowledgeType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ModelPrice]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[NewApiCollectLog]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Notice]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[NoticeRead]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[OpenAPIModelSetting]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Orders]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Plugins]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[PluginsCookies]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[PluginsHeaders]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[PluginsInstall]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[PluginsJsonPr]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[PluginsParams]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[RoleChat]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[RoleSetting]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Share]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ShareLog]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[SignIn]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[SunoRes]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[SystemCfg]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[SystemLog]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[SystemPlugins]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[SystemPluginsInstall]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[TxOrders]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[UISetting]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[UserPrompt]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Users]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[UserSetting]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[UseUpLog]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[VIP]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[WorkFlow]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[WorkShopAIModel]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[WorkShopModelUserSeq]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[IPlook_Stats_View]",
+         "ObjectType": 3
+      }
+   ],
+   "UiHint": "win-l2mf25l7av2.AIBotPro.dbo",
+   "UncountableWords": null,
+   "UseBoolPropertiesWithoutDefaultSql": false,
+   "UseDatabaseNames": true,
+   "UseDateOnlyTimeOnly": false,
+   "UseDbContextSplitting": false,
+   "UseDecimalDataAnnotationForSprocResult": true,
+   "UseFluentApiOnly": false,
+   "UseHandleBars": false,
+   "UseHierarchyId": false,
+   "UseInflector": true,
+   "UseLegacyPluralizer": false,
+   "UseManyToManyEntity": false,
+   "UseNoDefaultConstructor": false,
+   "UseNoNavigations": false,
+   "UseNoObjectFilter": false,
+   "UseNodaTime": false,
+   "UseNullableReferences": false,
+   "UsePrefixNavigationNaming": false,
+   "UseSchemaFolders": false,
+   "UseSchemaNamespaces": false,
+   "UseSpatial": false,
+   "UseT4": false
+}

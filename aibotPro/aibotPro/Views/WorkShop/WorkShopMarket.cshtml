@@ -1,0 +1,85 @@
+@{
+    ViewData["Title"] = "插件市场（Market）";
+    Layout = "_Layout";
+}
+<style>
+    .systemPluginBox {
+        border: 1px solid lightgray;
+        padding: 10px;
+        border-radius: 10px;
+    }
+</style>
+<script src="/system/js/masonry.pkgd.min.js"></script>
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        @* <a href="#" class="header-help-link" onclick="DALLinfo()">
+        <i data-feather="help-circle">
+        </i>
+        </a> *@
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px;">
+    <div class="content-header">
+        <div>
+            <h4 class="content-title content-title-sm">
+                <b style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105));
+    -webkit-background-clip: text;
+    color: transparent;">插件市场</b>
+            </h4>
+            <span>无所不有的插件市场 🛒💨💨💨</span>
+            <p></p>
+            <div class="systemPluginBox">
+                <b><i data-feather="settings" style="width:18px;"></i> 系统插件选装</b>
+                <p></p>
+                <div style="display: flex; gap: 10px;">
+                    <label><input type="checkbox" name="options" class="systemPlugins" value="use_dalle3_withpr"> DALL-E3绘画</label>
+                    <i data-feather="help-circle" style="width:18px;cursor:pointer" onclick="dalleinfo()" data-toggle="tooltip" title="当您安装此插件，您可以在【创意工坊对话】中，描述您的【绘画要求】，插件会根据您的语义选择调用时机"></i>
+                    <label><input type="checkbox" name="options" class="systemPlugins" value="search_google_when_gpt_cannot_answer"> 谷歌搜索</label>
+                    <i data-feather="help-circle" style="width:18px;cursor:pointer" onclick="googlesearchinfo()" data-toggle="tooltip" title="当您安装此插件，您可以在【创意工坊对话】中，要求AI进行【谷歌搜索】，适用于工坊中所有AI模型"></i>
+                    <label><input type="checkbox" name="options" class="systemPlugins" value="search_knowledge_base"> 知识库检索</label>
+                    <i data-feather="help-circle" style="width:18px;cursor:pointer" onclick="knowledgeinfo()" data-toggle="tooltip" title="当您安装此插件，您可以在【知识库对话】中，令AI查询您的【私有知识库】，如【未安装】此插件，您将【无法使用知识库对话】"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="content-main text-center">
+        <div class="header-search mb-4">
+            <i data-feather="search"></i>
+            <input type="search" class="form-control" placeholder="输入插件名搜索插件，回车搜索" id="searchKey" style="width: 100%;">
+        </div>
+        <div class="row" id="masonry-layout">
+            <li class="divider-text">
+                加载中...
+            </li>
+            <!-- 第一个卡片 -->
+            @* <div class="col-lg-3 col-md-6 col-sm-12 mb-4 grid-item">
+            <div class="card h-100">
+            <img class="card-img-top" style="width: 50px;margin:10px auto;"
+            src="/files/pluginavatar/20240206/02f59659b3064b90bf3e4166716878c0.png" alt="插件名称1">
+            <div class="card-body">
+            <h5 class="card-title">插件名称1</h5>
+            <p class="card-text">这里是插件1的简介，简要介绍插件的主要功能和特点。这里是插件1的简介，简要介绍插件的主要功能和特点。</p>
+            <div class="d-flex justify-content-between flex-wrap">
+            <a href="#" class="btn btn-primary">安装</a>
+            <a href="#" class="btn btn-secondary">查看</a>
+            </div>
+            </div>
+            </div>
+            </div> *@
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <button class="btn btn-primary loadMore" onclick="getWorkShopPlugins('loadmore')">加载更多</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/system/js/workshopmarket.js?v2"></script>

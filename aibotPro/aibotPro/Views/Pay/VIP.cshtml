@@ -1,0 +1,105 @@
+﻿@{
+    ViewData["Title"] = "会员开通（VIP）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    .member-card {
+        transition: transform .3s, box-shadow .3s, background-image .3s ease-in-out; /* 使背景色改变更平滑 */
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        cursor: pointer; /* 鼠标悬停时显示手势 */
+    }
+
+        .member-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+</style>
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        @* <a href="#" class="header-help-link" onclick="DALLinfo()">
+        <i data-feather="help-circle">
+        </i>
+        </a> *@
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px">
+    <div class="content-header">
+        <div>
+            <h4 class="content-title content-title-sm">
+                <b style="background-image: linear-gradient(to right, rgb(0, 176, 240), rgb(255, 233, 0));
+    -webkit-background-clip: text;
+    color: transparent;">VIP开通</b>
+            </h4>
+            <span>如果觉得我们做得还不错，请收购我们🤑🤑🤑</span>
+        </div>
+    </div>
+</div>
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-6 mb-4 align-items-stretch">
+            <div class="card member-card">
+                <!-- Card content -->
+                <div class="card-body" style="padding:40px;">
+                    <div class="marker marker-ribbon marker-success pos-absolute t-10 l-0">入门级首选</div>
+                    <h5 class="card-title">初级会员</h5>
+                    <p class="card-text">价格：<b style="color:darkgoldenrod">￥20/月</b></p>
+                    <p class="card-text">
+                        1、享有免费模型（详见模型列表：带【✨】标志的模型）
+                        <br />
+                        2、专项会员折扣
+                        <br />
+                        3、专属会员功能
+                        <br />
+                        4、客服优先处理
+                        <br />
+                        5、无签到奖励
+                        <br />
+                        7、无专属模型
+                        <br />
+                        8、无余额奖励
+                    </p>
+                    <button class="btn btn-success" onclick="Pay(20,'wxpay','VIP|20')"><img src="~/system/images/wechatpay.png" class="payimg" /> 微信支付</button>
+                    <button class="btn btn-primary" onclick="Pay(20,'alipay','VIP|20')"><img src="~/system/images/alipay.png" class="payimg" /> 支付宝支付</button>
+                    <button class="btn btn-info" onclick="BalncePayVIP(15)"><i data-feather="dollar-sign"></i> 余额支付</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4 align-items-stretch">
+            <div class="card member-card">
+                <!-- Card content -->
+                <div class="card-body" style="padding:40px;">
+                    <div class="marker marker-ribbon marker-danger pos-absolute t-10 l-0">超高性价比</div>
+                    <h5 class="card-title">高级会员</h5>
+                    <p class="card-text">价格：<b style="color:darkgoldenrod">￥50/月</b></p>
+                    <p class="card-text">
+                        1、享有免费模型（详见模型列表：带【✨】标志的模型）
+                        <br />
+                        <b style="color:orangered">2、专项高级会员折扣</b>
+                        <br />
+                        3、专属会员功能
+                        <br />
+                        4、客服优先处理
+                        <br />
+                        <b style="color:orangered">6、每日签到，随机抽取0.5~1余额</b>
+                        <br />
+                        <b style="color:orangered">7、享有专属模型（详见模型列表：带【👑】标志的模型）</b>
+                        <br />
+                        <b style="color:orangered">8、获得50余额</b>
+
+                    </p>
+                    <button class="btn btn-success" onclick="Pay(50,'wxpay','VIP|50')"><img src="~/system/images/wechatpay.png" class="payimg" /> 微信支付</button>
+                    <button class="btn btn-primary" onclick="Pay(50,'alipay','VIP|50')"><img src="~/system/images/alipay.png" class="payimg" /> 支付宝支付</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/system/js/vip.js?v1.2"></script>

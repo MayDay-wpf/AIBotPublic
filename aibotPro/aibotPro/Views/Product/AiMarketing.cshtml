@@ -1,0 +1,270 @@
+﻿@{
+    ViewData["Title"] = "营销号助手（AiMarketing）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    #logview {
+        width: 100%;
+        height: 200px;
+        overflow-y: scroll;
+        background-color: papayawhip;
+    }
+
+    .imgsize {
+        float: left;
+        margin-right: 10px;
+        cursor: pointer;
+    }
+
+        .imgsize.size55 {
+            width: 80px;
+            height: 80px;
+            border: 2px solid orangered;
+        }
+
+        .imgsize.size75 {
+            width: 120px;
+            height: 80px;
+            border: 1px solid gray;
+        }
+
+        .imgsize.size57 {
+            width: 80px;
+            height: 120px;
+            border: 1px solid gray;
+        }
+
+</style>
+<div class="modal fade" id="waitingModal" tabindex="-1" role="dialog" aria-labelledby="waitingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="waitingModalLabel">请等待</h5>
+            </div>
+            <div class="modal-body">
+                <p style="color:red">倒数结束后将开始生成视频，视频生成时间较长</p>
+                <p style="color:orangered">生成时间消耗(分钟)≈图片数，请耐心等待，没有提示失败，就说明正在生成中</p>
+                <p id="countdownText">后端正在搭建基架构，30秒后继续...</p>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        @* <a href="#" class="header-help-link" onclick="DALLinfo()">
+        <i data-feather="help-circle">
+        </i>
+        </a> *@
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px">
+    <div class="content-header">
+        <div>
+            <h4 class="content-title content-title-sm">
+                <b style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105));
+    -webkit-background-clip: text;
+    color: transparent;">文本转语音</b>
+            </h4>
+            <span>文本转语音，支持超长文本🗣︎🗣︎🗣︎</span>
+        </div>
+    </div>
+    <div class="card" id="step1">
+        <div class="card-header">
+            <h5>第一步：输入待转换的文字</h5>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <textarea class="form-control" style="height:300px;" id="text" placeholder="请输入待转换为语音的文本"></textarea>
+            </div>
+            <div class="form-group">
+                <button class="btn btn-primary" onclick="toStep(2)">继续</button>
+                <br />
+                <span class="tx-danger">注意，段落一定要恰当，段落鲜明，分配合理</span>
+            </div>
+        </div>
+    </div>
+    <p></p>
+    <div class="card" id="step2" style="display:none">
+        <div class="card-header">
+            <h5>第二步：检查段落切分结果，您可以进行调整</h5>
+        </div>
+        <div class="card-body">
+            <div class="form-group" id="sections">
+                @* <textarea class="form-control section" style="height:120px;"></textarea>
+                <textarea class="form-control section" style="height:120px;"></textarea>
+                <textarea class="form-control section" style="height:120px;"></textarea> *@
+            </div>
+            <div class="form-group">
+                <button class="btn btn-primary" onclick="toStep(3)">继续</button>
+                <br />
+                <span class="tx-danger">下一步将为您的段落转换为语音</span>
+            </div>
+        </div>
+    </div>
+    <p></p>
+    <div class="card" id="step3" style="display:none">
+        <div class="card-header">
+            <h5>第三步：配音</h5>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label>请选择讲述人：</label>
+            </div>
+            <div class="form-group">
+                <div class="form-group">
+                    <input type="radio" id="alloy" name="voice" value="alloy" checked>
+                    <label for="alloy">Alloy</label><br>
+                    <audio id="alloyAudio" class="audio-player" controls>
+                        <source src="/system/doc/alloy.mp3" type="audio/mp3">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+                <div class="form-group">
+                    <input type="radio" id="echo" name="voice" value="echo">
+                    <label for="echo">Echo</label><br>
+                    <audio id="echoAudio" class="audio-player" controls>
+                        <source src="/system/doc/echo.mp3" type="audio/mp3">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+                <div class="form-group">
+                    <input type="radio" id="fable" name="voice" value="fable">
+                    <label for="fable">Fable</label><br>
+                    <audio id="fableAudio" class="audio-player" controls>
+                        <source src="/system/doc/fable.mp3" type="audio/mp3">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+                <div class="form-group">
+                    <input type="radio" id="onyx" name="voice" value="onyx">
+                    <label for="onyx">Onyx</label><br>
+                    <audio id="onyxAudio" class="audio-player" controls>
+                        <source src="/system/doc/onyx.mp3" type="audio/mp3">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+                <div class="form-group">
+                    <input type="radio" id="nova" name="voice" value="nova">
+                    <label for="nova">Nova</label><br>
+                    <audio id="novaAudio" class="audio-player" controls>
+                        <source src="/system/doc/nova.mp3" type="audio/mp3">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+                <div class="form-group">
+                    <input type="radio" id="shimmer" name="voice" value="shimmer">
+                    <label for="shimmer">Shimmer</label><br>
+                    <audio id="shimmerAudio" class="audio-player" controls>
+                        <source src="/system/doc/shimmer.mp3" type="audio/mp3">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+            </div>
+            <div class="form-group">
+                <button class="btn btn-primary btnTTS" id="btnTTS" onclick="createMP3()">开始为段落生成音频</button>
+            </div>
+            <div class="form-group">
+                <label>生成日志：</label><br>
+                <textarea id="logview" class="form-control" readonly="readonly"></textarea>
+            </div>
+            <div class="form-group" id="toStep4" style="display:none">
+                <button class="btn btn-primary" onclick="toStep(4)">继续</button>
+                <br />
+                <span class="tx-danger">下一步将为您的文章生成分镜</span>
+            </div>
+        </div>
+    </div>
+    <p></p>
+    <div class="card" id="step4" style="display:none">
+        <div class="card-header">
+            <h5>第四步：生成分镜</h5>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label>选择分镜生成的AI模型</label>
+                <span class="tx-danger">使用GPT4时将产生GPT4费用</span>
+                <select class="form-control" id="aiModelSelect" style="width:200px;">
+                    <option value="gpt-4o-mini">gpt-4o-mini</option>
+                    <option value="gpt-4-turbo-preview">gpt-4-turbo-preview</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <!-- 优化按钮语义 -->
+                <button type="button" class="btn btn-info btnLens" onclick="createLens()">点击开始生成</button>
+            </div>
+            <div class="form-group" id="lens">
+            </div>
+            <div class="form-group" id="toStep5">
+                <button type="button" class="btn btn-primary" onclick="toStep(5)">继续</button>
+                <br>
+                <span class="text-danger">下一步将为您绘制场景</span>
+            </div>
+        </div>
+    </div>
+    <p></p>
+    <div class="card" id="step5" style="display:none">
+        <div class="card-header">
+            <h5>第四步：场景生成</h5>
+            <span class="tx-danger">图片不满意时，可以重新生成，视频生成不会100%成功，图片生成产生的费用无法退回，图片生成后完毕后建议您等待1~2分钟，以增加生成视频成功率</span>
+        </div>
+        <div class="card-body">
+            <!-- 分离label和选择尺寸的操作，更符合实际表单的布局 -->
+            <div class="form-group">
+                <label>选择场景绘制尺寸</label>
+                <div class="d-flex flex-wrap">
+                    <!-- 使用按钮样式的div，提升点击区域的可访问性 -->
+                    <div class="imgsize size55" role="button" tabindex="0" onclick="TabD3ImgSize('1024x1024','size55')">1024x1024</div>
+                    <div class="imgsize size75" role="button" tabindex="0" onclick="TabD3ImgSize('1792x1024','size75')">1792x1024</div>
+                    <div class="imgsize size57" role="button" tabindex="0" onclick="TabD3ImgSize('1024x1792','size57')">1024x1792</div>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="row" id="draw">
+                    @* <div class="col-lg-3 col-md-4 col-sm-6 col-12 mb-4">
+                    <div class="card h-100">
+                    <div class="card-header">
+                    <div class="form-group">
+                    <textarea class="form-control" rows="2"></textarea>
+                    </div>
+                    </div>
+                    <img src="" class="card-img-top img-fluid" alt="图片显示区" style="aspect-ratio: 1 / 1; object-fit: cover;">
+                    <div class="card-body text-center">
+                    <a href="#" class="btn btn-primary drawBtn">绘制</a>
+                    </div>
+                    </div>
+                    </div> *@
+                </div>
+            </div>
+            <div class="form-group" id="toStep6">
+                <button class="btn btn-primary btnVideo" onclick="createVideo()">生成视频</button>
+                <br />
+                <span class="tx-danger">最后将为您合成完整幻灯片视频，请确定所有场景图片全部生成完毕，生成时间消耗(分钟)≈图片数，请耐心等待</span>
+            </div>
+        </div>
+    </div>
+    <p></p>
+    <div class="card" id="step6" style="display:none">
+        <div class="card-header">
+            <h5>视频结果</h5>
+            <a href="" class="btn btn-info" download id="videoDownload">下载视频</a>
+        </div>
+        <div class="card-body d-flex justify-content-center align-items-center">
+            <video id="video" controls style="max-width:100%; max-height:100%;">
+                <source src="" type="video/mp4">
+                您的浏览器不支持video标签。
+            </video>
+        </div>
+    </div>
+    <p></p>
+</div>
+<link rel="stylesheet" href="~/system/css/magnific-popup.min.css">
+<script src="~/system/js/jquery.magnific-popup.min.js"></script>
+<script src="~/system/js/aimarketing.js?v1.0.1"></script>

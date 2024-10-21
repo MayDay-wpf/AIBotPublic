@@ -1,0 +1,146 @@
+﻿@{
+    ViewData["Title"] = "Suno";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/system/css/suno.css" rel="stylesheet" />
+<div id="gradient-container"></div>
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px;">
+    <div class="content-header">
+        <div>
+            @* <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+            <li class="breadcrumb-item" style="cursor:unset"><a href="#">AIBot-Pro</a></li>
+            <li class="breadcrumb-item"><a href="#">AI</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Midjourney</li>
+            </ol>
+            </nav> *@
+            <h4 class="content-title content-title-sm">
+                <b style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105));
+    -webkit-background-clip: text;
+    color: transparent;">Suno🎵🎶</b>
+            </h4>
+        </div>
+    </div>
+    <div class="main-container">
+        <div class="generator-panel" id="generatorPanel">
+            <h4><b>音乐生成器</b></h4>
+            <div class="form-group">
+                <label for="mode">模式 <span class="text-danger">*</span>：</label>
+                <select class="form-control" id="mode">
+                    <option value="inspiration" selected="selected">灵感模式</option>
+                    <option value="custom">自定义模式</option>
+                </select>
+            </div>
+            <div id="inspirationMode">
+                <div class="form-group">
+                    <label for="gptDescription">歌曲描述 <span class="text-danger">*</span>：</label>
+                    <textarea class="form-control" id="gptDescription" placeholder="输入描述" rows="5"></textarea>
+                </div>
+            </div>
+            <div id="customMode" style="display: none;">
+                <div class="form-group">
+                    <label for="prompt">歌词 <span class="text-danger">*</span>：</label>
+                    <textarea class="form-control" id="prompt" rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="tags">标签 <span class="text-danger">*</span>：</label>
+                    <input type="text" class="form-control" id="tags" placeholder="输入标签">
+                </div>
+                <div class="form-group">
+                    <label for="mv">MV <span class="text-danger">*</span>：</label>
+                    <select class="form-control" id="mv">
+                        <option value="chirp-v3-0" selected="selected">chirp-v3-0</option>
+                        <option value="chirp-v3-5">chirp-v3-5</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="title">标题 <span class="text-danger">*</span>：</label>
+                    <input type="text" class="form-control" id="title" placeholder="输入标题">
+                </div>
+            </div>
+            <button class="btn btn-primary" id="generateBtn"><i class="fas fa-guitar"></i> 生成音乐</button>
+            <p></p>
+            <button class="btn btn-danger" id="stopgenerateBtn" style="display:none;"><i class="fas fa-stop-circle"></i> 停止生成</button>
+            <div id="sunoinfo">
+            </div>
+        </div>
+        <div class="player-container">
+            <div class="suno-player">
+                <div class="record-container">
+                    <div class="record" id="record">
+                        <div class="album-cover"></div>
+                    </div>
+                    <div class="tonearm" id="tonearm"></div>
+                </div>
+                <div class="current-song-title">
+                </div>
+                <div class="lyrics" id="lyrics">
+                    <!-- 歌词将显示在这里 -->
+                </div>
+                <div class="controls">
+                    <input type="range" class="custom-range" id="progress" min="0" max="100" value="0">
+                    <div class="justify-content-between mt-2">
+                        <button class="btn btn-info" id="playPause"><i class="fas fa-play-circle"></i>  播放</button>
+                        <span id="currentTime">0:00</span> / <span id="duration">0:00</span>
+                    </div>
+                </div>
+            </div>
+            <div id="video-container" class="hidden">
+                <video id="video-player"></video>
+                <div id="loading-message">视频加载中...</div>
+            </div>
+        </div>
+        <div class="song-list-container" id="songListContainer">
+            <h4><b>歌曲列表</b></h4>
+            <div class="mb-3">
+                <div class="input-group">
+                    <input type="text" class="form-control" style="border-radius:5px 0 0 5px;" id="searchInput" placeholder="搜索歌曲...">
+                    <div class="input-group-append">
+                        <button class="btn btn-outline-secondary" type="button" id="searchBtn">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="play-mode">
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="playModeDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        顺序播放
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="playModeDropdown">
+                        <a class="dropdown-item active" href="#" data-mode="sequential">顺序播放</a>
+                        <a class="dropdown-item" href="#" data-mode="random">随机播放</a>
+                    </div>
+                </div>
+            </div>
+            <div class="song-list" id="songList">
+                <div style="text-align:center">
+                    <span class="badge badge-pill badge-info loading">加载中...</span>
+                </div>
+            </div>
+            <div class="text-center mt-3">
+                <button id="loadMoreBtn" class="btn btn-outline-primary">
+                    <i class="fas fa-sync-alt mr-2"></i>加载更多
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<button class="btn btn-success d-md-none" id="openGenerator" style="position: fixed; bottom: 20px; left: 20px;"><i class="fas fa-magic"></i> 打开生成器</button>
+<button class="btn btn-success d-md-none" id="openSongList" style="position: fixed; bottom: 20px; right: 20px;"><i class="fas fa-list"></i> 打开歌曲列表</button>
+<div class="overlay" id="overlay"></div>
+<script src="~/static/js/popper.min.js"></script>
+<script src="~/system/js/suno.js"></script>

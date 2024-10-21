@@ -1,0 +1,407 @@
+﻿@{
+    ViewData["Title"] = "我的工作台（My Workbench）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/system/css/mywork.css" rel="stylesheet" />
+<link rel="stylesheet" href="~/system/js/codemirror5/codemirror.min.css">
+<link rel="stylesheet" href="~/system/js/codemirror5/3024-night.min.css">
+<script src="~/system/js/codemirror5/codemirror.min.js"></script>
+<script src="~/system/js/codemirror5/javascript.min.js"></script>
+<!-- 引入显示提示的插件和样式 -->
+<link rel="stylesheet" href="~/system/js/codemirror5/show-hint.min.css">
+<script src="~/system/js/codemirror5/show-hint.min.js"></script>
+<!-- 引入JavaScript代码提示 -->
+<script src="~/system/js/codemirror5/javascript-hint.min.js"></script>
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        @* <a href="#" class="header-help-link" onclick="DALLinfo()">
+        <i data-feather="help-circle">
+        </i>
+        </a> *@
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px">
+    <div class="content-header">
+        <div>
+            <h4 class="content-title content-title-sm">
+                <b style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105));
+    -webkit-background-clip: text;
+    color: transparent;">工作台</b>
+            </h4>
+            <span>开始制作一个自己的专属插件吧🤩</span>
+        </div>
+    </div>
+    <div id="STEP">
+        <div class="card">
+            <div class="card-header">
+                <h5>必读知识及注意事项</h5>
+            </div>
+            <div class="card-body">
+                <h6>
+                    1、插件基于Function calling 如果你还不了解，建议前往 <a target="_blank"
+                                                           href="https://platform.openai.com/docs/guides/function-calling/function-calling">https://platform.openai.com/docs/guides/function-calling/function-calling</a>
+                    以了解功能原理
+                </h6>
+                <h6>2、您需要有一定的编程知识储备，以及深刻了解API特性、调用原理、系统集成等知识</h6>
+                <h6>3、了解JavaScript</h6>
+                <h6>4、插件要以实用为主，以充分利用AI能力服务于人类</h6>
+                <h6>5、不得制作违反法律法规，损害他人和本站利益的插件</h6>
+                <h6>6、不得盗用未经许可的API以制作插件</h6>
+                <button class="btn btn-success" onclick="showStep()">已认真阅读完毕，点击立即开始</button>
+            </div>
+        </div>
+        <p></p>
+        <div class="card" id="plugin-1" style="display:none">
+            <div class="card-header">
+                <h5>第一步：配置插件基础信息</h5>
+            </div>
+            <div class="card-body">
+                <form>
+                    <div class="form-group">
+                        <label for="avatar">
+                            头像上传 <span class="tx-danger">*</span>
+                        </label>
+                        <div class="avatar-upload" onclick="document.getElementById('avatar').click()">
+                            <input type="file" id="avatar" style="display: none;" onchange="loadImage(event)">
+                            <img id="avatar-image" src="/system/images/addavatar.png" alt="+">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="nickname">插件昵称 <span class="tx-danger">*</span></label>
+                        <input type="text" class="form-control" maxlength="50" id="nickname"
+                               placeholder="为插件取一个易于识别的昵称">
+                    </div>
+                    <div class="form-group">
+                        <label for="functionname">函数名称 <span class="tx-danger">*</span></label>
+                        <input type="text" class="form-control" maxlength="50" id="functionname"
+                               placeholder="函数名，示例：get_weather_forecast">
+                    </div>
+                    <div class="form-group">
+                        <label for="functioninfo">插件描述 <span class="tx-danger">*</span></label>
+                        <textarea class="form-control" maxlength="300" id="functioninfo"
+                                  placeholder="描述插件的作用，便于AI理解调用时机，示例：需要查询某地天气预报时调用"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>是否开源 <span class="tx-danger">*</span>：</label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="opensource" id="opensource" value="yes"
+                                   checked>
+                            <label class="form-check-label" for="opensource">
+                                是
+                            </label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="opensource" id="unopensource" value="no">
+                            <label class="form-check-label" for="unopensource">
+                                否
+                            </label>
+                            <!-- 在这里可以添加更多的单选按钮，每个按钮对应一个 .col -->
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="functioninfo">插件价格 <span class="tx-danger">*</span></label>
+                        <input type="text" class="form-control" id="pluginprice" value="0.00">
+                    </div>
+                    @* <button type="button" class="btn btn-primary" onclick="showStep2()">下一步</button> *@
+                </form>
+            </div>
+        </div>
+        <p></p>
+        <div class="card" id="plugin-2" style="display:none">
+            <div class="card-header">
+                <h5>第二步：选择插件开发模式</h5>
+            </div>
+            <div class="card-body">
+                <div class="btn-group" role="group" aria-label="Plugin Development Modes">
+                    <button type="button" class="btn btn-primary" onclick="selectMode('plugin-online')"><i data-feather="link"></i> 线上API</button>
+                    <button type="button" class="btn btn-secondary" onclick="selectMode('plugin-offline')"><i data-feather="code"></i> 离线JavaScript</button>
+                    <button type="button" class="btn btn-info" onclick="selectMode('plugin-mixed')"><i data-feather="codesandbox"></i> 脚本回调</button>
+                    <button type="button" class="btn btn-danger" onclick="selectMode('plugin-workflow')"><i data-feather="share-2"></i> 工作流</button>
+                </div>
+            </div>
+        </div>
+        <p></p>
+        <div class="card" id="plugin-online" style="display:none">
+            <div class="card-header">
+                <h5>第三步：线上API模式配置信息</h5>
+            </div>
+            <div class="card-body">
+                <form>
+                    <div class="form-group">
+                        <label for="apiurl">API请求地址 <span class="tx-danger">*</span></label>
+                        <input type="text" class="form-control" maxlength="200" id="apiurl" placeholder="请输入API请求地址">
+                    </div>
+                    <div class="form-group">
+                        <label>请求方式：</label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="method" id="method-post" value="post"
+                                   checked>
+                            <label class="form-check-label" for="method-post">
+                                Post
+                            </label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="method" id="method-get" value="get">
+                            <label class="form-check-label" for="method-get">
+                                Get
+                            </label>
+                            <!-- 在这里可以添加更多的单选按钮，每个按钮对应一个 .col -->
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="functionname">请求参数（选填）</label>
+                        <table id="AddPr" class="form-table">
+                        </table>
+                        <button type="button" class="btn btn-success" onclick="addPrLine()">
+                            <i data-feather="plus"></i>新增一行
+                        </button>
+                    </div>
+                    <div class="form-group" id="JsonPrGroup">
+                        <label for="JsonPr">使用模板语法结构化Josn参数（选填）</label>
+                        <textarea class="form-control" id="JsonPr" style="height:200px;" placeholder="此处可将AI生成的参数，插入Json结构以发送复杂数据结构的请求，模板语法：{{参数}}"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="functionname">请求Headers（选填）</label>
+                        <table id="AddHd" class="form-table">
+                        </table>
+                        <button type="button" class="btn btn-success" onclick="addHdLine()">
+                            <i data-feather="plus"></i>新增一行
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <label for="functionname">请求Cookies（选填）</label>
+                        <table id="AddCk" class="form-table">
+                        </table>
+                        <button type="button" class="btn btn-success" onclick="addCkLine()">
+                            <i data-feather="plus"></i>新增一行
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-check mt-3">
+                            <input class="form-check-input" type="checkbox" id="usehtml1">
+                            <label class="form-check-label" for="usehtml1">直接渲染html</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="btn btn-primary uploadPluginBtn" onclick="PostPlugin('')">
+                            <i data-feather="upload"></i> 发布到市场
+                        </button>
+                        <button type="button" class="btn btn-success savePluginBtn" onclick="PostPlugin('test')">
+                            <i data-feather="save"></i> 发布测试
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <p></p>
+        <div class="card" id="plugin-offline" style="display:none">
+            <div class="card-header">
+                <h5>第三步：离线JavaScript模式配置信息</h5>
+            </div>
+            <div class="card-body">
+                <h6>1、请不要写注释以避免执行失败</h6>
+                <h6>2、后端执行时不支持ajax等请求</h6>
+                <p></p>
+                <form>
+                    <div class="form-group">
+                        <label for="functionname">请求参数（选填），由GPT生成参数，参数作为您脚本的全局变量</label>
+                        <table id="AddPr1" class="form-table">
+                        </table>
+                        <button type="button" class="btn btn-success" onclick="addPrLine(1)">
+                            <i data-feather="plus"></i>新增一行
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <label>选择脚本执行位置：</label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="runLocation" id="back-end"
+                                   value="back-end" checked>
+                            <label class="form-check-label" for="back-end">
+                                后端执行
+                            </label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="runLocation" id="fore-end"
+                                   value="fore-end">
+                            <label class="form-check-label" for="fore-end">
+                                前端执行
+                            </label>
+                            <!-- 在这里可以添加更多的单选按钮，每个按钮对应一个 .col -->
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="btn btn-info" onclick="runCode()">
+                            <i data-feather="play"></i>
+                            调试
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <label>编写脚本：</label>
+                        <textarea id="myTextarea"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>调试结果：</label>
+                        <div class="output" id="output"></div>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-check mt-3">
+                            <input class="form-check-input" type="checkbox" id="usehtml2">
+                            <label class="form-check-label" for="usehtml2">直接渲染html</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="btn btn-primary uploadPluginBtn" onclick="PostPlugin('')">
+                            <i data-feather="upload"></i> 发布到市场
+                        </button>
+                        <button type="button" class="btn btn-success savePluginBtn" onclick="PostPlugin('test')">
+                            <i data-feather="save"></i> 发布测试
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <p></p>
+        <div class="card" id="plugin-mixed" style="display:none">
+            <div class="card-header">
+                <h5>第三步：脚本回调模式配置信息</h5>
+            </div>
+            <div class="card-body">
+                <form>
+                    <div class="form-group">
+                        <label for="apiurl">API请求地址 <span class="tx-danger">*</span></label>
+                        <input type="text" class="form-control" maxlength="200" id="apiurl2" placeholder="请输入API请求地址">
+                    </div>
+                    <div class="form-group">
+                        <label>请求方式：</label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="method2" id="method-post2" value="post"
+                                   checked>
+                            <label class="form-check-label" for="method-post2">
+                                Post
+                            </label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="method2" id="method-get2" value="get">
+                            <label class="form-check-label" for="method-get2">
+                                Get
+                            </label>
+                            <!-- 在这里可以添加更多的单选按钮，每个按钮对应一个 .col -->
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="functionname">请求参数（选填）</label>
+                        <table id="AddPr2" class="form-table">
+                        </table>
+                        <button type="button" class="btn btn-success" onclick="addPrLine(2)">
+                            <i data-feather="plus"></i>新增一行
+                        </button>
+                    </div>
+                    <div class="form-group" id="JsonPrGroup2">
+                        <label for="JsonPr2">使用模板语法结构化Josn参数（选填）</label>
+                        <textarea class="form-control" id="JsonPr2" style="height:200px;" placeholder="此处可将AI生成的参数，插入Json结构以发送复杂数据结构的请求，模板语法：{{参数}}"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="functionname">请求Headers（选填）</label>
+                        <table id="AddHd2" class="form-table">
+                        </table>
+                        <button type="button" class="btn btn-success" onclick="addHdLine(2)">
+                            <i data-feather="plus"></i>新增一行
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <label for="functionname">请求Cookies（选填）</label>
+                        <table id="AddCk2" class="form-table">
+                        </table>
+                        <button type="button" class="btn btn-success" onclick="addCkLine(2)">
+                            <i data-feather="plus"></i>新增一行
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <h6>1、脚本是API请求的回调函数，脚本函数名与【步骤一】中的函数名需一致</h6>
+                        <h6>2、脚本参数必填，API请求结果是脚本的参数,有且只有一个，参数名统一使用‘res’</h6>
+                        <h6>3、后端执行时，脚本必须有返回值，即：`return`</h6>
+                    </div>
+                    <div class="form-group">
+                        <label>选择脚本执行位置：</label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="runLocation2" id="back-end2"
+                                   value="back-end2" checked>
+                            <label class="form-check-label" for="back-end">
+                                后端执行
+                            </label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="runLocation2" id="fore-end2"
+                                   value="fore-end2">
+                            <label class="form-check-label" for="fore-end">
+                                前端执行
+                            </label>
+                            <!-- 在这里可以添加更多的单选按钮，每个按钮对应一个 .col -->
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="btn btn-info" onclick="runCode2()">
+                            <i data-feather="play"></i>
+                            调试
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <label>编写脚本：</label>
+                        <textarea id="myTextarea2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>调试结果：</label>
+                        <div class="output" id="output2"></div>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-check mt-3">
+                            <input class="form-check-input" type="checkbox" id="usehtml3">
+                            <label class="form-check-label" for="usehtml3">直接渲染html</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="btn btn-primary uploadPluginBtn" onclick="PostPlugin('')">
+                            <i data-feather="upload"></i> 发布到市场
+                        </button>
+                        <button type="button" class="btn btn-success savePluginBtn" onclick="PostPlugin('test')">
+                            <i data-feather="save"></i> 发布测试
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <p></p>
+        <div class="card" id="plugin-workflow" style="display:none">
+            <div class="card-header">
+                <h5>第三步：工作流配置信息</h5>
+            </div>
+            <div class="card-body">
+                <form>
+                    <div class="form-group">
+                        <div id="workflowBox" onclick="workflowDrive()">
+                            <img src="~/system/images/addflow.png" />
+                            <p>新建工作流</p>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="btn btn-primary uploadPluginBtn" onclick="PostPlugin('')">
+                            <i data-feather="upload"></i> 发布到市场
+                        </button>
+                        <button type="button" class="btn btn-success savePluginBtn" onclick="PostPlugin('test')">
+                            <i data-feather="save"></i> 发布测试
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/system/js/mywork.js?v1"></script>

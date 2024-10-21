@@ -1,0 +1,55 @@
+﻿@{
+    ViewData["Title"] = "支付配置 (Payment)";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px;">
+    <div class="card">
+        <div class="card-header">
+            <h5>易支付配置</h5>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="shopId">商户ID</label>
+                <input type="text" class="form-control" id="shopId" placeholder="商户ID">
+            </div>
+            <div class="form-group">
+                <label for="apiKey">商户密钥</label>
+                <input type="text" class="form-control" id="apiKey" placeholder="商户密钥">
+            </div>
+            <div class="form-group">
+                <label for="submitUrl">支付请求地址</label>
+                <input type="text" class="form-control" id="submitUrl" placeholder="支付请求地址">
+            </div>
+            <div class="form-group">
+                <label for="checkPayUrl">支付结果检查地址</label>
+                <input type="text" class="form-control" id="checkPayUrl" placeholder="支付请求地址">
+            </div>
+            <div class="form-group">
+                <label for="notifyUrl">异步通知地址</label>
+                <input type="text" class="form-control" id="notifyUrl" placeholder="异步通知地址">
+            </div>
+            <div class="form-group">
+                <label for="returnUrl">返回地址</label>
+                <input type="text" class="form-control" id="returnUrl" placeholder="返回地址">
+            </div>
+            <div class="form-group">
+                <button type="button" class="btn btn-primary save" onclick="savePayment()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/system/js/openall/payment.js"></script>
+
+

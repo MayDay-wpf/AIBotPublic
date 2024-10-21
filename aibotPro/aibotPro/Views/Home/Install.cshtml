@@ -1,0 +1,178 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>AIBotPro Install</title>
+    <script src="~/static/js/jquery.min.js"></script>
+    <script src="~/system/js/install.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .log-area {
+            height: 200px;
+            overflow-y: scroll;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+            .form-group label {
+                display: block;
+                margin-bottom: 5px;
+            }
+
+            .form-group input {
+                width: 200px;
+                padding: 5px;
+            }
+
+            .form-group button {
+                padding: 5px 10px;
+            }
+
+        .content {
+            width: 50%;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <h1>AIBotPro安装页</h1>
+        <div class="section">
+            <h2>服务检查日志</h2>
+            <div class="log-area" id="logArea">
+            </div>
+        </div>
+        <div class="installStep" style="display:none">
+            <div class="section">
+                <h2>管理员账号设置</h2>
+                <div class="form-group">
+                    <label for="adminUsername">管理员账号：</label>
+                    <input type="text" id="adminUsername">
+                </div>
+                <div class="form-group">
+                    <label for="adminPassword">管理员密码：</label>
+                    <input type="text" id="adminPassword">
+                </div>
+                <button onclick="createAdmin()">确定</button> <span>确定后系统安装完成！！！</span>
+            </div>
+            <div class="section">
+                <h2>系统配置项（不需要填写，可按需申请，后续在管理后台修改）</h2>
+                <div class="form-group">
+                    <label>QQ邮箱账号（用于注册邮件发送）：</label>
+                    <input type="text" readonly="readonly" value="Mail" style="background-color:#ccc">
+                    <input type="text" id="Mail" readonly="readonly" value="After" style="background-color:#ccc">
+                    <label>QQ邮箱授权码：</label>
+                    <input type="text" readonly="readonly" value="MailPwd" style="background-color:#ccc">
+                    <input type="text" id="MailPwd" readonly="readonly" value="After" style="background-color:#ccc">
+                </div>
+                <div class="form-group">
+                    <label>用户注册初始金额（建议值1~3）：</label>
+                    <input type="text" readonly="readonly" value="RegiestMcoin" style="background-color:#ccc">
+                    <input type="text" id="RegiestMcoin" readonly="readonly" value="1" style="background-color:#ccc">
+                </div>
+                <div class="form-group">
+                    <label>用户分享注册金额（建议值1~3）：</label>
+                    <input type="text" readonly="readonly" value="ShareMcoin" style="background-color:#ccc">
+                    <input type="text" id="ShareMcoin" readonly="readonly" value="1" style="background-color:#ccc">
+                </div>
+                <div class="form-group">
+                    <label>百度OCR 通用文字识别</label>
+                    <label>免费申请地址：<a href="https://cloud.baidu.com/product/ocr">https://cloud.baidu.com/product/ocr</a></label>
+                    <label>API Key：</label>
+                    <input type="text" readonly="readonly" value="Baidu_TXT_AK" style="background-color:#ccc">
+                    <input type="text" id="Baidu_TXT_AK" readonly="readonly" value="After" style="background-color:#ccc">
+                    <label>Secret Key：</label>
+                    <input type="text" readonly="readonly" value="Baidu_TXT_SK" style="background-color:#ccc">
+                    <input type="text" id="Baidu_TXT_SK" readonly="readonly" value="After" style="background-color:#ccc">
+                </div>
+                <div class="form-group">
+                    <label>百度OCR 通用场景识别</label>
+                    <label>免费申请地址：<a href="https://cloud.baidu.com/product/imagerecognition/general">https://cloud.baidu.com/product/imagerecognition/general</a></label>
+                    <label>API Key：</label>
+                    <input type="text" readonly="readonly" value="Baidu_OBJ_AK" style="background-color:#ccc">
+                    <input type="text" id="Baidu_OBJ_AK" readonly="readonly" value="After" style="background-color:#ccc">
+                    <label>Secret Key：</label>
+                    <input type="text" readonly="readonly" value="Baidu_OBJ_SK" style="background-color:#ccc">
+                    <input type="text" id="Baidu_OBJ_SK" readonly="readonly" value="After" style="background-color:#ccc">
+                </div>
+                <div class="form-group">
+                    <label>Google Custom Search API</label>
+                    <label>免费申请地址：<a href="https://developers.google.com/custom-search/v1/introduction?apix=true&hl=zh-cn">https://developers.google.com/custom-search/v1/introduction?apix=true&hl=zh-cn</a></label>
+                    <label>API Key：</label>
+                    <input type="text" readonly="readonly" value="GoogleSearchApiKey" style="background-color:#ccc">
+                    <input type="text" id="GoogleSearchApiKey" readonly="readonly" value="After" style="background-color:#ccc">
+                    <label>搜索引擎ID：</label>
+                    <input type="text" readonly="readonly" value="GoogleSearchEngineId" style="background-color:#ccc">
+                    <input type="text" id="GoogleSearchEngineId" readonly="readonly" value="After" style="background-color:#ccc">
+                </div>
+                <div class="form-group">
+                    <label>阿里巴巴滑动验证码(已停用)</label>
+                    <label>申请地址：<a href="https://www.aliyun.com/product/security/captcha?spm=5176.28508143.J_XmGx2FZCDAeIy2ZCWL7sW.53.12f5154a3eeJoV&scm=20140722.S_product@@%E4%BA%91%E4%BA%A7%E5%93%81@@2827699._.ID_product@@%E4%BA%91%E4%BA%A7%E5%93%81@@2827699-RL_%E9%AA%8C%E8%AF%81-LOC_topbar~UND~product-OR_ser-V_3-P0_0">点击前往</a></label>
+                    <label>API Key：</label>
+                    <input type="text" readonly="readonly" value="Alibaba_DashVectorApiKey" style="background-color:#ccc">
+                    <input type="text" id="Alibaba_DashVectorApiKey" readonly="readonly" value="After" style="background-color:#ccc">
+                    <label>Endpoint：</label>
+                    <input type="text" readonly="readonly" value="Alibaba_DashVectorEndpoint" style="background-color:#ccc">
+                    <input type="text" id="Alibaba_DashVectorEndpoint" readonly="readonly" value="After" style="background-color:#ccc">
+                    <label>CollectionName：</label>
+                    <input type="text" readonly="readonly" value="Alibaba_DashVectorCollectionName" style="background-color:#ccc">
+                    <input type="text" id="Alibaba_DashVectorCollectionName" readonly="readonly" value="After" style="background-color:#ccc">
+                </div>
+                <div class="form-group">
+                    <label>阿里巴巴向量检索(已停用)</label>
+                    <label>申请地址：<a href="https://www.aliyun.com/product/ai/dashvector?spm=5176.28508143.J_4VYgf18xNlTAyFFbOuOQe.109.e08d154a65tViw&scm=20140722.S_product@@%E4%BA%91%E4%BA%A7%E5%93%81@@2853507._.ID_product@@%E4%BA%91%E4%BA%A7%E5%93%81@@2853507-RL_%E5%90%91%E9%87%8F-LOC_menu~UND~product-OR_ser-V_3-P0_1">点击前往</a></label>
+                    <label>API Key：</label>
+                    <input type="text" readonly="readonly" value="Alibaba_Captcha_AK" style="background-color:#ccc">
+                    <input type="text" id="Alibaba_Captcha_AK" readonly="readonly" value="After" style="background-color:#ccc">
+                    <label>Secret Key：</label>
+                    <input type="text" readonly="readonly" value="Alibaba_Captcha_SK" style="background-color:#ccc">
+                    <input type="text" id="Alibaba_Captcha_SK" readonly="readonly" value="After" style="background-color:#ccc">
+                    <label>身份标Endpoint：</label>
+                    <input type="text" readonly="readonly" value="Alibaba_Captcha_Endpoint" style="background-color:#ccc">
+                    <input type="text" id="Alibaba_Captcha_Endpoint" readonly="readonly" value="After" style="background-color:#ccc">
+                </div>
+                <div class="form-group">
+                    <label>网站域名，不要添加(http://,https://)：</label>
+                    <input type="text" readonly="readonly" value="Domain" style="background-color:#ccc">
+                    <input type="text" id="Domain" readonly="readonly" value="After" style="background-color:#ccc">
+                </div>
+                <div class="form-group">
+                    <label>知识库</label>
+                    <label>API Key（嵌入和数据清洗共用一个key，需符合OpenAI请求体规范）：</label>
+                    <input type="text" readonly="readonly" value="EmbeddingsApiKey" style="background-color:#ccc">
+                    <input type="text" id="EmbeddingsApiKey" readonly="readonly" value="After" style="background-color:#ccc">
+                    <label>嵌入模型请求地址（例：https://api.openai.com/v1/embeddings）：</label>
+                    <input type="text" readonly="readonly" value="EmbeddingsUrl" style="background-color:#ccc">
+                    <input type="text" id="EmbeddingsUrl" readonly="readonly" value="After" style="background-color:#ccc">
+                    <label>数据清洗对话模型请求地址（例：https://api.openai.com/v1/chat/completions）：</label>
+                    <input type="text" readonly="readonly" value="QAurl" style="background-color:#ccc">
+                    <input type="text" id="QAurl" readonly="readonly" value="After" style="background-color:#ccc">
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

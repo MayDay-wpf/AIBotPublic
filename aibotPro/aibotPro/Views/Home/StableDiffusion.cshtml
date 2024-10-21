@@ -1,0 +1,237 @@
+﻿@{
+    ViewData["Title"] = "StableDiffusion";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/system/css/sd.css?v1.1" rel="stylesheet" />
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        <button type="button" class="btn btn-primary" onclick="window.location.href='/Users/Gallery'">
+            <i data-feather="image"></i> 前往图库
+        </button>
+        &nbsp;&nbsp;
+        <a href="#" class="header-help-link" onclick="SDinfo()">
+            <i data-feather="help-circle">
+            </i>
+        </a>
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px;">
+    <div class="content-header">
+        <div>
+            @* <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+            <li class="breadcrumb-item" style="cursor:unset"><a href="#">AIBot-Pro</a></li>
+            <li class="breadcrumb-item"><a href="#">AI</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Midjourney</li>
+            </ol>
+            </nav> *@
+            <h4 class="content-title content-title-sm">
+                <b style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105));
+    -webkit-background-clip: text;
+    color: transparent;">Stable Diffusion</b>
+            </h4>
+        </div>
+    </div>
+    <div id="STEP">
+        <div class="card">
+            <div class="card-header">
+                <h5>第一步：输入提示词</h5>
+                <button class="btn btn-outline-success greatePrompt" onclick="sendMsg()"><img src="~/system/images/magic_stick.png" style="width:20px;" />优化提示词</button>
+                <button class="btn btn-outline-info englishPrompt" onclick="englishPrompt()"><img src="~/system/images/translated.png" style="width:20px;" />转英语提示词</button>
+            </div>
+            <div class="card-body">
+                <div class="textarea-container">
+                    <textarea class="form-control" rows="10" maxlength="3000"
+                              placeholder="请描述画面中的内容，描述的方式，顺序，措辞等都会对画面产生不同的影响效果" id="inputText"></textarea>
+                    <div class="char-count">
+                        <span id="charCount">0</span>/<span class="char-limit">3000</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p></p>
+        <div class="card">
+            <div class="card-header">
+                <h5>
+                    第二步：绘图配置
+                </h5>
+            </div>
+            <div class="card-body" style="text-align:center;">
+                <div class="model-settings">
+                    <div class="form-group little-tips">
+                        <p>
+                            <b>小贴士</b>
+                        </p>
+                        <p>1：随机种子固定后，风格将被固定，所以建议每生成一次，切换一次随机种子</p>
+                        <p>2：绘制尺寸选择1:1的效果是最好的</p>
+                        <p>3：如果绘制总是不理想，可以适当减少步骤数</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="modelSelect">
+                            <b>模型</b>
+                        </label>
+                        <select class="form-control" id="modelSelect">
+                            <option value="stabilityai/stable-diffusion-3-medium">Stable-Diffusion-3-Medium</option>
+                            <option value="stabilityai/stable-diffusion-xl-base-1.0">Stable-Diffusion-XL</option>
+                            <option value="black-forest-labs/FLUX.1-schnell">FLUX.1-Schnell</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <b>绘制尺寸</b>
+                        </label>
+                        <div class="image-size-selector">
+                            <label class="image-size-option">
+                                <input type="radio" name="imageSize" value="1024x1024" checked>
+                                <div class="image-size-border">
+                                    <svg viewBox="0 0 24 24" width="24" height="24">
+                                        <rect width="22" height="22" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" />
+                                    </svg>
+                                </div>
+                                <span>1:1</span>
+                            </label>
+                            <label class="image-size-option">
+                                <input type="radio" name="imageSize" value="1024x2048">
+                                <div class="image-size-border">
+                                    <svg viewBox="0 0 24 48" width="24" height="48">
+                                        <rect width="22" height="46" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" />
+                                    </svg>
+                                </div>
+                                <span>1:2</span>
+                            </label>
+                            <label class="image-size-option">
+                                <input type="radio" name="imageSize" value="1536x1024">
+                                <div class="image-size-border">
+                                    <svg viewBox="0 0 36 24" width="36" height="24">
+                                        <rect width="34" height="22" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" />
+                                    </svg>
+                                </div>
+                                <span>3:2</span>
+                            </label>
+                            <label class="image-size-option">
+                                <input type="radio" name="imageSize" value="1536x2048">
+                                <div class="image-size-border">
+                                    <svg viewBox="0 0 24 32" width="24" height="32">
+                                        <rect width="22" height="30" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" />
+                                    </svg>
+                                </div>
+                                <span>3:4</span>
+                            </label>
+                            <label class="image-size-option">
+                                <input type="radio" name="imageSize" value="2048x1152">
+                                <div class="image-size-border">
+                                    <svg viewBox="0 0 48 27" width="48" height="27">
+                                        <rect width="46" height="25" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" />
+                                    </svg>
+                                </div>
+                                <span>16:9</span>
+                            </label>
+                            <label class="image-size-option">
+                                <input type="radio" name="imageSize" value="1152x2048">
+                                <div class="image-size-border">
+                                    <svg viewBox="0 0 27 48" width="27" height="48">
+                                        <rect width="25" height="46" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" />
+                                    </svg>
+                                </div>
+                                <span>9:16</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group numberImagesValue">
+                        <label for="numberImages">
+                            <b>绘制数量: <span id="numberImagesValue">1</span></b>
+                        </label>
+                        <input type="range" class="custom-range" id="numberImages" min="1" max="4" step="1" value="1">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="seedInput">
+                            <b>随机种子</b>
+                        </label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="seedInput" max="9999999999" value="0">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary" type="button" id="randomSeedBtn">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="fixSeedCheckbox">
+                            <label class="form-check-label" for="fixSeedCheckbox">
+                                固定随机种子
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group inferenceSteps">
+                        <label for="inferenceSteps">
+                            <b>步骤数: <span id="inferenceStepsValue">25</span></b>
+                        </label>
+                        <input type="range" class="custom-range" id="inferenceSteps" min="1" max="50" step="1" value="25">
+                    </div>
+
+                    <div class="form-group guidanceScale">
+                        <label for="guidanceScale">
+                            <b>提示词权重: <span id="guidanceScaleValue">4.5</span></b>
+                        </label>
+                        <input type="range" class="custom-range" id="guidanceScale" min="0" max="20" step="0.1" value="4.5">
+                    </div>
+
+                    <div class="form-group negativePrompt">
+                        <label for="negativePrompt">
+                            <b>反向词</b>
+                        </label>
+                        <textarea class="form-control" id="negativePrompt" rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p></p>
+        <div class="card">
+            <div class="card-header">
+                <h5>第三步：创建任务</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <button type="button" class="btn btn-success" id="createTaskBtn">
+                        <i data-feather="feather"></i>点击开始绘画
+                    </button>
+                </div>
+            </div>
+        </div>
+        <p></p>
+        <div class="card" id="resview" style="display:none">
+            <div class="card-header">
+                <h5>任务结果</h5>
+            </div>
+            <div class="card-body" style="text-align:center;">
+                <h4 id="nt"></h4>
+                <div id="resBox" class="row no-gutters">
+                    <div class="text-center mb-3">
+                        <a href="" id="resimgurl-a" class="image-popup">
+                            <img src="" id="resimgurl" class="img-fluid" style="width:30%;min-width:300px;"
+                                 alt="任务结果显示区，请稍候...">
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p></p>
+    </div>
+</div>
+<script src="~/system/js/signalr.min.js"></script>
+<link rel="stylesheet" href="~/system/css/magnific-popup.min.css">
+<script src="~/system/js/jquery.magnific-popup.min.js"></script>
+<script src="~/system/js/sd.js?v1.0.1"></script>

@@ -1,0 +1,231 @@
+﻿@{
+    ViewData["Title"] = "对话 （Chat by 知识库）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script>
+    MathJax = {
+        tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']]
+        },
+        processHtmlClass: "chat-body-content",
+        options: {
+            skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code", "a", "b", "txt"]
+        }
+    };
+</script>
+<link href="~/system/css/chat.css?v3.0.0" rel="stylesheet"/>
+<link href="~/system/css/pluginloading.css" rel="stylesheet"/>
+<script src="~/system/js/markdown-it.min.js"></script>
+<script src="~/system/js/tex-chtml.js"></script>
+
+
+<div class="header header-chat">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        <div class="header-search">
+            <i data-feather="search">
+            </i>
+            <input type="search" class="form-control" placeholder="输入对话记录关键词，回车搜索" id="searchKey">
+        </div>
+        <button type="button" class="btn btn-danger" style="margin-left:10px;" onclick="deleteChatAll()"><i data-feather="trash-2"></i> 清空历史</button>
+        &nbsp;
+        <div class="dropdown" style="text-align:center;width:auto;float:left;" id="onfilelist">
+            <a href="#" class="btn btn-info" id="fileDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span>选用知识库</span>
+                <i data-feather="chevron-down" style="width:20px;"></i>
+            </a>
+            <div class="dropdown-menu dropdown-menu-onfile" aria-labelledby="chatDropdown" style="max-height: 505px;width:250px;overflow-y:scroll;text-align:center;">
+                <input type="text" class="form-control" placeholder="输入知识库名称,回车查询" id="seachKnowledge"/>
+                <div class="form-group mx-3 mb-2">
+                    <label for="topkSlider" class="form-label">Top K: <span id="topkValue">3</span></label>
+                    <input type="range" class="form-range" id="topkSlider" min="3" max="100" step="1" value="3">
+                </div>
+
+                <div class="form-check mx-3 mb-2">
+                    <input class="form-check-input" type="checkbox" id="reorderCheckbox">
+                    <label class="form-check-label" for="reorderCheckbox">
+                        结果重排序
+                    </label>
+                </div>
+                <div class="form-group mx-3 mb-2" style="display:none" id="tpn">
+                    <label for="topnSlider" class="form-label">Top N: <span id="topnValue">3</span></label>
+                    <input type="range" class="form-range" id="topnSlider" min="3" max="100" step="1" value="3">
+                </div>
+                <ul class="list-group" id="onknowledgeitem">
+                    @* <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                    <input type="checkbox">
+                    Item 1
+                    </div>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                    <input type="checkbox">
+                    Item 2
+                    </div>
+                    </li> *@
+                    <!-- 可添加更多列表项 -->
+                </ul>
+                <button class="btn btn-success btn-success-sm loadmorebtn" onclick="getKonwLedgeTypeByMilvus('loadmore')">加载更多</button>
+            </div>
+        </div>
+    </div>
+    <div class="header-right">
+    </div>
+</div>
+<div class="content-body content-body-chat">
+    <div class="chat-panel">
+        <div class="chat-sidebar">
+            <div class="chat-sidebar-header">
+                <h6 class="tx-14 tx-color-01 mg-b-0">
+                    一个有个性的AI👻
+                </h6>
+                <div>
+                    @* <a href="" data-toggle="tooltip" title="New Conversation">
+                    <i data-feather="user-plus">
+                    </i>
+                    </a> *@
+                    <button type="button" class="btn btn-info" onclick="newChat()"><i data-feather="plus"></i> 新建会话</button>
+                </div>
+            </div>
+            <div class="chat-sidebar-body">
+                <ul class="chat-list no-select">
+                </ul>
+            </div>
+            <div class="chat-sidebar-footer">
+                <button type="button" class="btn btn-primary" style="width:100%" id="loadMoreBtn" onclick="loadMoreHistory()"><i data-feather="loader" style="width:20px;"></i> 加载更多</button>
+                @* <div class="avatar avatar-sm avatar-online">
+                <img src="static/picture/fff.png" class="rounded-circle" alt="">
+                </div>
+                <h6 class="chat-loggeduser">
+                Louise Kate
+                <span>
+                (Me)
+                </span>
+                </h6>
+                <div>
+                <a href="" data-toggle="tooltip" title="Enable Mic">
+                <i data-feather="mic">
+                </i>
+                </a>
+                <a href="" data-toggle="tooltip" title="Settings">
+                <i data-feather="settings">
+                </i>
+                </a>
+                </div> *@
+            </div>
+        </div>
+        <div class="chat-body">
+            <div class="chat-body-header">
+                <div class="avatar avatar-xs">
+                    <span class="avatar-initial rounded-circle bg-dark" data-toggle="tooltip" onclick="hideHistoary()" style="cursor:pointer">
+                        <i data-feather="chevron-left" id="hidehis" style="width:15px;cursor:pointer"></i>
+                    </span>
+                </div>
+                <div class="dropdown" style="text-align:center;width:auto;float:left" data-toggle="tooltip">
+                    <a href="#" class="tx-14 tx-color-01 mg-b-0 mg-l-10" id="chatDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <span id="firstModel">---</span>
+                        <i data-feather="chevron-down" style="width:20px;"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-left" aria-labelledby="chatDropdown" style="max-height: 505px;overflow-y:scroll;overflow-x:hidden;" id="AIModel">
+                        <div id="searchIcon" style="cursor:pointer;margin:5px;color:gray;">
+                            <i data-feather="search" style="width: 20px;"></i>
+                            <span>点击搜索,下方拖动排序</span>
+                        </div>
+                        <input type="text" id="modelSearch" class="form-control searchModel" placeholder="搜索模型..." onkeyup="filterModels()" style="display:none;">
+                        <div id="modelList"></div>
+                    </div>
+                </div>
+                &nbsp;&nbsp;
+                <a href="#" data-toggle="tooltip" title="新建会话" onclick="newChat()">
+                    <i data-feather="plus">
+                    </i>
+                </a>
+            </div>
+
+            @* <li class="divider-text">
+            加载中...
+            </li> *@
+            <div class="chat-body-content">
+                @* <div class="chat-message">
+                <div class="avatar">U</div>
+                <div style="width:100%">
+                <pre style="display:inline">Hello!Hello!Hello!Hello!Hello!Hello!Hello!</pre>
+                </div>
+                </div>
+                <div class="chat-message">
+                <div class="avatar gpt-avatar">A</div>
+                <div style="width:100%">
+                <pre style="display:inline">Hello, how can I help you?</pre>
+                <svg width="30" height="30" style="display:inline">
+                <circle cx="15" cy="15" r="7.5" fill="black" class="blinking-dot" />
+                </svg>
+                </div>
+                </div> *@
+                <div class="chat-body-main">
+                    <div class="model-icons-container">
+                        <h3 class="model-icons-title">
+                            <span class="gradient-text">模型标签说明</span>
+                        </h3>
+                        <div class="model-icons-wrapper">
+                            <div class="model-icon">
+                                <span class="model-emoji">🆓</span>
+                                <span class="label">免费</span>
+                            </div>
+                            <div class="model-icon">
+                                <span class="model-emoji">✨</span>
+                                <span class="label">VIP免费</span>
+                            </div>
+                            <div class="model-icon">
+                                <span class="model-emoji">👑</span>
+                                <span class="label">SVIP免费</span>
+                            </div>
+                            <div class="model-icon">
+                                <span class="model-emoji">🖼️</span>
+                                <span class="label">支持AI识图</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @*<div style="position:absolute;bottom:10%;margin-left:10px;">
+            <input type="text" class="form-control" value="Amsterdam,Washington,Sydney,Beijing,Cairo" data-role="tagsinput">
+            </div>*@
+            <div class="chat-body-footer">
+                <div class="chat-body-options">
+                    <a href="#" data-toggle="tooltip" title="🖼️ 图片上传" onclick="showCameraMenu()" id="openCamera">
+                        <i data-feather="camera">
+                        </i>
+                        <span class="image-upload-count" id="imageCount">0</span>
+                    </a>
+                    @* <a href="" data-toggle="tooltip" title="📎文件上传">
+                    <i data-feather="paperclip">
+                    </i>
+                    </a> *@
+                </div>
+                <div class="form-group" style="position: relative;padding: 15px">
+                    <i data-feather="maximize-2" class="maximize-2" style="width:15px;right:0;cursor:pointer;position: absolute;" onclick="max_textarea_Q()"></i>
+                    <textarea type="text" class="form-control" placeholder="输入问题，Enter发送，Ctrl+Enter或Shift+Enter换行，首字符输入 / 打开提词本" id="Q" style="max-height:200px;"></textarea>
+                </div>
+                <button class="btn btn-icon" data-toggle="tooltip" title="发送" id="sendBtn">
+                    <i data-feather="send"></i>
+                </button>
+            </div>
+            @* <button type="button" class="btn btn-danger" style="width:120px" id="stopBtn" onclick="stopGenerate()"><i data-feather="stop-circle"></i> 停止生成</button> *@
+        </div>
+    </div>
+</div>
+<script src="~/system/js/signalr.min.js"></script>
+<script src="~/system/js/knowledgechat.js?v10.9"></script>
+<script src="~/system/js/marked.min.js"></script>
+<link href="~/system/css/atom-one-dark.min.css" rel="stylesheet"/>
+<script src="~/system/js/highlight.min.js"></script>
+<script src="~/system/js/dart.js"></script>

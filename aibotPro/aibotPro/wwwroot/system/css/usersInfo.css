@@ -1,0 +1,107 @@
+﻿
+.avatar-upload {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    overflow: hidden;
+    text-align: center;
+}
+
+    .avatar-upload img {
+        width: 100%;
+        height: auto;
+        margin: 0 auto;
+    }
+
+.form-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+    .form-table th,
+    .form-table td {
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .form-table th {
+        background-color: #f2f2f2;
+    }
+
+    .form-table tbody tr:nth-child(odd) {
+        background-color: #f9f9f9;
+    }
+
+    .form-table tbody tr:nth-child(even) {
+        background-color: #e6e6e6;
+    }
+
+    .form-table tbody tr:hover {
+        background-color: #f5f5f5;
+    }
+
+.calendar {
+    background-color: white;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    width: 300px;
+    position: relative;
+}
+
+.calendar-header {
+    text-align: center;
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.calendar-body {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+    .calendar-day.active {
+        background-color: #ffa500;
+        color: white;
+    }
+
+.signInBtn {
+    margin-top: 10px;
+    font-size: 14px;
+    padding: 5px 10px;
+}
+
+.calendar-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.upgrade-btn {
+    z-index: 10;
+}

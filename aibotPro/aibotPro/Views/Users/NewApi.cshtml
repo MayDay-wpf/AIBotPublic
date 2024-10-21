@@ -1,0 +1,169 @@
+﻿@{
+    ViewData["Title"] = "中转API（New API）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+    </div>
+</div>
+<div class="content-body">
+    <div class="card" style="display: none" id="bindorcreate">
+        <div class="card-header">
+            <h5>绑定或创建</h5>
+        </div>
+        <div class="card-body">
+            <div class="row justify-content-center">
+                <div class="col-12 col-md-8 col-lg-6">
+                    <div class="form-group">
+                        <label for="accountType">选择操作类型</label>
+                        <select class="form-control" id="accountType">
+                            <option value="bind">绑定现有账户</option>
+                            <option value="create">创建新账户</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="username">NewApi 用户名</label>
+                        <input type="text" class="form-control" id="username" required>
+                    </div>
+                    <div class="form-group" id="passwordGroup" style="display: none;">
+                        <label for="password">密码</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="password">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary bind" onclick="bindUser()"><i class="fas fa-plus"></i> 提交</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card" style="display: none" id="bindInfo">
+        <div class="card-header">
+            <h5>绑定信息</h5>
+        </div>
+        <div class="card-body">
+            <div class="row justify-content-center">
+                <div class="col-12 col-md-8 col-lg-6">
+                    <div class="row mb-3">
+                        <div class="col-sm-4">
+                            <b>NewApi ID:</b>
+                        </div>
+                        <div class="col-sm-8" id="newApiId">
+                            --
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-4">
+                            <b>用户名:</b>
+                        </div>
+                        <div class="col-sm-8" id="newusername">
+                            --
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-4">
+                            <b>中转地址:</b>
+                        </div>
+                        <div class="col-sm-8" id="apiQuota">
+                            <span id="newapiUrl">--</span>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-12 mb-3">
+                            <button id="checkInBtn" class="btn btn-primary checkin" onclick="newApiCheckIn()">
+                                <i class="fas fa-calendar-check mr-2"></i>签到获取API额度兑换码
+                            </button>
+                        </div>
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-gift mr-2"></i>兑换码
+                                        <small class="text-muted">(请前往中转站[钱包]兑换)</small>
+                                    </h5>
+                                    <div class="input-group">
+                                        <input type="text" id="exchangeCode" class="form-control" value="--" readonly>
+                                        <div class="input-group-append">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="copyText($('#exchangeCode').val())">
+                                                <i class="fas fa-copy"></i> 复制
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <h5 class="card-header">
+                                    <i class="fas fa-coins mr-2"></i>AIBotPRO余额生成API兑换码
+                                    <small class="text-muted">(请前往中转站[钱包]兑换,兑换比例1:1)</small>
+                                </h5>
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        <label for="generateAmount">生成金额</label>
+                                        <div class="input-group mb-3">
+                                            <input type="number" class="form-control" id="generateAmount" placeholder="输入生成金额">
+                                            <div class="input-group-append">
+                                                <button class="btn btn-outline-primary" type="button" id="generateBtn" onclick="createCard()">
+                                                    <i class="fas fa-key mr-2"></i>生成
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="apiCodeContainer">
+                                        <label>API兑换码</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="apiCode" value="--" readonly>
+                                            <div class="input-group-append">
+                                                <button class="btn btn-outline-secondary" type="button" onclick="copyText($('#apiCode').val())">
+                                                    <i class="fas fa-copy"></i> 复制
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <p></p>
+    <div class="card" id="newapisite">
+        <div class="card-header">
+            <h5>兑换方法</h5>
+        </div>
+        <div class="card-body">
+            <div class="row justify-content-center">
+                <div class="col-12 col-md-8 col-lg-6">
+                    <h5><i class="fas fa-info-circle mr-2"></i>使用说明</h5>
+                    <ol>
+                        <li>
+                            前往API中转站
+                        </li>
+                        <li>
+                            在API中转站[钱包]页面兑换兑换码
+                        </li>
+                    </ol>
+                    <img src="/system/images/newapi.png" style="width: 100%"/>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/system/js/newapi.js"></script>

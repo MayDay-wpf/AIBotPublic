@@ -1,0 +1,144 @@
+﻿html, body {
+    height: 100%;
+}
+
+.content-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 120px);
+}
+
+@media (min-width: 992px) {
+    .content-wrapper {
+        height: calc(100vh - 120px);
+    }
+}
+
+#pdf-viewer {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    position: relative;
+    border-radius: 10px;
+}
+
+#Q {
+    resize: none;
+    overflow-y: auto;
+    min-height: 38px;
+    max-height: 200px;
+    border-radius: 10px;
+}
+
+#send-button, #clear-chat {
+    height: 38px;
+    white-space: nowrap;
+}
+
+.d-flex .flex-column {
+    width: 110px; /* 调整按钮容器的宽度 */
+}
+
+#chat-container {
+    height: calc(100% - 80px);
+    overflow-y: auto;
+    border-radius: 10px;
+}
+
+.message {
+    margin-bottom: 10px;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.user-message {
+    background-color: #e6f3ff;
+}
+
+.ai-message {
+    background-color: #f0f0f0;
+}
+
+.custom-file-label::after {
+    content: "浏览";
+}
+
+.page-container {
+    position: relative;
+    margin-bottom: 10px;
+}
+
+.text-layer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    opacity: 0.2;
+    line-height: 1.0;
+}
+
+    .text-layer > span {
+        color: transparent;
+        position: absolute;
+        white-space: pre;
+        cursor: text;
+        transform-origin: 0% 0%;
+    }
+
+    .text-layer ::selection {
+        background: black
+    }
+
+.selection-tools {
+    position: fixed;
+    background: white;
+    border-radius: 10px;
+    padding: 5px;
+    display: none;
+    z-index: 1000;
+    border: 1px solid lightgray;
+    background-color: ghostwhite;
+}
+
+#suggested-questions {
+    display: none; /* 初始隐藏建议问题区域 */
+}
+
+.suggested-question {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 10px;
+    position: relative;
+    cursor: pointer;
+    min-height: 50px; /* 添加最小高度 */
+}
+
+    .suggested-question:hover {
+        background-color: #e9ecef;
+    }
+
+    .suggested-question .close-btn {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        border: none;
+        background: none;
+        font-size: 1.2rem;
+        line-height: 1;
+        padding: 0;
+        cursor: pointer;
+    }
+
+#pageList {
+    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+    #pageList .dropdown-item {
+        margin-left: 0;
+    }

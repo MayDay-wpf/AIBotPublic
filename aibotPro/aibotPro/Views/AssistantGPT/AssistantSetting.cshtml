@@ -1,0 +1,78 @@
+﻿@{
+    ViewData["Title"] = "助理配置 (Setting)";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        <button type="button" class="btn btn-primary save" onclick="saveAssistant()">
+            <i data-feather="save"></i>保存助理配置
+        </button>
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px;">
+    <div class="content-header">
+        <div>
+            <h4 class="content-title content-title-sm">
+                <b style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105));
+    -webkit-background-clip: text;
+    color: transparent;">Assistant GPT</b>
+            </h4>
+            <span>OpenAI官方出品的助理GPT🤖</span>
+        </div>
+    </div>
+    <div class="card" id="assistantsetting">
+        <div class="card-header">
+            <h5>配置列表</h5>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="mj-baseurl">助理ID：</label>
+                <input type="text" class="form-control" maxlength="100" readonly="readonly" style="background-color:lightgray" id="assisId" placeholder="保存后自动生成">
+            </div>
+            <div class="form-group">
+                <label for="mj-baseurl">助理名：<span class="tx-danger">*</span></label>
+                <input type="text" class="form-control" maxlength="100" id="assisName" placeholder="请输入助理名以便于识别">
+            </div>
+            <div class="form-group">
+                <label for="mj-baseurl">助理系统提示词：<span class="tx-danger">*</span></label>
+                <textarea class="form-control" maxlength="500" style="height:200px;" id="assisSystemPrompt" placeholder="请输入助理系统提示词"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="mj-baseurl">选择助理模型：<span class="tx-danger">*</span></label>
+                <select class="form-control select" id="assisModel">
+                </select>
+            </div>
+            <div class="form-group mg-b-30">
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="codeinterpreter">
+                    <label class="custom-control-label tx-sm" for="codeinterpreter">
+                        代码解释器(Code interpreter)
+                    </label>
+                </div>
+            </div>
+            <div class="form-group mg-b-30">
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="retrieval">
+                    <label class="custom-control-label tx-sm" for="retrieval">
+                        文件检索器((Retrieval))
+                    </label>
+                </div>
+            </div>
+            <div class="form-group" id="filegroup-assis" style="display:none">
+                <label class="btn btn-info" for="fileInput" style="cursor:pointer;">选择文件</label>
+                <input type="file" id="fileInput" class="form-control" multiple style="display: none;">
+            </div>
+            <ul id="fileList" class="list-group mt-3"></ul>
+        </div>
+    </div>
+</div>
+
+<script src="~/system/js/assistantsetting.js"></script>

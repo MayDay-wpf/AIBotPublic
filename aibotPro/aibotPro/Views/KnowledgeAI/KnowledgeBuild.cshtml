@@ -1,0 +1,62 @@
+﻿@{
+    ViewData["Title"] = "知识库构建（Build）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        @* <a href="#" class="header-help-link" onclick="DALLinfo()">
+        <i data-feather="help-circle">
+        </i>
+        </a> *@
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px">
+    <div class="content-header">
+        <div>
+            <h4 class="content-title content-title-sm">
+                <b style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105));
+    -webkit-background-clip: text;
+    color: transparent;">知识库构建</b>
+            </h4>
+            <span>一个AI的进阶用法🚀🚀🚀</span>
+        </div>
+    </div>
+    <div class="card" id="step1">
+        <div class="card-header">
+            <h5>第一步：选择知识库生成模式</h5>
+        </div>
+        <div class="card-body">
+            <button class="btn btn-primary" onclick="knowledgeCreateModel('unwash')">定长切片，不清洗</button>
+            <button class="btn btn-warning" onclick="knowledgeCreateModel('wash')">定长切片，清洗</button>
+            <p></p>
+            <p>当前模式：<b id="onmodel">--请点击上方按钮选择--</b></p>
+        </div>
+    </div>
+    <p></p>
+    <div class="card" id="step2" style="display:none">
+        <div class="card-header">
+            <h5>第二步：选择用于制作知识库的文件：Word、PPT、Excel、txt、PDF</h5>
+            <span class="tx-danger">您可以上传多个文件，但是我们并不建议您这样做！</span>
+        </div>
+        <div class="card-body">
+            <div class="input-group">
+                <label class="btn btn-info" for="fileInput" style="cursor:pointer;">选择文件</label>
+                <input type="file" id="fileInput" class="form-control" multiple style="display: none;">
+            </div>
+            <ul id="fileList" class="list-group mt-3"></ul>
+            <p></p>
+            <p>运行日志：</p>
+            <textarea id="log" class="form-control" style="height:200px;background-color:antiquewhite;resize: none" readonly="readonly"></textarea>
+        </div>
+    </div>
+</div>
+<script src="~/system/js/knowledgebuild.js"></script>

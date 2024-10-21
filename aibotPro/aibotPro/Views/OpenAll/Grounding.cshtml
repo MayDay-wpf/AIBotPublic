@@ -1,0 +1,100 @@
+﻿@{
+    ViewData["Title"] = "商品上架（Grounding）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    .goodimage {
+        max-width: 150px;
+        cursor: pointer;
+    }
+
+        .goodimage img {
+            width: 100%;
+        }
+</style>
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        @* <a href="#" class="header-help-link" onclick="DALLinfo()">
+        <i data-feather="help-circle">
+        </i>
+        </a> *@
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px;">
+    <div class="card">
+        <div class="card-header">
+            <h5>商品上架</h5>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="goodname">商品展示图（建议尺寸350px*250px）：</label>
+                <div class="goodimage" onclick="document.getElementById('goodimage').click()">
+                    <img src="~/system/images/addflow.png" id="goodImg" />
+                    <input type="file" id="goodimage" style="display: none;" accept="image/*" onchange="loadImage(event)">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="goodname">商品名：</label>
+                <input type="text" class="form-control" id="goodname" style="width:300px;">
+            </div>
+            <div class="form-group">
+                <label for="goodinfo">商品详情：</label>
+                <textarea class="form-control" id="goodinfo" style="height:150px;" placeholder="支持html"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="goodprice">商品价格：</label>
+                <input type="text" class="form-control" id="goodprice" style="width:300px;">
+            </div>
+            <div class="form-group">
+                <label for="goodstock">商品库存：</label>
+                <input type="number" class="form-control" id="goodstock" style="width:300px;">
+            </div>
+            <div class="form-group">
+                <label for="goodstock">允许的支付方式：</label>
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="wxpay">
+                    <label class="custom-control-label tx-sm" for="wxpay">
+                        微信支付
+                    </label>
+                </div>
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="alipay">
+                    <label class="custom-control-label tx-sm" for="alipay">
+                        支付宝支付
+                    </label>
+                </div>
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="balancepay">
+                    <label class="custom-control-label tx-sm" for="balancepay">
+                        余额支付
+                    </label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="goodstock">购买后获得（VIP）：</label>
+                <select id="viptype" class="form-control" style="width:300px;">
+                    <option value="VIP|20">VIP|20（入门,不可签到）</option>
+                    <option value="VIP|50">VIP|50（高级,可签到）</option>
+                </select>
+                <p></p>
+                <input type="text" class="form-control" id="vipdays" style="width:300px;" placeholder="VIP天数,0表示该商品无此项">
+            </div>
+            <div class="form-group">
+                <label for="nickname">购买后获得（余额）：</label>
+                <input type="text" class="form-control" id="balance" style="width:300px;" placeholder="余额,0表示该商品无此项">
+            </div>
+            <button class="btn btn-primary releaseGood" onclick="releaseGood()">发布</button>
+        </div>
+    </div>
+    <p></p>
+
+</div>
+<script src="~/system/js/openall/grounding.js"></script>

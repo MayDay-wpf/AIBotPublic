@@ -1,0 +1,167 @@
+﻿
+html.dark {
+    background-color: black;
+    transition: all .5s;
+}
+
+    html.dark ::-webkit-scrollbar-track {
+        background: #1e1e1e;
+        border-radius: 2px;
+    }
+
+    html.dark ::-webkit-scrollbar-thumb {
+        background-color: dimgrey;
+        border-radius: 10px;
+    }
+
+        html.dark ::-webkit-scrollbar-thumb:hover {
+            background: lightgray;
+        }
+
+    html.dark .wrapper .col {
+        background-color: #000000;
+        border-right-color: #2e2e2e;
+        transition: all .5s;
+    }
+
+    html.dark .col .drag-drawflow {
+        background-color: #1e1e1e;
+        color: lightgray;
+        border-color: #1e1e1e;
+    }
+
+        html.dark .col .drag-drawflow:hover {
+            background-color: #2e2e2e;
+        }
+
+    html.dark .col-right .menu {
+        background-color: #000000;
+    }
+
+        html.dark .col-right .menu ul {
+            background-color: #000000;
+        }
+
+            html.dark .col-right .menu ul li {
+                border-color: #1e1e1e
+            }
+
+    html.dark #drawflow {
+        background-color: #313131;
+        background-image: linear-gradient(to right, #0e0d0d 1px, transparent 1px), linear-gradient(to bottom, #0e0d0d 1px, transparent 1px);
+        transition: all .5s;
+    }
+
+    html.dark .col-right {
+        background-color: #000000;
+    }
+
+    html.dark .drawflow-node .title-box {
+        background-color: #2b2b2b;
+        color: lightgray;
+    }
+
+    html.dark .drawflow .drawflow-node.selected .title-box {
+        color: #ffd04b;
+    }
+
+    html.dark #sidePanel {
+        border-color: #2e2e2e;
+        background-color: #1e1e1e;
+        color: lightgray;
+    }
+
+        html.dark #sidePanel select,
+        html.dark #sidePanel select option,
+        html.dark #sidePanel textarea,
+        html.dark #sidePanel input,
+        html.dark #sidePanel .nodeinfo {
+            border-color: #2e2e2e;
+            background-color: #000000;
+            color: lightgray;
+        }
+
+        html.dark #sidePanel .panel-footer {
+            background-color: #555555;
+            border-color: #000000;
+        }
+
+        html.dark #sidePanel table tr:nth-child(2n) {
+            background-color: #1e1e1e;
+        }
+
+    html.dark #bottomPanel {
+        border-color: #2e2e2e;
+        background-color: #1e1e1e;
+        color: lightgray;
+    }
+
+    html.dark .bottom-panel-header {
+        background-color: #000000;
+        border-color: #000000;
+    }
+
+        html.dark .bottom-panel-header select {
+            border-color: #2e2e2e;
+            background-color: #000000;
+            color: lightgray;
+        }
+
+        html.dark .bottom-panel-header .close-btn {
+            color: lightgray;
+        }
+
+    html.dark .bottom-panel-footer {
+        background-color: #000000;
+        color: lightgray;
+        border-color: #2e2e2e;
+    }
+
+        html.dark .bottom-panel-footer input {
+            background-color: #2e2e2e;
+            color: lightgray;
+        }
+
+    html.dark .chat-message.user {
+        background-color: #000000;
+        color: lightgray;
+    }
+
+    html.dark .chat-message.system {
+        background-color: #162f54;
+        color: aliceblue;
+    }
+
+    html.dark .dkmodel {
+        color: antiquewhite;
+    }
+
+    html.dark .layui-layer {
+        background-color: #1e1e1e;
+    }
+
+    html.dark .layui-layer-title {
+        background-color: #3b3b3b;
+        color: lightgray;
+        border-color: #3b3b3b;
+    }
+
+    html.dark .custom-modal {
+        background-color: #1e1e1e;
+        color: lightgray;
+    }
+
+        html.dark .custom-modal input {
+            background-color: black;
+            color: lightgray;
+        }
+
+        html.dark .custom-modal select {
+            background-color: black;
+            color: lightgray;
+        }
+
+            html.dark .custom-modal select option {
+                background-color: black;
+                color: lightgray;
+            }

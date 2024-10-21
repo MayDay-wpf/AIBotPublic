@@ -1,0 +1,76 @@
+﻿@{
+    ViewData["Title"] = "正则切片测试（Test）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        <button class="btn btn-info newfile" for="fileInput" onclick="uploadFiles()"><i data-feather="file-plus"></i> 上传</button>
+        @* <a href="#" class="header-help-link" onclick="DALLinfo()">
+        <i data-feather="help-circle">
+        </i>
+        </a> *@
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px;">
+    <div class="content-header">
+        <div>
+            <h4 class="content-title content-title-sm">
+                <b style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105)); -webkit-background-clip: text;color: transparent;">
+                    正则表达式切片测试
+                </b>
+            </h4>
+            <span>您可以在这里上传待处理知识库使用正则表达式预览效果🧑‍💻👩‍💻</span>
+            <p></p>
+            <b>
+                常用表达式
+            </b>
+            <table border="1">
+                <tr>
+                    <td>表达式</td>
+                    <td>描述</td>
+                </tr>
+                <tr>
+                    <td><b>([^。！？]+[。！？])</b></td>
+                    <td>按结束标点符号切片（如句号、问号、感叹号）</td>
+                </tr>
+                <tr>
+                    <td><b>((?:\r?\n){2,}.+?)</b></td>
+                    <td>按段落切片（以双换行符为分隔）</td>
+                </tr>
+                <tr>
+                    <td><b>([^。！？.!?]+[。！？.!?])</b></td>
+                    <td>按句子切片（包括英文标点符号，如句号、问号和感叹号）</td>
+                </tr>
+                <tr>
+                    <td><b>([^，,]+[，,])</b></td>
+                    <td>按逗号切片（适用于需要根据逗号分割长文本的情况）</td>
+                </tr>
+                <tr>
+                    <td><b>第\\s*(?:[一二三四五六七八九十]\\s*)*章\\s+.*?(?=第\\s*(?:[一二三四五六七八九十]\\s*)*章\\s+|$)</b></td>
+                    <td>按章节（例如第*章分割，兼容空格阿拉伯数字和汉字）</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div>
+        <input type="text" class="form-control" id="Regular" placeholder="请输入正则表达式" style="width:30%;display:inline" />
+        <button class="btn btn-success test" onclick="textRegular()"><i data-feather="activity"></i> 测试</button>
+        <button class="btn btn-warning" onclick="clearTextarea()"><i data-feather="trash-2"></i> 清空</button>
+    </div>
+    <p></p>
+    <div id="reviewTxtBox">
+        <textarea class="form-control" id="reviewTxt" style="height:600px;" readonly="readonly"></textarea>
+    </div>
+    <div id="reviewCutResult">
+    </div>
+</div>
+<script src="~/system/js/cuttest.js"></script>

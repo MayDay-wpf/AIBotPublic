@@ -1,0 +1,266 @@
+﻿/*.drawflow-node.plugins {
+    width: 300px;
+}
+
+.drawflow-node.start {
+    width: 650px;
+}
+*/
+.custom-select select {
+    background-color: white;
+    color: #333;
+    overflow-y: scroll;
+    width: 50%;
+    padding-left: 10px;
+    border-radius: 5px;
+    border: 1px solid lightgray;
+    height: 30px;
+    align-content: center;
+}
+
+    .custom-select select:focus {
+        outline: none;
+        border-color: #3498db;
+    }
+
+    .custom-select select option {
+        background-color: #f1f1f1;
+        color: #333;
+    }
+
+        .custom-select select option:hover {
+            background-color: #3498db;
+            color: #fff;
+        }
+
+table select {
+    width: 50%;
+    padding-left: 5px;
+    border-radius: 5px;
+    border: 1px solid lightgray;
+    height: 30px;
+    align-content: center;
+    background-color: white;
+}
+
+.requestUrl {
+    border: none;
+    width: 100%;
+    height: 30px;
+    padding: 10px;
+    font-size: 14px;
+    color: deepskyblue;
+}
+
+#codeBox {
+}
+
+.nodeinfo {
+    font-size: 14px;
+    color: gray;
+    background-color: white;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.nodeTextId {
+    color: rgb(220, 53, 69)
+}
+
+.outputnode {
+    font-size: 12px;
+    float: right;
+    margin-top: -26px;
+    margin-bottom: -200px;
+    margin-right: 5px;
+}
+
+.list-group-item {
+    background-color: rgb(255, 255, 255);
+    margin-bottom: 10px;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+#onknowledgeitem {
+    height: 200px;
+    overflow-y: scroll;
+    border: 1px solid lightgray;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+/* 底部弹出面板样式 */
+/* 底部弹出面板样式 */
+.bottom-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 80%;
+    background-color: white;
+    border-top: 3px solid #ccc;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    transform: translateY(100%);
+    transition: transform 0.4s ease-in-out;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+}
+
+    /* 面板显示状态 */
+    .bottom-panel.show {
+        transform: translateY(0);
+    }
+
+/* 面板头部样式 */
+.bottom-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background-color: #f1f1f1;
+    border-bottom: 1px solid #ccc;
+}
+
+/* 内容可滚动区域样式 */
+.bottom-panel-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    width: 80%;
+    margin: 0 auto;
+}
+
+/* 底部输入区域样式 */
+.bottom-panel-footer {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #ccc;
+    background-color: #f1f1f1;
+}
+
+/* 输入框样式 */
+.bottom-input-box {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-right: 10px;
+    outline: none;
+}
+
+/* 发送按钮样式 */
+.bottom-send-btn {
+    padding: 10px 20px;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    outline: none;
+}
+
+/* 关闭按钮样式 */
+.close-btn {
+    text-decoration: none;
+    font-size: 24px;
+    color: #333;
+    cursor: pointer;
+}
+
+/* 聊天消息基础样式 */
+.chat-message {
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 6px;
+    max-width: 100%;
+    word-wrap: break-word;
+}
+
+    /* 用户消息样式 */
+    .chat-message.user {
+        align-self: flex-end;
+        background-color: #dcf8c6;
+        color: #000;
+    }
+
+    /* 系统消息样式 */
+    .chat-message.system {
+        align-self: flex-start;
+        background-color: #f1f0f0;
+        color: #000;
+    }
+
+        .chat-message.system img {
+            width: 50%;
+        }
+
+.model-select {
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    background-color: #f1f1f1;
+    font-size: 16px;
+    outline: none;
+    cursor: pointer;
+}
+
+    .model-select:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+    }
+
+@keyframes spinner-grow {
+    0% {
+        transform: scale(0)
+    }
+
+    50% {
+        opacity: 1
+    }
+}
+
+.spinner-grow {
+    display: inline-block;
+    width: 2rem;
+    height: 2rem;
+    vertical-align: text-bottom;
+    background-color: currentColor;
+    border-radius: 50%;
+    opacity: 0;
+    animation: spinner-grow .75s linear infinite
+}
+
+.spinner-grow-sm {
+    width: 1rem;
+    height: 1rem
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9998; /* 在面板(z-index: 9999)下方 */
+    display: none; /* 初始隐藏 */
+}
+
+.jsonschemaBox {
+    display: none;
+}
+
+.jsonschemaInput {
+    margin-top: 10px;
+    width: 100%;
+}
+
+.editJsonschema {
+    display: none;
+}
+
+.params-box {
+    display: none;
+}

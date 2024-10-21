@@ -1,0 +1,86 @@
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>处理Google登录</title>
+    <link href="/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="/static/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f8f9fa;
+        }
+        .login-container {
+            text-align: center;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+<div class="login-container">
+    <h1 class="mb-4"><i class="fab fa-google-plus"></i> 正在处理Google登录</h1>
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+
+<script src="/static/js/jquery.min.js"></script>
+<script src="/lib/bootstrap/dist/js/bootstrap.min.js"></script>
+<script>
+    $(document).ready(function() {
+        var hash = window.location.hash.substring(1);
+        var params = new URLSearchParams(hash);
+        var idToken = params.get('id_token');
+
+        if (idToken) {
+            GoogleOAuth(idToken);
+        } else {
+            showAlert('未收到有效的ID令牌', 'danger');
+        }
+    });
+
+    function GoogleOAuth(JWT) {
+        $.ajax({
+            url: '/Users/GoogleOAuth',
+            type: 'POST',
+            data: { 
+                  JWT: JWT
+            },
+            success: function(response) {
+                if (response.success && response.token) {
+                    localStorage.setItem('aibotpro_userToken', response.token);
+                    var expirationTime = new Date().getTime() + (24 * 60 * 60 * 1000);
+                    localStorage.setItem('aibotpro_userToken_Expiration', expirationTime);
+                    window.location.href = '/Home/Index';
+                } else {
+                    showAlert(response.msg || '登录失败', 'danger');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error:', error);
+                showAlert('登录过程中发生错误', 'danger');
+            }
+        });
+    }
+
+    function showAlert(message, type) {
+        $('.login-container').html(`
+                <div class="alert alert-${type}" role="alert">
+                    ${message}
+                </div>
+            `);
+    }
+</script>
+</body>
+</html>

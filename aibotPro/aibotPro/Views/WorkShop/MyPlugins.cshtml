@@ -1,0 +1,73 @@
+@{
+    ViewData["Title"] = "我的插件（My Plugins）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/system/css/myplugins.css" rel="stylesheet" />
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+    </div>
+</div>
+<div class="card-body">
+    <div class="component-section no-code">
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item active">
+                <a class="nav-link active" id="Myinstall" data-toggle="tab" data-info="myinstall" href="#My_install" role="tab"
+                   aria-controls="My_install" aria-selected="true">我的安装</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="MyCreated" data-toggle="tab" data-info="mycreated" href="#My_Created" role="tab"
+                   aria-controls="My_Created" aria-selected="false">我的制作</a>
+            </li>
+        </ul>
+        <div class="tab-content bd bd-t-0 pd-20" id="myTabContent">
+            <div class="tab-pane fade active show" id="My_install" role="tabpanel" aria-labelledby="My_install-tab"
+                 style="text-align:center;">
+                <div class="row" id="masonry-layout">
+                    <div class="col-12 text-center grid-item">加载中...</div>
+                    @* <div class="col-lg-3 col-md-6 col-sm-12 mb-4 grid-item">
+                    <div class="card h-100">
+                    <img class="card-img-top" style="width: 50px;height: 50px;margin:10px auto;"
+                    src="/files/pluginavatar/20240206/02f59659b3064b90bf3e4166716878c0.png" alt="插件名称1">
+                    <div class="card-body">
+                    <h5 class="card-title">插件名称1</h5>
+                    <p class="card-text">这里是插件1的简介，简要介绍插件的主要功能和特点。这里是插件1的简介，简要介绍插件的主要功能和特点。</p>
+                    <div class="d-flex justify-content-center flex-wrap">
+                    <a href="#" class="btn btn-secondary">卸载</a>
+                    </div>
+                    </div>
+                    </div>
+                    </div> *@
+                </div>
+            </div>
+            <div class="tab-pane fade" id="My_Created" role="tabpanel" aria-labelledby="My_Created-tab"
+                 style="text-align:center;">
+                <div class="row" id="masonry-layout-mine">
+                    <div class="col-12 text-center grid-item">加载中...</div>
+                    @* <div class="col-lg-3 col-md-6 col-sm-12 mb-4 grid-item">
+                    <div class="card h-100">
+                    <img class="card-img-top" style="width: 50px;height: 50px;margin:10px auto;"
+                    src="/files/pluginavatar/20240206/02f59659b3064b90bf3e4166716878c0.png" alt="插件名称1">
+                    <div class="card-body">
+                    <h5 class="card-title">插件名称1</h5>
+                    <p class="card-text">这里是插件1的简介，简要介绍插件的主要功能和特点。这里是插件1的简介，简要介绍插件的主要功能和特点。</p>
+                    <div class="d-flex justify-content-center flex-wrap">
+                    <a href="#" class="btn btn-secondary">卸载</a>
+                    </div>
+                    </div>
+                    </div>
+                    </div> *@
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/system/js/masonry.pkgd.min.js"></script>
+<script src="~/system/js/myplugins.js?v1"></script>

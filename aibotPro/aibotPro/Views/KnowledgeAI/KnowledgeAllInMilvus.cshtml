@@ -1,0 +1,87 @@
+﻿@{
+    ViewData["Title"] = " Milvus集成知识库（Milvus）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        <button class="btn btn-success newtype" onclick="createKnowledgeType()"><i data-feather="plus"></i> 新建</button>
+        <button class="btn goback" onclick="goback()" style="display:none"><i data-feather="chevron-left"></i> 返回</button>
+        <label class="btn btn-info newfile" for="fileInput" style="display:none;cursor:pointer;"><i data-feather="file-plus"></i> 上传</label>
+        <input type="file" id="fileInput" class="form-control" multiple style="display: none;">
+        @* <a href="#" class="header-help-link" onclick="DALLinfo()">
+        <i data-feather="help-circle">
+        </i>
+        </a> *@
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px;" id="knowledge-content">
+    <div id="knowledge-types">
+        <div class="content-header">
+            <div>
+                <h4 class="content-title content-title-sm">
+                    <b style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105)); -webkit-background-clip: text;color: transparent;">
+                        基于Milvus的知识库
+                    </b>
+                </h4>
+                <span>您可以在这里创建知识库并进行分类管理🗄🗂</span>
+                <p></p>
+            </div>
+        </div>
+        <div class="content-main text-center">
+            <div class="header-search mb-4">
+                <i data-feather="search"></i>
+                <input type="search" class="form-control" placeholder="输入知识库名搜索文件，回车搜索" id="searchKey" style="width: 100%;">
+            </div>
+            <div class="row" id="masonry-layout">
+                <li class="divider-text">
+                    加载中...
+                </li>
+                <!-- 第一个卡片 -->
+                @* <div class="col-lg-3 col-md-6 col-sm-12 mb-4 grid-item">
+                <div class="card h-100">
+                <img class="card-img-top" style="width: 50px;margin:10px auto;"
+                src="/files/pluginavatar/20240206/02f59659b3064b90bf3e4166716878c0.png" alt="插件名称1">
+                <div class="card-body">
+                <h5 class="card-title">插件名称1</h5>
+                <p class="card-text">这里是插件1的简介，简要介绍插件的主要功能和特点。这里是插件1的简介，简要介绍插件的主要功能和特点。</p>
+                <div class="d-flex justify-content-between flex-wrap">
+                <a href="#" class="btn btn-primary">安装</a>
+                <a href="#" class="btn btn-secondary">查看</a>
+                </div>
+                </div>
+                </div>
+                </div> *@
+            </div>
+            <div class="row">
+                <div class="col-12">
+                    <button class="btn btn-primary loadMore" onclick="getKnowledgeType('loadmore')">加载更多</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="content-main text-center" id="knowledge-file" style="display:none;">
+        <div class="header-search mb-4">
+            <i data-feather="search"></i>
+            <input type="search" class="form-control" placeholder="输入文件名搜索文件，回车搜索" id="searchKey-knowledgefile" style="width: 100%;">
+        </div>
+        <div class="row" id="masonry-layout-file">
+            <li class="divider-text">
+                加载中...
+            </li>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <button class="btn btn-primary loadMore" onclick="getFiles('loadmore')">加载更多</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/system/js/knowledgeallinmilvus.js?v1.0.3"></script>

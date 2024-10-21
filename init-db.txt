@@ -1,0 +1,1 @@
+ sqlcmd -S .,1433 -U SA -P "Abc123@#" -d master -i aibotpro.sql

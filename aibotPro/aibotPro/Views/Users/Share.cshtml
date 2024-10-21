@@ -1,0 +1,108 @@
+﻿@{
+    ViewData["Title"] = "分享共盈（Share）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        <a href="#" class="header-help-link" onclick="ShareInfo()">
+            <i data-feather="help-circle">
+            </i>
+        </a>
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px;">
+    <div class="card">
+        <div class="card-header">
+            <h5>分享佣金</h5>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="cardno">我的分享盈利：</label>
+                <label id="shareMcoin">--</label> <span>￥</span>&nbsp;
+                <span class="badge badge-pill badge-success" style="cursor:pointer" onclick="mcoinToMcoin()">点击转入Mcoin用于使用AI产品（1:1）</span>&nbsp;
+                <span class="badge badge-pill badge-info" style="cursor:pointer" onclick="mcoinToMoney()">提现</span>
+            </div>
+            <div class="form-group">
+                <label for="cardno">分享链接：</label>
+                <input type="text" class="form-control" readonly="readonly" id="shareLink" />
+                <p></p>
+                <button class="btn btn-primary" onclick="copyText($('#shareLink').val())">复制</button>
+            </div>
+        </div>
+    </div>
+    <p></p>
+    <div class="card">
+        <div class="card-header">
+            <h5>我的下级</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            <th>用户账号</th>
+                            <th>注册时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersList">
+                        <tr>
+                            <td>--</td>
+                            <td>--</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <nav aria-label="Page navigation example">
+                    <ul class="pagination">
+                        <li class="page-item" id="first-page"><a class="page-link" href="#">首页</a></li>
+                        <li class="page-item" id="previous-page"><a class="page-link" href="#">上一页</a></li>
+                        <!-- 页码链接将在这里动态插入 -->
+                        <li class="page-item" id="next-page"><a class="page-link" href="#">下一页</a></li>
+                        <li class="page-item" id="last-page"><a class="page-link" href="#">尾页</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+    <p></p>
+    <div class="card">
+        <div class="card-header">
+            <h5>分享日志</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            <th>日志内容</th>
+                            <th>记录时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logList">
+                        <tr>
+                            <td>--</td>
+                            <td>--</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <nav aria-label="Page navigation example">
+                    <ul class="pagination">
+                        <li class="page-item" id="first-page-log"><a class="page-link" href="#">首页</a></li>
+                        <li class="page-item" id="previous-page-log"><a class="page-link" href="#">上一页</a></li>
+                        <!-- 页码链接将在这里动态插入 -->
+                        <li class="page-item" id="next-page-log"><a class="page-link" href="#">下一页</a></li>
+                        <li class="page-item" id="last-page-log"><a class="page-link" href="#">尾页</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/system/js/share.js?v1"></script>

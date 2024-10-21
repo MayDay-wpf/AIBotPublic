@@ -1,0 +1,102 @@
+﻿@{
+    ViewData["Title"] = "自定义角色（Custom Role）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/system/css/customrole.css" rel="stylesheet" />
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        @* <a href="#" class="header-help-link" onclick="DALLinfo()">
+        <i data-feather="help-circle">
+        </i>
+        </a> *@
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px">
+    <div class="content-header">
+        <div>
+            <h4 class="content-title content-title-sm">
+                <b style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105));
+    -webkit-background-clip: text;
+    color: transparent;">自定义角色</b>
+            </h4>
+            <span>开始制作一个角色吧👻👻👻</span>
+        </div>
+    </div>
+    <p></p>
+    <div class="card">
+        <div class="card-header">
+            <h5>发布角色</h5>
+        </div>
+        <div class="card-body">
+            <form>
+                <div class="form-group">
+                    <label for="roleAvatar">头像上传 <span class="tx-danger">*</span></label>
+                    <div class="avatar-upload" onclick="document.getElementById('roleAvatar').click()">
+                        <input type="file" id="roleAvatar" style="display: none;" onchange="loadImage(event)">
+                        <img id="avatar-image" src="/system/images/addavatar.png" alt="+">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="nickname">角色名称 <span class="tx-danger">*</span></label>
+                    <input type="text" class="form-control" maxlength="12" id="roleName"
+                           placeholder="为角色取一个易于识别的名称">
+                </div>
+                <div class="form-group">
+                    <label for="functioninfo">角色描述 <span class="tx-danger">*</span></label>
+                    <input type="text" class="form-control" maxlength="300" id="roleInfo"
+                           placeholder="描述角色的特点" />
+                </div>
+                <div class="form-group">
+                    <label for="functioninfo">角色系统提示词 <span class="tx-danger">*</span></label>
+                    <textarea class="form-control" maxlength="2000" id="roleSystemChat" placeholder="角色系统提示词" style="height:150px;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="functionname">前置对话预设（选填）</label>
+                    <table id="AddRoleChat1" class="form-table">
+                    </table>
+                    <button type="button" class="btn btn-success" onclick="addRoleChatLine(1)">
+                        <i data-feather="plus"></i>新增一行
+                    </button>
+                </div>
+                <button type="button" class="btn btn-primary saveBtn" onclick="saveRole()">发 布</button>
+            </form>
+        </div>
+    </div>
+    <p></p>
+    <div class="card">
+        <div class="card-header">
+            <h5>临时角色</h5>
+        </div>
+        <div class="card-body">
+            <form>
+                <div class="form-group">
+                    <label for="nickname">角色名称 <span class="tx-danger">*</span></label>
+                    <input type="text" class="form-control" maxlength="12" id="roleName2"
+                           placeholder="为角色取一个易于识别的名称">
+                </div>
+                <div class="form-group">
+                    <label for="functioninfo">角色系统提示词 <span class="tx-danger">*</span></label>
+                    <textarea class="form-control" maxlength="2000" id="roleSystemChat2" placeholder="角色系统提示词" style="height:150px;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="functionname">前置对话预设（选填）</label>
+                    <table id="AddRoleChat2" class="form-table">
+                    </table>
+                    <button type="button" class="btn btn-success" onclick="addRoleChatLine(2)">
+                        <i data-feather="plus"></i>新增一行
+                    </button>
+                </div>
+                <button type="button" class="btn btn-primary testBtn" onclick="runTestRole()">开始对话</button> <br />
+            </form>
+        </div>
+    </div>
+</div>
+<script src="~/system/js/customrole.js?v1.0.0"></script>
