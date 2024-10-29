@@ -1,6 +1,6 @@
 [English](https://github.com/MayDay-wpf/AIBotPublic/blob/main/Readme-en.md) | [简体中文](https://github.com/MayDay-wpf/AIBotPublic/blob/main/Readme.md)
 # AIBotPro Open Source Edition
-## Author's Operating Address：[https://aibotpro.cn](https://aibotpro.cn)
+## Author's Operating Address：[https://embbot.com](https://embbot.com)
 ## QQ group chat：833716234 [Click to join the group chat【AIBot-MayMay】](https://qm.qq.com/q/2Wqd6MpW3S)（Free technical support is provided within the group, and any questions will be answered.）
 ## Differences between the open-source and closed-source versions: The open-source version replaces the special encryption algorithm for sensitive information such as user history and user profiles with simple base64 encoding for storage. Other than that, it is identical to the closed-source version.
 ## Tech Stack
