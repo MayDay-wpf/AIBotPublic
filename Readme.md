@@ -1,4 +1,5 @@
 [简体中文](https://github.com/MayDay-wpf/AIBotPublic/blob/main/Readme.md) | [English](https://github.com/MayDay-wpf/AIBotPublic/blob/main/Readme-en.md)
+![aibotprologo](https://github.com/user-attachments/assets/2ce92d4a-e1de-4803-aed3-bffd261f3033)
 # AIBotPro 开源版
 ## 作者运营地址：[https://embbot.com](https://embbot.com)
 ## 赞助我们❤：[https://afdian.com/a/aibotpro](https://afdian.com/a/aibotpro)
