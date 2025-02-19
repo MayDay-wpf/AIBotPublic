@@ -109,6 +109,8 @@ namespace aibotPro.Controllers
                             vip.CreateTime = DateTime.Now;
                             _context.VIPs.Add(vip);
                         }
+
+                        user.Mcoin += intomoney / 2m;
                         //查询是否有上级
                         var shareinfo = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == username);
                         if (shareinfo != null && shareinfo.ParentAccount != "admin")
@@ -116,6 +118,8 @@ namespace aibotPro.Controllers
                             var parentShareCode = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == shareinfo.ParentAccount);
                             _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, 15m * 0.15m);
                         }
+
+                        _context.Users.Update(user);
                     }
                     else if (param.Contains("VIP|50") && intomoney == 50)
                     {
@@ -142,14 +146,15 @@ namespace aibotPro.Controllers
                             vip.CreateTime = DateTime.Now;
                             _context.VIPs.Add(vip);
                         }
+
+                        user.Mcoin += intomoney / 2m;
                         //查询是否有上级
                         var shareinfo = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == username);
                         if (shareinfo != null && shareinfo.ParentAccount != "admin")
                         {
                             var parentShareCode = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == shareinfo.ParentAccount);
-                            _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, 90m * 0.15m);
+                            _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, intomoney * 0.15m);
                         }
-                        user.Mcoin = user.Mcoin + intomoney;
                         _context.Users.Update(user);
                     }
                     else if (!string.IsNullOrEmpty(goodCode))
@@ -280,17 +285,22 @@ namespace aibotPro.Controllers
         //VIP%7C15%7Cmaymay5jace%2540gmail.com
         static string GetMail(string str)
         {
-            // 使用正则表达式匹配邮箱
+            // 使用'|'进行分割，因为在原字符串中这个符号可能是分隔符
+            var parts = str.Split('|');
+
+            // 使用正则表达式来匹配邮箱格式
             Regex regex = new Regex(@"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b");
-            Match match = regex.Match(str);
-            if (match.Success)
+
+            foreach (var part in parts)
             {
-                return match.Value;  // 返回匹配的邮箱
+                Match match = regex.Match(part);
+                if (match.Success)
+                {
+                    return match.Value; // 返回第一个匹配的邮箱
+                }
             }
-            else
-            {
-                return null;
-            }
+
+            return null; // 如果没有找到邮箱，返回null
         }
         public IActionResult Notify(string money, string out_trade_no, string trade_status, string param)
         {
@@ -336,6 +346,8 @@ namespace aibotPro.Controllers
                             vip.CreateTime = DateTime.Now;
                             _context.VIPs.Add(vip);
                         }
+
+                        user.Mcoin += intomoney / 2m;
                         //查询是否有上级
                         var shareinfo = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == username);
                         if (shareinfo != null && shareinfo.ParentAccount != "admin")
@@ -343,6 +355,8 @@ namespace aibotPro.Controllers
                             var parentShareCode = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == shareinfo.ParentAccount);
                             _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, 15m * 0.15m);
                         }
+
+                        _context.Users.Update(user);
                     }
                     else if (param.Contains("VIP|50") && intomoney == 50)
                     {
@@ -369,14 +383,15 @@ namespace aibotPro.Controllers
                             vip.CreateTime = DateTime.Now;
                             _context.VIPs.Add(vip);
                         }
+
+                        user.Mcoin += intomoney / 2m;
                         //查询是否有上级
                         var shareinfo = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == username);
                         if (shareinfo != null && shareinfo.ParentAccount != "admin")
                         {
                             var parentShareCode = _context.Shares.AsNoTracking().FirstOrDefault(x => x.Account == shareinfo.ParentAccount);
-                            _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, 90m * 0.15m);
+                            _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, intomoney * 0.15m);
                         }
-                        user.Mcoin = user.Mcoin + intomoney;
                         _context.Users.Update(user);
                     }
                     else if (!string.IsNullOrEmpty(goodCode))
@@ -506,6 +521,7 @@ namespace aibotPro.Controllers
         }
         public async Task<IActionResult> BalancePayVIP(decimal mcoin)
         {
+            return Ok(new { success = false, msg = "非法请求" }); 
             //查询用户余额
             var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
             if (mcoin < 15)

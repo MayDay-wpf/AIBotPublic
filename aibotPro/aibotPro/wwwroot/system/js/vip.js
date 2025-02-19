@@ -109,31 +109,31 @@ function Pay(payMoney, type, param) {
     });
 }
 
-function BalncePayVIP(mcoin) {
-    //二次确认
-    showConfirmationModal("确认支付", "确认使用余额支付吗？", function () {
-        // 余额支付
-        loadingOverlay.show();
-        $.ajax({
-            url: "/Pay/BalancePayVIP",
-            type: "post",
-            dataType: "json",//返回对象
-            data: {
-                mcoin: mcoin
-            },
-            success: function (res) {
-                loadingOverlay.hide();
-                if (res.success) {
-                    localStorage.removeItem('vipStatus');
-                    balert("支付成功", "success", false, 2000, "center");
-                } else
-                    balert(res.msg, "danger", false, 2000, "center");
-            },
-            error: function (e) {
-                loadingOverlay.hide();
-                console.log("失败" + e);
-                sendExceptionMsg(e);
-            }
-        });
-    });
-}
+// function BalncePayVIP(mcoin) {
+//     //二次确认
+//     showConfirmationModal("确认支付", "确认使用余额支付吗？", function () {
+//         // 余额支付
+//         loadingOverlay.show();
+//         $.ajax({
+//             url: "/Pay/BalancePayVIP",
+//             type: "post",
+//             dataType: "json",//返回对象
+//             data: {
+//                 mcoin: mcoin
+//             },
+//             success: function (res) {
+//                 loadingOverlay.hide();
+//                 if (res.success) {
+//                     localStorage.removeItem('vipStatus');
+//                     balert("支付成功", "success", false, 2000, "center");
+//                 } else
+//                     balert(res.msg, "danger", false, 2000, "center");
+//             },
+//             error: function (e) {
+//                 loadingOverlay.hide();
+//                 console.log("失败" + e);
+//                 sendExceptionMsg(e);
+//             }
+//         });
+//     });
+// }

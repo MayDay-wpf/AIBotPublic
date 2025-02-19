@@ -1,0 +1,35 @@
+﻿.user-actions {
+}
+
+    .user-actions i {
+        cursor: pointer;
+    }
+
+.post-title {
+    flex-grow: 1;
+    display: -webkit-box;
+    display: -moz-box;
+    display: box;
+    -webkit-line-clamp: 2;
+    -moz-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    -moz-box-orient: vertical;
+    box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: 2.4em;
+    line-height: 1.2em;
+    margin-bottom: 10px;
+}
+
+.no-content-placeholder {
+    font-size: 20px;
+    color: gray;
+    text-align: center;
+    padding: 10px;
+}
+
+#editUserInfoBtn {
+    display: none;
+}

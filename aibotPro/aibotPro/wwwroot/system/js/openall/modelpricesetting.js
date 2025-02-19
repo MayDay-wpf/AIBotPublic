@@ -121,7 +121,7 @@ function getModelPrice() {
 }
 
 function saveModelPrice() {
-    var formData = new FormData();
+    var modelPriceList = [];
     var rows = $("#AddSt").find("tr");
     var issave = true;
     rows.each(function (index, row) {
@@ -147,20 +147,22 @@ function saveModelPrice() {
             issave = false;
             return;
         } else {
-            formData.append(`ModelPrice[${index}].ModelName`, modelname);
-            formData.append(`ModelPrice[${index}].ModelPriceInput`, modelpriceinput);
-            formData.append(`ModelPrice[${index}].ModelPriceOutput`, modelpriceoutput);
-            formData.append(`ModelPrice[${index}].VipModelPriceInput`, vipmodelpriceinput);
-            formData.append(`ModelPrice[${index}].VipModelPriceOutput`, vipmodelpriceoutput);
-            formData.append(`ModelPrice[${index}].SvipModelPriceInput`, svipmodelpriceinput);
-            formData.append(`ModelPrice[${index}].SvipModelPriceOutput`, svipmodelpriceoutput);
-            formData.append(`ModelPrice[${index}].Rebate`, rebate);
-            formData.append(`ModelPrice[${index}].VipRebate`, viprebate);
-            formData.append(`ModelPrice[${index}].SvipRebate`, sviprebate);
-            formData.append(`ModelPrice[${index}].Maximum`, maximum);
-            formData.append(`ModelPrice[${index}].OnceFee`, oncefee);
-            formData.append(`ModelPrice[${index}].VipOnceFee`, viponcefee);
-            formData.append(`ModelPrice[${index}].SvipOnceFee`, sviponcefee);
+            modelPriceList.push({
+                ModelName: modelname,
+                ModelPriceInput: modelpriceinput,
+                ModelPriceOutput: modelpriceoutput,
+                VipModelPriceInput: vipmodelpriceinput,
+                VipModelPriceOutput: vipmodelpriceoutput,
+                SvipModelPriceInput: svipmodelpriceinput,
+                SvipModelPriceOutput: svipmodelpriceoutput,
+                Rebate: rebate,
+                VipRebate: viprebate,
+                SvipRebate: sviprebate,
+                Maximum: maximum,
+                OnceFee: oncefee,
+                VipOnceFee: viponcefee,
+                SvipOnceFee: sviponcefee
+            });
         }
     });
     if (issave) {
@@ -168,9 +170,10 @@ function saveModelPrice() {
         $.ajax({
             type: 'POST',
             url: '/OpenAll/SaveModelPrice',
-            processData: false,  // 告诉jQuery不要处理发送的数据
-            contentType: false,  // 告诉jQuery不要设置contentType
-            data: formData,
+            dataType: 'json',
+            data: {
+                modelPrice: JSON.stringify(modelPriceList)
+            },
             success: function (res) {
                 unloadingBtn('.save');
                 if (res.success) {

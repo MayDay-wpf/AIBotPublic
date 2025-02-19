@@ -219,10 +219,10 @@ namespace aibotPro.Service
             messageDto.Stream = chatCompletionCreate.Stream.Value;
             if (chatCompletionCreate.Tools != null)
             {
-                List<Function> functions = new List<Function>();
+                List<Dtos.BaiduResDto.Function> functions = new List<Dtos.BaiduResDto.Function>();
                 foreach (var item in chatCompletionCreate.Tools)
                 {
-                    Function function = new Function();
+                    Dtos.BaiduResDto.Function function = new Dtos.BaiduResDto.Function();
                     var openaiFunction = item.Function;
                     function.Name = openaiFunction.Name;
                     function.Description = openaiFunction.Description;

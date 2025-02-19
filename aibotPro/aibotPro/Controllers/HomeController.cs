@@ -13,6 +13,10 @@ using Microsoft.Data.SqlClient;
 using System.Security.Principal;
 using System.Text;
 using System.Collections.Concurrent;
+using System.IO.Compression;
+using Microsoft.IdentityModel.Tokens;
+using System.Text.RegularExpressions;
+
 namespace aibotPro.Controllers
 {
     public class HomeController : Controller
@@ -96,10 +100,12 @@ namespace aibotPro.Controllers
         {
             return View();
         }
+
         public IActionResult SystemGallery()
         {
             return View();
         }
+
         public IActionResult Suno()
         {
             return View();
@@ -119,10 +125,22 @@ namespace aibotPro.Controllers
         {
             return View();
         }
+
         public IActionResult Welcome()
         {
             return View();
         }
+
+        public IActionResult PriceInfo()
+        {
+            return View();
+        }
+
+        public IActionResult MoldeUsage()
+        {
+            return View();
+        }
+
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
@@ -186,6 +204,8 @@ namespace aibotPro.Controllers
             {
                 x.BaseUrl = string.Empty;
                 x.ApiKey = string.Empty;
+                x.Delay = 0;
+                x.AdminPrompt = string.Empty;
             });
             return Json(new
             {
@@ -268,6 +288,7 @@ namespace aibotPro.Controllers
                 msg = "删除成功"
             });
         }
+
         [Authorize]
         [HttpPost]
         public IActionResult DelChoiceChatHistory(string chatIds)
@@ -280,6 +301,7 @@ namespace aibotPro.Controllers
             {
                 _ai.DelChatHistory(username, chatId);
             }
+
             return Json(new
             {
                 success = true,
@@ -637,20 +659,6 @@ namespace aibotPro.Controllers
                     msg = "非法请求"
                 });
             }
-            else
-            {
-                //查询管理员列表中是否已有数据
-                var check = _context.Admins.AsNoTracking().FirstOrDefault();
-                if (check != null)
-                {
-                    return Json(new
-                    {
-                        success = false,
-                        msg = "已存在管理员"
-                    });
-                }
-            }
-
             var result = _systemService.CreateSystemCfg();
             return Json(new
             {
@@ -886,6 +894,74 @@ namespace aibotPro.Controllers
             return File(stream, mimeType, $"{Guid.NewGuid().ToString("N")}.{fileExtension}");
         }
 
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> ExportChats(string chatIds, string type)
+        {
+            var username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+
+            var chatIdList = chatIds.Split(',', StringSplitOptions.RemoveEmptyEntries);
+
+            if (!chatIdList.Any())
+            {
+                return BadRequest("No chat IDs provided");
+            }
+
+            var memoryStream = new MemoryStream();
+            try
+            {
+                using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+                {
+                    foreach (var chatId in chatIdList)
+                    {
+                        var chatlist = _ai.GetChatHistories(username, chatId, -1);
+
+                        if (chatlist == null || !chatlist.Any())
+                        {
+                            continue; // Skip if no chat history found for this chatId
+                        }
+
+                        string content = string.Empty;
+                        string fileExtension = string.Empty;
+
+                        switch (type.ToLower())
+                        {
+                            case "markdown":
+                                fileExtension = "md";
+                                content = ConvertToMarkdown(chatlist);
+                                break;
+                            case "html":
+                                fileExtension = "html";
+                                content = ConvertToHtml(chatlist);
+                                break;
+                            default:
+                                return BadRequest("Invalid export type");
+                        }
+
+                        var entryName = $"{chatId}.{fileExtension}";
+                        var entry = archive.CreateEntry(entryName);
+
+                        using (var entryStream = entry.Open())
+                        using (var writer = new StreamWriter(entryStream))
+                        {
+                            await writer.WriteAsync(content);
+                        }
+                    }
+                }
+
+                memoryStream.Seek(0, SeekOrigin.Begin);
+
+                return File(memoryStream, "application/zip", $"chat_exports_{DateTime.Now:yyyyMMddHHmmss}.zip");
+            }
+            catch (Exception ex)
+            {
+                memoryStream.Dispose();
+                // Log the exception
+                return StatusCode(500, "An error occurred while exporting chats");
+            }
+        }
+
         private string ConvertToMarkdown(List<ChatHistory> chatlist)
         {
             var markdownContent = new StringBuilder();
@@ -987,6 +1063,271 @@ namespace aibotPro.Controllers
             htmlContent.AppendLine("</div></body></html>");
 
             return htmlContent.ToString();
+        }
+
+        public IActionResult GetAIModelGroup()
+        {
+            var aimodels = _systemService.GetAImodel();
+            var groups = aimodels.Select(a => a.ModelGroup).Distinct().ToList();
+            return Json(new
+            {
+                success = true,
+                data = groups
+            });
+        }
+        public IActionResult GetAIModelPriceInfo(string group)
+        {
+            var query = from model in _context.AImodels
+                        join price in _context.ModelPrices
+                        on model.ModelName equals price.ModelName
+                        select new
+                        {
+                            model.Id,
+                            model.ModelNick,
+                            model.ModelName,
+                            model.ModelInfo,
+                            model.ModelGroup,
+                            model.VisionModel,
+                            model.Seq,
+                            model.Delay,
+                            price.ModelPriceInput,
+                            price.ModelPriceOutput,
+                            price.VipModelPriceInput,
+                            price.VipModelPriceOutput,
+                            price.SvipModelPriceInput,
+                            price.SvipModelPriceOutput,
+                            price.Rebate,
+                            price.VipRebate,
+                            price.SvipRebate,
+                            price.Maximum,
+                            price.OnceFee,
+                            price.VipOnceFee,
+                            price.SvipOnceFee
+                        };
+
+            if (!string.IsNullOrEmpty(group))
+            {
+                if (group == "free")
+                    query = query.Where(m =>
+                        m.ModelPriceInput == 0 && m.ModelPriceOutput == 0 && m.VipModelPriceInput == 0 &&
+                        m.VipModelPriceOutput == 0 && m.SvipModelPriceInput == 0 && m.SvipModelPriceOutput == 0 &&
+                        m.OnceFee == 0 && m.VipOnceFee == 0 && m.SvipOnceFee == 0);
+                else if (group == "vip")
+                    query = query.Where(m =>
+                        m.VipModelPriceInput == 0 &&
+                        m.VipModelPriceOutput == 0 && m.SvipModelPriceInput == 0 && m.SvipModelPriceOutput == 0 &&
+                        m.VipOnceFee == 0 && m.SvipOnceFee == 0);
+                else if (group == "svip")
+                    query = query.Where(m =>
+                        m.SvipModelPriceInput == 0 && m.SvipModelPriceOutput == 0 && m.SvipOnceFee == 0);
+                else
+                    query = query.Where(m => m.ModelGroup == group);
+            }
+            query = query.OrderBy(m => m.Seq);
+            var result = query.ToList();
+
+            return Json(new
+            {
+                success = true,
+                data = result
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public IActionResult LockChat(string chatId)
+        {
+            var username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var chatList = _context.ChatHistories.Where(c => c.ChatId == chatId && c.Account == username).ToList();
+            if (chatList != null && chatList.Count > 0)
+            {
+                string encryptionKey = _systemService.CreateEncryptionKey();
+                foreach (var chat in chatList)
+                {
+                    if (chat.IsLock == 1)
+                    {
+                        return Json(new
+                        {
+                            success = false,
+                            data = "请勿重复加密"
+                        });
+                    }
+                    chat.Chat = _systemService.CreateCipherText(chat.Chat, encryptionKey);
+                    chat.IsLock = 1;
+                }
+                _context.SaveChanges();
+                return Json(new
+                {
+                    success = true,
+                    data = encryptionKey
+                });
+            }
+            return Json(new
+            {
+                success = false,
+                data = string.Empty
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public IActionResult UnLockChat(string chatId, string encryptionKey)
+        {
+            var username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var chatList = _context.ChatHistories.Where(c => c.ChatId == chatId && c.Account == username).ToList();
+            if (chatList != null && chatList.Count > 0)
+            {
+                foreach (var chat in chatList)
+                {
+                    if (chat.IsLock == 0)
+                    {
+                        return Json(new
+                        {
+                            success = false,
+                            data = "非加密状态无需解密"
+                        });
+                    }
+                    chat.Chat = _systemService.DecryptWithKey(chat.Chat, encryptionKey);
+                    chat.IsLock = 0;
+                }
+                _context.SaveChanges();
+                return Json(new
+                {
+                    success = true,
+                    data = encryptionKey
+                });
+            }
+            return Json(new
+            {
+                success = false,
+                data = string.Empty
+            });
+        }
+        [Authorize]
+        [HttpPost]
+        public IActionResult PinnedChat(string chatId, bool pinned)
+        {
+            var username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+
+            if (pinned)
+            {
+                // 检查当前置顶的聊天数量（按ChatId分组）
+                var pinnedChatsCount = _context.ChatHistories
+                    .Where(c => c.Account == username && c.IsTop.HasValue ? c.IsTop.Value : false)
+                    .Select(c => c.ChatId)
+                    .Distinct()
+                    .Count();
+
+                // 如果已经有10个置顶的聊天，并且当前聊天不在置顶列表中，则返回错误
+                if (pinnedChatsCount >= 10 && !_context.ChatHistories.Any(c => c.ChatId == chatId && c.Account == username && c.IsTop.HasValue ? c.IsTop.Value : false))
+                {
+                    return Json(new { success = false, data = "最多允许置顶10条记录" });
+                }
+            }
+
+            var chatList = _context.ChatHistories.Where(c => c.ChatId == chatId && c.Account == username).ToList();
+
+            foreach (var chat in chatList)
+            {
+                chat.IsTop = pinned;
+            }
+
+            var success = _context.SaveChanges() > 0;
+
+            return Json(new { success });
+        }
+
+        [Authorize]
+        [HttpPost]
+        public IActionResult UpdateCollectionTitle(string collectionCode, string collectionName)
+        {
+            var username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var result = _usersService.UpdateCollectionTitle(collectionCode, collectionName, username, out string msg);
+            return Json(new
+            {
+                success = result,
+                msg = msg
+            });
+        }
+
+        [Authorize]
+        [HttpPost]
+        public IActionResult DeleteCollection(string collectionCode)
+        {
+            var username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var result = _usersService.DeleteCollection(collectionCode, username);
+            return Json(new
+            {
+                success = result
+            });
+        }
+
+        [Authorize]
+        [HttpPost]
+        public IActionResult GetCollection()
+        {
+            var username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var result = _usersService.GetCollection(username);
+            return Json(new
+            {
+                success = true,
+                data = result
+            });
+        }
+
+        [Authorize]
+        [HttpPost]
+        public IActionResult SaveToCollection(string chatId, string collectionCode)
+        {
+            var username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var result = _usersService.SaveToCollection(chatId, collectionCode, username);
+            return Json(new
+            {
+                success = result
+            });
+        }
+
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> GetChatHistoryByCollection(string collectionCode)
+        {
+            var username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var result = await _usersService.GetChatHistoryByCollection(collectionCode, username);
+            return Json(new
+            {
+                success = true,
+                data = result
+            });
+        }
+
+        [Authorize]
+        [HttpPost]
+        public IActionResult BackHistoryList(string chatId, string collectionCode)
+        {
+            var username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var result = _usersService.BackHistoryList(chatId, collectionCode, username);
+            return Json(new
+            {
+                success = result
+            });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> GetTokenUsage(string filterType)
+        {
+            var tokenUsage = await _ai.GetTokenUsage(filterType);
+            return Json(new
+            {
+                success = true,
+                data = tokenUsage
+            });
         }
     }
 }

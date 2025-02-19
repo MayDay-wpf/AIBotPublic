@@ -1,0 +1,257 @@
+@{
+    ViewData["Title"] = "用量排行（Usage）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    .chart-bar-container {
+        display: flex;
+        align-items: center;
+        margin: 8px 0;
+    }
+
+    .model-label {
+        width: 120px;
+        /* 调整模型标签的宽度 */
+        text-align: right;
+        margin-right: 10px;
+        color: #2d3436;
+    }
+
+    .chart-bar-wrapper {
+        flex-grow: 1;
+        /* 允许 .chart-bar-wrapper 填充剩余空间 */
+        position: relative;
+        /* 为 .usage-value 定位 */
+
+    }
+
+    .chart-bar {
+        height: 30px;
+        /* 调整柱状图的高度 */
+        border-radius: 4px;
+        transition: width 0.8s ease-in-out;
+        /*background-image: linear-gradient(90deg, #ff6b6b 0%, #ff8e53 50%, #ffd93d 100%);*/
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        /*position: relative;  使usage-value相对于chart-bar定位 */
+        /*flex-grow: 1;  填充剩余空间 */
+    }
+
+    .usage-value {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 2;
+        color: #2d3436;
+        text-shadow: -1px -1px 0 white,
+        1px -1px 0 white,
+        -1px 1px 0 white,
+        1px 1px 0 white;
+    }
+
+    /* 过滤模式样式 */
+    .filter-buttons {
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: flex-start; /* 左对齐 */
+        gap: 10px; /* 按钮间距 */
+    }
+
+    .filter-button {
+        padding: 8px 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: white;
+        cursor: pointer;
+        transition: background-color 0.3s, color 0.3s;
+    }
+
+    .filter-button.active {
+        background-color: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+
+</style>
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu"></i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left"></i>
+        </a>
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px;">
+    <div class="container py-5">
+        <h2 class="mb-4" style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105));
+           -webkit-background-clip: text;
+           color: transparent;">AI模型Token用量排行</h2>
+
+        <!-- 过滤按钮 -->
+        <div class="filter-buttons">
+            <button class="filter-button active" data-filter="week">本周</button>
+            <button class="filter-button" data-filter="month">本月</button>
+            <button class="filter-button" data-filter="year">本年</button>
+            <button class="filter-button" data-filter="all">全部</button>
+        </div>
+
+        <!-- 图表容器 -->
+        <div class="chart-container">
+            <!-- 数据通过JavaScript动态生成 -->
+        </div>
+    </div>
+</div>
+<script>
+    // 默认的过滤类型
+    let currentFilter = 'week';
+
+    function fetchTokenUsage(filter) {
+        loadingOverlay.show();
+        return new Promise((resolve, reject) => {
+            $.ajax({
+                url: '/Home/GetTokenUsage',
+                type: 'POST',
+                dataType: 'json',
+                data: {filterType: filter}, // 传递过滤类型
+                success: function (response) {
+                    resolve(response.data);
+                    loadingOverlay.hide();
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    loadingOverlay.hide();
+                    balert("Error: " + errorThrown, "danger", false, 1500, 'center');
+                    reject(errorThrown);
+                }
+            });
+        });
+    }
+
+    function formatTokenUsage(usageK) {
+        let value = parseFloat(usageK);
+        let unit = 'K';
+
+        // 根据数值大小转换单位
+        if (value >= 1000000) {
+            value /= 1000000;
+            unit = 'B';
+        } else if (value >= 1000) {
+            value /= 1000;
+            unit = 'M';
+        }
+
+        // 格式化为最多两位小数并去除末尾零
+        const formatter = new Intl.NumberFormat('en-US', {
+            maximumFractionDigits: 2,
+            minimumFractionDigits: 0
+        });
+        let formattedValue = formatter.format(value);
+
+        // 处理四舍五入后需要进位的情况（例如999.999M -> 1B）
+        const numericValue = parseFloat(formattedValue.replace(/,/g, ''));
+        if (unit === 'M' && numericValue >= 1000) {
+            value /= 1000;
+            unit = 'B';
+            formattedValue = formatter.format(value);
+        } else if (unit === 'K' && numericValue >= 1000) {
+            value /= 1000;
+            unit = 'M';
+            formattedValue = formatter.format(value);
+        }
+
+        return `${formattedValue}${unit}`;
+    }
+
+    async function renderChart(filter = 'week') {
+        try {
+            const modelData = await fetchTokenUsage(filter); // 传递 filter
+
+            if (modelData.length === 0) {
+                // 没有数据时，显示提示信息。
+                const container = document.querySelector('.chart-container');
+                container.innerHTML = '<p>No token usage data available.</p>';
+                return;
+            }
+
+            // 按 TokenUsage 降序排序
+            modelData.sort((a, b) => b.tokenUsage - a.tokenUsage);
+
+            // 动态生成图表
+            const container = document.querySelector('.chart-container');
+            container.innerHTML = ''; // 清空容器
+            const maxUsage = Math.max(...modelData.map(item => item.tokenUsage));
+
+            // 定义热力图颜色
+            const heatColors = generateHeatColors(modelData.length);
+
+            modelData.forEach((item, index) => {
+                const barContainer = document.createElement('div');
+                barContainer.className = 'chart-bar-container';
+
+                const label = document.createElement('div');
+                label.className = 'model-label';
+                label.textContent = item.modelName;
+
+                const barWrapper = document.createElement('div');
+                barWrapper.className = 'chart-bar-wrapper';
+
+                const bar = document.createElement('div');
+                bar.className = 'chart-bar';
+                bar.style.width = `${(item.tokenUsage / maxUsage * 100)}%`;
+                bar.style.backgroundColor = heatColors[index % heatColors.length];
+
+                const value = document.createElement('div');
+                value.className = 'usage-value';
+                value.textContent = formatTokenUsage(item.tokenUsage);
+
+                barWrapper.appendChild(bar);
+                barWrapper.appendChild(value);
+
+                barContainer.appendChild(label);
+                barContainer.appendChild(barWrapper);
+                container.appendChild(barContainer);
+            });
+        } catch (error) {
+            // 在这里处理 fetchTokenUsage 中的 reject 情况
+            console.error("Error rendering chart:", error);
+            // 可以显示错误消息给用户
+        }
+    }
+
+    function generateHeatColors(numColors) {
+        const colors = [];
+        const startColor = [1, 68, 33];  // #014421 (深森林绿)
+        const endColor = [245, 245, 220]; // #f5f5dc (米色/Beige)
+
+        for (let i = 0; i < numColors; i++) {
+            const r = Math.round(startColor[0] + (endColor[0] - startColor[0]) * (i / (numColors - 1)));
+            const g = Math.round(startColor[1] + (endColor[1] - startColor[1]) * (i / (numColors - 1)));
+            const b = Math.round(startColor[2] + (endColor[2] - startColor[2]) * (i / (numColors - 1)));
+            colors.push(`rgb(${r}, ${g}, ${b})`);
+        }
+        if (numColors === 1) {
+            return [`rgb(${startColor[0]}, ${startColor[1]}, ${startColor[2]})`];
+        }
+        return colors;
+    }
+
+
+    $(document).ready(function () {
+        // 初始渲染图表（全部）
+        renderChart();
+
+        // 过滤按钮点击事件
+        $('.filter-button').click(function () {
+            // 移除所有按钮的 active 类
+            $('.filter-button').removeClass('active');
+            // 给当前点击的按钮添加 active 类
+            $(this).addClass('active');
+
+            // 获取过滤类型
+            currentFilter = $(this).data('filter');
+            // 重新渲染图表
+            renderChart(currentFilter);
+        });
+    });
+</script>

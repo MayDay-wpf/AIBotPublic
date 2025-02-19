@@ -867,11 +867,22 @@
         <_ContentIncludedByDefault Remove="wwwroot\system\js\highlight\highlight.min.js" />
         <_ContentIncludedByDefault Remove="wwwroot\ffmpeg-binaries\ffmpeg" />
         <_ContentIncludedByDefault Remove="wwwroot\ffmpeg-binaries\ffmpeg.exe" />
+        <_ContentIncludedByDefault Remove="wwwroot\files\dallres\maymay5jace@gmail.com\20240225-71b3be9cc8744a1b8af1e717a34bddcc.jpg"/>
+        <_ContentIncludedByDefault Remove="wwwroot\files\dallres\maymay5jace@gmail.com\20240225-841275f0698a47f9887b34c92e085b7f.jpg"/>
+        <_ContentIncludedByDefault Remove="wwwroot\files\dallres\maymay5jace@gmail.com\20240225-be33563d306447ef95dd507c95d1651c.jpg"/>
+        <_ContentIncludedByDefault Remove="wwwroot\files\dallres\maymay5jace@gmail.com\20240225-cbc0dbc8de63417c9c350006a4df4914.jpg"/>
+        <_ContentIncludedByDefault Remove="wwwroot\files\dallres\maymay5jace@gmail.com\20240225-d5bbc663cbb347d189344683b0e6bc09.jpg"/>
+        <_ContentIncludedByDefault Remove="wwwroot\files\dallres\maymay5jace@gmail.com\20241125-c2cea1fa35b34cb5978ef177a88591c7.png"/>
+        <_ContentIncludedByDefault Remove="wwwroot\files\dallres\maymay5jace@gmail.com\thumbnails_20241125-c2cea1fa35b34cb5978ef177a88591c7.jpg"/>
+        <_ContentIncludedByDefault Remove="wwwroot\files\filesknowledge\1566fc2194f30573\20240222\73c23795-0f75-449e-833a-e1bf4e6c60f9_哈利波特与魔法石-J.K.罗琳.pdf"/>
+        <_ContentIncludedByDefault Remove="wwwroot\files\filesknowledge\1566fc2194f30573\20240222\9569596d-3ead-4d08-a373-13eb16d036a5_哈利波特与魔法石-J.K.罗琳.pdf"/>
+        <_ContentIncludedByDefault Remove="wwwroot\files\fileslib\20240913\098c1d9e-28db-4cc0-a43d-cccc0476e53b_执法人员.txt"/>
+        <_ContentIncludedByDefault Remove="wwwroot\files\fileslib\20240913\251b6f7a-de84-402d-bd38-fc94b4abd06d_行政执法法律法规.xlsx"/>
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="AlibabaCloud.SDK.Captcha20230305" Version="1.1.3" />
-        <PackageReference Include="Betalgo.OpenAI" Version="7.4.6" />
+        <PackageReference Include="Betalgo.OpenAI" Version="8.7.1"/>
         <PackageReference Include="CS-Script.Core" Version="2.0.0" />
         <PackageReference Include="EPPlus" Version="7.0.9" />
         <PackageReference Include="Google.Apis" Version="1.61.0" />
@@ -898,7 +909,7 @@
         </PackageReference>
         <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.26" />
         <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.5" />
-        <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="6.0.17" />
+        <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="6.0.18"/>
         <PackageReference Include="Milvus.Client" Version="2.3.0-preview.1" />
         <PackageReference Include="RestSharp" Version="110.2.0" />
         <PackageReference Include="SixLabors.Fonts" Version="2.0.4" />
@@ -914,10 +925,15 @@
 
     <ItemGroup>
         <Folder Include="wwwroot\files\audio\" />
+        <Folder Include="wwwroot\files\filesknowledge\"/>
+        <Folder Include="wwwroot\files\fileslib\"/>
+        <Folder Include="wwwroot\files\mjupload\"/>
         <Folder Include="wwwroot\files\uploadImg\" />
         <Folder Include="wwwroot\files\referencedrawing\" />
         <Folder Include="wwwroot\files\mjres\" />
         <Folder Include="wwwroot\files\dallres\" />
+        <Folder Include="wwwroot\files\usersavatar\"/>
+        <Folder Include="wwwroot\files\usersbackgroundimg\"/>
     </ItemGroup>
 
     <ItemGroup>

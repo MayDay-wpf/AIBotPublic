@@ -12,9 +12,11 @@ var chatgroupid = "";
 var assistansBoxId = "";
 let pageIndex = 1;
 let pageSize = 20;
+let isLoading = false;
+let hasMore = true;
 let useMemory = false;
 let pure = false;
-let grouping = false;
+let grouping = true;
 let createAiPrompt = false;
 let seniorSetting = false;
 let shortcuts = true;
@@ -26,57 +28,100 @@ let roleAvatar = 'A';
 var systemPrompt = "";
 let roleName = "AIBot";
 let modelList = [];
+let globe = false;
+let roleListPage = 1;
+let roleListPageSize = 20;
+let roleListNoMoreData = false;
+let roleListIsLoading = false;
+let connection = null;
 
-// websocket连接设置
-var connection = new signalR.HubConnectionBuilder()
-    .withUrl('/chatHub', {
-        accessTokenFactory: () => localStorage.getItem('aibotpro_userToken')
-    })
-    .withAutomaticReconnect()
-    .build();
-
-// 启动连接
-connection.start()
-    .then(function () {
-        console.log('与服务器握手成功 :-)'); // 与服务器握手成功
-    })
-    .catch(function (error) {
-        console.log('与服务器握手失败 :-( 原因: ' + error); // 与服务器握手失败
-        sendExceptionMsg('与服务器握手失败 :-( 原因: ' + error);
-        // 检查令牌是否过期，如果是，则跳转到登录页面
-        if (isTokenExpiredError(error)) {
-            window.location.href = "/Users/Login";
-        }
-    });
-
-// 检查错误是否表示令牌过期的函数
-// 注意：您需要根据实际的错误响应格式来调整此函数
-function isTokenExpiredError(error) {
-    // 这里的判断逻辑依赖于服务器返回的错误格式
-    // 例如，如果服务器在令牌过期时返回特定的状态码或错误信息，您可以在这里检查
-    var expiredTokenStatus = 401; // 假设401表示令牌过期
-    return error.statusCode === expiredTokenStatus || error.message.includes("令牌过期");
+// 1. 封装token检查函数
+function checkToken() {
+    const token = localStorage.getItem('aibotpro_userToken');
+    if (!token) {
+        window.location.href = "/Users/Welcome";
+        return false;
+    }
+    return token;
 }
 
-// You can also handle the reconnection events if needed:
-connection.onreconnecting((error) => {
-    console.assert(connection.state === signalR.HubConnectionState.Reconnecting);
-    console.log(`由于错误"${error}"失去连接。正在尝试重新连接。`);
-    // Here you might want to inform the user that the connection is being reattempted.
-});
+// 2. 封装connection创建函数 
+function createConnection(token) {
+    connection = new signalR.HubConnectionBuilder()
+        .withUrl('/chatHub', {
+            accessTokenFactory: () => token
+        })
+        .withAutomaticReconnect([0, 2000, 5000, 10000, null]) // 自定义重连间隔
+        .build();
+    return connection;
+}
 
-connection.onreconnected((connectionId) => {
-    console.assert(connection.state === signalR.HubConnectionState.Connected);
-    console.log(`连接已重新建立。已连接到connectionId为"${connectionId}"。`);
-    // Here you might want to inform the user that the connection has been successfully reestablished.
-});
+// 3. 优化启动连接的处理
+async function startConnection(connection) {
+    try {
+        await connection.start();
+        console.log('与服务器握手成功 :-)');
+    } catch (error) {
+        console.error('与服务器握手失败:', error);
 
-connection.onclose((error) => {
-    console.assert(connection.state === signalR.HubConnectionState.Disconnected);
-    console.log(`由于错误"${error}"连接已关闭。尝试重新启动连接。`);
-    // 这里您可以尝试再次启动连接，或者通知用户连接已丢失。
-    connection.start();
-});
+        if (isTokenExpiredError(error)) {
+            localStorage.removeItem('aibotpro_userToken'); // 清除过期token
+            localStorage.removeItem('aibotpro_userToken_Expiration');
+            window.location.href = "/Users/Login";
+            return;
+        }
+
+        // 其他错误处理
+        sendExceptionMsg('连接失败: ' + error.message);
+    }
+}
+
+// 4. 改进token过期检查
+function isTokenExpiredError(error) {
+    return error.statusCode === 401 ||
+        error.message?.toLowerCase().includes('token') ||
+        error.message?.toLowerCase().includes('unauthorized');
+}
+
+// 5. 主函数整合所有功能
+async function initializeConnection() {
+    const token = checkToken();
+    if (!token) return;
+
+    const connection = createConnection(token);
+
+    // 注册事件处理
+    connection.onreconnecting((error) => {
+        console.warn(`连接断开,正在重连...`, error);
+        // 可以显示重连UI提示
+    });
+
+    connection.onreconnected((connectionId) => {
+        console.log(`重连成功! ID: ${connectionId}`);
+        // 可以隐藏重连UI提示
+    });
+
+    connection.onclose(async (error) => {
+        console.error(`连接关闭:`, error);
+        // 可以显示断开连接UI提示
+        await startConnection(connection); // 尝试重新连接
+    });
+
+    // 启动连接
+    await startConnection(connection);
+
+    return connection;
+}
+
+// 6. 启动应用
+(async () => {
+    try {
+        const connection = await initializeConnection();
+        // 在这里可以使用connection进行后续操作
+    } catch (error) {
+        console.error('初始化连接失败:', error);
+    }
+})();
 
 //监听键盘事件
 $(document).keypress(function (e) {
@@ -97,12 +142,14 @@ $(document).keypress(function (e) {
         } else if (e.which == 13) {
             // 避免回车键换行
             e.preventDefault();
-            sendMsg();
+            if (sysmodel == 'chat') sendMsg();
+            else sendMsgByCanver();
         }
     }
     if ($("#searchKey").is(":focus")) {
         if (e.which == 13) {
             //按下回车键搜索
+            hasMore = true;
             getHistoryList(1, 20, true, true, $("#searchKey").val().trim());
         }
     }
@@ -114,7 +161,7 @@ function dataURLtoFile(dataurl, filename) {
     while (n--) {
         u8arr[n] = bstr.charCodeAt(n);
     }
-    return new File([u8arr], filename, { type: mime });
+    return new File([u8arr], filename, {type: mime});
 }
 
 // 阻止浏览器默认行为
@@ -135,6 +182,7 @@ $(document).on({
 //页面加载完成后执行
 $(document).ready(function () {
     bindEnglishPromptTranslation("#Q");
+    bindAtCharacterSelector("#Q");
     bindOptimizePrompt("#Q");
     bindInputToSidebar("#Q");
     //当#Q失去焦点时，关闭最大化
@@ -152,12 +200,39 @@ $(document).ready(function () {
             }
         }
     });
+    $('#searchIcon').on('click', function (event) {
+        event.stopPropagation();
+        $('#searchIcon').hide();
+        $('#modelSearch').addClass('expand').fadeIn().focus();
+    });
 
+    // 搜索框失去焦点时恢复成放大镜图标
+    $('#modelSearch').on('blur', function () {
+        $(this).removeClass('expand').fadeOut(function () {
+            $('#searchIcon').fadeIn();
+        });
+        $(this).val('');
+        filterModels();
+    });
     $("#sendBtn").on("click", function () {
         if (!processOver) {
             stopGenerate();
-        } else sendMsg();
+        } else if (sysmodel == 'chat') sendMsg();
+        else sendMsgByCanver();
     });
+
+
+    const daysInMonth = moment("2024-07", "YYYY-MM").daysInMonth();
+    const firstDay = moment("2024-07-01", "YYYY-MM-DD").day();
+
+    for (let i = 0; i < firstDay; i++) {
+        $('#calendarBody').append('<div></div>');
+    }
+
+    for (let i = 1; i <= daysInMonth; i++) {
+        $('#calendarBody').append(`<div class="calendar-day">${i}</div>`);
+    }
+    isVIPbyUserInfo();
 });
 document.addEventListener('DOMContentLoaded', function () {
     // 为所有的聊天项绑定右键事件
@@ -166,7 +241,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (chatItem) {
             e.preventDefault();
             const chatId = chatItem.dataset.chatId;
-            showContextMenu(e.pageX, e.pageY, chatId);
+            const isTop = chatItem.dataset.istop === 'true';
+            const itemType = chatItem.dataset.itemtype;
+            showContextMenu(e.pageX, e.pageY, chatId, isTop, itemType);
         }
     });
 
@@ -177,7 +254,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (chatItem) {
             longPressTimer = setTimeout(function () {
                 const chatId = chatItem.dataset.chatId;
-                showContextMenu(e.touches[0].pageX, e.touches[0].pageY, chatId);
+                const isTop = chatItem.dataset.istop === 'true';
+                const itemType = chatItem.dataset.itemtype;
+                showContextMenu(e.touches[0].pageX, e.touches[0].pageY, chatId, isTop, itemType);
             }, 500);
         }
     });
@@ -243,7 +322,7 @@ $(function () {
     $("#ai-main-menu").parent().toggleClass('show');
     $("#ai-main-menu").parent().siblings().removeClass('show');
     $("#aichat-nav").addClass('active');
-    if (grouping) getAIModelListByGroup(); else getAIModelList();
+    if (grouping && !isMobile()) getAIModelListByGroup(); else getAIModelList();
     getHistoryList(pageIndex, pageSize, true, true, "");
     var type = getUrlParam("type");
     if (type == "test") {
@@ -260,6 +339,14 @@ $(function () {
     $('[data-toggle="popover"]').popover({
         trigger: 'manual',
         container: 'body'
+    });
+    isVIPorSupperVIP(function (isSuper) {
+        if (isSuper) {
+            $('.calendar-overlay').hide();
+            getThisMonthSignInList();
+        } else {
+            $('.calendar-overlay').show();
+        }
     });
 })
 
@@ -290,6 +377,18 @@ function max_textarea_Q() {
 
 //获取AI模型列表
 function getAIModelList() {
+    // 允许滚动
+    $('#AIModel').html(`<div id="searchIcon" style="cursor:pointer;margin:5px;color:gray;">
+                            <i data-feather="search" style="width: 20px;"></i>
+                            <span>点击搜索,下方拖动排序</span>
+                        </div>
+                        <input type="text" id="modelSearch" class="form-control searchModel" placeholder="搜索模型..."
+                               onkeyup="filterModels()" style="display:none;">
+                        <div id="modelList"></div>`);
+    $('#AIModel').css({
+        'overflow': 'auto',
+        'height': '550px'
+    });
     $.ajax({
         type: "Post", url: "/Home/GetAImodel", dataType: "json", success: function (res) {
             var html = "";
@@ -318,11 +417,11 @@ function getAIModelList() {
                     $("#modelList").sortable({
                         revert: 100, start: function (event, ui) {
                             // 记录原始顺序
-                            originalOrder = $("#modelList").sortable("toArray", { attribute: "data-model-name" });
+                            originalOrder = $("#modelList").sortable("toArray", {attribute: "data-model-name"});
                             // 在拖动开始时禁用点击事件
                             $('#modelList a').off('click');
                         }, stop: function (event, ui) {
-                            var newOrder = $("#modelList").sortable("toArray", { attribute: "data-model-name" });
+                            var newOrder = $("#modelList").sortable("toArray", {attribute: "data-model-name"});
                             // 比较新旧顺序
                             if (!arraysEqual(originalOrder, newOrder)) {
                                 saveModelSeq();
@@ -342,110 +441,163 @@ function getAIModelList() {
 }
 
 function getAIModelListByGroup() {
-    $.ajax({
-        type: "Post", url: "/Home/GetAImodel", dataType: "json", success: function (res) {
-            var html = "";
-            if (res.success) {
-                modelPriceInfo(res.data[0].modelName);
-                $("#firstModel").html(res.data[0].modelNick);
-                thisAiModel = res.data[0].modelName;
-                // 使用 Map 对返回的数据根据 modelGroup 分组
-                const groupedByModelGroup = res.data.reduce((acc, model) => {
-                    const key = model.modelGroup || "未分组";
-                    if (!acc[key]) acc[key] = [];
-                    acc[key].push(model);
-                    return acc;
-                }, {});
+    // 基础HTML结构
+    var html = `<div class="newgroup-container">
+                    <!-- 左侧分组 -->
+                    <div class="newgroup-sidebar">
+                        <div class="newgroup-search">
+                            <input type="text" class="form-control" placeholder="搜索模型...">
+                        </div>
+                        <div class="newgroup-categories">
+                        </div>
+                    </div>
+                    <!-- 右侧模型列表 -->
+                    <div class="newgroup-content">
+                        <div class="newgroup-models">
+                           <p class="text-info">加载中...</p>
+                        </div>
+                    </div>
+                </div>`;
 
-                // 按照每组内部模型的最小 seq 对每个组进行排序
-                let groups = Object.keys(groupedByModelGroup)
-                    .map(group => ({
-                        groupName: group,
-                        models: groupedByModelGroup[group],
-                        minSeq: Math.min(...groupedByModelGroup[group].map(m => m.seq))
-                    }))
-                    .sort((a, b) => a.minSeq - b.minSeq);
+    // 首先将基础HTML结构渲染到#AIModel
+    $('#AIModel').html(html);
+    $('#AIModel .newgroup-container').on('click', function (e) {
+        e.stopPropagation();
+    });
+    // 禁止滚动
+    $('#AIModel').css({
+        'overflow': 'hidden',
+        'height': '550px'
+    });
+    // 渲染分组列表
+    getGroupHtml();
 
-                groups.forEach((group, index) => {
-                    html += `<div class='model-group'>
-                                <h5 class='dropdown-header' data-toggle="collapse" data-target="#group-content-${index}" aria-expanded="${index === 0 ? 'true' : 'false'}">${group.groupName} <i data-feather="chevron-down"></i></h5>
-                                <div id="group-content-${index}" class="collapse ${index === 0 ? 'show' : ''}">`;
-                    group.models.forEach((item, itemIndex) => {
-                        var modelNick = stripHTML(item.modelNick);
-                        html += `<a class="dropdown-item font-14 ${itemIndex === 0 && index === 0 ? 'firstModel' : ''}" href="#" data-model-name="${item.modelName}" data-model-nick="${modelNick}" data-seq="${item.seq}">${item.modelNick}</a>`;
-                        modelList.push({
-                            model: item.modelName,
-                            modelNick: item.modelNick
-                        });
-                    });
-                    html += `  </div></div>`;
-                });
+    // 渲染模型卡片
+    getModelCard('');
 
-                $('#modelList').html(html);
-
-                // 重新绑定点击事件
-                bindClickEvent();
-
-                if (!isMobile()) {
-                    var originalOrder;
-                    // 对每个组内的模型进行排序初始化
-                    $("#modelList .collapse").sortable({
-                        items: "a", revert: 100, start: function (event, ui) {
-                            // 记录原始顺序
-                            originalOrder = $("#modelList .collapse").sortable("toArray", { attribute: "data-model-name" });
-                            // 在拖动开始时禁用点击事件
-                            $('#modelList a').off('click');
-                        }, stop: function (event, ui) {
-                            var newOrder = $("#modelList .collapse").sortable("toArray", { attribute: "data-model-name" });
-                            // 比较新旧顺序
-                            if (!arraysEqual(originalOrder, newOrder)) {
-                                saveModelSeq();
-                            }
-                            bindClickEvent();
-                            bindHoverEvent();
-                        }
-                    }).disableSelection();
-                    bindHoverEvent();
-                    // 防止下拉框与分组展开点击事件冲突
-                    $('.dropdown-header').on('click', function (e) {
-                        e.stopPropagation();
-                        var target = $(this).data('target');
-                        $('.collapse').not(target).collapse('hide');
-                        $(target).collapse('toggle');
-                    });
-                    // 允许拖动分组进行排序
-                    $("#modelList").sortable({
-                        items: ".model-group", revert: 100, start: function (event, ui) {
-                            $('.collapse').collapse('hide');
-                            // 记录原始顺序
-                            originalOrder = $("#modelList .collapse").sortable("toArray", { attribute: "data-model-name" });
-                            $('.dropdown-header').off('click');
-                        }, stop: function (event, ui) {
-                            var newOrder = $("#modelList .collapse").sortable("toArray", { attribute: "data-model-name" });
-                            // 比较新旧顺序
-                            if (!arraysEqual(originalOrder, newOrder)) {
-                                saveModelSeq();
-                            }
-                            $('.dropdown-header').on('click', function (e) {
-                                e.stopPropagation();
-                                var target = $(this).data('target');
-                                $('.collapse').not(target).collapse('hide');
-                                $(target).collapse('toggle');
-                            });
-                        }
-                    }).disableSelection();
-                }
-                // 防止下拉框与分组展开点击事件冲突
-                $('.dropdown-header').on('click', function (e) {
-                    e.stopPropagation();
-                    var target = $(this).data('target');
-                    $('.collapse').not(target).collapse('hide');
-                    $(target).collapse('toggle');
-                });
-                feather.replace();
+    // 绑定搜索功能
+    $('#AIModel .newgroup-search input').on('input', function () {
+        const searchText = $(this).val().toLowerCase();
+        $('#AIModel .newgroup-model-card').each(function () {
+            const title = $(this).find('.newgroup-model-title').text().toLowerCase();
+            const desc = $(this).find('.newgroup-model-desc').text().toLowerCase();
+            if (title.includes(searchText) || desc.includes(searchText)) {
+                $(this).show();
+            } else {
+                $(this).hide();
             }
-        }, error: function (err) {
-            console.error("Error fetching AI models: ", err);
+        });
+    });
+}
+
+//渲染分组列表
+function getGroupHtml() {
+    let groupHtml = '';
+    $.ajax({
+        type: "Post",
+        url: "/Home/GetAIModelGroup",
+        dataType: "json",
+        success: function (res) {
+            if (res.success) {
+                var data = res.data;
+                groupHtml += `<div class="newgroup-category active" data-group="">
+                                <div class="newgroup-category-name">全部</div>
+                             </div>`;
+                groupHtml += `<div class="newgroup-category" data-group="free">
+                                <div class="newgroup-category-name">🆓 免费模型</div>
+                             </div>`;
+                groupHtml += `<div class="newgroup-category" data-group="vip">
+                                <div class="newgroup-category-name">✨ VIP特惠</div>
+                             </div>`;
+                groupHtml += `<div class="newgroup-category" data-group="svip">
+                                <div class="newgroup-category-name">👑 SVIP特惠</div>
+                             </div>`;
+                for (var i = 0; i < data.length; i++) {
+                    groupHtml += `<div class="newgroup-category ${data[i] === 'all' ? 'active' : ''}" data-group="${data[i]}">
+                                <div class="newgroup-category-name">${data[i]}</div>
+                             </div>`;
+                }
+
+                $('#AIModel .newgroup-categories').html(groupHtml);
+                // 绑定分组点击事件
+                $('#AIModel .newgroup-category').click(function () {
+                    $('#AIModel .newgroup-category').removeClass('active');
+                    $(this).addClass('active');
+
+                    const selectedGroup = $(this).data('group');
+                    $('#AIModel .newgroup-models').html(`<p class="text-info">加载中...</p>`);
+                    getModelCard(selectedGroup);
+                });
+            }
+        }
+    });
+}
+
+// 渲染模型卡片
+function getModelCard(group) {
+    let modelCards = '';
+    $.ajax({
+        type: "Post",
+        url: "/Home/GetAIModelPriceInfo",
+        dataType: "json",
+        data: {
+            group: group
+        },
+        success: function (res) {
+            var data = res.data;
+            $("#firstModel").html(data[0].modelNick);
+            thisAiModel = data[0].modelName;
+            modelPriceInfo(data[0].modelName);
+            for (var i = 0; i < data.length; i++) {
+                var model = data[i];
+                if (group === '') {
+                    modelList.push({
+                        model: model.modelName,
+                        modelNick: model.modelNick
+                    });
+                }
+                const needExpand = model.modelInfo.length > 36;
+                modelCards += `
+                    <div class="newgroup-model-card" data-model="${model.modelName}">
+                        <div class="newgroup-model-title">${model.modelNick}</div>
+                        <small class="text-info">${model.modelName}</small>
+                        <div class="newgroup-model-desc">${model.modelInfo}</div>
+                        <div class="toggle-expand" style="display: ${needExpand ? 'block' : 'none'}">展开</div>
+                    </div>
+                    `;
+            }
+            //modelList去重
+            modelList = modelList.filter((item, index) => {
+                return modelList.findIndex(obj => obj.model === item.model) === index;
+            });
+            $('#AIModel .newgroup-models').html(modelCards);
+            // 展开收起点击事件
+            $('.toggle-expand').click(function (e) {
+                e.stopPropagation(); // 阻止事件冒泡
+                const $this = $(this);
+                const $desc = $this.siblings('.newgroup-model-desc');
+
+                if ($desc.hasClass('expanded')) {
+                    $desc.removeClass('expanded');
+                    $this.text('展开');
+                } else {
+                    $desc.addClass('expanded');
+                    $this.text('收起');
+                }
+            });
+            // 绑定模型卡片点击事件
+            $('#AIModel .newgroup-model-card').click(function () {
+                const modelName = $(this).data('model');
+                const modelNick = $(this).find('.newgroup-model-title').html();
+
+                // 更新选中的模型
+                $('#firstModel').html(modelNick);
+                thisAiModel = modelName;
+                balert("切换模型【" + modelNick + "】成功", "success", false, 1000);
+                // 关闭下拉框
+                $('#chatDropdown').dropdown('hide');
+                modelPriceInfo(modelName);
+            });
         }
     });
 }
@@ -498,40 +650,40 @@ function modelPriceInfo(modelName) {
                 if (res.length > 0) {
                     var data = res[0];
                     if (data.modelPrice.onceFee > 0) {
-                        if (topVipType == "VIP|15") {
-                            str = `<span class="badge badge-pill badge-success">输出：${data.modelPrice.vipOnceFee}/次</span>`;
+                        if (topVipType == "VIP|15" || topVipType == "VIP|20") {
+                            str = `<span class="badge badge-pill badge-info">输出：${data.modelPrice.vipOnceFee}/次</span>`;
                         }
                         if (topVipType == "VIP|50" || topVipType == "VIP|90") {
-                            str = `<span class="badge badge-pill badge-success">输出：${data.modelPrice.svipOnceFee}/次</span>`;
+                            str = `<span class="badge badge-pill badge-info">输出：${data.modelPrice.svipOnceFee}/次</span>`;
                         } else {
-                            str = `<span class="badge badge-pill badge-success">输出：${data.modelPrice.onceFee}/次</span>`;
+                            str = `<span class="badge badge-pill badge-info">输出：${data.modelPrice.onceFee}/次</span>`;
                         }
                     } else {
-                        if (topVipType == "VIP|15") {
+                        if (topVipType == "VIP|15" || topVipType == "VIP|20") {
                             if (data.modelPrice.vipModelPriceInput > 0 && data.modelPrice.vipModelPriceOutput > 0) {
                                 str = `<span class="badge badge-pill badge-info">输入：${data.modelPrice.vipModelPriceInput}/1k token</span>
-                                   <span class="badge badge-pill badge-success">输出：${data.modelPrice.vipModelPriceOutput}/1k token</span>`;
+                                   <span class="badge badge-pill badge-info">输出：${data.modelPrice.vipModelPriceOutput}/1k token</span>`;
                             } else {
                                 str = '<span class="badge badge-pill badge-success">免费</span>';
                             }
                         } else if (topVipType == "VIP|50" || topVipType == "VIP|90") {
                             if (data.modelPrice.svipModelPriceInput > 0 && data.modelPrice.svipModelPriceOutput > 0) {
                                 str = `<span class="badge badge-pill badge-info">输入：${data.modelPrice.svipModelPriceInput}/1k token</span>
-                                   <span class="badge badge-pill badge-success">输出：${data.modelPrice.svipModelPriceOutput}/1k token</span>`;
+                                   <span class="badge badge-pill badge-info">输出：${data.modelPrice.svipModelPriceOutput}/1k token</span>`;
                             } else {
-                                str = '<span class="badge badge-pill badge-success">免费</span>';
+                                str = '<span class="badge badge-pill badge-info">免费</span>';
                             }
                         } else {
                             if (data.modelPrice.modelPriceInput > 0 && data.modelPrice.modelPriceOutput > 0) {
                                 str = `<span class="badge badge-pill badge-info">输入：${data.modelPrice.modelPriceInput}/1k token</span>
-                                   <span class="badge badge-pill badge-success">输出：${data.modelPrice.modelPriceOutput}/1k token</span>`;
+                                   <span class="badge badge-pill badge-info">输出：${data.modelPrice.modelPriceOutput}/1k token</span>`;
                             } else {
-                                str = '<span class="badge badge-pill badge-success">免费</span>';
+                                str = '<span class="badge badge-pill badge-info">免费</span>';
                             }
                         }
                     }
                 } else {
-                    str = '<span class="badge badge-pill badge-success">免费</span>';
+                    str = '<span class="badge badge-pill badge-info">免费</span>';
                 }
                 $('#priceInfo').html(str);
             }
@@ -652,10 +804,10 @@ function saveModelSeq() {
 
 //切换模型
 function changeModel(modelName, modelNick) {
-    $("#chatDropdown").html(modelNick + `<i data-feather="chevron-down" style="width:20px;"></i>`);
+    $("#firstModel").html(modelNick);
     feather.replace();
-    $("#chatDropdown").attr("data-modelName", modelName);
-    $("#chatDropdown").attr("data-modelNick", modelNick);
+    $("#firstModel").attr("data-modelName", modelName);
+    $("#firstModel").attr("data-modelNick", modelNick);
     thisAiModel = modelName;
     modelPriceInfo(modelName);
     balert("切换模型【" + modelNick + "】成功", "success", false, 1000);
@@ -713,9 +865,9 @@ function mobileChat(show) {
 }
 
 //接收消息
-var md = window.markdownit();
-var sysmsg = "";
-var jishuqi = 0;
+
+let sysmsg = "";
+let jishuqi = 0;
 
 // 添加显示代码语言的 Labels
 function addLanguageLabels() {
@@ -746,25 +898,35 @@ function addLanguageLabels(useSpecificId = false, assistansBoxId = '') {
 
     selector.each(function () {
         var codeBlock = $(this);
-        if (codeBlock.parent().find('.code-lang-label-container').length === 0) {
+        var parentPre = codeBlock.parent('pre');
+        // 添加标记,防止重复处理
+        if (parentPre.data('labels-added')) {
+            return;
+        }
+        // 跳过 Mermaid 图表
+        if (parentPre.prev('.mermaid').length > 0 || codeBlock.hasClass('language-mermaid')) {
+            return;
+        }
+
+        if (parentPre.find('.code-lang-label-container').length === 0) {
             var lang = codeBlock.attr('class').match(/language-(\w+)/);
             if (lang) {
                 var langLabelContainer = $('<div class="code-lang-label-container"></div>');
                 var langLabel = $('<span class="code-lang-label">' + lang[1] + '</span>');
-                var toggleBtn = $('<span class="toggle-button"><i class="fas fa-chevron-up"></i> 收起</span>'); // 使用 FontAwesome 图标
+                var toggleBtn = $('<span class="toggle-button"><i class="fas fa-chevron-up"></i> 收起</span>');
 
                 toggleBtn.on('click', function () {
                     if (codeBlock.is(':visible')) {
                         codeBlock.slideUp();
-                        $(this).html('<i class="fas fa-chevron-down"></i> 展开'); // 切换到下箭头
+                        $(this).html('<i class="fas fa-chevron-down"></i> 展开');
                     } else {
                         codeBlock.slideDown();
-                        $(this).html('<i class="fas fa-chevron-up"></i> 收起'); // 切换到上箭头
+                        $(this).html('<i class="fas fa-chevron-up"></i> 收起');
                     }
                 });
 
                 langLabelContainer.append(langLabel, toggleBtn);
-                codeBlock.before(langLabelContainer);
+                parentPre.before(langLabelContainer);
             }
         }
     });
@@ -802,54 +964,140 @@ connection.on('ReceiveMessage', function (message) {
                 let terminalBody = terminalWindow.find('.terminal-body');
                 terminalBody.scrollTop(terminalBody[0].scrollHeight);
             } else if (message.message != null) {
-                stopTimer(`#${assistansBoxId}_timer_first`);
                 sysmsg += message.message;
-                $("#" + assistansBoxId).html(md.render(sysmsg));
-                MathJax.typeset();
-                //hljs.highlightAll();
-                $("#" + assistansBoxId + " pre code").each(function (i, block) {
-                    hljs.highlightElement(block);
-                });
-                addLanguageLabels(true, assistansBoxId);
-                addCopyBtn(assistansBoxId);
-                if (Scrolling == 1) chatBody.scrollTop(chatBody[0].scrollHeight);
-                applyMagnificPopup('.chat-message-box');
+                let thinkContent = '';
+                let normalContent = sysmsg;
+                let thinkingEnded = false; // 标记是否找到完整的 <think></think> 对
+
+                // 提取 <think> 标签及内容
+                const thinkRegex = /<think>([\s\S]*?)<\/think>/g;
+                let match;
+                while ((match = thinkRegex.exec(sysmsg)) !== null) {
+                    thinkContent = match[1]; // 直接取最后一个完整的 think 块内容
+                    normalContent = normalContent.replace(match[0], '');
+                    thinkingEnded = true; // 找到完整的 <think></think> 对
+                }
+
+                // 如果没有找到完整的 <think></think> 对，则继续查找未闭合的 <think> 标签
+                if (!thinkingEnded) {
+                    const unfinishedThinkRegex = /<think>([\s\S]*?)$/g;
+                    if ((match = unfinishedThinkRegex.exec(sysmsg)) !== null) {
+                        thinkContent = match[1];
+                        normalContent = normalContent.replace(match[0], '');
+                    }
+                }
+
+                if (sysmodel == "chat") {
+                    stopTimer(`#${assistansBoxId}_timer_first`);
+                    let chatContentBox = $(`#${assistansBoxId}`);
+
+                    // 处理 <think> 内容
+                    let thinkBox = $(`#${assistansBoxId}-think`);
+                    if (thinkContent) {
+                        if (thinkBox.length === 0) {
+                            thinkBox = $(`<details id="${assistansBoxId}-think"><summary>AI 正在思考中(点击展开)...</summary><div class="think-content"></div></details>`);
+                            chatContentBox.before(thinkBox); // 将 thinkBox 放到 chatContentBox 前面
+                        }
+
+                        thinkBox.find('.think-content').html(md.render(thinkContent));
+                        if (thinkingEnded) {
+                            thinkBox.find('summary').text('AI 思考结束（点击展开）');
+                            if (!thinkBox.data('fixed')) {
+                                chatContentBox.parent().prepend(thinkBox);
+                                thinkBox.data('fixed', true);
+                            }
+                        } else {
+                            thinkBox.find('summary').text('AI 正在思考中(点击展开)...');
+                        }
+                    }
+
+                    // 渲染普通内容
+                    if (normalContent) {
+                        chatContentBox.html(md.render(normalContent));
+                    }
+
+                    $("#" + assistansBoxId + " pre code").each(function (i, block) {
+                        hljs.highlightElement(block);
+                    });
+                    addLanguageLabels(true, assistansBoxId);
+                    addCopyBtn(assistansBoxId);
+                    if (Scrolling == 1) chatBody.scrollTop(chatBody[0].scrollHeight);
+                    applyMagnificPopup('.chat-message-box');
+                } else if (sysmodel == "aicanver") {
+                    // 渲染普通内容
+                    let aicanverContentBox = $(`#${assistansBoxId}`);
+                    if (normalContent) {
+                        handleAicanverContent(normalContent, assistansBoxId, processOver);
+                    }
+                    // 处理 <think> 内容
+                    let thinkBox = $(`#${assistansBoxId}-think`);
+                    if (thinkContent) {
+                        if (thinkBox.length === 0) {
+                            thinkBox = $(`<details id="${assistansBoxId}-think"><summary>AI 正在思考中...</summary><div class="think-content"></div></details>`);
+                            aicanverContentBox.before(thinkBox);
+                        }
+
+                        thinkBox.find('.think-content').html(md.render(thinkContent));
+                        if (thinkingEnded) {
+                            thinkBox.find('summary').text('AI 思考结束（点击展开）');
+                            if (!thinkBox.data('fixed')) {
+                                aicanverContentBox.parent().prepend(thinkBox);
+                                thinkBox.data('fixed', true);
+                            }
+                        } else {
+                            thinkBox.find('summary').text('AI 正在思考中（点击展开）...');
+                        }
+                    }
+                    if (Scrolling == 1) {
+                        $('.aicanver-chat-container').scrollTop($('.aicanver-chat-container').prop("scrollHeight"));
+                    }
+                }
             }
 
         }
         jishuqi++;
     } else {
-        stopTimer(`#${assistansBoxId}_timer_first`);
-        stopTimer(`#${assistansBoxId}_timer_alltime`);
         processOver = true;
         $("#sendBtn").html(`<i data-feather="send"></i>`);
-        $("#ctrl-" + assistansBoxId).show();
-        feather.replace();
-        $('[data-toggle="tooltip"]').tooltip();
-        $(`.chat-message[data-group="${chatgroupid}"] .memory`).attr('onclick', function () {
-            return `saveMemory('${chatgroupid}','${chatid}')`;
-        });
         $("#sendBtn").removeClass("text-danger");
-        $("#" + assistansBoxId).html(marked(completeMarkdown(sysmsg)));
-        MathJax.typeset();
-        $("#" + assistansBoxId + " pre code").each(function (i, block) {
-            hljs.highlightElement(block);
-        });
-        addLanguageLabels(true, assistansBoxId);
-        var item = {
-            id: assistansBoxId, markdown: sysmsg
-        };
-        markdownHis.push(item);
+        $("#ctrl-" + assistansBoxId).show();
+        if (sysmodel == "chat") {
+            stopTimer(`#${assistansBoxId}_timer_first`);
+            stopTimer(`#${assistansBoxId}_timer_alltime`);
+            $('[data-toggle="tooltip"]').tooltip();
+            $(`.chat-message[data-group="${chatgroupid}"] .memory`).attr('onclick', function () {
+                return `saveMemory('${chatgroupid}','${chatid}')`;
+            });
+
+            $("#" + assistansBoxId + " pre code").each(function (i, block) {
+                hljs.highlightElement(block);
+            });
+            var item = {
+                id: assistansBoxId, markdown: sysmsg
+            };
+            markdownHis.push(item);
+            addCopyBtn(assistansBoxId);
+            addExportButtonToTables();
+            if (Scrolling == 1) chatBody.scrollTop(chatBody[0].scrollHeight);
+            applyMagnificPopup('.chat-message-box');
+            renderMermaidDiagrams('#' + assistansBoxId);
+        } else if (sysmodel == "aicanver") {
+            handleAicanverContent(sysmsg, assistansBoxId, processOver);
+            var newCode = monacoEditor.getValue();
+            highlightChanges(oldCode, newCode, monacoEditor);
+            if (Scrolling == 1) {
+                $('.chat-sidebar-body').scrollTop($('.chat-sidebar-body').prop("scrollHeight"));
+            }
+        }
+        feather.replace();
         sysmsg = "";
         jishuqi = 0;
         $('.LDI').remove();
-        addCopyBtn(assistansBoxId);
         getHistoryList(1, 20, true, false, "");
-        addExportButtonToTables();
-        if (Scrolling == 1) chatBody.scrollTop(chatBody[0].scrollHeight);
-        applyMagnificPopup('.chat-message-box');
+        getUserInfo();
     }
 });
+
 
 //发送消息
 function sendMsg(retryCount = 3) {
@@ -922,7 +1170,8 @@ function sendMsg(retryCount = 3) {
         "seniorSetting": seniorSetting,
         "inputCacheKey": "",
         "stream": stream,
-        "readingMode": readingMode
+        "readingMode": readingMode,
+        "globe": globe
     };
     $("#Q").val("");
     $("#Q").focus();
@@ -992,7 +1241,7 @@ function sendMsg(retryCount = 3) {
                         <i data-feather="anchor" class="chatbtns" data-toggle="tooltip" title="锚" onclick="quote('${msgid_g}')"></i>
                         <i data-feather="trash-2" class="chatbtns custom-delete-btn-1" data-toggle="tooltip" title="删除" data-chatgroupid="${chatgroupid}"></i>
                         <i data-feather="cpu" class="chatbtns memory" data-toggle="tooltip" title="存入记忆" onclick="saveMemory('${chatgroupid}','${chatid}')"></i>
-                        <i data-feather="codepen" class="chatbtns" data-toggle="tooltip" title="复制Markdown" onclick="toMarkdown('${msgid_g}')"></i>
+                        <i data-feather="codepen" class="chatbtns" data-toggle="tooltip" title="显示/隐藏Markdown" onclick="toMarkdown('${msgid_g}')"></i>
                     </div>
                 </div>`;
     chatBody.append(gpthtml);
@@ -1039,20 +1288,30 @@ function showCameraMenu() {
 
 //获取历史记录
 function getHistoryList(pageIndex, pageSize, reload, loading, searchKey) {
+    if (isLoading || !hasMore) return;
+    isLoading = true;
     if (loading) $(".chat-list").append(`<li class="divider-text" style="text-align:center;">加载中...</li>`);
     $.ajax({
         type: "Post", url: "/Home/GetChatHistoriesList", dataType: "json", data: {
             pageIndex: pageIndex, pageSize: pageSize, searchKey: searchKey
         }, success: function (res) {
             //console.log(res);
+            isLoading = false;
             $(".divider-text").remove();
-            if (res.data.length <= 0 && pageIndex > 1 && !reload) {
-                $(".chat-list").append(`<li class="divider-text" style="text-align:center;">没有更多数据了~</li>`);
-                //禁用loadMoreBtn
-                $("#loadMoreBtn").prop('disabled', true).addClass('btn-secondary').removeClass('btn-primary')
-                $(".chat-sidebar-body").animate({
-                    scrollTop: $(".chat-sidebar-body")[0].scrollHeight
-                }, 500)
+            if (res.data.length <= 0) {
+                if (pageIndex > 1 && !reload) {
+                    hasMore = false;
+                    $(".chat-list").append(`<li class="divider-text" style="text-align:center;">没有更多数据了~</li>`);
+                    //禁用loadMoreBtn
+                    //$("#loadMoreBtn").prop('disabled', true).addClass('btn-secondary').removeClass('btn-primary')
+                    // $(".chat-sidebar-body").animate({
+                    //     scrollTop: $(".chat-sidebar-body")[0].scrollHeight
+                    // }, 500)
+                } else {
+                    //显示没有更多数据了
+                    $(".chat-list").append(`<li class="divider-text" style="text-align:center;">暂无对话记录,快开始一次对话吧~</li>`);
+                }
+
             }
             var html = "";
             for (var i = 0; i < res.data.length; i++) {
@@ -1061,14 +1320,27 @@ function getHistoryList(pageIndex, pageSize, reload, loading, searchKey) {
                     var contentarr = chat.split("aee887ee6d5a79fdcmay451ai8042botf1443c04");
                     chat = contentarr[0];
                 }
-                chat = chat.substring(0, 50); // 只取前20个文字
+                chat = chat.substring(0, 50);
                 if (chat.length > 20) {
                     chat += "...";
                 }
                 //转译尖括号
                 chat = chat.replace(/&lt;/g, "&amp;lt;").replace(/&gt;/g, "&amp;gt;");
                 chat = chat.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                html += `<li class="chat-item" id="${res.data[i].chatId}" data-chat-id="${res.data[i].chatId}">
+                var ctrlBtn = `<span class="delete-chat">
+                                 <i data-feather="x" onclick="deleteChat('` + res.data[i].chatId + `')"></i>
+                               </span>`;
+                if (res.data[i].isLock == 1) {
+                    ctrlBtn = `<span class="delete-chat text-success">
+                                 <i data-feather="unlock" onclick="unLockChat('` + res.data[i].chatId + `')"></i>
+                               </span>`;
+                }
+                var topIcon = '';
+                if (res.data[i].isTop == 1) {//<i data-feather="arrow-up" class="text-success mg-r-10"></i>
+                    topIcon = '<i class="far fa-arrow-alt-circle-up text-success"></i>';
+                }
+                html += `<li class="chat-item" id="${res.data[i].chatId}" data-chat-id="${res.data[i].chatId}" data-istop="${res.data[i].isTop}" data-itemtype="chat">
+                            ${topIcon}
                             <div class="chat-item-body">
                                 <div>
                                     <txt>
@@ -1079,36 +1351,177 @@ function getHistoryList(pageIndex, pageSize, reload, loading, searchKey) {
                                     ${isoStringToDateTime(res.data[i].createTime)}
                                 </p>
                             </div>
-                        <span class="delete-chat">
-                            <i data-feather="x" onclick="deleteChat('` + res.data[i].chatId + `')"></i>
-                        </span>
+                            ${ctrlBtn}
                     </li>`;
             }
-            if (reload) $(".chat-list").html(html); else {
+            if (reload) {
+                $.ajax({
+                    url: "/Home/GetCollection",
+                    type: "post",
+                    dataType: "json",
+                    success: function (res) {
+                        var data = res.data;
+                        var str = "";
+                        for (var i = 0; i < data.length; i++) {
+                            var item = data[i];
+                            str += `<li class="chat-item" id="${item.collectionCode}" data-chat-id="${item.collectionCode}" data-itemtype="collection" onclick="showCollection('${item.collectionCode}')">
+                                        <i data-feather="folder"></i>
+                                        <div class="chat-item-body">
+                                            <div>
+                                                <txt id="${item.collectionCode}">
+                                                    ${item.collectionName}
+                                                </txt>
+                                            </div>
+                                            <p>
+                                                ${item.createTime}
+                                            </p>
+                                        </div>
+                                        <span class="delete-chat">
+                                           <i data-feather="trash-2" onclick="deleteCollection('${item.collectionCode}','${item.id}')"></i>
+                                        </span>
+                                   </li>`
+                        }
+                        html = str + html;
+                        $(".chat-list").html(html);
+                        feather.replace();
+                        addChatItemListeners();
+                    },
+                    error: function (err) {
+                        sendExceptionMsg(`【API：/Home/GetCollection】:${err}`);
+                    }
+                });
+
+            } else {
                 $(".chat-list").append(html);
-                $(".chat-sidebar-body").animate({
-                    scrollTop: $(".chat-sidebar-body")[0].scrollHeight
-                }, 500)
+                // $(".chat-sidebar-body").animate({
+                //     scrollTop: $(".chat-sidebar-body")[0].scrollHeight
+                // }, 500)
             }
             feather.replace();
             addChatItemListeners();
         }, error: function (err) {
+            isLoading = false;
             //window.location.href = "/Users/Login";
             //balert("出现了未经处理的异常，请联系管理员：" + err, "danger", false, 2000, "center");
         }
     });
 }
 
+function showCollection(collectionCode) {
+    const $collectionItem = $(`#${collectionCode}[data-itemtype="collection"]`);
+
+    // 切换展开/折叠状态
+    const isExpanded = $collectionItem.hasClass("expanded");
+
+    if (isExpanded) {
+        // 当前是展开状态，执行折叠操作
+        $collectionItem.removeClass("expanded");
+        $collectionItem.next(".collection-content").slideUp(300, function () {
+            $(this).remove(); // 动画结束后移除 DOM 元素
+        });
+    } else {
+        // 当前是折叠状态，执行展开操作
+        $collectionItem.addClass("expanded");
+
+        // 添加加载提示
+        const loadingHtml = `
+      <div class="collection-content" style="display: none;">
+        <div class="collection-loading" style="text-align: center; padding: 10px;">
+          <i class="fas fa-spinner fa-spin"></i> 加载中...
+        </div>
+      </div>
+    `;
+        $collectionItem.after(loadingHtml);
+        $collectionItem.next(".collection-content").slideDown(300);
+
+        // 发起 AJAX 请求获取合集内容
+        $.ajax({
+            type: "Post",
+            url: "/Home/GetChatHistoryByCollection",
+            dataType: "json",
+            data: {
+                collectionCode: collectionCode
+            },
+            success: function (res) {
+                const $collectionContent = $collectionItem.next(".collection-content");
+                $collectionContent.find(".collection-loading").remove(); // 移除加载提示
+
+                if (res.data.length > 0) {
+                    // 构建合集内容 HTML
+                    let itemsHtml = "";
+                    res.data.forEach(item => {
+                        var chat = item.chat.substring(0, 50);
+                        if (chat.length > 20) {
+                            chat += "...";
+                        }
+                        //转译尖括号
+                        chat = chat.replace(/&lt;/g, "&amp;lt;").replace(/&gt;/g, "&amp;gt;");
+                        chat = chat.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                        var ctrlBtn = `<span class="delete-chat">
+                                 <i data-feather="x" onclick="deleteChat('` + item.chatId + `')"></i>
+                               </span>`;
+                        if (item.isLock == 1) {
+                            ctrlBtn = `<span class="delete-chat text-success">
+                                 <i data-feather="unlock" onclick="unLockChat('` + item.chatId + `')"></i>
+                               </span>`;
+                        }
+                        itemsHtml += `<li class="chat-item" id="${item.chatId}" data-chat-id="${item.chatId}" data-istop="${item.isTop}" data-itemtype="chat">
+                            <div class="chat-item-body">
+                                <div>
+                                    <txt>
+                                        ${chat}
+                                    </txt>
+                                </div>
+                                <p>
+                                    ${isoStringToDateTime(item.createTime)}
+                                </p>
+                            </div>
+                            ${ctrlBtn}
+                    </li>`;
+                    });
+
+                    // 插入合集内容并添加背景
+                    $collectionContent.append(`<ul class="chat-list">${itemsHtml}</ul>`);
+                    feather.replace();
+                    addChatItemListeners();
+                } else {
+                    // 数据为空时显示提示
+                    $collectionContent.append(`<div style="text-align: center; padding: 10px;">该合集下暂无聊天记录</div>`);
+                }
+
+                // 合集内容添加平滑的进入动画
+                $collectionContent.find(".chat-list, div").hide().fadeIn(300);
+            },
+            error: function () {
+                // 请求失败时显示错误提示
+                const $collectionContent = $collectionItem.next(".collection-content");
+                $collectionContent.find(".collection-loading").remove();
+                $collectionContent.append(`<div style="text-align: center; padding: 10px; color: red;">加载失败，请稍后重试</div>`);
+            }
+        });
+    }
+}
+
+// 滚动监听
+$(".chat-sidebar-body").on('scroll', function () {
+    if (!isLoading && hasMore && $(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight - 20) {
+        loadMoreHistory();
+    }
+});
+
 function addChatItemListeners() {
     $('.chat-item').off('click').on('click', function () {
-        if (!window.isMultipleChoiceMode) {
+        var itemtype = $(this).data('itemtype');
+        if (!window.isMultipleChoiceMode && itemtype == "chat") {
             showHistoryDetail($(this).attr('id'));
         }
     });
 
     $('.delete-chat i').off('click').on('click', function (e) {
         e.stopPropagation();
-        deleteChat($(this).data('chat-id'));
+        var itemtype = $(this).attr('itemtype');
+        if (itemtype == "chat")
+            deleteChat($(this).data('chat-id'));
     });
 }
 
@@ -1127,6 +1540,7 @@ function multipleChoice() {
             <div class="action-container">
                 <select id="bulkActionSelect" class="form-control">
                     <option value="delete">删除选中</option>
+                    <option value="export">导出选中</option>
                 </select>
                 <button onclick="executeBulkAction()" class="btn btn-primary btn-sm">
                     <i class="fas fa-check mr-1"></i>执行
@@ -1140,6 +1554,8 @@ function multipleChoice() {
 
         // 为每个聊天项添加复选框和样式
         $('.chat-item').each(function () {
+            //data-itemtype="chat"才添加
+            if ($(this).data('itemtype') != "chat") return;
             $(this).prepend('<div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input chat-checkbox" id="checkbox-' + $(this).attr('id') + '"><label class="custom-control-label" for="checkbox-' + $(this).attr('id') + '"></label></div>');
             $(this).css({
                 'padding-left': '40px',
@@ -1148,7 +1564,9 @@ function multipleChoice() {
         });
 
         // 隐藏删除按钮
-        $('.delete-chat').hide();
+        if ($(this).data('itemtype') === "chat") {
+            $('.delete-chat').hide();
+        }
         // 隐藏loadMore
         $('.chat-sidebar-footer').hide();
     } else {
@@ -1192,6 +1610,9 @@ function executeBulkAction() {
         case 'delete':
             deteteChoiceChat(selectedChats.join(','));
             break;
+        case 'export':
+            exportChats(selectedChats.join(','));
+            break;
         default:
             balert("请选择一个操作", "warning", false, 2000, "center");
     }
@@ -1216,6 +1637,25 @@ function deleteChat(id) {
                         chatBody.html("");
                         chatid = "";
                     }
+                }
+            }, error: function (err) {
+                //window.location.href = "/Users/Login";
+                balert("删除失败，错误请联系管理员：err", "danger", false, 2000, "center");
+            }
+        });
+    });
+}
+
+function deleteCollection(collectionCode) {
+    event.stopPropagation();
+    showConfirmationModal("提示", "确定删除这个合集吗？注意：合集内的对话记录也会一起删除！", function () {
+        $.ajax({
+            type: "Post", url: "/Home/DeleteCollection", dataType: "json", data: {
+                collectionCode: collectionCode
+            }, success: function (res) {
+                if (res.success) {
+                    balert("删除成功", "success", false, 1000, "top");
+                    $('[id*="' + collectionCode + '"]').remove();
                 }
             }, error: function (err) {
                 //window.location.href = "/Users/Login";
@@ -1259,6 +1699,85 @@ function deteteChoiceChat(ids) {
     });
 }
 
+//导出选中的历史记录并打包成ZIP
+function exportChats(ids) {
+    $('#exportImage').hide();
+    $('#exportModal').modal('show');
+    $('#exportMarkdown').off('click').on('click', function () {
+        batchExport(ids, "markdown");
+        $('#exportModal').modal('hide');
+    });
+    $('#exportHTML').off('click').on('click', function () {
+        // 调用HTML导出逻辑
+        batchExport(ids, "html");
+        $('#exportModal').modal('hide');
+    });
+}
+
+//批量导出
+function batchExport(ids, type) {
+    loadingOverlay.show();
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "/Home/ExportChats", true);
+    xhr.responseType = "blob";
+
+    // 获取 JWT Token
+    var token = localStorage.getItem('aibotpro_userToken');
+
+    if (token) {
+        // 设置 Authorization 头，携带 JWT token
+        xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+    } else {
+        // 如果 token 不存在，跳转到登录页面
+        window.location.href = "/Home/Welcome";
+        return;
+    }
+
+    // 设置请求的 Content-Type
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            // 从 Content-Disposition 头中获取文件名
+            var contentDisposition = xhr.getResponseHeader('Content-Disposition');
+            var filename = "chat_exports.zip";
+
+            if (contentDisposition && contentDisposition.indexOf('attachment') !== -1) {
+                var filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                var matches = filenameRegex.exec(contentDisposition);
+                if (matches !== null && matches[1]) {
+                    filename = matches[1].replace(/['"]/g, '');
+                }
+            }
+
+            var blob = xhr.response;
+            var url = window.URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            loadingOverlay.hide();
+            a.click();
+            setTimeout(function () {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 0);
+        } else {
+            loadingOverlay.hide();
+            balert("导出失败", "danger", false, 1500, "center");
+            sendExceptionMsg(`【API：/Home/ExportChats】:${xhr.statusText}`);
+        }
+    };
+
+    xhr.onerror = function () {
+        loadingOverlay.hide();
+        balert("导出失败", "danger", false, 1500, "center");
+        sendExceptionMsg(`【API：/Home/ExportChats】:${xhr.statusText}`);
+    };
+
+    var data = `chatIds=${encodeURIComponent(ids)}&type=${encodeURIComponent(type)}`;
+    xhr.send(data);
+}
 
 //删除所有历史记录
 function deleteChatAll() {
@@ -1327,9 +1846,13 @@ function showHistoryDetail(id) {
     $('[id="' + id + '"]').addClass("highlight-chat-item");
     mobileChat(true);
     $.ajax({
-        type: "Post", url: "/Home/ShowHistoryDetail", dataType: "json", data: {
+        type: "Post",
+        url: "/Home/ShowHistoryDetail",
+        dataType: "json",
+        data: {
             chatId: id
-        }, success: function (res) {
+        },
+        success: function (res) {
             //console.log(res);
             chatid = id;
             var html = "";
@@ -1377,7 +1900,6 @@ function showHistoryDetail(id) {
                                    </div>
                                    <div class="chat-message-box">
                                      <pre id="${res.data[i].chatCode}">${contentarr[0].replace(/</g, "&lt;").replace(/>/g, "&gt;")}`;
-
                         // 循环添加后续内容
                         contentarr.slice(1).forEach(item => {
                             if (item.includes('<img ')) {
@@ -1388,7 +1910,6 @@ function showHistoryDetail(id) {
                                 html += item.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                             }
                         });
-
                         html += `</pre></div>
                                    <div>
                                      <i data-feather="refresh-cw" class="chatbtns" onclick="tryAgain('${res.data[i].chatCode}')"></i>
@@ -1397,28 +1918,54 @@ function showHistoryDetail(id) {
                                  </div>`;
                         imgBox.push(res.data[i].chatCode);
                     }
-
                 } else {
                     var item = {
-                        "id": res.data[i].chatCode, "markdown": content
+                        "id": res.data[i].chatCode,
+                        "markdown": content
+                    };
+                    let thinkMatches = [];
+                    let normalContent = content;
+                    const thinkRegex = /<think>([\s\S]*?)<\/think>/g;
+                    let match;
+                    while ((match = thinkRegex.exec(content)) !== null) {
+                        if (!thinkMatches.includes(match[1])) {
+                            thinkMatches.push(match[1]);
+                        }
                     }
+                    // 从 normalContent 中移除所有成对的 <think> 标签内容
+                    normalContent = normalContent.replace(thinkRegex, '');
+                    // 处理未闭合的 <think> 标签（例如只有 <think> 而没有 </think> 的情况）
+                    const unfinishedThinkRegex = /<think>([\s\S]*)$/g;
+                    if ((match = unfinishedThinkRegex.exec(normalContent)) !== null) {
+                        if (!thinkMatches.includes(match[1])) {
+                            thinkMatches.push(match[1]);
+                        }
+                        normalContent = normalContent.replace(unfinishedThinkRegex, '');
+                    }
+                    const thinkContent = thinkMatches.join("\n");
+
                     markdownHis.push(item);
-                    var markedcontent = marked(completeMarkdown(content));//md.render(content)//marked.parse(content);
+                    var markedcontent = md.render(normalContent);
                     var encoder = new TextEncoder();
                     //<span class="badge badge-pill badge-success" id="${msgid_g}_timer_first"></span>
                     //   <span class="badge badge-pill badge-dark" id="${msgid_g}_timer_alltime"></span>
                     var firstTime = '';
                     var allTime = '';
                     if (res.data[i].firstTime != "null" && res.data[i].allTime != "null" && res.data[i].firstTime != null && res.data[i].allTime != null) {
-                        firstTime = `<span class="badge badge-pill badge-success">${res.data[i].firstTime}s</span>`
-                        allTime = `<span class="badge badge-pill badge-dark">${res.data[i].allTime}s</span>`
+                        firstTime = `<span class="badge badge-pill badge-success">${res.data[i].firstTime}s</span>`;
+                        allTime = `<span class="badge badge-pill badge-dark">${res.data[i].allTime}s</span>`;
                         if (res.data[i].firstTime > 10) {
-                            firstTime = `<span class="badge badge-pill badge-danger">${res.data[i].firstTime}s</span>`
+                            firstTime = `<span class="badge badge-pill badge-danger">${res.data[i].firstTime}s</span>`;
                         } else if (res.data[i].firstTime > 5) {
-                            firstTime = `<span class="badge badge-pill badge-warning">${res.data[i].firstTime}s</span>`
+                            firstTime = `<span class="badge badge-pill badge-warning">${res.data[i].firstTime}s</span>`;
                         }
                     }
-
+                    let thinkBoxHtml = '';
+                    if (thinkContent) {
+                        thinkBoxHtml = `<details><summary>AI 思考结束（点击展开）</summary>
+                                            <div class="think-content">${md.render(thinkContent)}</div>
+                                        </details>`;
+                    }
                     html += `<div class="${msgclass}" data-group="` + res.data[i].chatGroupId + `">
                                  <div style="display: flex; align-items: center;">
                                     <div class="avatar  gpt-avatar">${roleAvatar}</div>
@@ -1426,15 +1973,16 @@ function showHistoryDetail(id) {
                                     <span class="badge badge-info ${res.data[i].model.replace('.', '')}">${res.data[i].model}</span>
                                     ${firstTime}${allTime}
                                  </div>
+                                 ${thinkBoxHtml}
                                 <div class="chat-message-box">
-                                    <div id="` + res.data[i].chatCode + `">` + markedcontent + `</div>
+                                    <div id="${res.data[i].chatCode}">${markedcontent}</div>
                                 </div>
-                                <div>
-                                  <i data-feather="copy" class="chatbtns" data-toggle="tooltip" title="复制" onclick="copyAll('` + res.data[i].chatCode + `')"></i>
-                                  <i data-feather="anchor" class="chatbtns" data-toggle="tooltip" title="锚" onclick="quote('` + res.data[i].chatCode + `')"></i>
+                                <div id="ctrl-${res.data[i].chatCode}">
+                                  <i data-feather="copy" class="chatbtns" data-toggle="tooltip" title="复制" onclick="copyAll('${res.data[i].chatCode}')"></i>
+                                  <i data-feather="anchor" class="chatbtns" data-toggle="tooltip" title="锚" onclick="quote('${res.data[i].chatCode}')"></i>
                                   <i data-feather="trash-2" class="chatbtns custom-delete-btn-1" data-toggle="tooltip" title="删除" data-chatgroupid="${res.data[i].chatGroupId}"></i>
                                   <i data-feather="cpu" class="chatbtns" data-toggle="tooltip" title="存入记忆" onclick="saveMemory('${res.data[i].chatGroupId}','${chatid}')"></i>
-                                  <i data-feather="codepen" class="chatbtns" data-toggle="tooltip" title="复制Markdown" onclick="toMarkdown('${res.data[i].chatCode}')"></i>
+                                  <i data-feather="codepen" class="chatbtns" data-toggle="tooltip" title="显示/隐藏Markdown" onclick="toMarkdown('${res.data[i].chatCode}')"></i>
                                 </div>
                             </div>`;
                     hisModelName = res.data[i].model;
@@ -1449,7 +1997,7 @@ function showHistoryDetail(id) {
                     changeModel(thisAiModel, thisAiModelNick);
                 }
             }
-            MathJax.typeset();
+            //MathJax.typeset();
             //MathJax.startup.promise = MathJax.startup.promise
             //    .then(() => MathJax.typesetClear())
             //    .then(() => MathJax.typesetPromise(document.querySelectorAll('.chat-body-content')))
@@ -1465,10 +2013,13 @@ function showHistoryDetail(id) {
             applyMagnificPopup('.chat-message-box');
             imgBox.forEach(item => initImageFolding(`#${item}`));
             createMaskedOverlays();
-            //滚动到最底部
+            renderMermaidDiagrams();
+            // 滚动到最底部
             chatBody.scrollTop(chatBody[0].scrollHeight);
             loadingOverlay.hide();
-        }, error: function (err) {
+            //bindLinkPreview('.chat-message-box', '#previewBox');
+        },
+        error: function (err) {
             loadingOverlay.hide();
             //window.location.href = "/Users/Login";
             balert("获取对话详情失败，请联系管理员：err", "danger", false, 2000, "center");
@@ -1478,66 +2029,130 @@ function showHistoryDetail(id) {
 
 
 function toMarkdown(id) {
-    var item = markdownHis.find(function (element) {
-        return element.id === id;
-    });
-    var markd = item ? item.markdown : null;
-    copyText(markd);
-    // 确保获取目标元素的唯一性
-    var $targetElement = $('#' + id);
+    const targetElement = document.getElementById(id);
+    if (!targetElement) return;
 
-    if ($targetElement.length > 0) {
-        // 检查是否已经存在 .markdown-content
-        var $existingMarkdownDiv = $targetElement.find('.markdown-content');
+    // 查找对应的 markdown 内容
+    const item = markdownHis.find(element => element.id === id);
+    const markdownContent = item ? item.markdown : '';
 
-        if ($existingMarkdownDiv.length > 0) {
-            // 如果存在，直接执行关闭操作
-            $existingMarkdownDiv.slideUp(function () {
-                $existingMarkdownDiv.remove();
-            });
-            return; // 提前返回
+    // 检查是否为移动端
+    if (isMobile()) {
+        // 移动端：切换内容显示
+        if (targetElement.getAttribute('data-showing-markdown') === 'true') {
+            // 如果正在显示 Markdown，切换回原始 HTML
+            targetElement.innerHTML = targetElement.getAttribute('data-original-content');
+            targetElement.removeAttribute('data-showing-markdown');
+        } else {
+            // 如果显示原始 HTML，切换到 Markdown
+            targetElement.setAttribute('data-original-content', targetElement.innerHTML);
+
+            // 创建一个隐藏的 textarea 来保存 Markdown 内容
+            const hiddenTextarea = document.createElement('textarea');
+            hiddenTextarea.style.display = 'none';
+            hiddenTextarea.value = markdownContent;
+
+            // 创建一个 pre 元素来显示 Markdown 内容
+            const preElement = document.createElement('pre');
+            preElement.textContent = markdownContent;
+            preElement.style.whiteSpace = 'pre-wrap';
+            preElement.style.wordWrap = 'break-word';
+
+            targetElement.innerHTML = '';
+            targetElement.appendChild(hiddenTextarea);
+            targetElement.appendChild(preElement);
+            targetElement.setAttribute('data-showing-markdown', 'true');
         }
-        if (markd) {
-            // 确保获取目标元素的唯一性
-            var $targetElement = $('#' + id);
-            if ($targetElement.length > 0 && markd) {
-                // 创建一个新的div来显示markdown内容
-                var $markdownDiv = $('<div class="markdown-content"></div>').hide();
-
-                // 插入markdown内容和关闭按钮到div
-                $closeButton = $('<p class="close-button">&times</p>');
-                var $contentDiv = $('<span class="badge badge-info">下方可编辑Markdown</span><textarea class="markdown-txt"></textarea>').val(markd);
-                $markdownDiv.append($closeButton);
-                $markdownDiv.append($contentDiv);
-
-                // 将该div插入目标元素中
-                $targetElement.append($markdownDiv);
-
-                // 展开动画效果
-                $markdownDiv.slideDown(300);
-                if (chatBody.length > 0) {
-                    var markdownDivOffsetTop = $markdownDiv.offset().top;
-                    var markdownDivHeight = $markdownDiv.outerHeight(true);
-                    var chatBodyHeight = chatBody.height();
-
-                    // 计算滚动位置，使$markdownDiv的中部在父容器的中部显示
-                    var scrollTop = markdownDivOffsetTop - chatBodyHeight / 2 + markdownDivHeight / 2 - chatBody.offset().top;
-
-                    // 滚动 chatBody
-                    chatBody.animate({
-                        scrollTop: chatBody.scrollTop() + scrollTop
-                    }, 'slow');   // 使用平滑滚动
-                }
-                // 关闭按钮功能，点击后收起div
-                $closeButton.on('click', function () {
-                    $markdownDiv.slideUp(function () {
-                        $markdownDiv.remove(); // 在动画结束后移除div
-                    });
-                });
-            }
-        }
+        return;
     }
+
+    // 桌面端：显示编辑器
+    const existingEditor = targetElement.querySelector('.markdown-editor');
+    if (existingEditor) {
+        // 如果编辑器已存在，则移除它（切换功能）
+        targetElement.innerHTML = targetElement.getAttribute('data-original-content');
+        targetElement.removeAttribute('data-showing-markdown');
+        return;
+    }
+
+    // 保存原始内容
+    targetElement.setAttribute('data-original-content', targetElement.innerHTML);
+    targetElement.setAttribute('data-showing-markdown', 'true');
+
+    // 创建编辑器容器
+    const editorContainer = document.createElement('div');
+    editorContainer.className = 'markdown-editor';
+    editorContainer.style.display = 'flex';
+    editorContainer.style.flexDirection = 'column';
+    editorContainer.style.height = '600px';
+
+    // 创建编辑区域容器
+    const editorAreaContainer = document.createElement('div');
+    editorAreaContainer.style.display = 'flex';
+    editorAreaContainer.style.flex = '1';
+
+    // 创建左侧编辑区
+    const editArea = document.createElement('textarea');
+    editArea.className = 'markdown-edit-area';
+    editArea.value = markdownContent;
+    editArea.style.width = '50%';
+    editArea.style.height = '100%';
+    editArea.style.resize = 'none';
+
+    // 创建右侧预览区
+    const previewArea = document.createElement('div');
+    previewArea.className = 'markdown-preview-area';
+    previewArea.style.width = '50%';
+    previewArea.style.height = '100%';
+    previewArea.style.overflow = 'auto';
+    previewArea.style.padding = '10px';
+    previewArea.style.boxSizing = 'border-box';
+
+    // 创建 markdown-it 实例
+    const md = window.markdownit({
+        highlight: function (str, lang) {
+            if (lang && hljs.getLanguage(lang)) {
+                try {
+                    return '<pre class="hljs"><code>' +
+                        hljs.highlight(lang, str, true).value +
+                        '</code></pre>';
+                } catch (__) {
+                }
+            }
+            return '<pre class="hljs"><code>' + md.utils.escapeHtml(str) + '</code></pre>';
+        }
+    });
+
+    // 更新预览函数
+    function updatePreview() {
+        const renderedHTML = md.render(editArea.value);
+        previewArea.innerHTML = renderedHTML;
+
+        // 高亮代码块
+        previewArea.querySelectorAll('pre code').forEach((block) => {
+            hljs.highlightElement(block);
+        });
+    }
+
+    // 初始更新预览
+    updatePreview();
+
+    // 添加实时预览
+    editArea.addEventListener('input', updatePreview);
+
+    // 组装编辑器
+    editorAreaContainer.appendChild(editArea);
+    editorAreaContainer.appendChild(previewArea);
+    editorContainer.appendChild(editorAreaContainer);
+
+    // 替换目标元素的内容
+    targetElement.innerHTML = '';
+    targetElement.appendChild(editorContainer);
+
+    // 滚动到编辑器位置
+    targetElement.scrollIntoView({behavior: 'smooth', block: 'nearest'});
 }
+
 
 //新建会话
 function newChat() {
@@ -1551,6 +2166,19 @@ function newChat() {
     chatBody.html("");
     $(".chat-item").removeClass("highlight-chat-item");
     $("#Q").focus();
+    if (sysmodel == "aicanver") {
+        var html = `<div class="aicanver-chat-container">
+                        <div class="aicanver-message aicanver-ai-message">
+                            <div id="aicanverTip">
+                                <i data-feather="info"></i> 您可以在这里针对右侧代码提出问题，我将为您进行针对性修改👉
+                                <br/>
+                                如果您没有现存的代码或文本文件，您依旧可以对我直接提问，我将为您将代码显示在右侧编辑器👉
+                            </div>
+                        </div>
+                    </div>`
+        $('#aicanverChatBox').html(html);
+        feather.replace();
+    }
 }
 
 //加载更多历史记录
@@ -1566,25 +2194,33 @@ function stopGenerate() {
         return;
     }
     processOver = true;
-    stopTimer(`#${assistansBoxId}_timer_first`);
-    stopTimer(`#${assistansBoxId}_timer_alltime`);
     $("#sendBtn").html(`<i data-feather="send"></i>`);
-    $("#ctrl-" + assistansBoxId).show();
-    feather.replace();
     $("#sendBtn").removeClass("text-danger");
     $('.LDI').remove();
-    if (sysmsg != '') $("#" + assistansBoxId).html(marked(completeMarkdown(sysmsg)));
-    MathJax.typeset();
-    $("#" + assistansBoxId + " pre code").each(function (i, block) {
-        hljs.highlightElement(block);
-    });
-    addLanguageLabels(true, assistansBoxId);
-    addCopyBtn(assistansBoxId);
+    //$("#" + assistansBoxId).html(marked(completeMarkdown(sysmsg)));
+    //MathJax.typeset();
+    if (sysmodel == "aicanver") {
+        handleAicanverContent(sysmsg, assistansBoxId, processOver);
+        var newCode = monacoEditor.getValue();
+        highlightChanges(oldCode, newCode, monacoEditor);
+    } else {
+        if (sysmsg != '')
+            $("#" + assistansBoxId).html(md.render(sysmsg));
+        $("#ctrl-" + assistansBoxId).show();
+        feather.replace();
+        stopTimer(`#${assistansBoxId}_timer_first`);
+        stopTimer(`#${assistansBoxId}_timer_alltime`);
+        $("#" + assistansBoxId + " pre code").each(function (i, block) {
+            hljs.highlightElement(block);
+        });
+        addLanguageLabels(true, assistansBoxId);
+        addCopyBtn(assistansBoxId);
+    }
     $.ajax({
         type: "Post", url: "/Home/StopGenerate", dataType: "json", data: {
             chatId: chatgroupid
         }, success: function (res) {
-            console.log(`chat停止生成，Id：${chatgroupid} --${getCurrentDateTime()}`);
+            getUserInfo();
         }, error: function (err) {
             //window.location.href = "/Users/Login";
             balert("出现了一些未经处理的异常，请联系管理员", "danger", false, 2000, "center", function () {
@@ -1746,20 +2382,49 @@ function addCopyBtn(id = '') {
             'cursor': 'pointer'
         });
 
+        // 复制按钮
         var copyBtn = $('<span>').addClass('copy-btn').attr('title', 'Copy to clipboard');
         copyBtn.html(feather.icons.clipboard.toSvg());
 
+        // 编辑器按钮
+        var editBtn = $('<span>').addClass('edit-btn').attr('title', 'Open in editor').css({
+            'margin-right': '10px'
+        });
+        editBtn.html(feather.icons.code.toSvg());
+
         if ($(this).parent().find('.copy-btn').length === 0) {
-            copyContainer.append(copyBtn);
+            if (!isMobile())
+                copyContainer.append(editBtn); // 先添加编辑按钮
+            copyContainer.append(copyBtn);  // 再添加复制按钮
             codeBlock.parent().append(copyContainer);
         }
 
+        // 复制按钮点击事件
         copyBtn.click(function () {
             var codeToCopy = codeBlock.text();
             var tempTextArea = $('<textarea>').appendTo('body').val(codeToCopy).select();
             document.execCommand('copy');
             tempTextArea.remove();
             balert("复制成功", "success", false, 1000, "top");
+        });
+
+        // 编辑器按钮点击事件
+        editBtn.click(async function () {
+            var codeContent = codeBlock.text();
+            // 获取代码语言
+            var lang = '';
+            var classes = codeBlock.attr('class').split(' ');
+            for (var i = 0; i < classes.length; i++) {
+                if (classes[i].startsWith('language-')) {
+                    lang = classes[i].replace('language-', '');
+                    break;
+                }
+            }
+
+            // 调用创建编辑器和设置内容的函数
+            newChat();
+            await createCanver(lang);
+            setEditorContent(lang, codeContent, false, true);
         });
     });
 }
@@ -1782,7 +2447,10 @@ function tryAgain(id) {
         $elem.find("img").each(function () {
             // 为每个<img>标签提取src属性
             var imgSrc = $(this).attr("src");
-            image_path.push(imgSrc);
+            if (isURL(imgSrc))
+                image_path.push(imgSrc);
+            else
+                image_path.push("wwwroot" + imgSrc);
             $Q.val($elem.text());
         });
         reviewImg(image_path);
@@ -1801,7 +2469,10 @@ function editChat(id) {
         $elem.find("img").each(function () {
             // 为每个<img>标签提取src属性
             var imgSrc = $(this).attr("src");
-            image_path.push(imgSrc);
+            if (isURL(imgSrc))
+                image_path.push(imgSrc);
+            else
+                image_path.push("wwwroot" + imgSrc);
             $Q.val($elem.text());
         });
         reviewImg(image_path);
@@ -1820,7 +2491,10 @@ function quote(id) {
         $elem.find("img").each(function () {
             // 为每个<img>标签提取src属性
             var imgSrc = $(this).attr("src");
-            image_path.push(imgSrc);
+            if (isURL(imgSrc))
+                image_path.push(imgSrc);
+            else
+                image_path.push("wwwroot" + imgSrc);
             $Q.val("回复：" + $elem.text());
         });
         reviewImg(image_path);
@@ -1851,32 +2525,33 @@ function saveMemory(chatgroupId, chatId) {
 //----------------------通用函数----------------------
 function adjustTextareaHeight() {
     if (max_textarea) return;
+    if (sysmodel == 'chat') {
+        const contentElement = $(".chat-body-content");
+        const footerElement = $(".chat-body-footer");
+        const initialContentHeight = contentElement.css("height");
+        const initialFooterHeight = footerElement.outerHeight();
 
-    const contentElement = $(".chat-body-content");
-    const footerElement = $(".chat-body-footer");
-    const initialContentHeight = contentElement.css("height");
-    const initialFooterHeight = footerElement.outerHeight();
+        textarea.style.height = 'auto';
+        let scrollHeight = textarea.scrollHeight;
 
-    textarea.style.height = 'auto';
-    let scrollHeight = textarea.scrollHeight;
+        if (scrollHeight > 200) {
+            textarea.style.height = "200px";
+        } else {
+            textarea.style.height = scrollHeight + "px";
+        }
 
-    if (scrollHeight > 200) {
-        textarea.style.height = "200px";
-    } else {
-        textarea.style.height = scrollHeight + "px";
-    }
+        // 计算 footer 高度的变化
+        const newFooterHeight = footerElement.outerHeight();
+        const footerHeightDiff = newFooterHeight - initialFooterHeight;
 
-    // 计算 footer 高度的变化
-    const newFooterHeight = footerElement.outerHeight();
-    const footerHeightDiff = newFooterHeight - initialFooterHeight;
-
-    // 只有当 footer 高度发生变化时才调整 content 高度
-    if (footerHeightDiff !== 0) {
-        const currentContentHeight = contentElement.outerHeight();
-        const newContentHeight = currentContentHeight - footerHeightDiff;
-        contentElement.css("height", newContentHeight + "px");
-    } else {
-        contentElement.css("height", initialContentHeight);
+        // 只有当 footer 高度发生变化时才调整 content 高度
+        if (footerHeightDiff !== 0) {
+            const currentContentHeight = contentElement.outerHeight();
+            const newContentHeight = currentContentHeight - footerHeightDiff;
+            contentElement.css("height", newContentHeight + "px");
+        } else {
+            contentElement.css("height", initialContentHeight);
+        }
     }
 }
 
@@ -1918,6 +2593,7 @@ $(document).ready(function () {
     const $notificationCount = $('.notification-count');
     const $bellContainer = $('.bell-container');
     const $bell = $('.bell');
+    const $closeBtn = $('.close-btn-bell');
     const $notificationDot = $('.notification-dot');
     const $notificationDropdown = $('.notification-dropdown');
     const $notificationList = $('.notification-list');
@@ -1977,16 +2653,16 @@ $(document).ready(function () {
 
         if (windowWidth <= 576) {
             // 移动端：靠左对齐
-            $notificationDropdown.css({ left: '-100px', right: '0' });
+            $notificationDropdown.css({left: '-100px', right: '0'});
         } else {
             // PC端：靠右对齐
             const rightPosition = containerRect.right - bellRect.right;
-            $notificationDropdown.css({ left: '0', right: '-100px' });
+            $notificationDropdown.css({left: '0', right: '-100px'});
 
             // 确保下拉框不会超出屏幕左侧
             const leftEdge = bellRect.left + bellRect.width - dropdownWidth;
             if (leftEdge < 0) {
-                $notificationDropdown.css({ left: '0', right: 'auto' });
+                $notificationDropdown.css({left: '0', right: 'auto'});
             }
         }
     }
@@ -2000,7 +2676,14 @@ $(document).ready(function () {
             adjustDropdownPosition();
         }
     });
-
+    $closeBtn.click(function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $notificationDropdown.toggle();
+        if ($notificationDropdown.is(':visible')) {
+            adjustDropdownPosition();
+        }
+    });
     $(document).click(function (e) {
         if (!$(e.target).closest('.bell-container').length) {
             $notificationDropdown.hide();
@@ -2032,6 +2715,12 @@ $(document).ready(function () {
                     });
 
                     updateNotificationDot();
+                    if (unreadCount > 0) {
+                        $notificationDropdown.toggle();
+                        if ($notificationDropdown.is(':visible')) {
+                            adjustDropdownPosition();
+                        }
+                    }
                 } else {
                     console.error("Failed to fetch notices");
                 }
@@ -2065,3 +2754,120 @@ $(document).ready(function () {
         })
     }
 });
+
+
+function toggleSignInDropdown() {
+    const dropdown = document.getElementById('signInDropdown');
+    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+}
+
+// 点击其他地方关闭下拉框
+document.addEventListener('click', function (event) {
+    const container = document.querySelector('.dropdown-container');
+    if (!container.contains(event.target)) {
+        document.getElementById('signInDropdown').style.display = 'none';
+    }
+});
+
+function isVIPbyUserInfo() {
+    //发起请求
+    $.ajax({
+        url: "/Users/IsVIP",
+        type: "post",
+        dataType: "json",//返回对象
+        success: function (res) {
+            loadingOverlay.hide();
+            if (res.success) {
+                vipPrice = res.data[0].vipType.split('|')[1];
+                vipEndDate = res.data[0].endTime
+                $('#isvip').show();
+                $('#vipendtime').html(`<span>${isoStringToDateTime(res.data[0].endTime)}</span> <span class="badge badge-pill badge-warning" style="cursor:pointer" onclick="vipToBalance()">会员时长兑换余额</span>`);
+            } else {
+                $('#isvip').hide();
+                $('#vipendtime').html('<span>未开通</span> <a href="/Pay/VIP" class="text-success">点击前往开通VIP</a>');
+            }
+        }
+    });
+}
+
+function signIn() {
+    //发起请求
+    loadingBtn('.signInBtn');
+    $.ajax({
+        url: "/Users/SignIn", type: "post", dataType: "json",//返回对象
+        success: function (res) {
+            unloadingBtn('.signInBtn');
+            if (res.success) {
+                balert(res.msg, 'success', false, 1500, 'center');
+                const now = moment();
+                const today = now.date();
+                const currentMonth = now.month();
+                const currentYear = now.year();
+
+                $(`.calendar-day`).filter(function () {
+                    const dayText = $(this).text().trim();
+                    return dayText === today.toString() && $(this).closest('.calendar').find('.calendar-header').text().includes(`${currentYear}年${currentMonth + 1}月`);
+                }).addClass('active animate__animated animate__rubberBand');
+                getUserInfo();
+                $('.signInBtn').prop('disabled', true).text('今日已签到').css('cursor', 'not-allowed');
+            } else {
+                balert(res.msg, 'danger', false, 1500, 'center');
+            }
+        }
+    });
+}
+
+function getThisMonthSignInList() {
+    $.ajax({
+        url: "/Users/GetThisMonthSignInList", type: "post", dataType: "json", success: function (res) {
+            if (res.success && res.data && Array.isArray(res.data)) {
+                var isTodaySigned = false;
+                var today = new Date();
+                var currentYear = today.getFullYear();
+                var currentMonth = today.getMonth();
+                var currentDay = today.getDate();
+                $('.calendar-header').text(`${currentYear}年${currentMonth + 1}月`);
+                // 清除所有之前的 'active' 类
+                $('.calendar-day').removeClass('active animate__animated animate__rubberBand');
+                res.data.forEach(function (dateString) {
+                    var date = new Date(dateString);
+                    var day = date.getDate();
+
+                    // 使用日期数字来选择元素
+                    $(`.calendar-day:contains('${day}')`)
+                        .filter(function () {
+                            // 确保我们只选择exact match，避免选中包含这个数字的其他元素
+                            return $(this).text().trim() === day.toString();
+                        })
+                        .addClass('active animate__animated animate__rubberBand');
+
+                    if (date.getFullYear() === currentYear && date.getMonth() === currentMonth && day === currentDay) {
+                        isTodaySigned = true;
+                    }
+                });
+
+                if (isTodaySigned) {
+                    $('.signInBtn').prop('disabled', true).text('今日已签到').css('cursor', 'not-allowed');
+                } else {
+                    toggleSignInDropdown();
+                }
+            }
+        }
+    });
+}
+
+function changeGlobe() {
+    globe = !globe; // 切换状态
+
+    const $globeSpan = $('.t-globe');
+
+    if (globe) {
+        $globeSpan.removeClass('badge-secondary').addClass('badge-success'); // 切换背景色
+        $globeSpan.html('<i data-feather="globe"></i> 联网已启用'); // 更新文本
+        balert("联网已启用", "success", false, 1500, "top");
+    } else {
+        $globeSpan.removeClass('badge-success').addClass('badge-secondary'); // 切换背景色
+        $globeSpan.html('<i data-feather="globe"></i> 联网关闭'); // 更新文本
+        balert("联网已关闭", "info", false, 1500, "top");
+    }
+}

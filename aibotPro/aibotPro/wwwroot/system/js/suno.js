@@ -152,10 +152,6 @@ $(document).ready(function () {
         songListContainer.removeClass('open');
         overlay.removeClass('open');
     });
-    //加载更多按钮点击事件
-    $("#loadMoreBtn").click(function () {
-        getSongList($("#searchInput").val(), true);
-    });
     //搜索歌曲
     $("#searchBtn").click(function () {
         performSearch();
@@ -456,21 +452,21 @@ function getSongList(keyword = '', loadMore = false) {
                 }
 
                 if (newSongs.length < pageSize) {
-                    $("#loadMoreBtn").hide();
+                    $("#loadMoreMusicBtn").hide();
                     if (loadMore) {
                         $('#songList').append('<div class="no-more-songs">没有更多歌曲了</div>');
                     }
                 } else {
-                    $("#loadMoreBtn").show();
+                    $("#loadMoreMusicBtn").show();
                     page++;
                 }
             } else {
                 if (loadMore) {
                     $('#songList').append('<div class="no-more-songs">没有更多歌曲了</div>');
-                    $("#loadMoreBtn").hide();
+                    $("#loadMoreMusicBtn").hide();
                 } else {
                     $('#songList').html('<div class="no-songs">没有找到歌曲</div>');
-                    $("#loadMoreBtn").hide();
+                    $("#loadMoreMusicBtn").hide();
                 }
             }
         },

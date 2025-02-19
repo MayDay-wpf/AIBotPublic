@@ -27,6 +27,15 @@ $(document).on('click', '.img-wrapper', function (e) {
         });
     }
 });
+// 滚动事件监听器
+$(window).scroll(function () {
+    if (loading || noMoreData) return;
+
+    // 当接近页面底部时触发
+    if ($(window).scrollTop() + $(window).height() > $(document).height() - 100) {
+        getAIdrawResList('scroll');
+    }
+});
 function getAIdrawResList(type) {
     if (loading || noMoreData) {
         $(".row .d-block").removeClass("d-block").addClass("d-none");
@@ -39,6 +48,7 @@ function getAIdrawResList(type) {
         page = 1;
     }
     loading = true;
+    $('#load-more-message').text('正在加载更多内容...').show();
     var data = {
         page: page,
         pageSize: pageSize,
@@ -91,6 +101,7 @@ function getAIdrawResList(type) {
                 });
                 if (res.data.length < pageSize) {
                     noMoreData = true;
+                    $('#load-more-message').text('到底了~').show();
                 } else {
                     page++;
                 }
@@ -102,7 +113,14 @@ function getAIdrawResList(type) {
                 feather.replace();
                 $(".row .d-none").removeClass("d-none").addClass("d-block");
                 loadingOverlay.hide();
+            } else {
+                $('#load-more-message').text('加载失败，请重试').show();
             }
+        },
+        error: function () {
+            loading = false;
+            loadingOverlay.hide();
+            $('#load-more-message').text('加载失败，请重试').show();
         }
     });
 }

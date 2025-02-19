@@ -3,6 +3,7 @@ using aibotPro.Dtos;
 using aibotPro.Models;
 using RestSharp;
 using System.Runtime.CompilerServices;
+using iTextSharp.text;
 
 namespace aibotPro.Interface
 {
@@ -17,9 +18,10 @@ namespace aibotPro.Interface
                 bool returnObject = false); //调用AI接口（非流式）
 
         Task<bool> SaveChatHistory(string account, string chatId, string content, string chatCode, string chatGroupId,
-            string role, string model, string firstTime = "", string allTime = ""); //AI对话记录入库
+            string role, string model, string firstTime = "", string allTime = "", int islock = 0); //AI对话记录入库
 
-        List<ChatHistory> GetChatHistories(string account, string chatId, int historyCount); //获取ai聊天记录
+        List<ChatHistory>
+            GetChatHistories(string account, string chatId, int historyCount, bool coder = false); //获取ai聊天记录
 
         Task<List<ChatHistory>>
             GetChatHistoriesList(string account, int pageIndex, int pageSize, string searchKey); //获取历史记录列表
@@ -92,7 +94,7 @@ namespace aibotPro.Interface
 
         Task<string>
             CreateHistoryPrompt(List<Message> messages,
-                List<VisionChatMesssage> visionChatMesssages = null); //总结历史记录生成Prompt
+                List<VisionChatMessage> visionChatMesssages = null); //总结历史记录生成Prompt
 
         Task<string> CreateSunoTask(string mode, string gptDescription, string prompt, string tags, string mv,
             string title, string baseUrl, string apiKey, string account); //创建suno任务
@@ -102,6 +104,22 @@ namespace aibotPro.Interface
         Task<TokenizerDetail> TokenizeJinaAI(string count, int fixedlength, string tokenizer = "cl100k_base",
             bool returnchunks = true, bool returntokens = false); //JinaAI分词切片器
 
-        Task<RerankerResponse> RerankerJinaAI(List<string> documents, string model, string query, int topn); //JinaAI重排器
+        Task<RerankerResponse> RerankerJinaAI(List<string> documents, string query, int topn); //JinaAI重排器
+        int GetImageTokenCount(string imagePath, string modelName); //计算图片tokens
+
+        Task<List<SearchEngineResult>>
+            SerperSearch(string query, string type = "global", int maxResults = 5); //Serper搜索
+
+        Task<List<SearchEngineResult>> YahooSearch(string query, int maxResults = 5); //Yahoo搜索
+
+        Task<string> CreateSearchKeyWordByHistory(string question, List<Message> messages,
+            List<VisionChatMessage> visionChatMesssages,
+            string model); //根据对话记录生成搜索引擎关键词
+
+        Task<string> CreateSearchPrompt(string promptHeadle, List<Message> messages,
+            List<VisionChatMessage> visionChatMesssages,
+            string model); //创建搜索引擎Prompt
+
+        Task<List<ModelTokenUsage>> GetTokenUsage(string filterType); //获取全站模型token使用量
     }
 }

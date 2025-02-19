@@ -722,6 +722,167 @@ namespace aibotPro.Service
                 return "";
             }
         }
+
+        public bool UpdateCollectionTitle(string collectionCode, string collectionName, string account,
+            out string msg)
+        {
+            msg = string.Empty;
+            List<SystemCfg> systemConfig = _systemService.GetSystemCfgs();
+            int maxCollectionCount = Convert.ToInt32(systemConfig.Find(x => x.CfgKey == "MaxCollectionCount").CfgValue);
+            //检查是否有该收藏夹
+            var collection = _context.ChatCollections
+                .Where(s => s.CollectionCode == collectionCode && s.Account == account && !s.IsDel.Value)
+                .FirstOrDefault();
+            //有则更新
+            if (collection != null)
+            {
+                collection.CollectionName = collectionName;
+                _context.SaveChanges();
+                return true;
+            }
+            else
+            {
+                //最多只允许添加5个合集
+                if (_context.ChatCollections.Where(s => s.Account == account && !s.IsDel.Value).Count() >=
+                    maxCollectionCount)
+                {
+                    msg = $"最多只允许添加{maxCollectionCount}个合集";
+                    return false;
+                }
+
+                //无则添加
+                ChatCollection chatCollection = new ChatCollection();
+                chatCollection.CollectionCode = collectionCode;
+                chatCollection.CollectionName = collectionName;
+                chatCollection.Account = account;
+                chatCollection.CreateTime = DateTime.Now;
+                chatCollection.IsDel = false;
+                _context.ChatCollections.Add(chatCollection);
+                return _context.SaveChanges() > 0;
+            }
+        }
+
+        public bool DeleteCollection(string collectionCode, string account)
+        {
+            var collection = _context.ChatCollections
+                .Where(s => s.CollectionCode == collectionCode && s.Account == account)
+                .FirstOrDefault();
+            if (collection != null)
+            {
+                collection.IsDel = true;
+                _context.SaveChanges();
+                var chatlist = _context.ChatHistories
+                    .Where(s => s.CollectionCode == collectionCode && s.Account == account).ToList();
+                foreach (var item in chatlist)
+                {
+                    item.IsDel = 1;
+                }
+
+                _context.SaveChanges();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public List<ChatCollection> GetCollection(string account)
+        {
+            var collection = _context.ChatCollections.Where(s => s.Account == account && !s.IsDel.Value)
+                .OrderByDescending(x => x.CreateTime).ToList();
+            return collection;
+        }
+
+        public bool SaveToCollection(string chatId, string collectionCode, string account)
+        {
+            var collection = _context.ChatCollections
+                .Where(s => s.CollectionCode == collectionCode && s.Account == account)
+                .FirstOrDefault();
+            if (collection != null)
+            {
+                var chatlist = _context.ChatHistories.Where(s => s.ChatId == chatId && s.Account == account).ToList();
+                foreach (var item in chatlist)
+                {
+                    item.CollectionCode = collectionCode;
+                }
+
+                return _context.SaveChanges() > 0;
+            }
+
+            return false;
+        }
+
+        public async Task<List<ChatHistory>> GetChatHistoryByCollection(string collectionCode, string account)
+        {
+            // 创建一个子查询，选出每个ChatId对应的最小CreateTime值，以此找到Role为"user"的记录
+            // 并添加 CollectionCode 过滤
+            var subQuery = _context.ChatHistories
+                .AsNoTracking()
+                .Where(ch =>
+                    ch.Account == account && ch.IsDel != 1 && ch.Role == "user" && ch.CollectionCode == collectionCode)
+                .GroupBy(ch => ch.ChatId)
+                .Select(g => new { ChatId = g.Key, MinCreateTime = g.Min(ch => ch.CreateTime) });
+
+            // 基础查询，并添加 CollectionCode 过滤
+            // 直接使用 OrderByDescending 对 CreateTime 排序
+            var chatHistories = await _context.ChatHistories
+                .AsNoTracking()
+                .Join(subQuery, ch => new { ch.ChatId, ch.CreateTime },
+                    sub => new { sub.ChatId, CreateTime = sub.MinCreateTime },
+                    (ch, sub) => ch)
+                .Where(ch =>
+                    ch.Account == account && ch.IsDel != 1 && ch.Role == "user" && ch.CollectionCode == collectionCode)
+                .OrderByDescending(ch => ch.CreateTime)
+                .Select(ch => new ChatHistory
+                {
+                    ChatId = ch.ChatId,
+                    Account = ch.Account,
+                    Role = ch.Role,
+                    CreateTime = ch.CreateTime,
+                    IsDel = ch.IsDel,
+                    Chat = ch.Chat,
+                    ChatTitle = ch.ChatTitle,
+                    IsLock = ch.IsLock ?? 0,
+                    IsTop = ch.IsTop, // 虽然不使用 IsTop，但为了保持 ChatHistory 对象的完整性，还是保留
+                    CollectionCode = ch.CollectionCode
+                })
+                .ToListAsync();
+
+            // Decode chat text and apply ChatTitle if available
+            chatHistories.ForEach(x =>
+            {
+                x.Chat = _systemService.DecodeBase64(x.Chat);
+
+                if (!string.IsNullOrEmpty(x.ChatTitle))
+                {
+                    x.ChatTitle = _systemService.DecodeBase64(x.ChatTitle);
+                    x.Chat = x.ChatTitle;
+                }
+            });
+
+            return chatHistories;
+        }
+
+        public bool BackHistoryList(string chatId, string collectionCode, string account)
+        {
+            var collection = _context.ChatCollections
+                .Where(s => s.CollectionCode == collectionCode && s.Account == account)
+                .FirstOrDefault();
+            if (collection != null)
+            {
+                var chatlist = _context.ChatHistories.Where(s => s.ChatId == chatId && s.Account == account).ToList();
+                foreach (var item in chatlist)
+                {
+                    item.CollectionCode = string.Empty;
+                }
+
+                _context.SaveChanges();
+                return true;
+            }
+
+            return false;
+        }
     }
 
 }

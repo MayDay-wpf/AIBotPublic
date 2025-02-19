@@ -1,0 +1,65 @@
+﻿.message-list {
+    margin-bottom: 20px;
+}
+
+.message-item {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 20px;
+}
+
+.avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    margin-right: 15px;
+}
+
+.message-content {
+    flex: 1;
+}
+
+.username {
+    margin-bottom: 5px;
+    font-size: 18px;
+}
+
+.unread-badge {
+    color: #fbb41a;
+    font-size: 0.8em;
+    margin-left: 5px;
+}
+
+.message-text {
+    margin-bottom: 10px;
+}
+
+.time {
+    color: #888;
+    font-size: 0.9em;
+}
+
+.message-reply {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.message-reply img {
+    max-width: 100%;
+}
+.deleteItem {
+    cursor: pointer;
+}
+
+.empty-notifications {
+    text-align: center;
+    padding: 20px;
+    font-size: 18px;
+    color: #666;
+}
+
+.empty-notifications p {
+    margin: 10px 0;
+}

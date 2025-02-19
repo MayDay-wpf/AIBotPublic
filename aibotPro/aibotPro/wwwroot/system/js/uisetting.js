@@ -149,13 +149,13 @@ function loadImage(event) {
 }
 
 function saveUISetting(type) {
-    var systemName = $('#systemName').val();
+    //var systemName = $('#systemName').val();
     var menuTransparency = $('#menuTransparency').val();
     var contentTransparency = $('#contentTransparency').val();
     var colorPicker = $('#colorPicker').val();
     var shadowSize = $('#shadowSize').val();
     var formData = new FormData();
-    // formData.append('SystemName', systemName);
+    formData.append('SystemName', 'Mufasa');
     formData.append('MenuTransparency', menuTransparency);
     formData.append('ContentTransparency', contentTransparency);
     formData.append('ColorPicker', colorPicker);

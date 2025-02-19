@@ -104,7 +104,7 @@ function sendMsg() {
         "msgid_g": msgid_g,
         "chatgroupid": chatgroupid,
         "ip": IP,
-        "image_path": '',
+        "image_path": [],
         "system_prompt": "# 要求一:请根据要求,输出一个符合vega-lite规范的schema json文本 \n\n # 要求二:不要说多余的话直接一行输出json文本 \n"
     };
     connection.invoke("SendMessage", data)

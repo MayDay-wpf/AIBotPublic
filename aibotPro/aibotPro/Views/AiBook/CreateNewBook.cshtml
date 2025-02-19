@@ -1,0 +1,70 @@
+﻿@{
+    ViewData["Title"] = "创建新书（CreateNewBook）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/system/css/aibook.css" rel="stylesheet" />
+<div class="header">
+    <div class="header-left d-flex align-items-center">
+        <a id="menuMain" href="#" class="burger-menu">
+            <i data-feather="menu"></i>
+        </a>
+        <a id="menuBack" href="#" class="burger-menu d-none">
+            <i data-feather="arrow-left"></i>
+        </a>
+        <a href="/AiBook/Index" class="btn btn-info ml-2">
+            <i class="fas fa-angle-left"></i> 返回我的书架
+        </a>
+    </div>
+</div>
+<div class="container mt-4">
+    <form id="newBookForm" enctype="multipart/form-data">
+        <div class="row">
+            <div class="col-md-2">
+                <div class="form-group">
+                    <label for="bookCover">点击上传封面图 <br />(建议尺寸 1600x2400 px)</label>
+                    <div class="cover-upload" onclick="document.getElementById('bookCover').click()">
+                        <img id="coverPreview" src="/system/images/newbook.png" alt="Book Cover" class="img-fluid">
+                        <input type="file" id="bookCover" name="bookCover" accept="image/*" hidden>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-10">
+                <div class="form-group">
+                    <label for="bookName">书名</label>
+                    <input type="text" class="form-control" id="bookName" name="bookName" required>
+                </div>
+                <div class="form-group">
+                    <label for="category1">分类</label>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <select class="form-control" id="category1" name="category1">
+                                <option value="男生">男生</option>
+                                <option value="女生">女生</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <select class="form-control" id="category2" name="category2">
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="bookRemark">书本简介</label>
+                    <textarea class="form-control" id="bookRemark" name="bookRemark" rows="3"></textarea>
+                </div>
+                <div class="form-group form-check d-none">
+                    <input type="checkbox" class="form-check-input" id="isPublic" name="isPublic">
+                    <label class="form-check-label" for="isPublic">是否公开</label>
+                </div>
+                <div class="form-group">
+                    <label for="bookTag">标签 (最多3个, 回车添加)</label>
+                    <input type="text" class="form-control" id="bookTag" name="bookTag">
+                    <div id="selectedTags" class="mt-2"></div>
+                </div>
+                <button type="button" class="btn btn-primary createBookBtn"><i class="fas fa-check"></i> 创建</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script src="~/system/js/aibook/createnewbook.js"></script>

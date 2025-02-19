@@ -19,6 +19,8 @@ namespace aibotPro.Dtos
             public bool IsTruncated { get; set; }
             [JsonProperty("result")]
             public string Result { get; set; }
+
+            [JsonProperty("role")] public string Role { get; set; }
             [JsonProperty("need_clear_history")]
             public bool NeedClearHistory { get; set; }
             [JsonProperty("function_call")]

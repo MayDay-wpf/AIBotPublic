@@ -131,7 +131,7 @@
                 </div>
             </div>
             <div class="text-center mt-3">
-                <button id="loadMoreBtn" class="btn btn-outline-primary">
+                <button id="loadMoreMusicBtn" class="btn btn-outline-primary" onclick="getSongList($('#searchInput').val(), true);">
                     <i class="fas fa-sync-alt mr-2"></i>加载更多
                 </button>
             </div>
@@ -143,4 +143,4 @@
 <button class="btn btn-success d-md-none" id="openSongList" style="position: fixed; bottom: 20px; right: 20px;"><i class="fas fa-list"></i> 打开歌曲列表</button>
 <div class="overlay" id="overlay"></div>
 <script src="~/static/js/popper.min.js"></script>
-<script src="~/system/js/suno.js"></script>
+<script src="~/system/js/suno.js?v1.0.0"></script>

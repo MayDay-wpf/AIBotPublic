@@ -1,0 +1,306 @@
+﻿@{
+    ViewData["Title"] = "AI作家（Writer）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/system/css/atom-one-dark.min.css?v1" rel="stylesheet" />
+<link href="~/system/css/writer.css?v1.0.1" rel="stylesheet"/>
+<link rel="stylesheet" href="~/system/js/markdownitplugin/katex.min.css">
+<script src="~/system/js/markdownitplugin/katex.min.js"></script>
+<script src="~/system/js/markdownitplugin/texmath.min.js"></script>
+<script src="~/system/js/markdown-it.min.js"></script>
+<script>
+    var md = window.markdownit()
+        .use(texmath, {
+            engine: katex,
+            delimiters: ['dollars', 'brackets'],
+            katexOptions: {
+                macros: {// 基本运算符
+                    '\\defeq': ':=',
+                    '\\bm': '\\boldsymbol',
+
+                    // 集合论
+                    '\\set': '\\left\\{ #1 \\right\\}', // \set{x}
+                    '\\N': '\\mathbb{N}',
+                    '\\Z': '\\mathbb{Z}',
+                    '\\Q': '\\mathbb{Q}',
+                    '\\R': '\\mathbb{R}',
+                    '\\C': '\\mathbb{C}',
+
+                    // 线性代数
+                    '\\mat': '\\begin{matrix} #1 \\end{matrix}', // \mat{...}
+                    '\\vec': '\\mathbf{#1}', // \vec{v}
+                    '\\det': '\\operatorname{det}',
+                    '\\tr': '\\operatorname{tr}',
+
+                    // 微积分
+                    '\\d': '\\mathrm{d}',
+                    '\\diff': '\\frac{\\d}{\\d #1}', // \diff{x}
+                    '\\pd': '\\frac{\\partial}{\\partial #1}', // \pd{x}
+
+                    // 概率论
+                    '\\P': '\\operatorname{P}',
+                    '\\E': '\\operatorname{E}',
+                    '\\Var': '\\operatorname{Var}',
+                    '\\Cov': '\\operatorname{Cov}',
+
+                    // 函数和极限
+                    '\\lim': '\\operatorname{lim}',
+                    '\\sup': '\\operatorname{sup}',
+                    '\\inf': '\\operatorname{inf}',
+                    '\\max': '\\operatorname{max}',
+                    '\\min': '\\operatorname{min}',
+
+                    // 三角函数
+                    '\\sin': '\\operatorname{sin}',
+                    '\\cos': '\\operatorname{cos}',
+                    '\\tan': '\\operatorname{tan}',
+                    '\\csc': '\\operatorname{csc}',
+                    '\\sec': '\\operatorname{sec}',
+                    '\\cot': '\\operatorname{cot}',
+
+                    // 双曲函数
+                    '\\sinh': '\\operatorname{sinh}',
+                    '\\cosh': '\\operatorname{cosh}',
+                    '\\tanh': '\\operatorname{tanh}',
+
+                    // 对数函数
+                    '\\log': '\\operatorname{log}',
+                    '\\ln': '\\operatorname{ln}',
+                    '\\lg': '\\operatorname{lg}',
+
+                    // 特殊函数
+                    '\\exp': '\\operatorname{exp}',
+                    '\\sgn': '\\operatorname{sgn}',
+
+                    // 复分析
+                    '\\Re': '\\operatorname{Re}',
+                    '\\Im': '\\operatorname{Im}',
+                    '\\arg': '\\operatorname{arg}',
+
+                    // 向量分析
+                    '\\grad': '\\operatorname{grad}',
+                    '\\div': '\\operatorname{div}',
+                    '\\rot': '\\operatorname{rot}',
+                    '\\curl': '\\operatorname{curl}',
+
+                    // 常用箭头
+                    '\\ra': '\\rightarrow',
+                    '\\Ra': '\\Rightarrow',
+                    '\\la': '\\leftarrow',
+                    '\\La': '\\Leftarrow',
+                    '\\lra': '\\leftrightarrow',
+                    '\\Lra': '\\Leftrightarrow',
+
+                    // 其他常用符号
+                    '\\eps': '\\varepsilon',
+                    '\\phi': '\\varphi',
+                    '\\ell': '\\ell',
+
+                    // 矩阵简写
+                    '\\pmatrix': '\\begin{pmatrix} #1 \\end{pmatrix}',
+                    '\\bmatrix': '\\begin{bmatrix} #1 \\end{bmatrix}',
+                    '\\vmatrix': '\\begin{vmatrix} #1 \\end{vmatrix}',
+
+                    // 定界符
+                    '\\abs': '\\left|#1\\right|',
+                    '\\norm': '\\left\\|#1\\right\\|',
+                    '\\ceil': '\\left\\lceil#1\\right\\rceil',
+                    '\\floor': '\\left\\lfloor#1\\right\\rfloor',
+
+                    // 求和、积分等
+                    '\\sum': '\\sum\\limits',
+                    '\\prod': '\\prod\\limits',
+                    '\\lim': '\\lim\\limits',
+
+                    // 自定义环境
+                    '\\cases': '\\begin{cases} #1 \\end{cases}',
+                    '\\align': '\\begin{align} #1 \\end{align}',
+                },
+                throwOnError: false, // 防止渲染错误导致整个公式失败
+                errorColor: '#cc0000', // 错误时显示红色
+                strict: false // 不要太严格的语法检查
+            }
+        });
+</script>
+<div class="header">
+    <div class="header-left d-flex align-items-center">
+        <a id="menuMain" href="#" class="burger-menu">
+            <i data-feather="menu"></i>
+        </a>
+        <a id="menuBack" href="#" class="burger-menu d-none">
+            <i data-feather="arrow-left"></i>
+        </a>
+        <a href="/AiBook/Index" class="btn btn-info ml-2">
+            <i class="fas fa-angle-left"></i> 返回我的书架
+        </a>
+        <div class="dropdown" style="text-align:center;width:auto;float:left" data-toggle="tooltip">
+            <a href="#" class="tx-14 tx-color-01 mg-b-0 mg-l-10" id="chatDropdown" data-toggle="dropdown"
+               aria-haspopup="true" aria-expanded="false">
+                <span id="firstModel">---</span>
+                <i data-feather="chevron-down" style="width:20px;"></i>
+            </a>
+            <div class="dropdown-menu dropdown-menu-left" aria-labelledby="chatDropdown"
+                 style="max-height: 505px;overflow-y:scroll;overflow-x:hidden;" id="AIModel">
+                <div id="searchIcon" style="cursor:pointer;margin:5px;color:gray;">
+                    <i data-feather="search" style="width: 20px;"></i>
+                    <span>点击搜索,下方拖动排序</span>
+                </div>
+                <input type="text" id="modelSearch" class="form-control searchModel" placeholder="搜索模型..."
+                       onkeyup="filterModels()" style="display:none;">
+                <div id="modelList"></div>
+            </div>
+        </div>
+        &nbsp;&nbsp;
+        <a href="#" data-toggle="tooltip" title="新建会话" onclick="newChat()">
+            <i data-feather="plus">
+            </i>
+        </a>
+    </div>
+    <div class="header-right">
+        <span class="text-info saveInfo"></span>
+    </div>
+</div>
+<div class="container-fluid">
+    <div class="row h-100">
+        <div class="col-md-3 h-100">
+            <div class="sidebarwriter">
+                <div class="chat-box" id="chatBox">
+                    <div id="Tips">
+                        <i data-feather="info"></i> 我是您的创作助手，您可以选中右侧内容与我进行针对性交流👉
+                        <br />
+                        如果您没有现存的文章，您依旧可以对我直接提问，您将需要的桥段粘贴至右侧，我会记住👉
+                    </div>
+
+                    @* <div class="message user"> *@
+                    @*     <div class="bubble"> *@
+                    @*         <p>你好！</p> *@
+                    @*     </div> *@
+                    @* </div> *@
+                    @* <div class="message ai"> *@
+                    @*     <div class="bubble"> *@
+                    @*         <p>你好！</p> *@
+                    @*     </div> *@
+                    @* </div> *@
+
+                    @* <div class="message user"> *@
+                    @*     <div class="bubble"> *@
+                    @*         <p>帮我写一章关于人工智能的内容。</p> *@
+                    @*     </div> *@
+                    @* </div> *@
+                    @* <div class="message ai"> *@
+                    @*     <div class="bubble"> *@
+                    @*         <p>今天有什么可以帮你的？</p> *@
+                    @*     </div> *@
+                    @* </div> *@
+                </div>
+                <div class="chat-input-area">
+                    <textarea type="text" class="chat-input" id="chatInput"
+                              placeholder="Enter发送，首字符输入 @@引用章节 #选角色" rows="1"></textarea>
+                    <button class="chat-send-button" id="sendButton"><i class="fas fa-paper-plane"></i> 发送</button>
+                    <div class="chapter-select-container">
+                        <div class="input-group">
+                            <input type="text" id="searchSelectInput" class="form-control" placeholder="搜索章节"
+                                   aria-label="搜索章节" aria-describedby="searchButton">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary" type="button" id="searchSelectButton">
+                                    <i class="fas fa-search"></i></button>
+                            </div>
+                        </div>
+                        <div class="chapter-select-list" id="chapterSelectList">
+                            @* <div class="chapter-select-item">章节一</div> *@
+                            <i class="fas fa-spinner fa-spin"></i> 加载中...
+                        </div>
+                    </div>
+                    <div class="role-select-container">
+                        <div class="input-group">
+                            <input type="text" id="roleSearchInput" class="form-control" placeholder="搜索角色"
+                                   aria-label="搜索角色" aria-describedby="searchButton">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary" type="button" id="roleSearchBtn">
+                                    <i class="fas fa-search"></i></button>
+                            </div>
+                        </div>
+                        <div class="chapter-select-list" id="roleSelectList">
+                            @* <div class="chapter-select-item">章节一</div> *@
+                            <i class="fas fa-spinner fa-spin"></i> 加载中...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 h-100">
+            <div class="editor-area">
+                <h6>章节标题:</h6><input type="text" class="form-control" id="chapterBigTitle" placeholder="可修改标题...">
+                <textarea id="editor" placeholder="请输入内容..."></textarea>
+                <button class="btn btn-sm btn-info" id="quoteButton"><i class="fas fa-quote-right"></i> 引用</button>
+                <div id="overlay">
+                    <p>请新建或选择章节</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 h-100">
+            <div class="d-flex flex-column h-100">
+                <div class="book-info flex-grow-0">
+                    <form id="book-form">
+                        <div class="form-group">
+                            <label for="coverImage">书籍封面图(点击更换)</label>
+                            <div class="cover-upload" onclick="document.getElementById('bookCover').click()">
+                                <img id="coverPreview" src="/system/images/newbook.png" alt="Book Cover" class="img-fluid">
+                                <input type="file" id="bookCover" name="bookCover" accept="image/*" hidden>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookName">书名</label>
+                            <input type="text" class="form-control" id="bookName" name="bookName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="category1">分类</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <select class="form-control" id="category1" name="category1">
+                                        <option value="男生">男生</option>
+                                        <option value="女生">女生</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <select class="form-control" id="category2" name="category2">
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookTag">标签 (最多3个, 回车添加)</label>
+                            <input type="text" class="form-control" id="bookTag" name="bookTag">
+                            <div id="selectedTags" class="mt-2"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookRemark">书本简介</label>
+                            <textarea class="form-control" id="bookRemark" name="bookRemark" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="wordCount">字数：<span class="badge badge-info" id="wordCount" style="border-radius:5px;">--</span></label>
+                        </div>
+                        <button type="button" class="btn btn-primary saveBookBtn">保存</button>
+                    </form>
+                </div>
+                <div class="chapter-list flex-grow-1">
+                    <p><b>章节列表</b>&nbsp;<button class="newbtn"><i class="fas fa-plus-circle"></i> 新建章节</button>&nbsp;<span id="orderBy" onclick="loadOrderBy()"><i class="fas fa-sort-amount-up"></i> 顺序</span></p>
+                    <div class="input-group mb-3">
+                        <input type="text" id="searchInput" class="form-control" placeholder="搜索章节" aria-label="搜索章节" aria-describedby="searchButton">
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" id="searchButton"><i class="fas fa-search"></i></button>
+                        </div>
+                    </div>
+                    <div id="chapterList">
+                        <i class="fas fa-spinner fa-spin"></i> 加载中...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/system/js/signalr.min.js"></script>
+<script src="~/system/js/mermaid.min.js"></script>
+<script src="~/system/js/highlight.min.js"></script>
+<script src="~/system/js/aibook/writerai.js?v1.0.1"></script>
+<script src="~/system/js/aibook/writer.js?v1.0.1"></script>

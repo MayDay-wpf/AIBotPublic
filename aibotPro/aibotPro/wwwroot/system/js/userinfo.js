@@ -5,7 +5,7 @@
     $("#usercenter-main-menu").parent().toggleClass('show');
     $("#usercenter-main-menu").parent().siblings().removeClass('show');
     $("#user_usercenter_nav").addClass('active');
-    isSupperVIP(function (isSuper) {
+    isVIPorSupperVIP(function (isSuper) {
         if (isSuper) {
             $('.calendar-overlay').hide();
             getThisMonthSignInList();
@@ -20,6 +20,9 @@ let avatar = '';
 let page = 1;
 let page_size = 15;
 let total = 0;
+let vipPrice = 0;
+let vipEndDate = '';
+let daysRemaining = 0;
 
 function loadImage(event) {
     var input = event.target;
@@ -109,12 +112,16 @@ function saveUserInfo() {
 function isVIPbyUserInfo() {
     //发起请求
     $.ajax({
-        url: "/Users/IsVIP", type: "post", dataType: "json",//返回对象
+        url: "/Users/IsVIP",
+        type: "post",
+        dataType: "json",//返回对象
         success: function (res) {
             loadingOverlay.hide();
             if (res.success) {
+                vipPrice = res.data[0].vipType.split('|')[1];
+                vipEndDate = res.data[0].endTime
                 $('#isvip').show();
-                $('#vipendtime').text(isoStringToDateTime(res.data[0].endTime));
+                $('#vipendtime').html(`<span>${isoStringToDateTime(res.data[0].endTime)}</span> <span class="badge badge-pill badge-warning" style="cursor:pointer" onclick="vipToBalance()">会员时长兑换余额</span>`);
             } else {
                 $('#isvip').hide();
                 $('#vipendtime').html('<span>未开通</span> <a href="/Pay/VIP" class="text-success">点击前往开通VIP</a>');
@@ -449,3 +456,74 @@ function editPassword() {
         });
     });
 }
+function vipToBalance() {
+    let dailyExchangeValue = (vipPrice / 30).toFixed(4);
+
+    let today = new Date();
+    let endDate = new Date(vipEndDate);
+    let timeDifference = endDate.getTime() - today.getTime();
+    daysRemaining = Math.ceil(timeDifference / (1000 * 3600 * 24));
+
+    if (daysRemaining < 0) daysRemaining = 0; // 处理过期情况
+
+    $('#days-remaining').text(daysRemaining);
+    $('#custom-days').attr('max', daysRemaining);
+    $('#vipType').text(`${vipPrice}|VIP`);
+
+    // 初始化时的余额预览
+    $('#preview-balance').text((dailyExchangeValue * 0).toFixed(4));
+
+    // 显示模态框
+    $('#vipModal').modal('show');
+}
+
+// 当用户输入天数时动态更新余额预览及检查合法性
+$('#custom-days').on('input', function () {
+    let days = parseInt(this.value, 10) || 0;
+
+    if (days > daysRemaining || days < 0) {
+        balert('请输入有效的天数！', 'warning', false, 1500, 'center');
+        $('#preview-balance').text("0.0000");
+    } else {
+        let dailyExchangeValue = (vipPrice / 30).toFixed(4);
+        $('#preview-balance').text((dailyExchangeValue * days).toFixed(4));
+    }
+});
+
+// 在用户确认兑换时检查输入并发送请求
+$('#confirm-exchange').click(() => {
+    let days = parseInt($('#custom-days').val(), 10) || 0;
+
+    if (days <= 0 || days > daysRemaining) {
+        balert('兑换失败：请录入有效的天数', 'warning', false, 1500, 'center');
+        return;
+    }
+
+    let dailyExchangeValue = (vipPrice / 30).toFixed(4);
+    let totalBalance = (dailyExchangeValue * days).toFixed(4);
+
+    loadingBtn('#confirm-exchange');
+    $.ajax({
+        url: '/Users/VipToBalance',
+        method: 'POST',
+        data: {
+            days: days
+        },
+        success: function (response) {
+            if (response.success) {
+                balert('兑换成功！', 'success', false, 1500, 'center');
+                $('#vipModal').modal('hide');
+                getUserInfo();
+                isVIPbyUserInfo();
+            }
+            else {
+                balert(response.msg, 'danger', false, 1500, 'center');
+            }
+            unloadingBtn('#confirm-exchange');
+        },
+        error: function (error) {
+            balert('兑换失败，请重试。', 'danger', false, 1500, 'center');
+            unloadingBtn('#confirm-exchange');
+        }
+    });
+});

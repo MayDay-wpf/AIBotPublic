@@ -1,0 +1,253 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <meta name="description" content="">
+    <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/static/css/cassie.css?v4.8">
+    <link href="~/static/css/all.min.css" rel="stylesheet">
+    <link href="~/system/css/atom-one-dark.min.css?v1" rel="stylesheet" />
+    <link href="~/system/forum/css/easymde.min.css" rel="stylesheet" />
+    <link href="~/system/forum/css/readtopic.css" rel="stylesheet" />
+</head>
+<body>
+    <div id="emoji-selector" style="display:none;">
+        <div class="emoji-list">
+            <span class="emoji" data-emoji="👍" data-index="a">👍</span>
+            <span class="emoji" data-emoji="👎" data-index="b">👎</span>
+            <span class="emoji" data-emoji="😀" data-index="c">😀</span>
+            <span class="emoji" data-emoji="😂" data-index="d">😂</span>
+            <span class="emoji" data-emoji="😅" data-index="e">😅</span>
+            <span class="emoji" data-emoji="🤮" data-index="f">🤮</span>
+            <span class="emoji" data-emoji="🤡" data-index="g">🤡</span>
+            <span class="emoji" data-emoji="💩" data-index="h">💩</span>
+            <span class="emoji" data-emoji="🎉" data-index="i">🎉</span>
+            <span class="emoji" data-emoji="🍾" data-index="j">🍾</span>
+            <span class="emoji" data-emoji="🤙" data-index="k">🤙</span>
+            <span class="emoji" data-emoji="✨" data-index="l">✨</span>
+            <span class="emoji" data-emoji="❤️" data-index="m">❤️</span>
+            <span class="emoji" data-emoji="🔥" data-index="n">🔥</span>
+            <span class="emoji" data-emoji="👏" data-index="o">👏</span>
+            <span class="emoji" data-emoji="🤔" data-index="p">🤔</span>
+            <span class="emoji" data-emoji="😊" data-index="q">😊</span>
+            <span class="emoji" data-emoji="😘" data-index="r">😘</span>
+            <span class="emoji" data-emoji="😜" data-index="s">😜</span>
+            <span class="emoji" data-emoji="😎" data-index="t">😎</span>
+            <span class="emoji" data-emoji="😢" data-index="u">😢</span>
+            <span class="emoji" data-emoji="😡" data-index="v">😡</span>
+            <span class="emoji" data-emoji="🙏" data-index="w">🙏</span>
+            <span class="emoji" data-emoji="💪" data-index="x">💪</span>
+        </div>
+
+    </div>
+    <div class="container mt-4">
+        <div class="card">
+            <div class="card-header post-header">
+                <div class="d-flex align-items-center">
+                    <img src="https://dummyimage.com/50x50/000/fff.png" alt="Avatar" class="avatar mr-3" id="avatarHeadImg">
+                    <div>
+                        <h5 class="mb-0 username" id="articleUsername">--</h5>
+                        <span class="mg-r-10">
+                            <i class="far fa-clock"></i> <span id="topicCreateTime">--</span>
+                        </span>
+                        <span class="mg-r-10">
+                            <i class="far fa-comment"></i> <span id="topicCommentCount">--</span>
+                        </span>
+                        <span class="mg-r-10">
+                            <i class="far fa-eye"></i> <span id="topicHitCount">--</span>
+                        </span>
+                        <a href="javascript:void(0)" class="laugh-btn mg-r-10">
+                            <span><i class="far fa-laugh"></i> 表态</span>
+                        </a>
+                        <div class="emoji-container">
+                        </div>
+                        <div class="post-tag">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <h4 class="card-title post-title">--</h4>
+                <div class="card-text post-content">--</div>
+            </div>
+            <div id="postscript">
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <h4>回复</h4>
+            <div id="replies">
+            </div>
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center" id="pagination">
+                    <!-- 分页将在这里动态添加 -->
+                </ul>
+            </nav>
+        </div>
+
+        <div class="mt-4 mg-b-10 reply-container">
+            <h4>添加回复</h4>
+            <textarea id="editor"></textarea>
+            <button id="submit-reply" class="btn btn-primary mt-2"><i class="far fa-paper-plane"></i> 提交回复</button>
+            <div id="reply-mask" class="reply-mask" style="display: none;">
+                <button id="login-register-btn" class="btn btn-primary" onclick="window.location.href='/Users/Login'">登录/注册</button>
+            </div>
+        </div>
+    </div>
+    <footer>
+        <div class="copyright">
+            <img src="/static/image/aibotprologo.png" alt="AIBotPro Logo" style="width:100px; margin-right: 10px;">
+            <span>© 2023 AIBotPro. All rights reserved.|AIBotPRO是一个开源的AI聚合平台，集成GPT，Claude，Gemini等众多优质AI大模型</span>
+        </div>
+        <div class="cta">
+            <a href="https://aibotpro.cn/" class="btn btn-success btn-sm" target="_blank"><i class="fas fa-rocket"></i> 前往体验线上版</a>
+            <a href="https://github.com/MayDay-wpf/AIBotPublic" class="btn btn-secondary btn-sm" target="_blank"><i class="fab fa-github"></i> GetHub项目地址</a>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/static/js/js.cookie.js"></script>
+    <script src="~/static/js/popper.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/static/js/feather.min.js"></script>
+    <script src="~/system/js/balert.js?v2"></script>
+    <script src="~/system/forum/js/easymde.min.js"></script>
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            processHtmlClass: "chat-body-content",
+            options: {
+                skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code", "a", "b", "txt"]
+            }
+        };
+        var easyMDE = new EasyMDE({
+            element: document.getElementById('editor'),
+            autofocus: true,
+            spellChecker: false,
+            status: false,
+            maxHeight: '200px',
+            placeholder: '请输入文章内容...',
+            toolbar: [
+                {
+                    name: "bold",
+                    action: EasyMDE.toggleBold,
+                    className: "fa fa-bold",
+                    title: "粗体",
+                },
+                {
+                    name: "italic",
+                    action: EasyMDE.toggleItalic,
+                    className: "fa fa-italic",
+                    title: "斜体",
+                },
+                {
+                    name: "heading",
+                    action: EasyMDE.toggleHeadingSmaller,
+                    className: "fa fa-header",
+                    title: "标题",
+                },
+                "|",
+                {
+                    name: "quote",
+                    action: EasyMDE.toggleBlockquote,
+                    className: "fa fa-quote-left",
+                    title: "引用",
+                },
+                {
+                    name: "code",
+                    action: EasyMDE.toggleCodeBlock,
+                    className: "fa fa-code",
+                    title: "代码",
+                },
+                {
+                    name: "unordered-list",
+                    action: EasyMDE.toggleUnorderedList,
+                    className: "fa fa-list-ul",
+                    title: "无序列表",
+                },
+                {
+                    name: "ordered-list",
+                    action: EasyMDE.toggleOrderedList,
+                    className: "fa fa-list-ol",
+                    title: "有序列表",
+                },
+                "|",
+                {
+                    name: "link",
+                    action: EasyMDE.drawLink,
+                    className: "fa fa-link",
+                    title: "创建链接",
+                },
+                {
+                    name: "image",
+                    action: function customFunction(editor) {
+                        // 创建一个隐藏的文件输入元素
+                        var fileInput = document.createElement('input');
+                        fileInput.type = 'file';
+                        fileInput.accept = 'image/*';
+                        fileInput.style.display = 'none';
+                        document.body.appendChild(fileInput);
+
+                        // 触发文件选择对话框
+                        fileInput.click();
+
+                        // 监听文件选择事件
+                        fileInput.onchange = function () {
+                            if (fileInput.files && fileInput.files[0]) {
+                                var destroyAlert = balert(`<i data-feather="loader" style="width:20px;"></i> 正在上传...`, "info", false, 0, "center");
+                                uploadIMGFile(fileInput.files[0], destroyAlert);
+                            }
+                            // 移除临时创建的文件输入元素
+                            document.body.removeChild(fileInput);
+                        };
+                    },
+                    className: "fa fa-picture-o",
+                    title: "插入图片",
+                },
+                {
+                    name: "preview",
+                    action: EasyMDE.togglePreview,
+                    className: "fa fa-eye no-disable",
+                    title: "切换预览",
+                },
+                "|",
+                {
+                    name: "guide",
+                    action: "https://www.markdownguide.org/basic-syntax/",
+                    className: "fa fa-question-circle",
+                    title: "Markdown 指南",
+                },
+            ],
+            promptURLs: true,
+            renderingConfig: {
+                codeSyntaxHighlighting: true,
+                highlightingTheme: 'atom-one-dark'
+            },
+            previewRender: function (plainText, preview) { // Async method
+                setTimeout(function () {
+                    preview.innerHTML = this.parent.markdown(plainText);
+                    hljs.highlightAll();
+                }.bind(this), 0);
+                return "加载中...";
+            },
+            uploadImage: true,
+            imageUploadFunction: function (file, onSuccess, onError) {
+                var destroyAlert = balert(`<i data-feather="loader" style="width:20px;"></i> 正在上传...`, "info", false, 0, "center");
+                uploadIMGFile(file, destroyAlert);
+            },
+        });
+
+
+    </script>
+    <script src="~/system/js/markdown-it.min.js"></script>
+    <script src="~/system/js/tex-chtml.js"></script>
+    <script src="~/system/js/highlight.min.js"></script>
+    <script src="~/system/forum/js/emojimap.js"></script>
+    <script src="~/system/forum/js/readtopic.js"></script>
+</body>
+</html>

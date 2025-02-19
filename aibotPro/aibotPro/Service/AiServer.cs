@@ -2,18 +2,27 @@
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Web;
+using System.Xml;
 using aibotPro.AppCode;
 using aibotPro.Dtos;
 using aibotPro.Interface;
 using aibotPro.Models;
+using Google.Apis.Util;
+using iTextSharp.text;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RestSharp;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.PixelFormats;
 using Spire.Presentation.Charts;
 using TiktokenSharp;
+using Formatting = Newtonsoft.Json.Formatting;
 using Image = SixLabors.ImageSharp.Image;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 using LogLevel = aibotPro.Dtos.LogLevel;
@@ -97,7 +106,8 @@ public class AiServer : IAiServer
                                 var jsonDataStartIndex = line.IndexOf("data:") + "data:".Length;
                                 var jsonData = line.Substring(jsonDataStartIndex).Trim();
                                 var resultIndex = jsonData.IndexOf("\"content\":");
-                                if (resultIndex >= 0)
+                                var tokenIndex = jsonData.IndexOf("\"total_tokens\":");
+                                if (resultIndex >= 0 || tokenIndex >= 0)
                                 {
                                     var res = new AiRes();
                                     try
@@ -110,10 +120,20 @@ public class AiServer : IAiServer
                                         throw;
                                     }
 
-                                    if (res != null && res.Choices != null && res.Choices[0].Delta != null)
+                                    if (res != null)
                                     {
-                                        var decodedResult = res.Choices[0].Delta.Content;
-                                        if (!string.IsNullOrEmpty(decodedResult)) yield return res;
+                                        //if (res.Choices != null && res.Choices.Count > 0 &&
+                                        //    res.Choices[0].Delta != null)
+                                        //{
+                                        //    var decodedResult = res.Choices[0].Delta.Content;
+                                        //    if (!string.IsNullOrEmpty(decodedResult))
+                                        //        yield return res;
+                                        //}
+                                        //else if (res.Usages != null)
+                                        //{
+                                        //    yield return res;
+                                        //}
+                                        yield return res;
                                     }
                                 }
                             }
@@ -171,7 +191,7 @@ public class AiServer : IAiServer
     }
 
     public async Task<bool> SaveChatHistory(string account, string chatId, string content, string chatCode,
-        string chatGroupId, string role, string model, string firstTime = "", string allTime = "")
+        string chatGroupId, string role, string model, string firstTime = "", string allTime = "", int islock = 0)
     {
         var chatHistory = new ChatHistory();
         chatHistory.Account = account;
@@ -185,6 +205,7 @@ public class AiServer : IAiServer
         chatHistory.FirstTime = firstTime;
         chatHistory.AllTime = allTime;
         chatHistory.CreateTime = DateTime.Now;
+        chatHistory.IsLock = islock;
         _context.ChatHistories.Add(chatHistory);
         await _context.SaveChangesAsync();
         var chatHistories = _context.ChatHistories
@@ -195,7 +216,7 @@ public class AiServer : IAiServer
         return true;
     }
 
-    public List<ChatHistory> GetChatHistories(string account, string chatId, int historyCount)
+    public List<ChatHistory> GetChatHistories(string account, string chatId, int historyCount, bool coder = false)
     {
         //先用chatId查询缓存
         var chatHistories = new List<ChatHistory>();
@@ -221,57 +242,146 @@ public class AiServer : IAiServer
         if (historyCount >= 0 && chatHistories.Count > historyCount * 2)
             chatHistories = chatHistories.Skip(chatHistories.Count - historyCount * 2).Take(historyCount * 2).ToList();
         chatHistories.ForEach(x => { x.Chat = _systemService.DecodeBase64(x.Chat); });
+        if (coder)
+        {
+            for (int i = 0; i < chatHistories.Count; i++)
+            {
+                if (chatHistories[i].Role == "user")
+                {
+                    var nextIndex = i + 1;
+                    if (nextIndex < chatHistories.Count && chatHistories[nextIndex].Role == "assistant")
+                    {
+                        // 查找 ``` 开始和结束的位置
+                        int start = chatHistories[nextIndex].Chat.IndexOf("```");
+                        while (start != -1)
+                        {
+                            int end = chatHistories[nextIndex].Chat.IndexOf("```", start + 3);
+                            if (end != -1)
+                            {
+                                // 检查是否是语言类型代码块
+                                int languageStart = start + 3;
+                                int languageEnd = chatHistories[nextIndex].Chat
+                                    .IndexOfAny(new char[] { '\n', ' ' }, languageStart);
+                                if (languageEnd != -1 && languageEnd < end)
+                                {
+                                    // 移除代码块
+                                    chatHistories[nextIndex].Chat =
+                                        chatHistories[nextIndex].Chat.Remove(start, end - start + 3);
+                                    // 重新查找下一个 ```
+                                    start = chatHistories[nextIndex].Chat
+                                        .IndexOf("```", start); // 注意这里不需要 + 3，因为我们已经移除了代码块
+                                }
+                                else
+                                {
+                                    // 不是语言类型代码块，继续查找下一个 ```
+                                    start = chatHistories[nextIndex].Chat.IndexOf("```", end + 3);
+                                }
+                            }
+                            else
+                            {
+                                // 没有找到结束的 ```，跳出循环
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < chatHistories.Count; i++)
+            {
+                if (chatHistories[i].Role == "assistant")
+                {
+                    chatHistories[i].Chat = RemoveThinkTags(chatHistories[i].Chat);
+                }
+            }
+        }
+
         return chatHistories;
+    }
+
+    private string RemoveThinkTags(string message)
+    {
+        string pattern = @"<think>.*?</think>";
+        string result = System.Text.RegularExpressions.Regex.Replace(message, pattern, string.Empty,
+            System.Text.RegularExpressions.RegexOptions.Singleline);
+
+        // 如果整个字符串都被 <think> 包裹，或者 <think> 没有闭合，则返回空字符串
+        if (result.Trim().Length == 0 || message.Contains("<think>") && !message.Contains("</think>"))
+        {
+            return string.Empty;
+        }
+
+        // 检查是否存在未闭合的 <think> 标签
+        if (result.Contains("<think>"))
+        {
+            return string.Empty;
+        }
+
+        return result;
     }
 
     public async Task<List<ChatHistory>> GetChatHistoriesList(string account, int pageIndex, int pageSize,
         string searchKey)
     {
-        // 创建一个子查询，选出每个ChatId对应的最小CreateTime值，以此找到Role为"user"的记录
-        var subQuery = _context.ChatHistories
+        var query = _context.ChatHistories
             .AsNoTracking()
-            .Where(ch => ch.Account == account && ch.IsDel != 1 && ch.Role == "user")
-            .OrderByDescending(ch => ch.CreateTime)
+            .Where(ch =>
+                ch.Account == account && ch.IsDel != 1 && ch.Role == "user" && string.IsNullOrEmpty(ch.CollectionCode));
+
+        // 优化：使用窗口函数获取每个 ChatId 对应的最早 CreateTime
+        var subQuery = query
             .GroupBy(ch => ch.ChatId)
             .Select(g => new { ChatId = g.Key, MinCreateTime = g.Min(ch => ch.CreateTime) });
 
-        // 将子查询的结果与原表连接，以获取每个ChatId对应的第一条Role为"user"的记录
-        var chatHistories = await _context.ChatHistories
+        var baseQuery = _context.ChatHistories
             .AsNoTracking()
-            .Join(subQuery, ch => new { ch.ChatId, ch.CreateTime },
+            .Join(subQuery,
+                ch => new { ch.ChatId, ch.CreateTime },
                 sub => new { sub.ChatId, CreateTime = sub.MinCreateTime },
                 (ch, sub) => ch)
-            .OrderByDescending(ch => ch.CreateTime)
-            .Select(ch => new ChatHistory
+            .Where(ch => ch.Account == account && ch.IsDel != 1 && ch.Role == "user");
+
+        // 优化：将置顶逻辑和排序合并到一个查询中
+        var pagedQuery = baseQuery
+            .OrderByDescending(ch => ch.IsTop) // 置顶的排在前面
+            .ThenByDescending(ch => ch.CreateTime);
+
+        // 优化：应用搜索条件
+        if (!string.IsNullOrEmpty(searchKey))
+        {
+            pagedQuery = (IOrderedQueryable<ChatHistory>)pagedQuery.Where(ch => ch.Chat.Contains(searchKey));
+        }
+
+        // 优化：数据库分页
+        var chatHistories = await pagedQuery
+            .Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize)
+            .Select(ch => new ChatHistory // 一次性完成数据转换
             {
                 ChatId = ch.ChatId,
                 Account = ch.Account,
                 Role = ch.Role,
                 CreateTime = ch.CreateTime,
                 IsDel = ch.IsDel,
-                Chat = ch.Chat, // Decode the chat text later
-                ChatTitle = ch.ChatTitle
+                Chat = ch.Chat,
+                ChatTitle = ch.ChatTitle,
+                IsLock = ch.IsLock ?? 0,
+                IsTop = ch.IsTop
             })
-            .Skip((pageIndex - 1) * pageSize)
-            .Take(pageSize)
             .ToListAsync();
 
-        // Decode chat text and apply ChatTitle if available
-        chatHistories.ForEach(x =>
+        // 优化：解码操作在获取数据后进行
+        foreach (var history in chatHistories)
         {
-            x.Chat = _systemService.DecodeBase64(x.Chat);
-
-            // Decode ChatTitle if not null, else fall back to decoded Chat
-            if (!string.IsNullOrEmpty(x.ChatTitle))
+            history.Chat = _systemService.DecodeBase64(history.Chat);
+            if (!string.IsNullOrEmpty(history.ChatTitle))
             {
-                x.ChatTitle = _systemService.DecodeBase64(x.ChatTitle);
-                x.Chat = x.ChatTitle; // Use the decoded ChatTitle
+                history.ChatTitle = _systemService.DecodeBase64(history.ChatTitle);
+                history.Chat = history.ChatTitle;
             }
-        });
-
-        // Filter based on searchKey after applying ChatTitle
-        if (!string.IsNullOrEmpty(searchKey))
-            chatHistories = chatHistories.Where(x => x.Chat.Contains(searchKey)).ToList();
+        }
 
         return chatHistories;
     }
@@ -567,12 +677,13 @@ public class AiServer : IAiServer
         var sDResponse = new SDResponse();
         if (Channel == "SiliconCloud")
         {
-            var client = new RestClient(baseUrl + $"/v1/{model}/text-to-image");
+            var client = new RestClient(baseUrl + $"/v1/images/generations");
             var request = new RestRequest("", Method.Post);
             request.AddHeader("Content-Type", "application/json");
             request.AddHeader("Authorization", $"Bearer {apiKey}");
             prompt = prompt.Replace("\r", "\\n").Replace("\n", "\\n");
             var sDdrawBody = new SDdrawBody();
+            sDdrawBody.model = model;
             sDdrawBody.prompt = prompt;
             sDdrawBody.batch_size = numberImages;
             sDdrawBody.guidance_scale = guidanceScale;
@@ -596,22 +707,22 @@ public class AiServer : IAiServer
         try
         {
             if (baseUrl.EndsWith("/")) baseUrl = baseUrl.TrimEnd('/');
+
+
+            var client = new RestClient($"{baseUrl}/mj/task/{taskId}/fetch");
+            var request = new RestRequest("");
+            request.AddHeader("Authorization", apiKey);
+            var response = await client.ExecuteAsync(request);
+            if (response.IsSuccessful)
+            {
+                var res = JsonConvert.DeserializeObject<TaskResponse>(response.Content);
+                return res;
+            }
         }
         catch (Exception e)
         {
-            throw e;
+            await _systemService.WriteLog("/AiServer/GetMJTaskResponse" + e.Message, LogLevel.Error, "system");
         }
-
-        var client = new RestClient($"{baseUrl}/mj/task/{taskId}/fetch");
-        var request = new RestRequest("");
-        request.AddHeader("Authorization", apiKey);
-        var response = await client.ExecuteAsync(request);
-        if (response.IsSuccessful)
-        {
-            var res = JsonConvert.DeserializeObject<TaskResponse>(response.Content);
-            return res;
-        }
-
         return null;
     }
 
@@ -975,7 +1086,7 @@ public class AiServer : IAiServer
             };
         }
 
-        List<VisionChatMesssage> messages = new List<VisionChatMesssage>();
+        List<VisionChatMessage> messages = new List<VisionChatMessage>();
         List<VisionContent> visionContents = new List<VisionContent>();
 
         VisionContent textVisionContent = new VisionContent()
@@ -995,10 +1106,13 @@ public class AiServer : IAiServer
         visionContents.Add(textVisionContent);
         visionContents.Add(imgVisionContent);
 
-        messages.Add(new VisionChatMesssage
+        messages.Add(new VisionChatMessage
         {
             role = "user",
-            content = visionContents
+            content = new ContentWrapper
+            {
+                visionContentList = visionContents
+            }
         });
 
         visionBody.messages = messages.ToArray();
@@ -1292,7 +1406,7 @@ public class AiServer : IAiServer
     }
 
     public async Task<string> CreateHistoryPrompt(List<Message> messages,
-        List<VisionChatMesssage> visionChatMesssages = null)
+        List<VisionChatMessage> visionChatMesssages = null)
     {
         var systemCfg = _systemService.GetSystemCfgs();
         var keepQuantity = systemCfg.Where(x => x.CfgCode == "History_Prompt_Keep_Quantity").FirstOrDefault();
@@ -1330,13 +1444,32 @@ public class AiServer : IAiServer
         // 生成历史摘要
         foreach (var item in messagesToSummarize)
         {
-            if (item is VisionChatMesssage visionMessage)
+            if (item is VisionChatMessage visionMessage)
             {
+                // 确定角色，并追加到历史字符串
                 historyStr += visionMessage.role == "user" ? "用户: " : "AI: ";
-                foreach (var content in visionMessage.content)
-                    if (content.type == "text")
-                        historyStr += content.text + " ";
-                    else if (content.type == "image_url") historyStr += "[图片内容] ";
+
+                // 检查是否有 stringContent (即 content 被配置为字符串)
+                if (visionMessage.content.stringContent != null)
+                {
+                    historyStr += visionMessage.content.stringContent + " ";
+                }
+                // 否则检查是否有 visionContentList
+                else if (visionMessage.content.visionContentList != null)
+                {
+                    foreach (var content in visionMessage.content.visionContentList)
+                    {
+                        // 根据内容类型处理
+                        if (content.type == "text")
+                        {
+                            historyStr += content.text + " ";
+                        }
+                        else if (content.type == "image_url" && content.image_url != null)
+                        {
+                            historyStr += "[图片内容: " + content.image_url.url + "] ";
+                        }
+                    }
+                }
             }
             else if (item is Message message)
             {
@@ -1370,12 +1503,28 @@ public class AiServer : IAiServer
             prompt = $"* 以下是之前对话的总结：\n\n{summaryResult}\n\n*以下是最近的对话：\n\n";
             foreach (var message in lastTwoMessages)
             {
-                if (message is VisionChatMesssage visionMessage)
+                if (message is VisionChatMessage visionMessage)
                 {
+                    // 追加用户或AI的角色到 prompt
                     prompt += $"{(visionMessage.role == "user" ? "用户" : "AI")}: ";
-                    foreach (var content in visionMessage.content)
-                        if (content.type == "text")
-                            prompt += content.text + " ";
+
+                    // 如果 content 是字符串，直接处理 stringContent
+                    if (visionMessage.content.stringContent != null)
+                    {
+                        prompt += visionMessage.content.stringContent + " ";
+                    }
+                    // 否则，处理 visionContentList
+                    else if (visionMessage.content.visionContentList != null)
+                    {
+                        foreach (var content in visionMessage.content.visionContentList)
+                        {
+                            // 如果内容类型是 text，就追加文本
+                            if (content.type == "text")
+                            {
+                                prompt += content.text + " ";
+                            }
+                        }
+                    }
                 }
                 else if (message is Message textMessage)
                 {
@@ -1666,11 +1815,12 @@ public class AiServer : IAiServer
     }
 
 
-    public async Task<RerankerResponse> RerankerJinaAI(List<string> documents, string model, string query, int topn)
+    public async Task<RerankerResponse> RerankerJinaAI(List<string> documents, string query, int topn)
     {
         var systemCfgs = _systemService.GetSystemCfgs();
         var baseUrl = systemCfgs.FirstOrDefault(x => x.CfgKey == "Rerank_BaseUrl_Jina")?.CfgValue;
         var apiKey = systemCfgs.FirstOrDefault(x => x.CfgKey == "Rerank_ApiKey_Jina")?.CfgValue;
+        var model = systemCfgs.FirstOrDefault(x => x.CfgKey == "Rerank_Model_Jina")?.CfgValue;
 
         if (string.IsNullOrEmpty(baseUrl) || string.IsNullOrEmpty(apiKey))
         {
@@ -1839,12 +1989,13 @@ public class AiServer : IAiServer
     public APISetting CreateAPISetting(string aimodel)
     {
         var apiSetting = new APISetting();
-        var aImodels = _systemService.GetAImodel();
-        var aiModelInfo = aImodels.Where(x => x.ModelName == aimodel).FirstOrDefault();
-        if (aiModelInfo == null) throw new Exception("AI模型不存在");
-        var apiKey = aiModelInfo.ApiKey;
+        //var aImodels = _systemService.GetAImodel();
+        //var aiModelInfo = aImodels.Where(x => x.ModelName == aimodel).FirstOrDefault();
+        // if (aiModelInfo == null) throw new Exception("AI模型不存在");
+        var systemCfg = _systemService.GetSystemCfgs();
+        var apiKey = systemCfg.FirstOrDefault(x => x.CfgKey == "AICodeCheckApiKey").CfgValue;
         //标准化baseurl
-        var baseUrl = aiModelInfo.BaseUrl;
+        var baseUrl = systemCfg.FirstOrDefault(x => x.CfgKey == "AICodeCheckBaseUrl").CfgValue;
         try
         {
             if (baseUrl.EndsWith("/")) baseUrl = baseUrl.TrimEnd('/');
@@ -1856,7 +2007,460 @@ public class AiServer : IAiServer
 
         apiSetting.ApiKey = apiKey;
         apiSetting.BaseUrl = baseUrl;
-        apiSetting.IsVisionModel = aiModelInfo.VisionModel;
         return apiSetting;
+    }
+
+    public int GetImageTokenCount(string imagePath, string modelName)
+    {
+        int width = 0, height = 0;
+
+        // Load image and get width and height
+        using (var image = LoadImage(imagePath))
+        {
+            width = image.Width;
+            height = image.Height;
+        }
+
+        // Calculate tokens
+        if (modelName.Contains("claude"))
+        {
+            return 2048;
+        }
+        else if (modelName.Contains("gpt"))
+        {
+            int blockWidth = 512;
+            int blockHeight = 512;
+            int tokenPerBlock = 255;
+
+            // 如果图片小于或等于一个块的大小，直接返回一个块的token数
+            if (width <= blockWidth && height <= blockHeight)
+            {
+                return tokenPerBlock;
+            }
+
+            // 计算完整的块数（向下取整）
+            int blocksHorizontal = Math.Max(1, width / blockWidth);
+            int blocksVertical = Math.Max(1, height / blockHeight);
+            int totalBlocks = blocksHorizontal * blocksVertical;
+            if (totalBlocks > 8)
+                totalBlocks = 8;
+            // 计算总token数
+            int totalTokens = totalBlocks * tokenPerBlock;
+            if (modelName.Contains("4o-mini"))
+            {
+                totalTokens = totalTokens * 33;
+            }
+
+            return totalTokens;
+        }
+
+        return 1024;
+    }
+
+    private static Image<Rgba32> LoadImage(string path)
+    {
+        if (IsBase64String(path))
+        {
+            // Remove the data URI scheme part if present
+            string base64Data = path.Contains("base64,")
+                ? path.Substring(path.IndexOf("base64,") + 7) // Remove "data:image/png;base64,"
+                : path;
+
+            byte[] imageBytes = Convert.FromBase64String(base64Data);
+            using (var ms = new MemoryStream(imageBytes))
+            {
+                return Image.Load<Rgba32>(ms);
+            }
+        }
+        else if (IsUrl(path))
+        {
+            using (WebClient wc = new WebClient())
+            {
+                byte[] imageData = wc.DownloadData(path);
+                using (var ms = new MemoryStream(imageData))
+                {
+                    return Image.Load<Rgba32>(ms);
+                }
+            }
+        }
+        else if (File.Exists(path))
+        {
+            return Image.Load<Rgba32>(path);
+        }
+        else
+        {
+            throw new ArgumentException("Invalid image path provided.");
+        }
+    }
+
+    private static bool IsBase64String(string s)
+    {
+        // Check if the string is a Base64 Data URI
+        if (s.StartsWith("data:image", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        // Regular Base64 string validation, assuming it's a standard Base64 string
+        s = s.Trim();
+        return (s.Length % 4 == 0) && Convert.TryFromBase64String(s, new Span<byte>(new byte[s.Length]), out _);
+    }
+
+    private static bool IsUrl(string path)
+    {
+        return Uri.TryCreate(path, UriKind.Absolute, out Uri uriResult)
+               && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+    }
+
+    public async Task<List<SearchEngineResult>> SerperSearch(string query, string type = "global", int maxResults = 5)
+    {
+        var systemCfg = _systemService.GetSystemCfgs();
+        var apiKey = systemCfg.FirstOrDefault(x => x.CfgKey == "SerperApiKey").CfgValue;
+        var baseUrl = "https://google.serper.dev";
+        var client = new HttpClient();
+        var results = new List<SearchEngineResult>();
+        var request = default(HttpRequestMessage);
+        try
+        {
+            switch (type)
+            {
+                case "global":
+                    request = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/search");
+                    break;
+                case "scholar":
+                    return await SearchArxivAsync(query);
+                case "news":
+                    request = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/news");
+                    break;
+                case "image":
+                    request = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/images");
+                    break;
+                case "shopping":
+                    request = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/shopping");
+                    break;
+            }
+
+            request.Headers.Add("X-API-KEY", apiKey);
+            var content = new StringContent(
+                JsonSerializer.Serialize(new { q = query }),
+                Encoding.UTF8,
+                "application/json");
+            request.Content = content;
+
+            var response = await client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+
+            var jsonResponse = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+            if (type == "image")
+            {
+                // 处理图片搜索结果
+                var images = jsonResponse.RootElement.GetProperty("images");
+                foreach (var image in images.EnumerateArray())
+                {
+                    results.Add(new SearchEngineResult
+                    {
+                        Title = image.GetProperty("title").GetString(),
+                        Url = image.GetProperty("imageUrl").GetString()
+                    });
+                }
+            }
+            else
+            {
+                // 处理普通搜索结果
+                var key = "organic";
+                switch (type)
+                {
+                    case "global":
+                        key = "organic";
+                        break;
+                    case "news":
+                        key = "news";
+                        break;
+                    case "shopping":
+                        key = "shopping";
+                        break;
+                }
+
+                var organic = jsonResponse.RootElement.GetProperty(key);
+                foreach (var item in organic.EnumerateArray())
+                {
+                    results.Add(new SearchEngineResult
+                    {
+                        Title = item.GetProperty("title").GetString(),
+                        Url = item.GetProperty("link").GetString(),
+                        Snippet = key == "shopping"
+                            ? item.GetProperty("price").GetString()
+                            : item.GetProperty("snippet").GetString()
+                    });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+        }
+
+        return results;
+    }
+
+    public async Task<string> CreateSearchKeyWordByHistory(string question, List<Message> messages,
+        List<VisionChatMessage> visionChatMesssages,
+        string model)
+    {
+        string historyChat = messages != null
+            ? JsonConvert.SerializeObject(messages)
+            : JsonConvert.SerializeObject(visionChatMesssages);
+
+        string prompt = @$"
+                    # Role: Expert in generating keywords for search engines
+                    # Scenario: Generate keywords suitable for search engines based on user conversation records, understand the query requirements in the context of the problem
+                    # Limitation: Only return keywords, without any punctuation or spaces, no explanations or extra words needed
+                    # Language: Follow the conversation record
+                    # User's new reply: {question}
+                    # Conversation Record Json: {historyChat}";
+
+        AiChat aiChat = CreateAiChat(model, prompt, false, false, false, "");
+        APISetting apiSetting = CreateAPISetting(model);
+
+        string result = string.Empty;
+        int retryCount = 0;
+        const int maxRetries = 3;
+
+        while (retryCount < maxRetries)
+        {
+            try
+            {
+                result = await CallingAINotStream(aiChat, apiSetting);
+                if (!string.IsNullOrEmpty(result))
+                {
+                    return result; // Return if result is not empty
+                }
+            }
+            catch (Exception e)
+            {
+                await _systemService.WriteLog($"Error while calling AI: {e.Message}", Dtos.LogLevel.Error, "system");
+                throw; // Optionally rethrow the exception if you want to handle it outside
+            }
+
+            retryCount++;
+        }
+
+        return result; // Return the empty result if all retries failed
+    }
+
+    public async Task<List<SearchEngineResult>> SearchArxivAsync(string query, int maxResults = 20)
+    {
+        var results = new List<SearchEngineResult>();
+        try
+        {
+            var arxivUrl =
+                $"http://export.arxiv.org/api/query?search_query=all:{Uri.EscapeDataString(query)}&start=0&max_results={maxResults}";
+            var request = new HttpRequestMessage(HttpMethod.Get, arxivUrl);
+            var client = new HttpClient();
+            var arxivResponse = await client.SendAsync(request);
+            arxivResponse.EnsureSuccessStatusCode();
+
+            var xmlContent = await arxivResponse.Content.ReadAsStringAsync();
+            var xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(xmlContent);
+
+            var nsMgr = new XmlNamespaceManager(xmlDoc.NameTable);
+            nsMgr.AddNamespace("arxiv", "http://www.w3.org/2005/Atom");
+
+            var entries = xmlDoc.SelectNodes("//arxiv:entry", nsMgr);
+
+            if (entries != null)
+            {
+                foreach (XmlNode entry in entries)
+                {
+                    var title = entry.SelectSingleNode("arxiv:title", nsMgr)?.InnerText.Trim();
+                    var summary = entry.SelectSingleNode("arxiv:summary", nsMgr)?.InnerText.Trim();
+                    var pdfUrl = entry.SelectSingleNode("arxiv:id", nsMgr)?.InnerText.Trim();
+
+                    if (!string.IsNullOrEmpty(pdfUrl))
+                    {
+                        // 将arXiv ID转换为PDF链接
+                        pdfUrl = pdfUrl.Replace("abs", "pdf");
+                        if (!pdfUrl.EndsWith(".pdf"))
+                        {
+                            pdfUrl += ".pdf";
+                        }
+                    }
+
+                    results.Add(new SearchEngineResult
+                    {
+                        Title = title,
+                        Url = pdfUrl,
+                        Snippet = summary
+                    });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // 适当的错误处理
+            throw new Exception($"Arxiv search failed: {ex.Message}", ex);
+        }
+
+        return results;
+    }
+
+    public async Task<string> CreateSearchPrompt(string promptHeadle, List<Message> messages,
+        List<VisionChatMessage> visionChatMesssages,
+        string model)
+    {
+        if (string.IsNullOrEmpty(model))
+        {
+            var firstModel = _systemService.GetAImodel().FirstOrDefault();
+            model = firstModel?.ModelName;
+        }
+
+        string searchKeyWord =
+            await CreateSearchKeyWordByHistory(promptHeadle, messages, visionChatMesssages, model);
+        //去除标点和空格
+        searchKeyWord = !string.IsNullOrEmpty(searchKeyWord)
+            ? Regex.Replace(searchKeyWord, @"[^\w\s]", "")
+            : promptHeadle;
+        var webSearchRes = new List<SearchEngineResult>();
+        webSearchRes = await YahooSearch(searchKeyWord);
+        if (webSearchRes.Count == 0)
+            webSearchRes = await SerperSearch(searchKeyWord);
+        if (webSearchRes != null)
+        {
+            promptHeadle +=
+                @$"\n\n # You can refer to the following search engine results. In your response, please include the full link with the entire URL as a citation anywhere in the content.：
+                   \n\n {JsonConvert.SerializeObject(webSearchRes)}";
+        }
+
+        return promptHeadle;
+    }
+
+    public async Task<List<ModelTokenUsage>> GetTokenUsage(string filterType)
+    {
+        DateTime startDate = DetermineStartDate(filterType);
+
+        var query = _context.AImodels
+            .GroupJoin(
+                _context.UseUpLogs.Where(x => x.CreateTime >= startDate),
+                model => model.ModelName,
+                log => log.ModelName,
+                (model, logs) => new { Model = model, Logs = logs }
+            )
+            .SelectMany(
+                joinResult => joinResult.Logs.DefaultIfEmpty(),
+                (joinResult, log) => new { joinResult.Model, Log = log }
+            )
+            .GroupBy(
+                x => x.Model.ModelName,
+                (key, group) => new ModelTokenUsage
+                {
+                    ModelName = key,
+                    // 修复运算符优先级问题：先处理空值再除以1000
+                    TokenUsage = Math.Round(
+                        (group.Sum(x => x.Log == null ? 0m : x.Log.InputCount + x.Log.OutputCount) ?? 0m) / 1000m,
+                        2)
+                })
+            .Where(x => x.TokenUsage > 0m);
+
+        return await query.ToListAsync();
+    }
+
+    private DateTime DetermineStartDate(string filterType)
+    {
+        DateTime now = DateTime.Now;
+        return filterType switch
+        {
+            "year" => new DateTime(now.Year, 1, 1),
+            "month" => new DateTime(now.Year, now.Month, 1),
+            "week" => now.Date.AddDays(-(int)now.DayOfWeek),
+            _ => new DateTime(2022, 1, 1)
+        };
+    }
+
+    public async Task<List<SearchEngineResult>> YahooSearch(string query, int maxResults = 5)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            throw new ArgumentException("Query cannot be null or empty.", nameof(query));
+        }
+
+        if (maxResults <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maxResults), "maxResults must be greater than 0.");
+        }
+
+
+        // Encode the query
+        string encodedQuery = HttpUtility.UrlEncode(query);
+        string requestUrl = $"https://sg.search.yahoo.com/search?p={encodedQuery}&ei=UTF-8";
+
+        using (HttpClient client = new HttpClient())
+        {
+            // client.DefaultRequestHeaders.Add("Host", "sg.search.yahoo.com");
+            // client.DefaultRequestHeaders.Add("Connection", "keep-alive");
+            // client.DefaultRequestHeaders.Add("User-Agent",
+            //     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:107.0) Gecko/20100101 Firefox/107.0");
+            // client.DefaultRequestHeaders.Add("Accept",
+            //     "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8");
+            // client.DefaultRequestHeaders.Add("Accept-Language",
+            //     "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2");
+
+            try
+            {
+                // Make the request
+                string response = await client.GetStringAsync(requestUrl);
+                MatchCollection titleMatches =
+                    Regex.Matches(response, "aria-label=\"([^\"]*)\"", RegexOptions.IgnoreCase);
+                MatchCollection contentMatches = Regex.Matches(response,
+                    "<span class=\"\\s*fc-falcon\\s*\"[^>]*>(.*?)</span>",
+                    RegexOptions.IgnoreCase | RegexOptions.Singleline);
+                MatchCollection urlMatches = Regex.Matches(response,
+                    "<a[^>]*class=\"[^\"]*d-ib fz-20 lh-26[^\"]*\"[^>]*href=\"(https?:\\/\\/[^\\s\"]+)\"[^>]*>",
+                    RegexOptions.IgnoreCase);
+
+
+                // Create a list to store the results
+                List<SearchEngineResult> results = new List<SearchEngineResult>();
+
+                // Combine the matches into SearchEngineResult objects
+                int count = Math.Min(maxResults,
+                    Math.Min(titleMatches.Count,
+                        Math.Min(contentMatches.Count,
+                            urlMatches.Count))); //Important: Handle cases where counts differ
+                for (int i = 0; i < count; i++)
+                {
+                    string title = titleMatches[i].Groups[1].Value;
+                    string snippet = Regex.Replace(contentMatches[i].Groups[1].Value, "<.*?>", ""); // Remove HTML tags
+                    string url = urlMatches[i].Groups[1].Value;
+
+                    results.Add(new SearchEngineResult
+                    {
+                        Title = title,
+                        Url = url,
+                        Snippet = snippet
+                    });
+                }
+
+                return results;
+            }
+            catch (HttpRequestException ex)
+            {
+                await _systemService.WriteLog($"Error during Yahoo search: {ex.Message}", Dtos.LogLevel.Error,
+                    "system");
+                return new List<SearchEngineResult>();
+            }
+            catch (RegexMatchTimeoutException ex) // Catch timeout exceptions during Regex
+            {
+                await _systemService.WriteLog($"Regex timeout during Yahoo search: {ex.Message}", Dtos.LogLevel.Error,
+                    "system");
+                return new List<SearchEngineResult>();
+            }
+            catch (Exception ex) // Catch other exceptions
+            {
+                await _systemService.WriteLog($"An unexpected error: {ex.Message}", Dtos.LogLevel.Error,
+                    "system");
+                return new List<SearchEngineResult>();
+            }
+        }
     }
 }

@@ -1,0 +1,637 @@
+﻿.cover-upload {
+    border: 1px dashed #ced4da;
+    border-radius: .25rem;
+    text-align: center;
+    cursor: pointer;
+    width: 25%;
+    padding-top: 35%;
+    position: relative;
+    overflow: hidden;
+    margin: 0 auto;
+}
+
+.cover-upload img {
+    max-height: none;
+    object-fit: cover;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+}
+
+.container-fluid {
+    height: calc(100vh - 60px)
+}
+
+.sidebarwriter,
+.editor-area,
+.book-info,
+.chapter-list {
+    height: 100%;
+    overflow-y: auto;
+}
+
+.sidebarwriter {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+    position: relative;
+}
+
+.chat-box {
+    display: flex;
+    flex-direction: column;
+    height: calc(100% - 60px);
+    overflow-y: auto;
+    padding-bottom: 60px;
+}
+
+.message {
+    margin-bottom: 10px; /* 减小消息间距 */
+    display: flex;
+    align-items: center; /* 头像和对话框顶部对齐 */
+    word-wrap: break-word;
+    width: 95%;
+}
+
+.message svg {
+    width: 15px;
+    cursor: pointer;
+}
+
+.message.ai {
+    justify-content: flex-start;
+}
+
+.message.user {
+    justify-content: flex-end;
+}
+
+.message .bubble {
+    padding: 8px 12px 10px 12px; /* 减小内边距 */
+    border-radius: 5px; /* 减小圆角 */
+    max-width: 95%;
+    font-family: Arial, sans-serif; /* 使用更正式的字体 */
+    font-size: 14px; /* 减小字体大小 */
+    line-height: 1.3; /* 调整行高 */
+}
+
+.message.ai .bubble {
+    background-color: #f2f2f2; /* 使用浅灰色 */
+    border: 1px solid #ddd; /* 添加边框 */
+    border-top-left-radius: 0;
+}
+
+.message.user .bubble {
+    background-color: #e8f0fe; /* 使用淡蓝色 */
+    border: 1px solid #cce0f5;
+    border-top-right-radius: 0;
+}
+
+.message pre {
+    margin: 0;
+    font-family: inherit;
+    white-space: pre-wrap;
+    background-color: transparent;
+    color: #333;
+    font-size: 15px;
+    overflow: scroll;
+    flex-grow: 1;
+    display: inline;
+    -ms-overflow-style: -ms-autohiding-scrollbar;
+}
+
+.chat-input-area {
+    display: flex;
+    align-items: center;
+    padding: 0;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px;
+}
+
+.chat-input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-right: 5px;
+    resize: none; /* 禁用手动调整大小 */
+    min-height: 42px; /* 设置最小高度 */
+    max-height: 200px;
+    outline: none;
+}
+
+.chat-send-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    margin-left: 5px;
+}
+
+.chat-send-button.danger {
+    background-color: orangered;
+}
+
+.editor-area {
+    padding: 20px;
+    height: 100%;
+    border: 1px solid #ccc;
+    /* 保留 editor-area 的边框 */
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    position: relative;
+    /* 确保内边距不会增加元素的大小 */
+}
+
+#overlay {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#editor {
+    flex-grow: 1;
+    width: 100%;
+    height: 100%;
+    border: none;
+    /* 移除 textarea 的边框 */
+    padding: 10px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    resize: none;
+    font-family: sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    outline: none;
+    /* 移除 focus 时的边框 */
+}
+
+.book-info {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.chapter-list {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+}
+
+.remove-tag {
+    margin-left: 5px;
+    cursor: pointer;
+}
+
+.newbtn {
+    border: none;
+    border-radius: 5px;
+    font-size: 10px;
+    padding: 5px;
+    background-color: blueviolet;
+    color: white;
+}
+
+.newbtn:hover {
+    background-color: #6506bc;
+}
+
+.chapter-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    border-radius: 5px;
+    padding: 5px;
+    border-bottom: 1px solid #ddd;
+    margin-top: 5px;
+}
+
+.chapter-item.active {
+    background-color: #e8e4e4;
+    border-left: 2px solid #007bff;
+}
+
+/* 悬停效果 */
+.chapter-item:hover {
+    background-color: #e8e4e4;
+}
+
+/* 初始化为隐藏状态 */
+.chapter-delete {
+    display: none;
+    color: orangered;
+    margin-left: 10px;
+}
+
+.chapter-selected {
+    color: darkgreen;
+    margin-left: 10px;
+}
+
+/* 悬停时显示删除按钮 */
+.chapter-item:hover .chapter-delete {
+    display: inline;
+}
+
+/* 设置每个段落的样式 */
+.chapter-seq,
+.chapter-wordcount {
+    margin-right: 15px;
+}
+
+.chapter-title {
+    margin-right: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
+/* 布局容器，确保删除按钮在右侧 */
+.chapter-content {
+    display: flex;
+    flex-grow: 1;
+    align-items: center;
+}
+
+#orderBy {
+    cursor: pointer;
+}
+
+.icon {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    vertical-align: middle;
+}
+
+.icon-360 {
+    background-image: url('../images/modelsvg/360.svg');
+}
+
+.icon-bing {
+    background-image: url('../images/modelsvg/bing.svg');
+}
+
+.icon-claude {
+    background-image: url('../images/modelsvg/claude.svg');
+}
+
+.icon-deepseek {
+    background-image: url('../images/modelsvg/deepseek.svg');
+}
+
+.icon-ernie {
+    background-image: url('../images/modelsvg/ernie.svg');
+}
+
+.icon-gemini {
+    background-image: url('../images/modelsvg/gemini.svg');
+}
+
+.icon-glm {
+    background-image: url('../images/modelsvg/glm.svg');
+}
+
+.icon-gpt {
+    background-image: url('../images/modelsvg/gpt.svg');
+}
+
+.icon-hunyuan {
+    background-image: url('../images/modelsvg/hunyuan.svg');
+}
+
+.icon-llama {
+    background-image: url('../images/modelsvg/llama.svg');
+}
+
+.icon-minimax {
+    background-image: url('../images/modelsvg/minimax.svg');
+}
+
+.icon-mistral {
+    background-image: url('../images/modelsvg/mistral.svg');
+}
+
+.icon-moonshot {
+    background-image: url('../images/modelsvg/moonshot.svg');
+}
+
+.icon-qwen {
+    background-image: url('../images/modelsvg/qwen.svg');
+}
+
+.icon-sparkdesk {
+    background-image: url('../images/modelsvg/sparkdesk.svg');
+}
+
+.icon-suno {
+    background-image: url('../images/modelsvg/suno.svg');
+}
+
+.icon-cohere {
+    background-image: url('../images/modelsvg/cohere.svg');
+}
+
+.icon-internlm {
+    background-image: url('../images/modelsvg/internlm.svg');
+}
+
+.icon-yi {
+    background-image: url('../images/modelsvg/yi.svg');
+}
+
+.icon-xai {
+    background-image: url('../images/modelsvg/xai.svg');
+}
+
+.icon-doubao {
+    background-image: url('../images/modelsvg/doubao.png');
+}
+
+.icon-amazon {
+    background-image: url('../images/modelsvg/amazon.svg');
+}
+
+#modelSearch {
+    width: 0;
+    transition: width 0.3s;
+}
+
+#modelSearch.expand {
+    width: 100%;
+}
+
+#chapterList {
+    overflow-y: scroll;
+    height: 400px;
+}
+
+#Tips {
+    background-color: white;
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+#quoteButton {
+    display: none;
+    position: absolute;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    z-index: 10;
+}
+
+code {
+    border-radius: 5px;
+}
+
+.chatbtns {
+    display: inline;
+    color: rgb(135, 136, 154);
+    cursor: pointer;
+    width: 15px;
+    margin-right: 10px;
+}
+
+.delete-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background-color: rgba(255, 255, 255, 0.7);
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.custom-confirm-delete-1 {
+    position: absolute;
+    z-index: 1000;
+    margin-top: 10px;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 0.3s, transform 0.3s;
+    pointer-events: none;
+}
+
+.custom-confirm-delete-1.custom-show-1 {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.custom-confirm-delete-content-1 {
+    position: relative;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.custom-confirm-delete-arrow-1 {
+    position: absolute;
+    top: -6px;
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-left: 1px solid #ddd;
+    border-top: 1px solid #ddd;
+    transform: rotate(45deg);
+}
+
+.custom-confirm-delete-1 p {
+    margin-bottom: 10px;
+}
+
+.chatgroup-masked {
+    position: relative;
+    padding: 15px;
+}
+
+.chatgroup-masked::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+    z-index: 1;
+}
+
+.chatgroup-masked-content,
+.chatgroup-masked-buttons {
+    position: relative;
+    z-index: 2;
+}
+
+.chatgroup-masked-content {
+    color: white;
+    font-size: 24px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.chatgroup-masked-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.chapter-select-container {
+    position: absolute;
+    bottom: 60px; /* Adjust this based on chat-input-area height */
+    left: 10px; /* Align with the left padding of chat-input-area */
+    width: calc(100% - 20px); /* Adjust for padding of chat-input-area */
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    display: none;
+    z-index: 1000;
+    background-color: white;
+}
+
+.chapter-select-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.chapter-select-item {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid #ced4da;
+}
+
+.chapter-select-item:hover {
+    background-color: #f8f9fa;
+}
+
+.role-select-container {
+    position: absolute;
+    bottom: 60px; /* Adjust this based on chat-input-area height */
+    left: 10px; /* Align with the left padding of chat-input-area */
+    width: calc(100% - 20px); /* Adjust for padding of chat-input-area */
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    display: none;
+    z-index: 1000;
+    background-color: white;
+}
+
+.role-select-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.role-item.selected {
+    background-color: #e0f7fa; /* Light blue background, adjust as needed */
+    border: 2px solid #4dd0e1; /* Light blue border, adjust as needed */
+}
+
+/* Style for the checkmark */
+.role-selected {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    color: #4dd0e1; /* Light blue, adjust as needed */
+}
+
+.role-avatar {
+    width: 50px;
+    height: 50px;
+    margin-right: 10px;
+}
+
+.role-content {
+    display: flex;
+    align-items: center; /* Vertically center items */
+    padding: 10px;
+    border-bottom: 1px solid #ddd; /* Add a subtle bottom border */
+}
+
+.role-details {
+    flex-grow: 1; /* Allow details to take up remaining space */
+}
+
+.role-name {
+    font-weight: bold;
+}
+
+.role-info {
+    font-size: 0.9em;
+    color: #666;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Show only 2 lines */
+    -webkit-box-orient: vertical;
+}
+
+.role-item {
+    position: relative; /*  make position */
+    cursor: pointer;
+}
+
+.role-item:hover {
+    background-color: #f8f9fa;
+}
+
+#selectedChaptersBadge {
+    cursor: pointer;
+}
+
+.role-avatar-tip {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.close-button {
+    position: absolute;
+    top: 5px; /* 根据需要调整位置 */
+    right: 5px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #999;
+    line-height: 1; /* 垂直居中 'x' */
+}
+
+.close-button:hover {
+    color: #333;
+}

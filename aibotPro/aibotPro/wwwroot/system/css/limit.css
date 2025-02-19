@@ -1,0 +1,11 @@
+﻿.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    color: black !important;
+}
+
+.select2-container--default .select2-search--inline .select2-search__field {
+    line-height: 18px !important;
+}
+
+.select2-container--default .select2-selection--multipl {
+    padding: 0 !important;
+}

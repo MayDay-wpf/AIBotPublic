@@ -1,0 +1,146 @@
+﻿
+#Q {
+    overflow-y: auto;
+    min-height: 38px;
+    max-height: 200px;
+    border-radius: 5px;
+}
+
+#sendBtn {
+    padding: 0;
+}
+
+
+
+/* 对话容器 */
+.aicanver-chat-container {
+    padding: 15px;
+    height: 100%;
+    overflow-y: auto;
+}
+
+/* 消息通用样式 */
+.aicanver-message {
+    max-width: 100%;
+    padding: 8px 12px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    word-wrap: break-word;
+}
+
+/* AI消息样式 */
+.aicanver-ai-message {
+    background-color: #f5f5f5;
+    margin-right: auto;
+}
+
+html.dark .aicanver-ai-message {
+    background-color: #363d47;
+    color: aliceblue;
+}
+
+/* 用户消息样式 */
+.aicanver-user-message {
+    background-color: #007bff;
+    color: white;
+    margin-left: auto;
+}
+
+.aicanver-message pre {
+    margin: 0;
+    font-family: inherit;
+    white-space: pre-wrap;
+    background-color: transparent;
+    font-size: 15px;
+    /*    overflow: scroll;*/
+    flex-grow: 1;
+    display: inline;
+    -ms-overflow-style: -ms-autohiding-scrollbar;
+}
+
+.editor-toolbar {
+    background: #1e1e1e;
+    border-bottom: 1px solid #333;
+}
+
+#language-select {
+    background: #2d2d2d;
+    color: #fff;
+    border: 1px solid #444;
+}
+
+#editor-container {
+    position: relative;
+}
+
+.modified-code {
+    background-color: rgba(255, 0, 0, 0.2) !important;
+    border-radius: 3px !important;
+}
+
+html.dark .modified-code {
+    background-color: rgb(225, 20, 15, 0.50) !important;
+    border-radius: 3px !important;
+}
+
+.aicoder {
+    /* 基础样式 */
+    padding: .437rem 1rem;
+    border: none;
+    border-radius: 5px;
+    font-size: 15px;
+    cursor: pointer;
+    color: #fff;
+    /* 渐变背景 */
+    background: linear-gradient( 45deg, #2196f3, #e91e63 );
+    /* hover过渡效果 */
+    background-size: 200% auto;
+    transition: 0.3s ease;
+    /* 投影 */
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+    outline: none;
+    display: inline-block;
+    font-weight: 400;
+    text-align: center;
+    vertical-align: middle;
+    user-select: none;
+}
+
+    /* 去除聚焦时的边框 */
+    .aicoder:focus {
+        outline: none;
+        box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+    }
+
+    /* 点击时的样式 */
+    .aicoder:active {
+        transform: translateY(1px);
+    }
+
+    /* hover效果 */
+    .aicoder:hover {
+        background-position: right center;
+        box-shadow: 0 5px 15px rgba(233, 30, 99, 0.4);
+    }
+
+    .aicoder.active {
+        background: linear-gradient( 45deg, #f44336, #ff9800 );
+    }
+
+
+/* 深色模式适配 */
+html.dark .aicoder {
+    background: linear-gradient( 45deg, #90caf9, #f48fb1 );
+}
+
+    html.dark .aicoder.active {
+        background: linear-gradient( 45deg, #ef9a9a, #ffcc80 );
+    }
+
+
+/* 移动端隐藏 */
+@media (max-width: 768px) {
+    .aicoder {
+        display: none;
+    }
+}

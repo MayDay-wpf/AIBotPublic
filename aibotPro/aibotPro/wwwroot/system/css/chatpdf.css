@@ -23,6 +23,28 @@
     border-radius: 10px;
 }
 
+.pdf-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    color: #ccc;
+    text-align: center;
+    user-select: none; /* 防止文本被选中 */
+    -webkit-user-select: none; /* Safari 支持 */
+    -moz-user-select: none; /* Firefox 支持 */
+    -ms-user-select: none; /* IE/Edge 支持 */
+}
+
+.pdf-placeholder i {
+    font-size: 48px;
+    margin-bottom: 10px;
+}
 #Q {
     resize: none;
     overflow-y: auto;
@@ -142,3 +164,9 @@
     #pageList .dropdown-item {
         margin-left: 0;
     }
+
+.camera-icon {
+    width: 24px !important;
+    height: 24px !important;
+    vertical-align: middle;
+}

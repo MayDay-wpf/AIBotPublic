@@ -7,10 +7,14 @@ namespace aibotPro.Service
     public class RoleService : IRoleService
     {
         private readonly AIBotProContext _context;
-        public RoleService(AIBotProContext context)
+        private readonly IAdminsService _adminService;
+
+        public RoleService(AIBotProContext context, IAdminsService adminService)
         {
             _context = context;
+            _adminService = adminService;
         }
+
         public bool SaveRole(string account, RoleSettingDto roleSetting, out string errormsg)
         {
             errormsg = string.Empty;
@@ -22,6 +26,7 @@ namespace aibotPro.Service
                 var oldrolechat = _context.RoleChats.Where(c => c.RoleChatCode == roleSetting.RoleChatCode).ToList();
                 _context.RoleChats.RemoveRange(oldrolechat);
             }
+
             string roleCode = Guid.NewGuid().ToString("N");
             //保存角色设置
             var role = new RoleSetting();
@@ -46,6 +51,7 @@ namespace aibotPro.Service
                     _context.RoleChats.Add(roleChat);
                 }
             }
+
             if (_context.SaveChanges() > 0)
             {
                 errormsg = "保存成功";
@@ -56,8 +62,8 @@ namespace aibotPro.Service
                 errormsg = "保存失败";
                 return false;
             }
-
         }
+
         public List<RoleSetting> GetRoleList(int page, int pageSize, string name, out int total)
         {
             // 利用IQueryable延迟执行，直到真正需要数据的时候才去数据库查询
@@ -74,12 +80,13 @@ namespace aibotPro.Service
 
             // 然后添加分页逻辑，此处同样是构建查询，没有执行
             var roleSettings = query.OrderBy(x => x.CreateTime) // 这里可以根据需要替换为合适的排序字段
-                                .Skip((page - 1) * pageSize)
-                                .Take(pageSize)
-                                .ToList(); // 直到调用ToList，查询才真正执行
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList(); // 直到调用ToList，查询才真正执行
 
             return roleSettings;
         }
+
         public RoleSettingDto GetRole(string roleCode)
         {
             //获取角色
@@ -106,6 +113,7 @@ namespace aibotPro.Service
                         roleSetting.RoleChat.Add(roleChat);
                     }
                 }
+
                 return roleSetting;
             }
             else
@@ -113,18 +121,54 @@ namespace aibotPro.Service
                 return null;
             }
         }
+
         public bool DelRole(string account, string roleCode, out string errormsg)
         {
             errormsg = string.Empty;
-            var role = _context.RoleSettings.Where(r => r.RoleCode == roleCode && r.Account == account).FirstOrDefault();
-            if (role == null)
+
+            // 检查是否是管理员。
+            bool isAdmin = _adminService.IsAdmin(account);
+
+            // 根据是否是管理员，构建不同的查询条件。
+            IQueryable<RoleSetting> query; // 使用 IQueryable 来延迟查询
+            if (isAdmin)
+            {
+                query = _context.RoleSettings.Where(r => r.RoleCode == roleCode);
+            }
+            else
+            {
+                query = _context.RoleSettings.Where(r => r.RoleCode == roleCode && r.Account == account);
+            }
+
+
+            var role = query.FirstOrDefault();
+
+            if (role == null && !isAdmin)
             {
                 errormsg = "角色不存在或用户无删除权限";
                 return false;
             }
-            var rolechat = _context.RoleChats.Where(c => c.RoleChatCode == role.RoleChatCode).ToList();
-            _context.RoleSettings.Remove(role);
-            _context.RoleChats.RemoveRange(rolechat);
+
+
+            if (role != null)
+            {
+                var rolechat = _context.RoleChats.Where(c => c.RoleChatCode == role.RoleChatCode);
+                _context.RoleChats.RemoveRange(rolechat);
+                _context.RoleSettings.Remove(role);
+            }
+
+            if (isAdmin)
+            {
+                var remainingRoles = _context.RoleSettings.Where(r => r.RoleCode == roleCode).ToList(); // 立即执行查询
+                foreach (var remainingRole in remainingRoles)
+                {
+                    var remainingRoleChats =
+                        _context.RoleChats.Where(c => c.RoleChatCode == remainingRole.RoleChatCode);
+                    _context.RoleChats.RemoveRange(remainingRoleChats);
+                    _context.RoleSettings.Remove(remainingRole);
+                }
+            }
+
             _context.SaveChanges();
             return true;
         }

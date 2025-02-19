@@ -687,7 +687,15 @@ $Q.on('keydown', function (e) {
     }
 });
 
-
+$Q.on('paste', function (event) {
+    for (var i = 0; i < event.originalEvent.clipboardData.items.length; i++) {
+        var item = event.originalEvent.clipboardData.items[i];
+        if (item.kind === 'file') {
+            var blob = item.getAsFile();
+            handleFileUpload(blob);
+        }
+    }
+});
 
 
 
@@ -804,6 +812,7 @@ connection.on('ReceiveMessage', function (message) {
     if (!message.isfinish) {
         if (jishuqi == 0) {
             chatid = message.chatid;
+            ClearImg();
         } else {
             if (message.message != null) {
                 stopTimer(`#${assistansBoxId}_timer_first`);
@@ -963,6 +972,13 @@ function sendMsg(retryCount = 3) {
         });
     }
     $("#" + msgid_u).text(msg);
+    if (image_path.length > 0) {
+        image_path.forEach(function (path) {
+            if (path != "") {
+                $("#" + msgid_u).append(`<br /><img src="${path.replace("wwwroot", "")}" style="max-width:50%" />`);
+            }
+        });
+    }
     applyMagnificPopup("#" + msgid_u);
     initImageFolding("#" + msgid_u);
     var gpthtml = `<div class="chat-message" data-group="${chatgroupid}">
@@ -1064,21 +1080,66 @@ function autoResizeTextarea() {
 //重试
 function tryAgain(id) {
     var $elem = $("#" + id);
-    $Q.val($elem.text());
+    // 检查是否存在<img>标签
+    if ($elem.find("img").length > 0) {
+        // 如果存在，遍历所有找到的<img>标签
+        $elem.find("img").each(function () {
+            // 为每个<img>标签提取src属性
+            var imgSrc = $(this).attr("src");
+            if (isURL(imgSrc))
+                image_path.push(imgSrc);
+            else
+                image_path.push("wwwroot" + imgSrc);
+            $Q.val($elem.text());
+        });
+        reviewImg(image_path);
+    } else {
+        $Q.val($elem.text());
+    }
     sendMsg();
 }
 
 //编辑
 function editChat(id) {
     var $elem = $("#" + id);
-    $Q.val($elem.text());
+    // 检查是否存在<img>标签
+    if ($elem.find("img").length > 0) {
+        // 如果存在，遍历所有找到的<img>标签
+        $elem.find("img").each(function () {
+            // 为每个<img>标签提取src属性
+            var imgSrc = $(this).attr("src");
+            if (isURL(imgSrc))
+                image_path.push(imgSrc);
+            else
+                image_path.push("wwwroot" + imgSrc);
+            $Q.val($elem.text());
+        });
+        reviewImg(image_path);
+    } else {
+        $Q.val($elem.text());
+    }
     autoResizeTextarea();
 }
 
 //引用
 function quote(id) {
     var $elem = $("#" + id);
-    $Q.val("回复： " + $elem.text() + "\n\n");
+    // 检查是否存在<img>标签
+    if ($elem.find("img").length > 0) {
+        // 如果存在，遍历所有找到的<img>标签
+        $elem.find("img").each(function () {
+            // 为每个<img>标签提取src属性
+            var imgSrc = $(this).attr("src");
+            if (isURL(imgSrc))
+                image_path.push(imgSrc);
+            else
+                image_path.push("wwwroot" + imgSrc);
+            $Q.val("回复：" + $elem.text());
+        });
+        reviewImg(image_path);
+    } else {
+        $Q.val("回复： " + $elem.text() + "\n\n");
+    }
     $Q.focus();
     autoResizeTextarea();
 }
@@ -1212,4 +1273,187 @@ function copyAll(id) {
     document.execCommand('copy'); // 执行复制操作
     tempTextArea.remove(); // 移除临时创建的 textarea
     balert("复制成功", "success", false, 1000, "top");
+}
+
+//调起摄像头&相册
+function showCameraMenu() {
+    $("#cameraModel").modal('show');
+    if (image_path.length > 0) {
+        reviewImg(image_path);
+    }
+}
+
+//图片上传
+$('body').on('click', '.popup-item', function () {
+    var type = $(this).data('type');
+    var $fileInput = $('#uploadImg');
+    if (type == "camera") {
+        $fileInput.attr('capture', 'environment');
+        $fileInput.click();
+    } else if (type == "upload") {
+        $fileInput.removeAttr("capture");
+        $fileInput.click();
+    }
+});
+
+$("#uploadImg").on('change', function (e) {
+    var destroyAlert = balert(`<i data-feather="loader" style="width:20px;"></i> 正在上传...`, "info", false, 0, "center");
+    uploadIMGFile(e.target.files[0], destroyAlert);
+});
+
+function uploadIMGFile(file, destroyAlert) {
+    if (image_path.length >= 4) {
+        destroyAlert();
+        balert("最多只能上传4张图片", "warning", false, 2000, "center");
+        return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+        destroyAlert();
+        balert("请选择图片文件", "warning", false, 2000, "center");
+        return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+        destroyAlert();
+        balert("图片文件大小不能超过5M", "warning", false, 2000, "center");
+        return;
+    }
+
+    var formData = new FormData();
+    formData.append("file", file);
+    formData.append("thisAiModel", thisAiModel);
+    feather.replace();
+
+    $.ajax({
+        url: "/Home/SaveImg",
+        type: "post",
+        data: formData,
+        contentType: false,
+        processData: false,
+        success: function (res) {
+            destroyAlert();
+            if (res.success) {
+                // 检查是否已存在相同路径的图片
+                if (!image_path.includes(res.data)) {
+                    image_path.push(res.data);
+                    balert("上传成功", "success", false, 800, "center");
+                }
+                reviewImg(image_path);
+            } else {
+                ClearImg();
+            }
+        },
+        error: function (e) {
+            sendok = true;
+            console.log("失败" + e);
+        }
+    });
+}
+
+//预览图片
+function reviewImg(paths) {
+    $('.preview-img').attr('src', '');
+    $('.img-container').hide();
+    let uniquePaths = [...new Set(paths)]; // 去重
+    image_path = uniquePaths;
+    for (let i = 0; i < uniquePaths.length && i < 4; i++) {
+        $('.preview-img').eq(i).attr('src', uniquePaths[i].replace("wwwroot", ""));
+        $('.img-container').eq(i).show();
+    }
+    applyMagnificPopup('.img-container');
+    $('.imgViewBox').show();
+    updateRedDot(uniquePaths.length)
+}
+
+
+//更新红点数字或隐藏
+function updateRedDot(num) {
+    var imageCount = $("#imageCount");
+    if (num > 0) {
+        imageCount.text(num);
+        imageCount.show();
+    } else {
+        imageCount.hide();
+    }
+}
+
+// 清除图片
+function ClearImg() {
+    image_path = [];
+    var $img = $('.preview-img');
+    $img.attr('src', '').removeClass('magnified');
+    if ($img.parent().is('a')) {
+        $img.unwrap();
+    }
+    $('.img-container').hide();
+    $('.imgViewBox').hide();
+    updateRedDot(0);
+}
+
+// 删除单个图片
+function deleteImage(index) {
+    let uniquePaths = [...new Set(image_path)]; // 去重
+    let deletedPath = uniquePaths[index];
+    image_path = image_path.filter(path => path !== deletedPath);
+    reviewImg(image_path);
+    if (image_path.length === 0) {
+        $('.imgViewBox').hide();
+    }
+}
+
+// 添加事件监听器
+$(document).ready(function () {
+    $('.delete-btn').on('click', function () {
+        var index = $(this).parent().index();
+        deleteImage(index);
+    });
+    $('#loadMoreBtn').on('click', function () {
+        loadingBtn("#loadMoreBtn");
+        getFiles('loadmore');
+    });
+});
+
+function dataURLtoFile(dataurl, filename) {
+    var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1], bstr = atob(arr[1]), n = bstr.length,
+        u8arr = new Uint8Array(n);
+    while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+}
+
+// 阻止浏览器默认行为
+$(document).on({
+    dragenter: function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+    }, dragover: function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+    }, drop: function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        var files = e.originalEvent.dataTransfer.files;
+        handleDroppedFiles(files);
+    }
+});
+
+function handleDroppedFiles(files) {
+    for (var i = 0; i < files.length; i++) {
+        handleFileUpload(files[i]);
+    }
+}
+
+function handleFileUpload(file) {
+    var reader = new FileReader();
+
+    if (/image/.test(file.type)) {
+        reader.onload = function (event) {
+            var base64 = event.target.result;
+            var imageFile = dataURLtoFile(base64, "clipboard_image-" + new Date().toISOString() + ".png");
+            var destroyAlert = balert(`<i data-feather="loader" style="width:20px;"></i> 正在上传...`, "info", false, 0, "center");
+            uploadIMGFile(imageFile, destroyAlert);
+        };
+        reader.readAsDataURL(file);
+    }
 }

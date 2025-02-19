@@ -1,0 +1,33 @@
+﻿@{
+    ViewData["Title"] = "AI作家（Writer）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/system/css/aibook.css" rel="stylesheet" />
+<div class="header">
+    <div class="header-left d-flex align-items-center">
+        <a id="menuMain" href="#" class="burger-menu">
+            <i data-feather="menu"></i>
+        </a>
+        <a id="menuBack" href="#" class="burger-menu d-none">
+            <i data-feather="arrow-left"></i>
+        </a>
+        <a href="/AiBook/CreateNewBook" class="btn btn-success ml-2">
+            <i class="fas fa-plus-circle"></i> 创建新书
+        </a>
+        <div class="header-search">
+            <i data-feather="search">
+            </i>
+            <input type="search" class="form-control" placeholder="输入关键词，回车搜索" id="searchKey">
+        </div>
+    </div>
+</div>
+<div class="book-list" id="bookList">
+    <!-- Book cards will be loaded here -->
+</div>
+
+<nav aria-label="Page navigation">
+    <ul class="pagination" id="pagination">
+        <!-- Pagination links will be loaded here -->
+    </ul>
+</nav>
+<script src="~/system/js/aibook/aibook.js"></script>

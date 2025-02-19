@@ -331,6 +331,23 @@ public class UsersController : Controller
         var errormsg = string.Empty;
         var errorCountKey = $"{account}_passwordErrorCount";
         var errorCount = 0;
+        var lockedKey = "lockedaccount_" + account;
+        var lockedTime = await _redis.GetAsync(lockedKey);
+        if (!string.IsNullOrEmpty(lockedTime))
+        {
+            //查询解锁时间
+            var lockDateTime = DateTime.Parse(lockedTime);
+            var timeSpan = (lockDateTime.AddMinutes(30) - DateTime.Now);
+            if (timeSpan.TotalMinutes > 0)
+            {
+                var minutes = Math.Floor(timeSpan.TotalMinutes);
+                var seconds = timeSpan.Seconds;
+                errormsg = minutes > 0
+                    ? $"账号已被锁定,请{minutes}分{seconds}秒后再试"
+                    : $"账号已被锁定,请{seconds}秒后再试";
+                return Json(new { success = false, msg = errormsg, errorCount });
+            }
+        }
         if (!string.IsNullOrEmpty(await _redis.GetAsync(errorCountKey)))
             errorCount = Convert.ToInt32(await _redis.GetAsync(errorCountKey));
         if (string.IsNullOrEmpty(account))
@@ -360,6 +377,14 @@ public class UsersController : Controller
         if (errorCount >= 3 && !await _usersService.CheckCodeImage("", checkCode, codekey))
         {
             errormsg = "验证码错误";
+            return Json(new { success = false, msg = errormsg, errorCount });
+        }
+        if (errorCount >= 5)
+        {
+            //账号被锁定30分钟，写入redis
+            await _redis.SetAsync("lockedaccount_" + account, DateTime.Now.ToString(), TimeSpan.FromMinutes(30));
+            errormsg = "连续密码错误多次，账号已被锁定30分钟";
+            await _redis.DeleteAsync(errorCountKey);
             return Json(new { success = false, msg = errormsg, errorCount });
         }
 
@@ -432,6 +457,10 @@ public class UsersController : Controller
         if (!await _usersService.CheckCodeImage("", checkCode, codekey))
             return Json(new { success = false, msg = "验证码错误" });
         var user = _context.Users.AsNoTracking().Where(x => x.Account == toemail).FirstOrDefault();
+        if (user.IsBan == 1)
+        {
+            return Json(new { success = false, msg = "账号已被禁用" });
+        }
         if (user == null)
             return Json(new
             {
@@ -634,7 +663,128 @@ public class UsersController : Controller
             msg = "不是VIP"
         });
     }
+    [Authorize]
+    [HttpPost]
+    public async Task<IActionResult> VipToBalance(int days)
+    {
+        // 验证JWT并获取用户名
+        var username = _jwtTokenManager
+            .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
 
+        if (string.IsNullOrEmpty(username))
+        {
+            return Json(new
+            {
+                success = false,
+                msg = "账号异常"
+            });
+        }
+
+        // 检查用户是否为VIP用户并获取VIP数据
+        var isVip = await _financeService.IsVip(username);
+        if (!isVip)
+        {
+            return Json(new
+            {
+                success = false,
+                msg = "非VIP用户，无法兑换"
+            });
+        }
+
+        // 获取用户的VIP数据，按过期时间倒序排列
+        var vipData = await _financeService.GetVipData(username);
+        vipData = vipData.OrderByDescending(x => x.EndTime).ToList();
+
+        // 验证是否有VIP数据
+        if (!vipData.Any())
+        {
+            return Json(new
+            {
+                success = false,
+                msg = "无有效的VIP数据"
+            });
+        }
+
+        // 获取最新的VIP信息
+        var latestVip = vipData.FirstOrDefault();
+        var vipEndDate = latestVip?.EndTime;
+        var vipType = latestVip?.VipType;
+
+        if (vipEndDate == null || days <= 0)
+        {
+            return Json(new
+            {
+                success = false,
+                msg = "无法进行兑换，提供的天数无效"
+            });
+        }
+
+        // 计算剩余的VIP天数
+        int daysRemaining = (int)Math.Ceiling((vipEndDate.Value - DateTime.UtcNow).TotalDays);
+
+        if (days > daysRemaining)
+        {
+            return Json(new
+            {
+                success = false,
+                msg = "可兑换的天数不足"
+            });
+        }
+
+        // 从VipType中解析出价格
+        decimal vipPrice = GetVipPriceFromType(vipType);
+        decimal ratePerDay = vipPrice / 30;
+        decimal balanceToAdd = days * ratePerDay;
+
+        // 更新用户余额
+        var user = _context.Users.Where(u => u.Account == username).FirstOrDefault();
+        user.Mcoin += balanceToAdd;
+        // 更新会员剩余天数
+        var vip = _context.VIPs.Where(v => v.Account == username).OrderByDescending(v => v.EndTime).FirstOrDefault();
+        if (vip == null)
+        {
+            return Json(new
+            {
+                success = false,
+                msg = "VIP记录未找到"
+            });
+        }
+
+        // 如果兑换的天数等于剩余天数，直接删除VIP记录
+        if (days == daysRemaining)
+        {
+            _context.VIPs.Remove(vip);  // 删除VIP记录
+        }
+        else
+        {
+            vip.EndTime = vip.EndTime.Value.AddDays(-days);  // 否则减少相应的天数
+            _context.VIPs.Update(vip);  // 标记VIP返回更新
+        }
+
+        // 提交对数据库的所有更改
+        bool changesSaved = await _context.SaveChangesAsync() > 0;
+        return Json(new
+        {
+            success = changesSaved
+        });
+    }
+    // 从VipType提取出价格
+    private decimal GetVipPriceFromType(string vipType)
+    {
+        if (string.IsNullOrEmpty(vipType))
+        {
+            throw new ArgumentException("VIP类型无效");
+        }
+
+        // 解析出价格部分
+        var parts = vipType.Split('|');
+        if (parts.Length < 2 || !decimal.TryParse(parts[1], out var price))
+        {
+            throw new ArgumentException("VIP价格解析失败");
+        }
+
+        return price;
+    }
     [Authorize]
     [HttpPost]
     public IActionResult GetTopVipType()
@@ -654,13 +804,15 @@ public class UsersController : Controller
             .ToList();
 
         string topVipType = "";
+        decimal topVipPrice = 0;
 
         // 定义VIP类型的优先级
         var vipPriority = new Dictionary<string, int>
         {
             { "VIP|15", 1 },
-            { "VIP|50", 2 },
-            { "VIP|90", 3 } // VIP|90 是最高等级
+            { "VIP|20", 2 },
+            { "VIP|50", 3 },
+            { "VIP|90", 4 }
         };
 
         int highestPriority = 0;
@@ -673,6 +825,7 @@ public class UsersController : Controller
                 {
                     highestPriority = priority;
                     topVipType = vip.VipType;
+                    topVipPrice = decimal.Parse(vip.VipType.Split('|')[1]);
                 }
             }
         }
@@ -680,7 +833,8 @@ public class UsersController : Controller
         return Json(new
         {
             success = true,
-            data = topVipType
+            data = topVipType,
+            price = topVipPrice
         });
     }
 
@@ -801,10 +955,9 @@ public class UsersController : Controller
                 {
                     var parentShareCode = _context.Shares.AsNoTracking()
                         .FirstOrDefault(x => x.Account == shareinfo.ParentAccount);
-                    _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, 90m * 0.15m);
+                    _usersService.UpdateShareMcoinAndWriteLog(parentShareCode.ShareCode, intomoney * 0.15m);
                 }
 
-                user.Mcoin = user.Mcoin + intomoney;
                 _context.Users.Update(user);
             }
             else if (thisorder.OrderType.Contains("MALL"))
@@ -1008,7 +1161,9 @@ public class UsersController : Controller
             .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
         var vipdata = await _financeService.GetVipData(username);
         //如果是VIP|50
-        if (vipdata.Where(x => x.VipType == "VIP|50" || x.VipType == "VIP|90").Count() > 0)
+        if (vipdata.Where(x =>
+                    x.VipType == "VIP|50" || x.VipType == "VIP|90" || x.VipType == "VIP|15" || x.VipType == "VIP|20")
+                .Count() > 0)
         {
             //查询今天是否已签到
             var sign = _context.SignIns.AsNoTracking()
@@ -1020,10 +1175,10 @@ public class UsersController : Controller
                     msg = "今天已签到,明天再来吧！"
                 });
             var user = _context.Users.FirstOrDefault(x => x.Account == username);
-            //余额随机增加0.5~1
+            //余额随机增加 0.5~0.6
             var random = new Random();
-            // 生成0.5到1(不包含)之间的随机小数
-            var money = Convert.ToDecimal(random.NextDouble() * 0.5 + 0.5);
+            // 生成 0.5 到 0.6 之间的随机小数
+            decimal money = (decimal)(random.NextDouble() * 0.1 + 0.5);
             user.Mcoin = user.Mcoin + money;
             _context.Users.Update(user);
             //记录签到
@@ -1043,7 +1198,7 @@ public class UsersController : Controller
         return Json(new
         {
             success = false,
-            msg = "不是高级会员，无法签到"
+            msg = "不是会员，无法签到"
         });
     }
 
@@ -1068,6 +1223,39 @@ public class UsersController : Controller
         var username = _jwtTokenManager
             .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
         var user = _context.Users.FirstOrDefault(x => x.Account == username);
+        var systemCfg = _systemService.GetSystemCfgs();
+        var cardsLimit = systemCfg.FirstOrDefault(x => x.CfgKey == "Cards_Limit");
+        // 检查是否在限制时间内使用
+        if (cardsLimit != null)
+        {
+            var cardsLimitTime = int.Parse(cardsLimit.CfgValue);
+            var lastUsedCard = _context.Cards
+                .Where(x => x.UseAccount == username)
+                .OrderByDescending(x => x.CreateTime)
+                .FirstOrDefault();
+
+            if (lastUsedCard != null)
+            {
+                // 计算时间差（将两者相减得到的是一个TimeSpan对象）
+                TimeSpan timeElapsed = DateTime.Now - lastUsedCard.CreateTime.Value;
+                double timeElapsedInSeconds = timeElapsed.TotalSeconds;
+                var cardsLimitTimeInSeconds = cardsLimitTime * 60;
+
+                if (timeElapsedInSeconds < cardsLimitTimeInSeconds)
+                {
+                    var remainingTime = cardsLimitTimeInSeconds - timeElapsedInSeconds;
+                    var remainingMinutes = Math.Floor(remainingTime / 60);
+                    var remainingSeconds = remainingTime % 60;
+
+                    return Json(new
+                    {
+                        success = false,
+                        msg = $"请等待 {remainingMinutes:F0} 分钟 {remainingSeconds:F0} 秒后再试"
+                    });
+                }
+            }
+        }
+
         if (card.Mcoin > 0)
             //更新用户余额
             user.Mcoin = user.Mcoin + card.Mcoin;
@@ -1121,6 +1309,7 @@ public class UsersController : Controller
 
         card.Used = 1;
         card.UseAccount = username;
+        card.CreateTime = DateTime.Now;
         _context.Cards.Update(card);
         _context.Users.Update(user);
         _context.SaveChanges();
@@ -1412,6 +1601,15 @@ public class UsersController : Controller
         //检查用户是否存在
         var user = _context.Users.AsNoTracking().Where(u => u.Account == email).FirstOrDefault();
         string token = string.Empty;
+        if (user.IsBan == 1)
+        {
+            return Json(new
+            {
+                success = false,
+                msg = "用户被封禁",
+                token
+            });
+        }
         if (user != null)
         {
             //直接登录

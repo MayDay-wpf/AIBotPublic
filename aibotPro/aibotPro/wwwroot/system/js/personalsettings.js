@@ -1,5 +1,140 @@
 ﻿$(document).ready(function () {
-    // 检查localStorage中的缓存
+    // 默认快捷键配置
+    const defaultShortcuts = {
+        useMemory: 'Ctrl+M',
+        pure: 'Ctrl+P',
+        modelGrouping: 'Ctrl+G',
+        createAiPrompt: 'Ctrl+J',
+        readingMode: 'Ctrl+R',
+        autoChange: 'Ctrl+N',
+        shortcuts: 'Ctrl+K',
+        stream: 'Ctrl+S',
+        seniorSetting: 'Ctrl+B'
+    };
+
+    // 当前快捷键配置
+    let shortcutsConfig = {};
+
+    // 加载快捷键配置
+    function loadShortcuts() {
+        const storedShortcuts = localStorage.getItem('shortcutsConfig');
+        if (storedShortcuts) {
+            shortcutsConfig = JSON.parse(storedShortcuts);
+        } else {
+            shortcutsConfig = { ...defaultShortcuts };
+            localStorage.setItem('shortcutsConfig', JSON.stringify(shortcutsConfig));
+        }
+    }
+
+    // 保存快捷键配置
+    function saveShortcuts() {
+        localStorage.setItem('shortcutsConfig', JSON.stringify(shortcutsConfig));
+    }
+
+    // 显示快捷键到UI
+    function displayShortcuts() {
+        for (const [setting, key] of Object.entries(shortcutsConfig)) {
+            $(`#${setting}-key`).text(key);
+        }
+    }
+
+    // 检查快捷键是否被占用
+    function isShortcutTaken(newShortcut, settingToExclude) {
+        for (const [setting, shortcut] of Object.entries(shortcutsConfig)) {
+            if (setting !== settingToExclude && shortcut.toLowerCase() === newShortcut.toLowerCase()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // 设置快捷键
+    function setShortcut(setting, newShortcut) {
+        shortcutsConfig[setting] = newShortcut;
+        saveShortcuts();
+        displayShortcuts();
+    }
+
+    // 初始化快捷键
+    loadShortcuts();
+    displayShortcuts();
+
+    // 快捷键更改逻辑
+    let currentSettingToChange = null;
+
+    $('.change-shortcut').on('click', function () {
+        const setting = $(this).data('setting');
+        currentSettingToChange = setting;
+        $('#shortcutInput').text('请按下新的快捷键...');
+        $('#shortcutError').hide();
+        $('#changeShortcutModal').modal('show');
+    });
+
+    // 捕捉快捷键输入
+    let capturingShortcut = false;
+    $('#changeShortcutModal').on('shown.bs.modal', function () {
+        capturingShortcut = true;
+    });
+
+    $('#changeShortcutModal').on('hidden.bs.modal', function () {
+        capturingShortcut = false;
+        currentSettingToChange = null;
+    });
+
+    $(document).on('keydown', function (e) {
+        if (capturingShortcut && currentSettingToChange) {
+            e.preventDefault();
+            let keys = [];
+            if (e.ctrlKey) keys.push('Ctrl');
+            if (e.altKey) keys.push('Alt');
+            if (e.shiftKey) keys.push('Shift');
+            if (e.metaKey) keys.push('Meta');
+            if (!['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) {
+                keys.push(e.key.toUpperCase());
+            }
+            const newShortcut = keys.join('+');
+            if (isShortcutTaken(newShortcut, currentSettingToChange)) {
+                $('#shortcutError').show();
+            } else {
+                setShortcut(currentSettingToChange, newShortcut);
+                $('#changeShortcutModal').modal('hide');
+            }
+        }
+    });
+
+    // 全局快捷键监听
+    $(document).on('keydown', function (e) {
+        if (!shortcuts)
+            return;
+        // 构建按下的键组合
+        let pressedKeys = [];
+        if (e.ctrlKey) pressedKeys.push('Ctrl');
+        if (e.altKey) pressedKeys.push('Alt');
+        if (e.shiftKey) pressedKeys.push('Shift');
+        if (e.metaKey) pressedKeys.push('Meta');
+        const key = e.key.toUpperCase();
+        if (!['CONTROL', 'ALT', 'SHIFT', 'META'].includes(e.key)) {
+            pressedKeys.push(key);
+        }
+        const pressedShortcut = pressedKeys.join('+');
+
+        // 检查是否匹配任何快捷键
+        for (const [setting, shortcut] of Object.entries(shortcutsConfig)) {
+            if (pressedShortcut.toLowerCase() === shortcut.toLowerCase()) {
+                e.preventDefault();
+                toggleSetting(setting);
+                break;
+            }
+        }
+    });
+
+    // 切换设置的函数
+    function toggleSetting(setting) {
+        const checkbox = $(`.${setting}`);
+        checkbox.prop('checked', !checkbox.is(':checked')).change();
+    }
+
+    // 启用记忆体
     var cache = localStorage.getItem('useMemory');
     if (cache) {
         var cachedData = JSON.parse(cache);
@@ -16,7 +151,6 @@
         useMemory = false;
     }
 
-    // 监听复选框状态改变
     $('.useMemory').change(function () {
         var isChecked = $(this).is(':checked');
         // 存入缓存
@@ -25,8 +159,26 @@
         };
         localStorage.setItem('useMemory', JSON.stringify(cacheData));
         useMemory = cacheData.value;
+        if (isChecked)
+            balert("记忆体已启用", "success", false, 1500, "top");
+        else
+            balert("记忆体已关闭", "info", false, 1500, "top");
     });
-    // 检查localStorage中的缓存
+    $('.pure').change(function () {
+        var isChecked = $(this).is(':checked');
+        pure = isChecked;
+        updatePureMode(pure);
+        // 存入缓存
+        var cacheData = {
+            value: isChecked, time: Date.now()
+        };
+        localStorage.setItem('pure', JSON.stringify(cacheData));
+        if (isChecked)
+            balert("纯净模式已启用", "success", false, 1500, "top");
+        else
+            balert("纯净模式已关闭", "info", false, 1500, "top");
+    });
+    // 历史记录智能压缩
     var cache_createAiPrompt = localStorage.getItem('createAiPrompt');
     if (cache_createAiPrompt) {
         var cachedData = JSON.parse(cache_createAiPrompt);
@@ -37,7 +189,6 @@
         createAiPrompt = false;
     }
 
-    // 监听复选框状态改变
     $('.createAiPrompt').change(function () {
         var isChecked = $(this).is(':checked');
         console.log('历史记录压缩:', isChecked ? '选中' : '未选中');
@@ -47,23 +198,25 @@
         };
         localStorage.setItem('createAiPrompt', JSON.stringify(cacheData));
         createAiPrompt = cacheData.value;
+        if (isChecked)
+            balert("历史记录压缩已启用", "success", false, 1500, "top");
+        else
+            balert("历史记录压缩已关闭", "info", false, 1500, "top");
     });
 
-    // 检查localStorage中的缓存
+    // 模型分组
     var grouping_cache = localStorage.getItem('modelGrouping');
     if (grouping_cache) {
         var cachedData = JSON.parse(grouping_cache);
         $('.modelGrouping').prop('checked', cachedData.value);
         grouping = cachedData.value;
     } else {
-        $('.modelGrouping').prop('checked', false);
-        grouping = false;
+        $('.modelGrouping').prop('checked', true);
+        grouping = true;
     }
-
-    // 监听复选框状态改变
     $('.modelGrouping').change(function () {
         var isChecked = $(this).is(':checked');
-        if (isChecked) {
+        if (isChecked && !isMobile()) {
             getAIModelListByGroup();
         } else {
             getAIModelList();
@@ -74,8 +227,14 @@
         };
         localStorage.setItem('modelGrouping', JSON.stringify(cacheData));
         grouping = cacheData.value;
+        if (isChecked)
+            balert("模型分组已启用", "success", false, 1500, "top");
+        else
+            balert("模型分组已关闭", "info", false, 1500, "top");
     });
-    // 检查localStorage中的缓存
+
+
+    // 启用参数调节
     var seniorSetting_cache = localStorage.getItem('seniorSetting');
     if (seniorSetting_cache) {
         var cachedData = JSON.parse(seniorSetting_cache);
@@ -94,7 +253,6 @@
         seniorSetting = false;
     }
 
-    // 监听复选框状态改变
     $('.seniorSetting').change(function () {
         var isChecked = $(this).is(':checked');
         if (isChecked) {
@@ -110,8 +268,14 @@
         };
         localStorage.setItem('seniorSetting', JSON.stringify(cacheData));
         seniorSetting = cacheData.value;
+        if (isChecked)
+            balert("参数调节已启用", "success", false, 1500, "top");
+        else
+            balert("参数调节已关闭", "info", false, 1500, "top");
     });
-    // 检查localStorage中的缓存
+
+
+    // 启用快捷键
     var shortcuts_cache = localStorage.getItem('shortcuts');
     if (shortcuts_cache) {
         var cachedData = JSON.parse(shortcuts_cache);
@@ -122,7 +286,6 @@
         shortcuts = true;
     }
 
-    // 监听复选框状态改变
     $('.shortcuts').change(function () {
         var isChecked = $(this).is(':checked');
         if (isChecked) {
@@ -136,8 +299,14 @@
         };
         localStorage.setItem('shortcuts', JSON.stringify(cacheData));
         shortcuts = cacheData.value;
+        if (isChecked)
+            balert("快捷键已启用", "success", false, 1500, "top");
+        else
+            balert("快捷键已关闭", "info", false, 1500, "top");
     });
-    // 检查localStorage中的缓存
+
+
+    // 开启流式输出
     var stream_cache = localStorage.getItem('stream');
     if (stream_cache) {
         var cachedData = JSON.parse(stream_cache);
@@ -148,7 +317,6 @@
         stream = true;
     }
 
-    // 监听复选框状态改变
     $('.stream').change(function () {
         var isChecked = $(this).is(':checked');
         if (isChecked) {
@@ -162,8 +330,14 @@
         };
         localStorage.setItem('stream', JSON.stringify(cacheData));
         stream = cacheData.value;
+        if (isChecked)
+            balert("流式输出已启用", "success", false, 1500, "top");
+        else
+            balert("流式输出已关闭", "info", false, 1500, "top");
     });
-    // 检查localStorage中的缓存
+
+
+    // 阅读模式
     var readingMode_cache = localStorage.getItem('readingMode');
     if (readingMode_cache) {
         var cachedData = JSON.parse(readingMode_cache);
@@ -173,8 +347,6 @@
         $('.readingMode').prop('checked', false);
         readingMode = false;
     }
-
-    // 监听复选框状态改变
     $('.readingMode').change(function () {
         var isChecked = $(this).is(':checked');
         if (isChecked) {
@@ -188,8 +360,14 @@
         };
         localStorage.setItem('readingMode', JSON.stringify(cacheData));
         readingMode = cacheData.value;
+        if (isChecked)
+            balert("阅读模式已启用", "success", false, 1500, "top");
+        else
+            balert("阅读模式已关闭", "info", false, 1500, "top");
     });
-    // 检查localStorage中的缓存
+
+
+    // 模型自动切换
     var autoChange_cache = localStorage.getItem('autoChange');
     if (autoChange_cache) {
         var cachedData = JSON.parse(autoChange_cache);
@@ -199,6 +377,7 @@
         $('.autoChange').prop('checked', true);
         autoChange = true;
     }
+
 
     // 监听复选框状态改变
     $('.autoChange').change(function () {
@@ -214,6 +393,10 @@
         };
         localStorage.setItem('autoChange', JSON.stringify(cacheData));
         autoChange = cacheData.value;
+        if (isChecked)
+            balert("模型自动切换已启用", "success", false, 1500, "top");
+        else
+            balert("模型自动切换已关闭", "info", false, 1500, "top");
     });
 
     $('#searchIcon').on('click', function (event) {

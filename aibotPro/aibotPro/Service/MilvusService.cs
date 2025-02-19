@@ -118,17 +118,30 @@ namespace aibotPro.Service
                 return false;
             }
         }
-        public async Task<Dtos.SearchVectorResultByMilvus> SearchVector(List<float> vector, string account, List<string> typeCode, int topK)
+
+        public async Task<Dtos.SearchVectorResultByMilvus> SearchVector(List<float> vector, string account,
+            List<string> typeCode = null, int topK = 3)
         {
             SearchVectorResultByMilvus result = new SearchVectorResultByMilvus();
-            string typeCodeStr = string.Join(",", typeCode.Select(code => $"'{code}'"));
+            string filter;
+
+            if (typeCode == null || !typeCode.Any())
+            {
+                filter = @$"account=='{account}'";
+            }
+            else
+            {
+                string typeCodeStr = string.Join(",", typeCode.Select(code => $"'{code}'"));
+                filter = @$"account=='{account}' and type in [{typeCodeStr}]";
+            }
+
             try
             {
                 var body = new
                 {
                     dbName = _options.Database,
                     collectionName = _options.Collection,
-                    filter = @$"account=='{account}' and type in [{typeCodeStr}]",
+                    filter = filter,
                     data = new List<List<float>>() { vector },
                     limit = topK,
                     outputFields = new List<string>() { "vectorcontent" },

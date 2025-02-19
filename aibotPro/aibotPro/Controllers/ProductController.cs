@@ -18,7 +18,9 @@ namespace aibotPro.Controllers
         private readonly JwtTokenManager _jwtTokenManager;
         private readonly IFinanceService _financeService;
         private readonly IUsersService _usersService;
-        public ProductController(IAiServer aiServer, ISystemService systemService, JwtTokenManager jwtTokenManager, IFinanceService financeService, IUsersService usersService)
+
+        public ProductController(IAiServer aiServer, ISystemService systemService, JwtTokenManager jwtTokenManager,
+            IFinanceService financeService, IUsersService usersService)
         {
             _aiServer = aiServer;
             _systemService = systemService;
@@ -26,22 +28,32 @@ namespace aibotPro.Controllers
             _financeService = financeService;
             _usersService = usersService;
         }
+
         public IActionResult ChatGrid()
         {
             return View();
         }
+
         public IActionResult AiMarketing()
         {
             return View();
         }
+
         public IActionResult AiDoc()
         {
             return View();
         }
+
         public IActionResult ChatPDF()
         {
             return View();
         }
+
+        public IActionResult RealTime()
+        {
+            return View();
+        }
+
         [Authorize]
         [HttpPost]
         public async Task<IActionResult> CreateTTSMP3(string text, string voice)
@@ -53,18 +65,21 @@ namespace aibotPro.Controllers
                 data = result
             });
         }
+
         [Authorize]
         [HttpPost]
         public async Task<IActionResult> CombineMP3([FromBody] CombineMP3Request request)
         {
             //合并MP3
             List<string> pathlists = request.Pathlist;
-            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/files/audio", $"output/{DateTime.Now.ToString("yyyyMMdd")}");
+            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/files/audio",
+                $"output/{DateTime.Now.ToString("yyyyMMdd")}");
             //没有目录则创建
             if (!Directory.Exists(outputPath))
             {
                 Directory.CreateDirectory(outputPath);
             }
+
             outputPath = Path.Combine(outputPath, $"{Guid.NewGuid().ToString().Replace("-", "")}.mp3");
             // 使用FileStream来创建/覆盖输出文件
             using (var outputStream = new FileStream(outputPath, FileMode.Create))
@@ -81,6 +96,7 @@ namespace aibotPro.Controllers
                     }
                 }
             }
+
             //outputPath只取相对路径
             outputPath = outputPath.Replace(Directory.GetCurrentDirectory(), "").Replace("\\", "/");
             // 返回操作结果，包括合并后文件的路径或其他信息
@@ -90,12 +106,14 @@ namespace aibotPro.Controllers
                 data = outputPath
             });
         }
+
         [Authorize]
         [HttpPost]
         public async Task<IActionResult> CreateLens(string model, string text, string systemPrompt)
         {
             //testModel:gpt-4-turbo-preview
-            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
             var user = _usersService.GetUserData(username);
             //检查该模型是否需要收费
             var modelPrice = await _financeService.ModelPrice(model);
@@ -122,6 +140,7 @@ namespace aibotPro.Controllers
                     data = "余额不足，请充值后再使用"
                 });
             }
+
             //去除text中的换行
             text = text.Replace("\r\n", " ").Replace("\n", " ");
             var result = await _aiServer.GPTJsonModel(systemPrompt, text, model, username);
@@ -145,8 +164,8 @@ namespace aibotPro.Controllers
                     data = result
                 });
             }
-
         }
+
         [Authorize]
         [HttpPost]
         public async Task<IActionResult> CreateVideo([FromBody] ImgListRequest request)
@@ -242,9 +261,11 @@ namespace aibotPro.Controllers
         }
 
         #region ChatPDF
+
         public async Task<IActionResult> CreateQuestion(string content)
         {
-            var username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
             var user = _usersService.GetUserData(username);
             if (user.Mcoin <= 0)
             {
@@ -254,6 +275,7 @@ namespace aibotPro.Controllers
                     msg = "余额不足"
                 });
             }
+
             var question = new Dtos.QuestionList();
             bool success = false;
             string prompt = @$"# Role: Please act as a question creator. \n
@@ -285,8 +307,10 @@ namespace aibotPro.Controllers
             {
                 success = true;
                 var tikToken = TikToken.GetEncoding("cl100k_base");
-                await _financeService.CreateUseLogAndUpadteMoney(username, model, tikToken.Encode(prompt + schema).Count, tikToken.Encode(result).Count);
+                await _financeService.CreateUseLogAndUpadteMoney(username, model,
+                    tikToken.Encode(prompt + schema).Count, tikToken.Encode(result).Count);
             }
+
             return Json(new
             {
                 success = success,
@@ -295,6 +319,5 @@ namespace aibotPro.Controllers
         }
 
         #endregion
-
     }
 }

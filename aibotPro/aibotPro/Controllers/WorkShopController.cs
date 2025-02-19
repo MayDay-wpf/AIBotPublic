@@ -526,6 +526,8 @@ namespace aibotPro.Controllers
             {
                 x.BaseUrl = string.Empty;
                 x.ApiKey = string.Empty;
+                x.Delay = 0;
+                x.AdminPrompt = string.Empty;
             });
 
             return Json(new

@@ -10,18 +10,21 @@ namespace aibotPro.Service
     public class VectorHelper
     {
         private readonly IRedisService _redisService;
-        public string apikey;
-        public string endpoint;
-        public string collectionName;
+
+        //public string apikey;
+        //public string endpoint;
+        //public string collectionName;
         public string embeddingsUrl;
         public string embeddingsapikey;
         public string embeddingsmodel;
-        public VectorHelper(IRedisService redisService, string _alibbapikey, string _endpoint, string _collectionName, string _embeddingsUrl, string _embeddingsapikey, string _embeddingsmodel)
+
+        public VectorHelper(IRedisService redisService, string _embeddingsUrl, string _embeddingsapikey,
+            string _embeddingsmodel)
         {
             _redisService = redisService;
-            apikey = _alibbapikey;
-            endpoint = _endpoint;
-            collectionName = _collectionName;
+            //apikey = _alibbapikey;
+            //endpoint = _endpoint;
+            //collectionName = _collectionName;
             embeddingsUrl = _embeddingsUrl;
             embeddingsapikey = _embeddingsapikey;
             embeddingsmodel = _embeddingsmodel;
@@ -65,11 +68,15 @@ namespace aibotPro.Service
             request.AddHeader("Authorization", $"Bearer {embeddingsapikey}");
             request.AddHeader("Content-Type", "application/json");
             request.AddHeader("Accept", "*/*");
-            var body = @"{" + "\n" +
-            $@"  ""model"": ""{model}""," + "\n" +
-            $@"  ""input"": ""{input}""" + "\n" +
-            @"}";
-            request.AddParameter("application/json", body, ParameterType.RequestBody);
+
+            // 使用匿名对象
+            var body = new
+            {
+                model = model,
+                input = input
+            };
+            request.AddJsonBody(body);
+
             return request;
         }
 
@@ -172,76 +179,76 @@ namespace aibotPro.Service
                 return null;
         }
 
-        public async Task<bool> InnerVectorAsync(Root root, string Account)
-        {
-            int totalCount = root.docs.Count;  // 文档总数
-            int sentCount = 0; // 已发送请求数量
-
-            for (int i = 0; i < totalCount; i += 2)
-            {
-                var batchDocs = root.docs.Skip(i).Take(2).ToList(); // 每次取2个文档
-
-                var response = await SendBatchRequestAsync2(batchDocs);
-                Interlocked.Add(ref sentCount, batchDocs.Count);
-                //FC.wikiuploadlog = $"转存进度：{sentCount} / {totalCount}";
-                await _redisService.SetAsync($"{Account}_wikiuploadlog", $"转存进度：{sentCount} / {totalCount}");
-
-                dynamic result = JsonConvert.DeserializeObject<dynamic>(response.Content);
-                if (result.code != 0)
-                    return false;
-            }
-
-            return true;
-        }
-        public async Task<RestResponse> SendBatchRequestAsync(List<Doc> batchDocs, SemaphoreSlim semaphore)
-        {
-            try
-            {
-                var client = new RestClient($"https://{endpoint}/v1/collections/{collectionName}/docs");
-                var request = new RestRequest("", Method.Post);
-                request.AddHeader("dashvector-auth-token", apikey);
-                request.AddHeader("Content-Type", "application/json");
-                request.AddHeader("Accept", "*/*");
-
-                var body = JsonConvert.SerializeObject(new Root { docs = batchDocs });
-                request.AddParameter("application/json", body, ParameterType.RequestBody);
-
-                var response = await client.ExecuteAsync(request);
-                return response;
-            }
-            finally
-            {
-                semaphore.Release(); // 释放信号量，确保其他任务能够获取
-            }
-        }
-        public async Task<RestResponse> SendBatchRequestAsync2(List<Doc> batchDocs)
-        {
-            var client = new RestClient($"https://{endpoint}/v1/collections/{collectionName}/docs");
-            var request = new RestRequest("", Method.Post);
-            request.AddHeader("dashvector-auth-token", apikey);
-            request.AddHeader("Content-Type", "application/json");
-            request.AddHeader("Accept", "*/*");
-
-            var body = JsonConvert.SerializeObject(new Root { docs = batchDocs });
-            request.AddParameter("application/json", body, ParameterType.RequestBody);
-
-            var response = await client.ExecuteAsync(request);
-            return response;
-        }
-
-        public SearchVectorResult SearchVector(SearchVectorPr searchVectorPr)
-        {
-            var client = new RestClient($"https://{endpoint}/v1/collections/{collectionName}/query");
-            var request = new RestRequest("", Method.Post);
-            request.AddHeader("dashvector-auth-token", apikey);
-            request.AddHeader("Content-Type", "application/json");
-            request.AddHeader("Accept", "*/*");
-            var body = JsonConvert.SerializeObject(searchVectorPr);
-            request.AddParameter("application/json", body, ParameterType.RequestBody);
-            RestResponse response = client.Execute(request);
-            SearchVectorResult result = JsonConvert.DeserializeObject<SearchVectorResult>(response.Content);
-            return result;
-        }
+        // public async Task<bool> InnerVectorAsync(Root root, string Account)
+        // {
+        //     int totalCount = root.docs.Count;  // 文档总数
+        //     int sentCount = 0; // 已发送请求数量
+        //
+        //     for (int i = 0; i < totalCount; i += 2)
+        //     {
+        //         var batchDocs = root.docs.Skip(i).Take(2).ToList(); // 每次取2个文档
+        //
+        //         var response = await SendBatchRequestAsync2(batchDocs);
+        //         Interlocked.Add(ref sentCount, batchDocs.Count);
+        //         //FC.wikiuploadlog = $"转存进度：{sentCount} / {totalCount}";
+        //         await _redisService.SetAsync($"{Account}_wikiuploadlog", $"转存进度：{sentCount} / {totalCount}");
+        //
+        //         dynamic result = JsonConvert.DeserializeObject<dynamic>(response.Content);
+        //         if (result.code != 0)
+        //             return false;
+        //     }
+        //
+        //     return true;
+        // }
+        // public async Task<RestResponse> SendBatchRequestAsync(List<Doc> batchDocs, SemaphoreSlim semaphore)
+        // {
+        //     try
+        //     {
+        //         var client = new RestClient($"https://{endpoint}/v1/collections/{collectionName}/docs");
+        //         var request = new RestRequest("", Method.Post);
+        //         request.AddHeader("dashvector-auth-token", apikey);
+        //         request.AddHeader("Content-Type", "application/json");
+        //         request.AddHeader("Accept", "*/*");
+        //
+        //         var body = JsonConvert.SerializeObject(new Root { docs = batchDocs });
+        //         request.AddParameter("application/json", body, ParameterType.RequestBody);
+        //
+        //         var response = await client.ExecuteAsync(request);
+        //         return response;
+        //     }
+        //     finally
+        //     {
+        //         semaphore.Release(); // 释放信号量，确保其他任务能够获取
+        //     }
+        // }
+        // public async Task<RestResponse> SendBatchRequestAsync2(List<Doc> batchDocs)
+        // {
+        //     var client = new RestClient($"https://{endpoint}/v1/collections/{collectionName}/docs");
+        //     var request = new RestRequest("", Method.Post);
+        //     request.AddHeader("dashvector-auth-token", apikey);
+        //     request.AddHeader("Content-Type", "application/json");
+        //     request.AddHeader("Accept", "*/*");
+        //
+        //     var body = JsonConvert.SerializeObject(new Root { docs = batchDocs });
+        //     request.AddParameter("application/json", body, ParameterType.RequestBody);
+        //
+        //     var response = await client.ExecuteAsync(request);
+        //     return response;
+        // }
+        //
+        // public SearchVectorResult SearchVector(SearchVectorPr searchVectorPr)
+        // {
+        //     var client = new RestClient($"https://{endpoint}/v1/collections/{collectionName}/query");
+        //     var request = new RestRequest("", Method.Post);
+        //     request.AddHeader("dashvector-auth-token", apikey);
+        //     request.AddHeader("Content-Type", "application/json");
+        //     request.AddHeader("Accept", "*/*");
+        //     var body = JsonConvert.SerializeObject(searchVectorPr);
+        //     request.AddParameter("application/json", body, ParameterType.RequestBody);
+        //     RestResponse response = client.Execute(request);
+        //     SearchVectorResult result = JsonConvert.DeserializeObject<SearchVectorResult>(response.Content);
+        //     return result;
+        // }
     }
     public class Root
     {

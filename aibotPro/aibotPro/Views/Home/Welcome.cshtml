@@ -4,8 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mufasa-AIBotPRO</title>
-    <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="~/static/css/all.min.css" rel="stylesheet">
+    <link rel="preload" href="~/lib/bootstrap/dist/css/bootstrap.min.css" as="style" onload="this.rel='stylesheet'">
+    <link rel="preload" href="~/static/css/all.min.css" as="style" onload="this.rel='stylesheet'">
+
+    <!-- 同步加载保底 -->
+    <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+    <link href="~/static/css/all.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+
+    <!-- 脚本加载优化 -->
+    <script src="~/lib/jquery/dist/jquery.min.js" defer></script>
+    <script src="~/static/js/bootstrap.bundle.min.js" defer data-depends="jquery"></script>
     <style>
         body, html {
             margin: 0;
@@ -34,25 +42,25 @@
             padding: 50px 0;
         }
 
-        .full-page::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1;
-        }
+            .full-page::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 1;
+            }
 
-        .full-page .content {
-            position: relative;
-            z-index: 2;
-            padding: 20px;
-            background: rgba(15, 15, 31, 0.7);
-            border-radius: 15px;
-            box-shadow: 0 0 30px rgba(0, 123, 255, 0.3);
-        }
+            .full-page .content {
+                position: relative;
+                z-index: 2;
+                padding: 20px;
+                background: rgba(15, 15, 31, 0.7);
+                border-radius: 15px;
+                box-shadow: 0 0 30px rgba(0, 123, 255, 0.3);
+            }
 
         h2 {
             font-size: 3rem;
@@ -77,12 +85,12 @@
             padding: 10px 30px;
         }
 
-        .btn-custom:hover {
-            background-color: #0056b3;
-            border-color: #0056b3;
-            box-shadow: 0 0 20px rgba(0,123,255,0.7);
-            transform: translateY(-2px);
-        }
+            .btn-custom:hover {
+                background-color: #0056b3;
+                border-color: #0056b3;
+                box-shadow: 0 0 20px rgba(0,123,255,0.7);
+                transform: translateY(-2px);
+            }
 
         .feature-icon {
             font-size: 4rem;
@@ -112,6 +120,7 @@
             from {
                 background-position: 0 0;
             }
+
             to {
                 background-position: 500px 500px;
             }
@@ -133,9 +142,11 @@
             0%, 20%, 50%, 80%, 100% {
                 transform: translateY(0) translateX(-50%);
             }
+
             40% {
                 transform: translateY(-30px) translateX(-50%);
             }
+
             60% {
                 transform: translateY(-15px) translateX(-50%);
             }
@@ -149,35 +160,35 @@
             transition: all 0.3s ease;
         }
 
-        .pricing-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 10px 20px rgba(0, 123, 255, 0.3);
-        }
+            .pricing-card:hover {
+                transform: translateY(-10px);
+                box-shadow: 0 10px 20px rgba(0, 123, 255, 0.3);
+            }
 
-        .pricing-card h3 {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-        }
+            .pricing-card h3 {
+                font-size: 2.5rem;
+                margin-bottom: 20px;
+            }
 
-        .pricing-card .price {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
+            .pricing-card .price {
+                font-size: 2rem;
+                font-weight: bold;
+                margin-bottom: 20px;
+            }
 
-        .pricing-card ul {
-            list-style-type: none;
-            padding: 0;
-            text-align: left;
-        }
+            .pricing-card ul {
+                list-style-type: none;
+                padding: 0;
+                text-align: left;
+            }
 
-        .pricing-card ul li {
-            margin-bottom: 10px;
-        }
+                .pricing-card ul li {
+                    margin-bottom: 10px;
+                }
 
-        .pricing-card ul li i {
-            margin-right: 10px;
-        }
+                    .pricing-card ul li i {
+                        margin-right: 10px;
+                    }
 
         .vip-card {
             border: 2px solid #ffd700;
@@ -189,159 +200,157 @@
     </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark fixed-top">
-    <div class="container">
-        <a class="navbar-brand" href="#">AIBotPRO</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="#home">首页</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#models">模型集成</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#features">功能特性</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#pricing">定价</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/Users/Login">登录/注册</a>
-                </li>
-            </ul>
-        </div>
-    </div>
-</nav>
-
-<section id="home" class="full-page">
-    <div class="tech-overlay"></div>
-    <div class="content">
-        <h2 class="gradient-text mb-4">AIBotPRO-生成式大语言模型集成服务</h2>
-        <p class="mb-5">探索AI的无限可能，体验前沿科技带来的革命性变革</p>
-        <a href="/Users/Login" class="btn btn-custom btn-lg">立即开始</a>
-    </div>
-    <div class="scroll-down">
-        <i class="fas fa-chevron-down"></i>
-    </div>
-</section>
-
-<section id="models" class="full-page">
-    <div class="tech-overlay"></div>
-    <div class="content">
-        <i class="fas fa-brain feature-icon"></i>
-        <h2 class="gradient-text">海量模型，一站式解决</h2>
-        <p>GPT、Claude、Gemini、Qwen、GLM 等多种顶级模型集成，满足您的所有AI需求。</p>
-    </div>
-    <div class="scroll-down">
-        <i class="fas fa-chevron-down"></i>
-    </div>
-</section>
-
-<section id="features" class="full-page">
-    <div class="tech-overlay"></div>
-    <div class="content">
-        <i class="fas fa-cogs feature-icon"></i>
-        <h2 class="gradient-text">功能齐全，灵活应用</h2>
-        <p>文件上传、图像识别、AI绘画（Midjourney、DALLE3、Flux），多样化功能满足各类需求。</p>
-    </div>
-    <div class="scroll-down">
-        <i class="fas fa-chevron-down"></i>
-    </div>
-</section>
-
-<section id="pricing" class="full-page">
-    <div class="tech-overlay"></div>
-    <div class="content">
-        <i class="fas fa-dollar-sign feature-icon"></i>
-        <h2 class="gradient-text">灵活定价，物超所值</h2>
-        <p>极致灵活的按量计费模式，极致优惠的订阅计划，不限期无理由退款服务。为您的AI之旅保驾护航。</p>
-        <div class="row justify-content-center">
-            <div class="col-md-5">
-                <div class="pricing-card vip-card">
-                    <h3>VIP</h3>
-                    <div class="price">￥20/月</div>
-                    <ul>
-                        <li><i class="fas fa-check"></i>享有免费模型（详见模型列表：带【✨】标志的模型）</li>
-                        <li><i class="fas fa-check"></i>专项会员折扣</li>
-                        <li><i class="fas fa-check"></i>专属会员功能</li>
-                        <li><i class="fas fa-check"></i>客服优先处理</li>
-                        <li><i class="fas fa-times"></i>无签到奖励</li>
-                        <li><i class="fas fa-times"></i>无专属模型</li>
-                        <li><i class="fas fa-times"></i>无余额奖励</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="col-md-5">
-                <div class="pricing-card svip-card">
-                    <h3>SVIP</h3>
-                    <div class="price">￥50/月</div>
-                    <ul>
-                        <li><i class="fas fa-check"></i>享有免费模型（详见模型列表：带【✨】标志的模型）</li>
-                        <li><i class="fas fa-check"></i>专项高级会员折扣</li>
-                        <li><i class="fas fa-check"></i>专属会员功能</li>
-                        <li><i class="fas fa-check"></i>客服优先处理</li>
-                        <li><i class="fas fa-check"></i>每日签到，随机抽取0.5~1余额</li>
-                        <li><i class="fas fa-check"></i>享有专属模型（详见模型列表：带【👑】标志的模型）</li>
-                        <li><i class="fas fa-check"></i>获得50余额</li>
-                    </ul>
-                </div>
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <img src="/static/image/aibotprologo-dark.png" style="width:100px" />
+            </a>
+            <a class="btn btn-sm btn-dark" href="/Users/Login">
+                <span>登录/注册</span>
+            </a>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#home">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#models">模型集成</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#features">功能特性</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#pricing">定价</a>
+                    </li>
+                </ul>
             </div>
         </div>
-    </div>
-</section>
+    </nav>
 
-<script src="~/static/js/bootstrap.bundle.min.js"></script>
-<script>
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            document.querySelector(this.getAttribute('href')).scrollIntoView({
-                behavior: 'smooth'
+    <section id="home" class="full-page">
+        <div class="tech-overlay"></div>
+        <div class="content">
+            <h2 class="gradient-text mb-4">AIBotPRO-生成式大语言模型集成服务</h2>
+            <p class="mb-5">探索AI的无限可能，体验前沿科技带来的革命性变革</p>
+            <a href="/Users/Login" class="btn btn-custom btn-lg text-light">立即开始</a>
+            <a href="/Forum/Index" class="btn btn-custom btn-lg text-light">前往社区</a>
+        </div>
+        <div class="scroll-down">
+            <i class="fas fa-chevron-down"></i>
+        </div>
+    </section>
+
+    <section id="models" class="full-page">
+        <div class="tech-overlay"></div>
+        <div class="content">
+            <i class="fas fa-brain feature-icon"></i>
+            <h2 class="gradient-text">海量模型，一站式解决</h2>
+            <p>GPT、Claude、Gemini、Qwen、GLM 等多种顶级模型集成，满足您的所有AI需求。</p>
+        </div>
+        <div class="scroll-down">
+            <i class="fas fa-chevron-down"></i>
+        </div>
+    </section>
+
+    <section id="features" class="full-page">
+        <div class="tech-overlay"></div>
+        <div class="content">
+            <i class="fas fa-cogs feature-icon"></i>
+            <h2 class="gradient-text">功能齐全，灵活应用</h2>
+            <p>文件上传、图像识别、AI绘画（Midjourney、DALLE3、Flux），多样化功能满足各类需求。</p>
+        </div>
+        <div class="scroll-down">
+            <i class="fas fa-chevron-down"></i>
+        </div>
+    </section>
+
+    <section id="pricing" class="full-page">
+        <div class="tech-overlay"></div>
+        <div class="content">
+            <i class="fas fa-dollar-sign feature-icon"></i>
+            <h2 class="gradient-text">灵活定价，物超所值</h2>
+            <p>极致灵活的按量计费模式，极致优惠的订阅折扣计划，不限期无理由退款服务。为您的AI之旅保驾护航。</p>
+            <div class="row justify-content-center">
+                <div class="col-md-5">
+                    <div class="pricing-card vip-card">
+                        <h3>VIP</h3>
+                        <div class="price">￥20/月</div>
+                        <ul>
+                            <li><i class="fas fa-check"></i>享有优惠模型（详见模型列表：带【✨】标志的模型）</li>
+                            <li><i class="fas fa-check"></i>专项会员折扣</li>
+                            <li><i class="fas fa-check"></i>专属会员功能</li>
+                            <li><i class="fas fa-check"></i>客服优先处理</li>
+                            <li><i class="fas fa-check"></i>获得10余额</li>
+                            <li><i class="fas fa-times"></i>每日签到，随机抽取0.5~0.6余额,每月可获得总余额15~18</li>
+                            <li><i class="fas fa-times"></i>无专属模型</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <div class="pricing-card svip-card">
+                        <h3>SVIP</h3>
+                        <div class="price">￥50/月</div>
+                        <ul>
+                            <li><i class="fas fa-check"></i>享有优惠模型（详见模型列表：带【✨】标志的模型）</li>
+                            <li><i class="fas fa-check"></i>享有专属优惠模型（详见模型列表：带【👑】标志的模型）</li>
+                            <li><i class="fas fa-check"></i>专项高级会员折扣</li>
+                            <li><i class="fas fa-check"></i>专属会员功能</li>
+                            <li><i class="fas fa-check"></i>客服优先处理</li>
+                            <li><i class="fas fa-check"></i>获得25余额</li>
+                            <li><i class="fas fa-check"></i>每日签到，随机抽取0.5~0.6余额,每月可获得总余额15~18</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <script>
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
             });
         });
-    });
 
-    window.addEventListener('scroll', function() {
-        var scrollPosition = window.pageYOffset;
-        var windowHeight = window.innerHeight;
-        var fullPages = document.querySelectorAll('.full-page');
+        window.addEventListener('scroll', function () {
+            var scrollPosition = window.pageYOffset;
+            var windowHeight = window.innerHeight;
+            var fullPages = document.querySelectorAll('.full-page');
 
-        fullPages.forEach(function(page, index) {
-            var pageTop = page.offsetTop;
-            var pageBottom = pageTop + page.offsetHeight;
-            var scrollArrow = page.querySelector('.scroll-down');
+            fullPages.forEach(function (page, index) {
+                var pageTop = page.offsetTop;
+                var pageBottom = pageTop + page.offsetHeight;
+                var scrollArrow = page.querySelector('.scroll-down');
 
-            if (scrollPosition >= pageTop && scrollPosition < pageBottom) {
-                if (scrollArrow) {
-                    scrollArrow.style.display = 'block';
+                if (scrollPosition >= pageTop && scrollPosition < pageBottom) {
+                    if (scrollArrow) {
+                        scrollArrow.style.display = 'block';
+                    }
+                } else {
+                    if (scrollArrow) {
+                        scrollArrow.style.display = 'none';
+                    }
                 }
-            } else {
-                if (scrollArrow) {
-                    scrollArrow.style.display = 'none';
-                }
-            }
 
-            if (index === fullPages.length - 1 && scrollPosition + windowHeight >= pageBottom) {
-                if (scrollArrow) {
-                    scrollArrow.style.display = 'none';
+                if (index === fullPages.length - 1 && scrollPosition + windowHeight >= pageBottom) {
+                    if (scrollArrow) {
+                        scrollArrow.style.display = 'none';
+                    }
                 }
-            }
+            });
         });
-    });
 
-    document.querySelectorAll('.scroll-down').forEach(function(arrow) {
-        arrow.addEventListener('click', function() {
-            var currentPage = this.closest('.full-page');
-            var nextPage = currentPage.nextElementSibling;
-            if (nextPage) {
-                nextPage.scrollIntoView({behavior: 'smooth'});
-            }
+        document.querySelectorAll('.scroll-down').forEach(function (arrow) {
+            arrow.addEventListener('click', function () {
+                var currentPage = this.closest('.full-page');
+                var nextPage = currentPage.nextElementSibling;
+                if (nextPage) {
+                    nextPage.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
         });
-    });
-</script>
+    </script>
 </body>
 </html>

@@ -4,6 +4,7 @@ var Address;
 var Scrolling;
 var HeadImgPath;
 var UserNickText;
+var Mcoin;
 let backgroundImg = '';
 let fontColor = '#000000';
 var menuShow = true;
@@ -12,8 +13,12 @@ var timerIds = {};
 let promptlistPage = 1;
 let promptlistSize = 20;
 var topVipType = "";
-
+var pathname = window.location.pathname;
+pathname = pathname.toLowerCase();
+let getUserInfoCount = 0;
+var IsAdmin = false;
 $(document).ready(function () {
+
     let savedScrollPosition = localStorage.getItem('sidebarScrollPosition');
     if (savedScrollPosition) {
         $('#dpSidebarBody').scrollTop(savedScrollPosition);
@@ -21,27 +26,61 @@ $(document).ready(function () {
     // 添加AJAX预过滤器，用于在每个请求中自动添加JWT token
     $.ajaxPrefilter(function (options, originalOptions, xhr) {
         var token = localStorage.getItem('aibotpro_userToken');
+
         if (token) {
-            // 添加 Authorization 头部，携带JWT token
-            xhr.setRequestHeader('Authorization', 'Bearer ' + token);
-            //token写入cookie
+            // 确保 headers 对象存在
+            options.headers = options.headers || {};
+            options.headers['Authorization'] = 'Bearer ' + token;
             Cookies.set('token', token, {expires: 30});
         } else {
-            window.location.herf = "/Home/Welcome"
+            window.location.href = "/Home/Welcome";
+            return; // 阻止后续的 prefilter 处理
         }
+
+        // 捕获原始的 success 和 error 处理函数
+        const originalSuccess = options.success;
+        const originalError = options.error;
+
+        // 重写 success 处理函数
+        options.success = function (data, textStatus, jqXHR) {
+            // 如果存在原始的 success 处理函数，则调用它
+            if (originalSuccess) {
+                originalSuccess(data, textStatus, jqXHR);
+            }
+            // 这里不需要为 401 添加额外的逻辑，它在 error 中处理
+        };
+
+        // 重写 error 处理函数 (这是我们处理 401 的地方)
+        options.error = function (jqXHR, textStatus, errorThrown) {
+            if (jqXHR.status === 401) {
+                localStorage.removeItem('aibotpro_userToken');
+                localStorage.removeItem('aibotpro_userToken_Expiration');
+                Cookies.remove('token');
+                window.location.href = "/Home/Welcome";
+            } else {
+                // 对于其他错误，调用原始的 error 处理函数
+                if (originalError) {
+                    originalError(jqXHR, textStatus, errorThrown);
+                }
+            }
+        };
     });
-    IsLogin();
-    getIpInfo();
-    isVipExpired();
-    getUserSetting();
-    getTopVipType();
-    var pathname = window.location.pathname;
-    pathname = pathname.toLowerCase();
+    if (pathname != "/forum/index" && pathname != "/forum/publisharticle" && !pathname.includes("/forum/personal") && pathname != "/forum/notifications") {
+        IsLogin();
+        getIpInfo();
+        isVipExpired();
+        getUserSetting();
+        getTopVipType();
+
+        //如果hljs已已定义
+        IsBlackUser();
+        getUserInfo();
+    }
     if (pathname != "/workshop/workflow") {
         isAdmin();
         getUISetting();
         customMenu();
-        getUserPromptList('init');
+        //getUserPromptList('init');
         // 创建应用按钮
         var applyBtn = $('<button/>', {
             class: 'btn btn-info apply-btn', html: '<i class="icon ion-quote"></i> 引用', css: {
@@ -133,9 +172,6 @@ $(document).ready(function () {
             }
         });
     }
-    //如果hljs已已定义
-    IsBlackUser();
-    getUserInfo();
 });
 
 //判断是否为移动端
@@ -168,13 +204,16 @@ function getIpInfo() {
 }
 
 //生成GUID
-function generateGUID() {
+function generateGUID(n = false) {
     function s4() {
         return Math.floor((1 + Math.random()) * 0x10000)
             .toString(16)
             .substring(1);
     }
 
+    if (n) {
+        return (s4() + s4() + s4() + s4() + s4() + s4() + s4() + s4());
+    }
     return (s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4());
 }
 
@@ -358,6 +397,7 @@ function isAdmin() {
         url: "/Users/IsAdmin", type: "post", dataType: "json",//返回对象
         async: false, success: function (res) {
             if (res.success) {
+                IsAdmin = true;
                 //判断#system-menu中是否存在.system-admin-aibot-pro
                 if ($("#system-menu .system-admin-aibot-pro").length === 0) {
                     $("#system-menu").append(`
@@ -390,6 +430,9 @@ function isAdmin() {
                         <nav class="nav nav-sub">
                             <a href="/OpenAll/UsersList" class="nav-sub-link" id="userlist_userlists_nav">
                                 用户列表（User List）
+                            </a>
+                            <a href="/OpenAll/Limit" class="nav-sub-link" id="limit_userlists_nav">
+                                用户限制（User Limit）
                             </a>
                             <a href="/OpenAll/VipList" class="nav-sub-link" id="viplist_userlists_nav">
                                 会员列表（VIP List）
@@ -597,36 +640,107 @@ function price() {
 }
 
 function copyText(txt) {
-    var tempTextArea = $('<textarea>').appendTo('body').val(txt).select(); // 创建临时的 textarea 并选中文本
-    document.execCommand('copy'); // 执行复制操作
-    tempTextArea.remove(); // 移除临时创建的 textarea
-    balert('复制成功', 'success', false, 1500, 'center');
+    // 检查是否支持 navigator.clipboard
+    if (navigator.clipboard && window.isSecureContext) {
+        // 使用 Clipboard API
+        navigator.clipboard.writeText(txt).then(() => {
+            balert('复制成功', 'success', false, 1500, 'center');
+        }).catch(err => {
+            console.error('复制失败: ', err);
+            balert('复制失败，请手动复制', 'danger', false, 1500, 'center');
+        });
+    } else {
+        // 回退到旧方法
+        let textArea = document.createElement("textarea");
+        textArea.value = txt;
+        // 使 textarea 不可见
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+            let successful = document.execCommand('copy');
+            if (successful) {
+                balert('复制成功', 'success', false, 1500, 'center');
+            } else {
+                balert('复制失败，请手动复制', 'danger', false, 1500, 'center');
+            }
+        } catch (err) {
+            console.error('复制失败: ', err);
+            balert('复制失败，请手动复制', 'danger', false, 1500, 'center');
+        }
+
+        document.body.removeChild(textArea);
+    }
+}
+
+function animateMcoinUpdate(oldValue, newValue) {
+    $({countNum: oldValue}).animate({countNum: newValue}, {
+        duration: 1000, // 动画持续时间
+        easing: 'linear', // 动画样式
+        step: function () {
+            // 每一步更新文本，保留小数点后四位
+            $("#Mcoin").text(this.countNum.toFixed(4));
+        },
+        complete: function () {
+            // 确保最终值正确显示
+            $("#Mcoin").text(newValue.toFixed(4));
+        }
+    });
 }
 
 function getUserInfo() {
     $.ajax({
-        url: "/Users/GetUserInfo", type: "post", dataType: "json",//返回对象
+        url: "/Users/GetUserInfo",
+        type: "POST",
+        dataType: "json", // 返回对象
         success: function (res) {
             if (res.success) {
-                res = res.data;
-                HeadImgPath = res.headImg;
-                UserNickText = res.nick;
+                const data = res.data;
+                HeadImgPath = data.headImg;
+                UserNickText = data.nick;
+                Mcoin = parseFloat(data.mcoin).toFixed(4); // 确保是数字并四舍五入
+
+                if ($("#HeadImg").length && $("#Mcoin").length) {
+                    $("#HeadImg").attr("src", HeadImgPath);
+
+                    // 进行余额更新时的滚动特效
+                    const currentMcoinText = $("#Mcoin").text();
+                    const currentMcoin = currentMcoinText === "--" ? 0 : parseFloat(currentMcoinText);
+
+                    if (currentMcoinText !== "--") {
+                        if (Mcoin !== currentMcoin.toFixed(4)) {
+                            animateMcoinUpdate(currentMcoin, parseFloat(Mcoin));
+                            getUserInfoCount = 0; // 在检测到余额变化后重置重试计数
+                        } else if (getUserInfoCount < 2) { // 使用正确的变量名
+                            // 如果旧余额和新余额相同，延迟1秒后再尝试获取数据（最多尝试三次）
+                            getUserInfoCount++;
+                            setTimeout(getUserInfo, 1000);
+                        }
+                    } else {
+                        $("#Mcoin").text(Mcoin);
+                    }
+                }
+            } else {
+                console.error("获取用户信息失败：", res.message);
+                // 根据需要添加用户提示
             }
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+            console.error("AJAX请求失败：", textStatus, errorThrown);
+            // 根据需要添加用户提示或重试逻辑
         }
     });
 }
 
 function IsLogin() {
-    $.ajax({
-        url: "/Users/IsLogin", type: "post", dataType: "json",//返回对象
-        success: function (res) {
-            if (!res.success) {
-                window.location.href = "/Home/Welcome"
-            }
-        }, error: function (err) {
-            window.location.href = "/Home/Welcome"
-        }
-    });
+    const token = localStorage.getItem('aibotpro_userToken');
+    if (!token) {
+        window.location.href = "/Home/Welcome";
+    }
 }
 
 // 改进后的Base64编码函数，可以处理中文字符
@@ -731,6 +845,13 @@ function customMenu() {
                         <i data-feather="image">
                         </i>
                         只是图床
+                    </a>
+                  </li>
+                  <li class="nav-item" id="SearchForYou">
+                    <a href="https://q.embbot.com" class="nav-link" target="_blank">
+                        <i data-feather="search">
+                        </i>
+                        AI联网搜索
                     </a>
                   </li>
                   <li>
@@ -1048,9 +1169,9 @@ function applyMagnificPopup(selector) {
     }).addClass('mfp-ready'); // 标记a标签为已初始化
 }
 
-function isSupperVIP(callback) {
+function isVIPorSupperVIP(callback) {
     $.ajax({
-        url: "/Users/IsSupperVIP", type: "post", dataType: "json", success: function (res) {
+        url: "/Users/IsVIP", type: "post", dataType: "json", success: function (res) {
             callback(res.success);
         }, error: function (err) {
             sendExceptionMsg(`【API：/Users/IsSupperVIP】:${err}`);
@@ -1101,10 +1222,7 @@ function bindEnglishPromptTranslation(selector) {
             showLoadingIndicator();
 
             $.ajax({
-                type: "POST",
-                url: "/AIdraw/EnglishPrompt",
-                dataType: "json",
-                data: {"prompt": textBeforeM},
+                type: "POST", url: "/AIdraw/EnglishPrompt", dataType: "json", data: {"prompt": textBeforeM},
                 success: function (data) {
                     if (data.success) {
                         // 验证是否仍然包含 'mmmmm'，确保用户在加载时没有修改
@@ -1175,10 +1293,7 @@ function bindOptimizePrompt(selector) {
             showLoadingIndicator();
 
             $.ajax({
-                type: "POST",
-                url: "/Home/OptimizePrompt",
-                dataType: "json",
-                data: {"prompt": textBeforeF},
+                type: "POST", url: "/Home/OptimizePrompt", dataType: "json", data: {"prompt": textBeforeF},
                 success: function (data) {
                     if (data.success) {
                         // 验证是否仍然包含 'fffff'，确保用户在加载时没有修改
@@ -1215,6 +1330,7 @@ function bindInputToSidebar(selector) {
         if (inputValue === '/') {
             // 打开侧边栏
             $('#offCanvas1').addClass('show');
+            getUserPromptList('init')
         } else {
             // 其他所有情况都关闭侧边栏
             $('#offCanvas1').removeClass('show');
@@ -1245,22 +1361,261 @@ function bindInputToSidebar(selector) {
     });
 }
 
-function showContextMenu(x, y, chatId) {
+// 快捷角色
+function bindAtCharacterSelector(selector) {
+    $(selector).on('input', function (e) {
+        var inputValue = $(this).val();
+
+        if (inputValue === '@') {
+            // 打开侧边栏
+            $('#offCanvas2').addClass('show');
+            getRoleList_Right('init');
+        } else {
+            // 其他所有情况都关闭侧边栏
+            $('#offCanvas2').removeClass('show');
+        }
+    });
+
+    // 当输入框失去焦点时，如果内容为空，关闭侧边栏
+    $(selector).on('blur', function () {
+        if ($(this).val() === '') {
+            $('#offCanvas2').removeClass('show');
+        }
+    });
+
+    // 保留原有的关闭侧边栏和点击外部关闭的功能
+    $('.off-canvas .close').on('click', function (e) {
+        e.preventDefault();
+        $(this).closest('.off-canvas').removeClass('show');
+    });
+
+    $(document).on('click touchstart', function (e) {
+        e.stopPropagation();
+        if (!$(e.target).closest('.off-canvas-menu').length) {
+            var offCanvas = $(e.target).closest('.off-canvas').length;
+            if (!offCanvas) {
+                $('.off-canvas.show').removeClass('show');
+            }
+        }
+    });
+}
+
+function bindLinkPreview(chatMessageBoxSelector, previewBoxSelector) {
+    const previewBox = document.querySelector(previewBoxSelector);
+    if (!previewBox) {
+        console.error(`Preview box element not found: ${previewBoxSelector}`);
+        return;
+    }
+
+    function attachPreviewListeners(chatMessageBox) {
+        if (!chatMessageBox) {
+            console.warn(`Chat message box element not found: ${chatMessageBoxSelector}`);
+            return;
+        }
+
+        chatMessageBox.addEventListener('mouseover', async function (event) {
+            const target = event.target;
+
+            if (target.tagName === 'A') {
+                const href = target.href;
+
+                if (href.startsWith('http://') || href.startsWith('https://')) {
+                    // --- Use mouse coordinates ---
+                    previewBox.style.display = 'block';
+                    previewBox.style.top = (event.offsetY - 10) + 'px';  // 10px below the cursor
+                    previewBox.style.left = (event.offsetX - 10) + 'px'; // 10px to the right of the cursor
+
+                    previewBox.innerHTML = 'Loading...';
+
+                    try {
+                        //previewBox.innerHTML = `<img src="https://api.pearktrue.cn/api/screenweb/?url=${href}&type=image" style="width:100%;"/>`;//`<iframe src="${href}" style="width:100%; height:100%; border:none;"></iframe>`;
+                        readLink(previewBox, href);
+                    } catch (error) {
+                        previewBox.innerHTML = `Error loading preview: ${error.message}`;
+                    }
+                }
+            }
+        });
+
+        chatMessageBox.addEventListener('mouseout', function (event) {
+            const relatedTarget = event.relatedTarget;
+            //Use a more general check here:  If the relatedTarget is the previewBox
+            // OR any of its children, don't hide.
+            if (!previewBox.contains(relatedTarget)) {
+                previewBox.style.display = 'none';
+            }
+        });
+
+        // No need for a separate mouseout listener on previewBox in this case.
+        // The chatMessageBox mouseout handles it correctly now.
+    }
+
+
+    // --- MutationObserver for Dynamic Content ---
+
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.addedNodes.length) {
+                mutation.addedNodes.forEach((node) => {
+                    if (node.matches && node.matches(chatMessageBoxSelector)) {
+                        attachPreviewListeners(node);
+                    }
+                    if (node.querySelectorAll) {
+                        const chatMessageBoxes = node.querySelectorAll(chatMessageBoxSelector);
+                        chatMessageBoxes.forEach(attachPreviewListeners);
+                    }
+                });
+            }
+        });
+    });
+
+    observer.observe(document.body, {
+        childList: true, subtree: true,
+    });
+
+    // --- Initial Attachment ---
+    const existingChatMessageBoxes = document.querySelectorAll(chatMessageBoxSelector);
+    existingChatMessageBoxes.forEach(attachPreviewListeners);
+
+
+    return function disconnect() {
+        observer.disconnect();
+    };
+}
+
+function readLink(previewBox, url) {
+    var myHeaders = new Headers();
+    myHeaders.append("Accept", "*/*");
+    myHeaders.append("Host", "api.pearktrue.cn");
+    myHeaders.append("Connection", "keep-alive");
+
+    var requestOptions = {
+        method: 'GET',
+        headers: myHeaders,
+        redirect: 'follow'
+    };
+
+    fetch(`https://api.pearktrue.cn/api/website/info/?url=${url}`, requestOptions)
+        .then(response => response.text())
+        .then(result => {
+            result = JSON.parse(result);
+            if (result.code === 200 && result.data) {
+                // 成功获取数据，更新预览框
+                previewBox.innerHTML = `
+                    <h3>${result.data.title}</h3>
+                    <p><strong>Host:</strong> ${result.data.host}</p>
+                    <p><strong>IP:</strong> ${result.data.ip}</p>
+                    <p><strong>Description:</strong> ${result.data.description || 'No description available.'}</p> 
+                    <img src="${result.data.icon}" alt="Favicon" style="max-width: 32px; max-height: 32px;">
+                `;
+            } else {
+                // API返回错误或缺少数据
+                previewBox.innerHTML = `Error loading preview: ${result.msg || 'Unknown error'}`;
+            }
+        })
+        .catch(error => console.log('error', error));
+}
+
+function getRoleList_Right(type, name) {
+    roleListIsLoading = true;
+
+    if (type == 'init') {
+        roleListNoMoreData = false;
+        roleListPage = 1;
+        roleListPageSize = 20;
+    }
+    if (type == 'loadmore' && roleListNoMoreData) {
+        roleListIsLoading = false;
+        balert('没有更多了', "warning", false, 1500, "center");
+        return;
+    }
+    if (type == 'loadmore') {
+        roleListPage++;
+    }
+
+    var data = {
+        name: name, page: roleListPage, pageSize: roleListPageSize
+    };
+
+    $.ajax({
+        type: 'Post', url: '/Role/GetRoleList', data: data, success: function (res) {
+            roleListIsLoading = false;
+            if (res.success) {
+                let html = '';
+                for (let i = 0; i < res.data.length; i++) {
+                    let item = res.data[i];
+                    html += `<li class="list-group-item list-group-item-action d-flex align-items-center">`;
+                    html += `<img src="${item.roleAvatar}" alt="${item.roleName}" class="rounded-circle mr-3" style="width: 40px; height: 40px;">`; // 头像
+                    html += `<div class="flex-grow-1"  onclick="startChat('${item.roleCode}')">`; // 添加点击事件
+                    html += `<h6 class="mb-1">${item.roleName}</h6>`; // 角色名
+                    html += `<p class="mb-0 text-muted small">${item.roleInfo}</p>`; // 简介
+                    html += `</div>`;
+                    html += `</li>`;
+                }
+
+                if (type == 'loadmore') {
+                    $('#chatRoleItems').append(html);
+                    roleListNoMoreData = res.data.length < roleListPageSize;
+                    //向下滚动一点点像素
+                    $('#chatRoleItems').animate({scrollTop: $('#chatRoleItems')[0].scrollHeight}, 500);
+                } else {
+                    $('#chatRoleItems').html(html);
+                    roleListNoMoreData = res.data.length < roleListPageSize;
+
+                }
+
+                //feather.replace(); //  这里不需要 feather.replace()
+            }
+        }, error: function (res) {
+            roleListIsLoading = false;
+            //loadingOverlay.hide(); // 如果使用了加载指示器
+            console.error("Error fetching role list:", res);
+        }
+    });
+}
+
+function searchRole_Right() {
+    var name = $('#roleSearchInput').val();
+    getRoleList_Right('init', name);
+}
+
+function loadMoreRoleList_Right() {
+    roleListIsLoading = true;
+    getRoleList_Right('loadmore');
+}
+
+function startChat(roleCode) {
+    window.location.href = `/Home/Index?type=${roleCode}`;
+}
+
+function showContextMenu(x, y, chatId, isTop = false, itemType = 'chat') {
     // 隐藏任何已显示的右键菜单
     $('.custom-context-menu').remove();
 
     // 创建菜单HTML
+    var pinnedLi = isTop
+        ? `<li onclick="pinnedChat('${chatId}', false)" class="text-warning"><i data-feather="arrow-down"></i>&nbsp;取消置顶</li>`
+        : `<li onclick="pinnedChat('${chatId}', true)" class="text-success"><i data-feather="arrow-up"></i>&nbsp;置顶消息</li>`;
+
     var menuHtml = `
-        <div class="custom-context-menu" style="position:absolute; z-index:1000;">
-            <ul>
-                <li onclick="saveMemory('','${chatId}')"><i data-feather="cpu"></i>&nbsp;存入记忆</li>
-                <li onclick="startEditing('${chatId}')"><i data-feather="edit-3"></i>&nbsp;编辑标题</li>
-                <li onclick="exportChat('${chatId}')"><i data-feather="share"></i>&nbsp;导出记录</li>
-                <li onclick="multipleChoice()"><i data-feather="check-square"></i>&nbsp;多项选择</li>
-                <li class="historyPreview" onclick="showHistoryPreview('${chatId}')"><i data-feather="message-square"></i>&nbsp;预览内容</li>
-                <li onclick="deleteChat('${chatId}')" class="text-danger"><i data-feather="trash-2"></i>&nbsp;删除</li>
-            </ul>
-        </div>
+    <div class="custom-context-menu" style="position:absolute; z-index:1000;">
+        <ul>
+            ${itemType === 'chat' ? `<li onclick="saveMemory('','${chatId}')"><i data-feather="cpu"></i>&nbsp;存入记忆</li>` : ''}
+            <li onclick="startEditing('${chatId}','${itemType}')"><i data-feather="edit-3"></i>&nbsp;编辑标题</li>
+            ${itemType === 'chat' ? `<li onclick="exportChat('${chatId}')"><i data-feather="share"></i>&nbsp;导出记录</li>` : ''}
+            ${itemType === 'chat' ? `<li onclick="multipleChoice()"><i data-feather="check-square"></i>&nbsp;多项选择</li>` : ''}
+            <li onclick="createCollection()"><i data-feather="folder-plus"></i> 新建合集</li>
+             ${itemType === 'chat' ? `<li class="collection-submenu"><i data-feather="git-branch"></i> 转存合集 <i data-feather="chevron-right" style="float: right"></i>
+                                            <ul class="submenu">
+                                                <li class="loading">加载中...</li>
+                                            </ul>
+                                        </li>` : ''}
+            ${itemType === 'chat' ? `<li class="historyPreview" onclick="showHistoryPreview('${chatId}')"><i data-feather="message-square"></i>&nbsp;预览内容</li>` : ''}
+            ${itemType === 'chat' ? pinnedLi : ''}
+            ${itemType === 'chat' ? `<li onclick="lockChat('${chatId}')" class="text-info"><i data-feather="lock"></i>&nbsp;私有加密</li>` : ''}
+            ${itemType === 'chat' ? `<li onclick="deleteChat('${chatId}')" class="text-danger"><i data-feather="trash-2"></i>&nbsp;删除</li>` : ''}
+        </ul>
+    </div>
     `;
 
     // 添加菜单到body
@@ -1268,6 +1623,7 @@ function showContextMenu(x, y, chatId) {
 
     // 获取菜单元素
     var $menu = $('.custom-context-menu');
+    var $submenu = $menu.find('.collection-submenu .submenu');
 
     // 计算菜单的尺寸
     var menuWidth = $menu.outerWidth();
@@ -1291,15 +1647,256 @@ function showContextMenu(x, y, chatId) {
     // 设置菜单位置
     $menu.css({top: y, left: x});
 
+    // 给"转存合集"添加点击事件
+    $menu.find('.collection-submenu').on('click', function (event) {
+        event.stopPropagation(); // 阻止事件冒泡
+
+        // 如果子菜单已显示，则隐藏它
+        if ($submenu.is(':visible')) {
+            $submenu.hide();
+        } else {
+            // 显示子菜单
+            $submenu.show();
+
+            // 获取 "转存合集" 元素及其尺寸
+            var parentLi = $(this);
+            var parentLiWidth = parentLi.outerWidth();
+            var parentLiHeight = parentLi.outerHeight();
+
+            // 获取子菜单的尺寸
+            var submenuWidth = $submenu.outerWidth();
+            var submenuHeight = $submenu.outerHeight();
+
+            // 计算子菜单相对于父元素的位置
+            var submenuX = parentLiWidth + 10; // 紧贴父元素右侧
+            var submenuY = 200
+
+            // 获取主菜单的位置
+            var menuOffset = $menu.offset();
+
+            // 调整子菜单的X坐标
+            if (menuOffset.left + submenuX + submenuWidth > windowWidth) {
+                submenuX = -submenuWidth; // 超出右侧，显示在父元素左侧
+            }
+
+            // 调整子菜单的Y坐标
+            if (menuOffset.top + submenuY + submenuHeight > windowHeight) {
+                submenuY = parentLiHeight - submenuHeight; // 超出底部，向上调整
+            }
+
+            // 设置子菜单相对于父元素的位置
+            $submenu.css({
+                left: submenuX,
+                top: submenuY
+            });
+        }
+    });
+
     feather.replace();
 
-    // 点击其他地方隐藏菜单
-    $(document).on('click', function () {
+    // 点击其他地方隐藏菜单 - 阻止冒泡到上级菜单
+    $(document).off('click.contextmenu').on('click.contextmenu', function () {
         $('.custom-context-menu').remove();
+        $(document).off('click.contextmenu');
+    });
+
+    $menu.on('click', function (event) {
+        event.stopPropagation();
+    });
+
+    // 获取合集列表并添加到二级菜单
+    $.ajax({
+        url: "/Home/GetCollection",
+        type: "post",
+        dataType: "json",
+        success: function (res) {
+            $submenu.empty(); // 清空加载提示
+
+            if (res.data && res.data.length > 0) {
+                var data = res.data;
+                for (var i = 0; i < data.length; i++) {
+                    var item = data[i];
+                    var str = `<li onclick="saveToCollection('${chatId}', '${item.collectionCode}'); event.stopPropagation();">${item.collectionName}</li>`; // 添加点击事件，阻止冒泡
+                    $submenu.append(str);
+                }
+                var strlast = `<li class="text-info" onclick="backHistoryList('${chatId}', '${item.collectionCode}'); event.stopPropagation();">恢复至列表</li>`;
+                $submenu.append(strlast);
+            } else {
+                $submenu.append('<li>暂无合集</li>');
+            }
+        },
+        error: function () {
+            $submenu.empty(); // 清空加载提示
+            $submenu.append('<li>加载失败</li>');
+        }
     });
 }
 
-function startEditing(chatId) {
+
+// 保存到合集的函数
+function saveToCollection(chatId, collectionCode) {
+    $.ajax({
+        url: "/Home/SaveToCollection",
+        type: "post",
+        dataType: "json",
+        data: {
+            chatId: chatId,
+            collectionCode: collectionCode
+        },
+        success: function (res) {
+            if (res.success) {
+                $('[id*="' + chatId + '"]').remove();
+                $('.custom-context-menu').remove();
+                balert("转存成功", "success", false, 1000, "top")
+            }
+        }, error: function (err) {
+            sendExceptionMsg(`【API：/Home/SaveToCollection】:${err}`);
+        }
+    });
+}
+
+// 恢复到列表的函数
+function backHistoryList(chatId, collectionCode) {
+    $.ajax({
+        url: "/Home/BackHistoryList",
+        type: "post",
+        dataType: "json",
+        data: {
+            chatId: chatId,
+            collectionCode: collectionCode
+        },
+        success: function (res) {
+            if (res.success) {
+                $('.custom-context-menu').remove();
+                getHistoryList(1, 20, true, false, "");
+            }
+        }, error: function (err) {
+            sendExceptionMsg(`【API：/Home/backHistoryList】:${err}`);
+        }
+    });
+}
+
+function pinnedChat(id, isTop) {
+    loadingOverlay.show();
+    $.ajax({
+        type: "Post",
+        url: "/Home/PinnedChat",
+        dataType: "json",
+        data: {
+            chatId: id,
+            pinned: isTop
+        }, success: function (res) {
+            if (res.success) {
+                getHistoryList(1, 20, true, false, "");
+            } else {
+                balert(res.data, "danger", false, 2000, "center");
+            }
+            loadingOverlay.hide();
+        }, error: function (err) {
+            loadingOverlay.hide();
+            //window.location.href = "/Users/Login";
+            balert("加密失败，错误请联系管理员：err", "danger", false, 2000, "center");
+        }
+    });
+}
+
+function lockChat(id) {
+    showConfirmationModal("提示", "私有化加密，您只能通过后台生成的密钥解密，如果密钥遗失您将永远无法解密此对话记录", function () {
+        loadingOverlay.show();
+        $.ajax({
+            type: "Post", url: "/Home/LockChat", dataType: "json", data: {
+                chatId: id
+            }, success: function (res) {
+                loadingOverlay.hide();
+                if (res.success) {
+                    showKeyModal(res.data);
+                    getHistoryList(1, 20, true, false, "");
+                    if (id == chatid) {
+                        showHistoryDetail(id);
+                    }
+                } else {
+                    balert(res.data, "danger", false, 2000, "center");
+                }
+            }, error: function (err) {
+                loadingOverlay.hide();
+                //window.location.href = "/Users/Login";
+                balert("加密失败，错误请联系管理员：err", "danger", false, 2000, "center");
+            }
+        });
+    });
+}
+
+function showKeyModal(key) {
+    // 创建模态框
+    var modal = $('<div class="modal fade" id="keyModal" tabindex="-1" role="dialog" aria-labelledby="keyModalLabel" aria-hidden="true"></div>');
+    var modalDialog = $('<div class="modal-dialog" role="document"></div>');
+    var modalContent = $('<div class="modal-content"></div>');
+
+    // 模态框头部
+    var modalHeader = $('<div class="modal-header"></div>');
+    modalHeader.append('<h5 class="modal-title" id="keyModalLabel">加密完成</h5>');
+    modalHeader.append('<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>');
+
+    // 模态框主体
+    var modalBody = $('<div class="modal-body"></div>');
+    modalBody.append('<p>您的密钥如下：</p>');
+    modalBody.append('<div class="key-container p-3 mb-3 text-center" style="border: 2px dashed #007bff; font-size: 2em; font-weight: bold; letter-spacing: 5px;">' +
+        key.substr(0, 3) + ' ' + key.substr(3, 3) + '</div>');
+    modalBody.append('<button class="btn btn-primary copy-btn" onclick="copyText(\'' + key + '\')"><i class="fas fa-copy mr-2"></i>复制密钥</button>');
+    modalBody.append('<p class="mt-3 text-danger"><strong>注意：</strong>密钥服务器不会保存，请务必妥善保管，切勿丢失！</p>');
+
+    // 模态框底部
+    var modalFooter = $('<div class="modal-footer"></div>');
+    modalFooter.append('<button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>');
+
+    // 组装模态框
+    modalContent.append(modalHeader, modalBody, modalFooter);
+    modalDialog.append(modalContent);
+    modal.append(modalDialog);
+
+    // 添加模态框到页面并显示
+    $('body').append(modal);
+    $('#keyModal').modal('show');
+
+    // 模态框关闭后移除
+    $('#keyModal').on('hidden.bs.modal', function (e) {
+        $(this).remove();
+    });
+}
+
+function unLockChat(id) {
+    event.stopPropagation();
+    showPromptModal('解密对话', '请输入该对话记录的<b style="color:red">加密私钥</b>以解密此对话', function (value) {
+        if (value != "") {
+            loadingOverlay.show();
+            $.ajax({
+                type: "Post", url: "/Home/UnLockChat", dataType: "json", data: {
+                    chatId: id,
+                    encryptionKey: value
+                }, success: function (res) {
+                    loadingOverlay.hide();
+                    if (res.success) {
+                        balert("解密完成", "success", false, 1000, "top");
+                        getHistoryList(1, 20, true, false, "");
+                        if (id == chatid) {
+                            showHistoryDetail(id);
+                        }
+                    } else {
+                        balert(res.data, "danger", false, 2000, "center");
+                    }
+                }, error: function (err) {
+                    loadingOverlay.hide();
+                    //window.location.href = "/Users/Login";
+                    balert("解密失败", "danger", false, 2000, "center");
+                }
+            });
+        } else {
+            balert('加密私钥不能为空', 'danger', false, 1000, 'top');
+        }
+    });
+}
+
+function startEditing(chatId, itemType = 'chat') {
     // 使用转义字符直接在选择器中
     const escapedChatId = chatId.replace(/([ #;?%&,.+*~\':"!^$[\]()=>|\/@])/g, '\\$1');
 
@@ -1338,7 +1935,12 @@ function startEditing(chatId) {
             e.preventDefault();
 
             let textContent = this.textContent.trim(); // 获取聊天标题原始文本
-            updateChatTitle(chatId, textContent);  // 更新聊天标题
+            if (itemType === 'chat') {
+                updateChatTitle(chatId, textContent);  // 更新聊天标题
+            }
+            if (itemType === 'collection') {
+                updateCollectionTitle(chatId, textContent)// 更新收藏夹标题
+            }
 
             // 将文本截断后设置回 txt 元素以供显示
             if (textContent.length > 50) {
@@ -1365,10 +1967,115 @@ function updateChatTitle(chatId, chatTitle) {
             chatTitle: chatTitle
         },
         success: function (res) {
-            if (res.success && chatTitle == "")
+            if (res.success)
                 getHistoryList(1, 20, true, false, "");
         }, error: function (err) {
             sendExceptionMsg(`【API：/Home/UpdateChatTitle】:${err}`);
+        }
+    });
+}
+
+function createCollection() {
+    var collectionCode = generateGUID(true);
+    var html = `<li class="chat-item" id="${collectionCode}" data-itemtype="collection" onclick="showCollection('${collectionCode}')">
+                            <i data-feather="folder"></i>
+                            <div class="chat-item-body">
+                                <div>
+                                    <txt id="${collectionCode} txt">
+                                        未命名合集
+                                    </txt>
+                                </div>
+                                <p>
+                                    --
+                                </p>
+                            </div>
+                            <span class="delete-chat text-success">
+                               <i data-feather="check" onclick="checkCollectionTitle('${collectionCode}')"></i>
+                            </span>
+                    </li>`
+    $(".chat-list").prepend(html); // 添加到第一行
+    feather.replace(); // 重新渲染图标
+
+    // 以下代码逻辑类似于 startEditing 函数
+    const escapedCollectionCode = collectionCode.replace(/([ #;?%&,.+*~\':"!^$[\]()=>|\/@])/g, '\\$1');
+    const txtElement = $(`#${escapedCollectionCode} txt`);
+    const listItem = $(`#${escapedCollectionCode}`);
+
+    // 使 txt 元素可编辑并获取焦点
+    txtElement.attr('contenteditable', 'true').focus();
+    txtElement.css('cursor', 'text');
+
+    // 全选文本
+    document.execCommand('selectAll', false, null);
+
+    // 临时移除绑定的 onclick 事件
+    const originalOnclick = listItem.attr('onclick');
+    listItem.attr('onclick', '');
+
+    // 实时监控文本输入，确保不超过100字符
+    txtElement.on('input', function () {
+        const maxLength = 100;
+        if (this.textContent.length > maxLength) {
+            // 如果输入超出100字符，截断超出的部分
+            this.textContent = this.textContent.substring(0, maxLength);
+            // 将光标移动到文本末尾
+            let range = document.createRange();
+            let sel = window.getSelection();
+            range.selectNodeContents(this);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+    });
+    // 移除 blur 和 keydown 事件监听器，让它只响应check按钮的点击事件
+    txtElement.off('blur keydown');
+}
+
+// 点击check按钮时触发，用于提交内容和截断显示
+function checkCollectionTitle(collectionCode) {
+    const escapedCollectionCode = collectionCode.replace(/([ #;?%&,.+*~\':"!^$[\]()=>|\/@])/g, '\\$1');
+    const txtElement = $(`#${escapedCollectionCode} txt`);
+    const listItem = $(`#${escapedCollectionCode}`);
+
+    let textContent = txtElement.text().trim(); // 获取合集名原始文本
+    //不允许为空
+    if (textContent == "") {
+        textContent = "未命名合集";
+    }
+
+    updateCollectionTitle(collectionCode, textContent); // 更新合集名
+
+    // 将文本截断后设置回 txt 元素以供显示
+    if (textContent.length > 50) {
+        txtElement.text(textContent.substring(0, 50) + "...");
+    }
+
+    txtElement.attr('contenteditable', 'false').off('input');
+
+    // 编辑完成，恢复原始的点击事件
+    listItem.attr('onclick', listItem.data('originalOnclick'));
+    // 恢复鼠标指针样式
+    txtElement.css('cursor', '');
+}
+
+// 新增的更新合集标题的函数
+function updateCollectionTitle(collectionCode, collectionName) {
+    $.ajax({
+        url: "/Home/UpdateCollectionTitle",
+        type: "post",
+        dataType: "json",
+        data: {
+            collectionCode: collectionCode,
+            collectionName: collectionName
+        },
+        success: function (res) {
+            if (!res.success) {
+                balert(res.msg, 'danger', false, 1500, 'top');
+            }
+            getHistoryList(1, 20, true, false, "");
+        },
+        error: function (err) {
+            sendExceptionMsg(`【API：/Home/UpdateCollectionTitle】:${err}`);
         }
     });
 }
@@ -1471,6 +2178,7 @@ function deleteUserPrompt(id) {
 
 // 调用函数打开模态框
 function exportChat(chatId) {
+    $('#exportImage').show();
     $('#exportModal').modal('show');
     showHistoryDetail(chatId);
     $('#exportMarkdown').off('click').on('click', function () {
@@ -1770,10 +2478,7 @@ function activateTab(tabId) {
 
 function loadChatContent(chatId, tabId) {
     $.ajax({
-        type: "Post",
-        url: "/Home/ShowHistoryDetail",
-        dataType: "json",
-        data: {chatId: chatId},
+        type: "Post", url: "/Home/ShowHistoryDetail", dataType: "json", data: {chatId: chatId},
         success: function (res) {
             let html = "";
             var isvip = false;
@@ -1832,8 +2537,28 @@ function loadChatContent(chatId, tabId) {
                         "id": res.data[i].chatCode,
                         "markdown": content
                     };
+                    let thinkMatches = [];
+                    let normalContent = content;
+                    const thinkRegex = /<think>([\s\S]*?)<\/think>/g;
+                    let match;
+                    while ((match = thinkRegex.exec(content)) !== null) {
+                        if (!thinkMatches.includes(match[1])) {
+                            thinkMatches.push(match[1]);
+                        }
+                    }
+                    // 从 normalContent 中移除所有成对的 <think> 标签内容
+                    normalContent = normalContent.replace(thinkRegex, '');
+                    // 处理未闭合的 <think> 标签（例如只有 <think> 而没有 </think> 的情况）
+                    const unfinishedThinkRegex = /<think>([\s\S]*)$/g;
+                    if ((match = unfinishedThinkRegex.exec(normalContent)) !== null) {
+                        if (!thinkMatches.includes(match[1])) {
+                            thinkMatches.push(match[1]);
+                        }
+                        normalContent = normalContent.replace(unfinishedThinkRegex, '');
+                    }
+                    const thinkContent = thinkMatches.join("\n");
                     markdownHis.push(item);
-                    var markedcontent = marked(completeMarkdown(content));
+                    var markedcontent = marked(completeMarkdown(normalContent));
                     var firstTime = '';
                     var allTime = '';
                     if (res.data[i].firstTime != "null" && res.data[i].allTime != "null" && res.data[i].firstTime != null && res.data[i].allTime != null) {
@@ -1845,7 +2570,12 @@ function loadChatContent(chatId, tabId) {
                             firstTime = `<span class="badge badge-pill badge-warning">${res.data[i].firstTime}s</span>`;
                         }
                     }
-
+                    let thinkBoxHtml = '';
+                    if (thinkContent) {
+                        thinkBoxHtml = `<details><summary>AI 思考结束（点击展开）</summary>
+                                            <div class="think-content">${md.render(thinkContent)}</div>
+                                        </details>`;
+                    }
                     html += `<div class="${msgclass}" data-group="${res.data[i].chatGroupId}">
                                  <div style="display: flex; align-items: center;">
                                     <div class="avatar  gpt-avatar">${roleAvatar}</div>
@@ -1853,6 +2583,7 @@ function loadChatContent(chatId, tabId) {
                                     <span class="badge badge-info ${res.data[i].model.replace('.', '')}">${res.data[i].model}</span>
                                     ${firstTime}${allTime}
                                  </div>
+                                 ${thinkBoxHtml}
                                 <div class="chat-message-box">
                                     <div id="${res.data[i].chatCode}">${markedcontent}</div>
                                 </div>
@@ -1861,7 +2592,7 @@ function loadChatContent(chatId, tabId) {
             }
             $(`[id="${tabId}"]`).html(html);
 
-            MathJax.typeset();
+            //MathJax.typeset();
             $(`[id="${tabId}"] .chat-message pre code`).each(function (i, block) {
                 hljs.highlightElement(block);
             });
@@ -2041,7 +2772,16 @@ $(document).on('click', '.custom-delete-btn-1', function (e) {
 
     $confirmDialog.find('.custom-confirm-2').on('click', function () {
         deleteChatGroup(chatgroupid, 2);
-        const $chatgroup = $(`.chat-message[data-group='${chatgroupid}']`);
+        const $message = $(`.bubble[data-group='${chatgroupid}']`);
+
+        let $chatgroup;
+        if ($message.length === 0) {
+            // 如果没有找到任何消息元素，则使用第二个选择器
+            $chatgroup = $(`.chat-message[data-group='${chatgroupid}']`);
+        } else {
+            // 如果找到了消息元素，可以选择使用它
+            $chatgroup = $message; // 或者你可以根据需要进行其他操作
+        }
         $chatgroup.addClass('chatgroup-masked');
         createMaskedOverlays();
         $confirmDialog.removeClass('custom-show-1');
@@ -2061,7 +2801,16 @@ function restoreChatGroup(chatgroupid) {
             loadingOverlay.hide();
             if (res.success) {
                 // 找到对应的聊天组元素
-                const $chatgroup = $(`.chat-message[data-group='${chatgroupid}']`);
+                const $message = $(`.bubble[data-group='${chatgroupid}']`);
+
+                let $chatgroup;
+                if ($message.length === 0) {
+                    // 如果没有找到任何消息元素，则使用第二个选择器
+                    $chatgroup = $(`.chat-message[data-group='${chatgroupid}']`);
+                } else {
+                    // 如果找到了消息元素，可以选择使用它
+                    $chatgroup = $message; // 或者你可以根据需要进行其他操作
+                }
 
                 // 移除遮罩层类
                 $chatgroup.removeClass('chatgroup-masked');
@@ -2114,4 +2863,33 @@ function createMaskedOverlays() {
             restoreChatGroup(chatgroupid);
         });
     });
+}
+
+function isURL(str) {
+    if (!str) {
+        return false;
+    }
+    str = str.trim();
+
+    // 使用正则表达式匹配 URL 格式
+    var pattern = new RegExp('^(https?:\\/\\/)?' + // 协议
+        '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // 域名
+        '((\\d{1,3}\\.){3}\\d{1,3}))' + // 或 IP (v4) 地址
+        '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // 端口和路径
+        '(\\?[;&a-z\\d%_.~+=-]*)?' + // 查询字符串
+        '(\\#[-a-z\\d_]*)?$', 'i'); // 锚点
+
+    return pattern.test(str);
+}
+
+function renderMermaidDiagrams(selector = '.chat-message') {
+    // 渲染Mermaid图表
+    $(`${selector} pre code.language-mermaid`).each(function (i, block) {
+        var mermaidCode = $(block).text();
+        var mermaidDiv = $('<div class="mermaid"></div>').text(mermaidCode);
+        $(block).parent().replaceWith(mermaidDiv); // 移除外层的<pre>标签
+    });
+
+    // 重新初始化Mermaid
+    mermaid.init(undefined, '.mermaid');
 }

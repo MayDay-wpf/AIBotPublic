@@ -81,6 +81,9 @@ builder.Services.AddScoped<IOpenAPIService, OpenAPIService>();
 builder.Services.AddScoped<ICOSService, COSService>();
 builder.Services.AddScoped<INewApiService, NewApiService>();
 builder.Services.AddSingleton<ChatCancellationManager>();
+builder.Services.AddScoped<IMessagesService, MessagesService>();
+builder.Services.AddScoped<IForumService, ForumService>();
+builder.Services.AddScoped<IAiBookService, AiBookService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddSignalR();
 
@@ -121,11 +124,23 @@ builder.Services.AddSingleton<JwtTokenManager>();
 var app = builder.Build();
 app.Use((context, next) =>
 {
-    var remoteIpAddress = context.Connection.RemoteIpAddress;
+    var remoteIpAddress = context.Connection.RemoteIpAddress ?? IPAddress.Parse("0.0.0.0");
 
     if (context.Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
     {
-        remoteIpAddress = IPAddress.Parse(forwardedFor.First());
+        try
+        {
+            var firstIp = forwardedFor.FirstOrDefault();
+            if (!string.IsNullOrEmpty(firstIp))
+            {
+                remoteIpAddress = IPAddress.Parse(firstIp.Split(',')[0].Trim());
+            }
+        }
+        catch (FormatException)
+        {
+            // 如果解析失败，使用默认IP地址
+            remoteIpAddress = IPAddress.Parse("0.0.0.0");
+        }
     }
 
     context.Items["RemoteIpAddress"] = remoteIpAddress;
@@ -144,6 +159,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapHub<ChatHub>("/chatHub");  // 映射Hub
+app.MapHub<MessagesHub>("/imessageHub"); // 映射Hub
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {

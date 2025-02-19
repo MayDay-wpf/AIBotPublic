@@ -1,9 +1,11 @@
 ﻿
 $(function () {
-    if (isMobile()) {
+    var pathname = window.location.pathname;
+    pathname = pathname.toLowerCase();
+    if (isMobile() || !isMobile()) {
         $('.robot-container').hide();
         $('.robotSM').hide();
-    } else {
+    } else if (pathname != "/forum/index" && pathname != "/forum/publisharticle") {
         getBotSetting();
         getNotice();
     }
@@ -219,18 +221,18 @@ var connection_bot = new signalR.HubConnectionBuilder()
     .build();
 
 // 启动连接
-connection_bot.start()
-    .then(function () {
-        console.log('Bot与服务器握手成功 :-)'); // 与服务器握手成功
-    })
-    .catch(function (error) {
-        console.log('与服务器握手失败 :-( 原因: ' + error); // 与服务器握手失败
-        sendExceptionMsg('与服务器握手失败 :-( 原因: ' + error);
-        // 检查令牌是否过期，如果是，则跳转到登录页面
-        if (isTokenExpiredError(error)) {
-            window.location.href = "/Users/Login";
-        }
-    });
+// connection_bot.start()
+//     .then(function () {
+//         console.log('Bot与服务器握手成功 :-)'); // 与服务器握手成功
+//     })
+//     .catch(function (error) {
+//         console.log('与服务器握手失败 :-( 原因: ' + error); // 与服务器握手失败
+//         sendExceptionMsg('与服务器握手失败 :-( 原因: ' + error);
+//         // 检查令牌是否过期，如果是，则跳转到登录页面
+//         if (isTokenExpiredError(error)) {
+//             window.location.href = "/Users/Login";
+//         }
+//     });
 
 // 检查错误是否表示令牌过期的函数
 // 注意：您需要根据实际的错误响应格式来调整此函数
@@ -343,7 +345,8 @@ function sendMsg_bot() {
                           * AIBot拥有海量的AI对话模型，供用户使用，并且可以无感切换。
                           * 当需要AIBot提供服务时，用户需支付一定的费用，在页面的右下角【计费说明】中有详细描述。
                           * AIBot也提供免费模型，在模型切换时，拥有【🆓】这个emoji标签的代表免费使用，但是需注意，用户余额需要大于0才可以免费使用。
-                          * AIBot有两项会员服务价格分别是【15元】和【50元】，拥有会员折扣价和会员专属免费模型，在切换模型时，拥有【✨】这个emoji标签的代表是会员专属免费模型，15元会员和50元会员都可以免费使用,拥有【👑】这个emoji标签的代表是高级会员专属免费模型,只有50元会员可以免费使用。
+                          * AIBot有两项会员服务价格分别是【20元】和【50元】，拥有会员折扣价和会员专属免费模型，在切换模型时，拥有【✨】这个emoji标签的代表是会员专属折扣模型，20元会员和50元会员都可以免费使用,拥有【👑】这个emoji标签的代表是高级会员专属折扣模型。
+                          * AIBot会员的折扣力度非常大，有部分模型是会员免费的
                           * AIBot的创意工坊有免费模型，按照频率刷新次数，拥有【🕔】这个emoji标签的代表按频率刷新免费使用次数。
                           * 会员充值链接：https://aibotpro.cn/Pay/VIP
                           * AIBot也可以单独充值余额，最低1元起充，充值链接：https://aibotpro.cn/Pay/Balance

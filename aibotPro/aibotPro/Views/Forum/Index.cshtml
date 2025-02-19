@@ -1,0 +1,137 @@
+@{
+    ViewData["Title"] = "轻论坛（Forum）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/system/forum/css/forumhome.css" rel="stylesheet" />
+<div class="header">
+    <div class="header-left d-flex align-items-center">
+        <a id="menuMain" href="#" class="burger-menu">
+            <i data-feather="menu"></i>
+        </a>
+        <a id="menuBack" href="#" class="burger-menu d-none">
+            <i data-feather="arrow-left"></i>
+        </a>
+        @* <a href="#" class="header-help-link ml-2" onclick="SDinfo()">
+        <i data-feather="help-circle"></i>
+        </a> *@
+        <a href="/Forum/PublishArticle" class="btn btn-success ml-2">
+            <i class="fas fa-edit"></i> 发布新帖
+        </a>
+        <div class="header-search">
+            <i data-feather="search">
+            </i>
+            <input type="search" class="form-control" placeholder="输入关键词，回车搜索" id="searchKey">
+        </div>
+    </div>
+    <div class="header-right">
+        <a id="sidebarToggle" href="#">
+            <i data-feather="sidebar"></i>
+        </a>
+    </div>
+</div>
+<div class="forum-container">
+    <div class="row">
+        <!-- 主内容区 -->
+        <div class="col-12 col-lg-9 main-content">
+            <!-- 帖子列表 -->
+            <div class="card mb-3 post-card">
+                <div class="card-body" id="topicList">
+                    <div id="loading" style="text-align: center;">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="emoji-selector" style="display:none;">
+                <div class="emoji-list">
+                    <span class="emoji" data-emoji="👍" data-index="a">👍</span>
+                    <span class="emoji" data-emoji="👎" data-index="b">👎</span>
+                    <span class="emoji" data-emoji="😀" data-index="c">😀</span>
+                    <span class="emoji" data-emoji="😂" data-index="d">😂</span>
+                    <span class="emoji" data-emoji="😅" data-index="e">😅</span>
+                    <span class="emoji" data-emoji="🤮" data-index="f">🤮</span>
+                    <span class="emoji" data-emoji="🤡" data-index="g">🤡</span>
+                    <span class="emoji" data-emoji="💩" data-index="h">💩</span>
+                    <span class="emoji" data-emoji="🎉" data-index="i">🎉</span>
+                    <span class="emoji" data-emoji="🍾" data-index="j">🍾</span>
+                    <span class="emoji" data-emoji="🤙" data-index="k">🤙</span>
+                    <span class="emoji" data-emoji="✨" data-index="l">✨</span>
+                    <span class="emoji" data-emoji="❤️" data-index="m">❤️</span>
+                    <span class="emoji" data-emoji="🔥" data-index="n">🔥</span>
+                    <span class="emoji" data-emoji="👏" data-index="o">👏</span>
+                    <span class="emoji" data-emoji="🤔" data-index="p">🤔</span>
+                    <span class="emoji" data-emoji="😊" data-index="q">😊</span>
+                    <span class="emoji" data-emoji="😘" data-index="r">😘</span>
+                    <span class="emoji" data-emoji="😜" data-index="s">😜</span>
+                    <span class="emoji" data-emoji="😎" data-index="t">😎</span>
+                    <span class="emoji" data-emoji="😢" data-index="u">😢</span>
+                    <span class="emoji" data-emoji="😡" data-index="v">😡</span>
+                    <span class="emoji" data-emoji="🙏" data-index="w">🙏</span>
+                    <span class="emoji" data-emoji="💪" data-index="x">💪</span>
+                </div>
+
+            </div>
+            <!-- 分页 -->
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- 自定义右侧侧边栏 -->
+<div id="customSidebar" class="custom-sidebar">
+    <div class="sidebar-content">
+        <div class="sidebar-section tologin">
+            <button class="btn btn-primary" onclick="window.location.href='/Users/Login'">登录/注册</button>
+        </div>
+        <div class="sidebar-section user-info">
+            <img src="https://www.wetools.com/imgplaceholder/180x180" class="userHeadImg" id="userHeadImg" alt="头像">
+            <a href="#" class="user-name d-block" id="user-name">--</a>
+            <div class="usersetting">
+                <p class="user-bio">我的简介:<span id="introduction">--</span></p>
+                <p class="user-bio">我的网站:<span id="website">--</span></p>
+            </div>
+            <div class="userPoints">
+                <i class="fas fa-coins text-warning"></i> 论坛积分：<span id="points">--</span>
+            </div>
+        </div>
+        <div class="sidebar-section user-msg" onclick="window.location.href='/Forum/Notifications?from=/Forum/Index'">
+            <p><i class="far fa-envelope"></i> 未读消息：<span class="unreadmsg" id="unreadmsg">--</span></p>
+        </div>
+        <div class="sidebar-section forum-info">
+            <p class="section-title">AIBotPro 轻论坛</p>
+            <p class="section-text">
+                一个理想主义的论坛，在这里可以讨论各种AI和你感兴趣的话题,但是在发帖前请一定记得，不要往中文互联网倒垃圾!<br /><br />
+                <span class="text-info">ℹ️站内允许推广自己的产品，但是务必要对自己的产品进行详细介绍、文案工整、篇幅长度合理，且必须在标题标注【推广】否则会被管理员删除!</span>
+                <br /><br />
+                <b>🚫禁止内容</b><br />
+                1、禁止散播无考证的谣言<br />
+                2、禁止散播反政府言论<br />
+                3、禁止挑起性别对立<br />
+                4、禁止重复发毫无营养的广告<br />
+                5、禁止使用一切拼音缩写<br />
+                6、允许激烈的讨论，禁止说脏话<br />
+            </p>
+        </div>
+
+        <!-- 主题分类列表 -->
+        @* <div class="sidebar-section">
+        <p class="section-title">节点列表</p>
+        <ul class="sidebar-list">
+        <li>
+        综合讨论
+        </li>
+        <li>
+        技术交流
+        </li>
+        <li>
+        生活分享
+        </li>
+        </ul>
+        </div> *@
+    </div>
+</div>
+
+<script src="~/system/forum/js/emojimap.js"></script>
+<script src="~/system/forum/js/forumhome.js"></script>

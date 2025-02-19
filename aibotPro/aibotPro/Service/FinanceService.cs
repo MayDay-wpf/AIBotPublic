@@ -167,6 +167,7 @@ namespace aibotPro.Service
                         _context.UseUpLogs.Add(log);
 
                         await _context.SaveChangesAsync();
+                        await UpdateForumpoint(inputCount + outputCount, account);
                         transaction.Commit();
                         return true;
                     }
@@ -183,6 +184,18 @@ namespace aibotPro.Service
             }
         }
 
+        private async Task UpdateForumpoint(int tokens, string account)
+        {
+            var user = _context.Users.AsNoTracking().Where(x => x.Account == account).FirstOrDefault();
+            var userForumSetting = _context.ForumUserSettings.AsNoTracking().Where(x => x.AccountId == user.Id)
+                .FirstOrDefault();
+            if (userForumSetting != null)
+            {
+                userForumSetting.Points += ((decimal)tokens) / 10000m;
+                _context.Entry(userForumSetting).State = EntityState.Modified;
+                await _context.SaveChangesAsync();
+            }
+        }
         private async Task<bool> AcquireLockAsync(string key)
         {
             var lockValue = Guid.NewGuid().ToString();

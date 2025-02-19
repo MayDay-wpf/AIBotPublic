@@ -2,7 +2,7 @@
     ViewData["Title"] = "沉浸式PDF（ChatPDF）";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-<link href="~/system/css/chatpdf.css" rel="stylesheet" />
+<link href="~/system/css/chatpdf.css?v1.0.1" rel="stylesheet" />
 <link href="~/system/css/chat.css?v3.5" rel="stylesheet" />
 <script src="~/system/js/markdown-it.min.js"></script>
 <script src="~/system/js/tex-chtml.js"></script>
@@ -60,7 +60,15 @@
         </div>
         <div class="row h-100">
             <div class="col-md-6 h-100">
-                <div id="pdf-viewer"></div>
+                <div id="pdf-viewer">
+                    <div class="pdf-placeholder">
+                        <div>
+                            <i class="fas fa-file-pdf"></i>
+                            <br>
+                            PDF显示区域
+                        </div>
+                    </div>
+                </div>
                 <div class="selection-tools">
                     <button class="btn btn-sm btn-primary" id="quote-btn"><i class="fas fa-quote-right"></i> 引用</button>
                     <button class="btn btn-sm btn-secondary" id="translate-btn"><i class="fas fa-language"></i> 翻译</button>
@@ -80,6 +88,11 @@
                                     <option value="ru">俄语</option>
                                     <option value="pt">葡萄牙语</option>
                                     <option value="ar">阿拉伯语</option>
+                                    <option value="hi">印地语</option>
+                                    <option value="th">泰语</option>
+                                    <option value="vi">越南语</option>
+                                    <option value="nl">荷兰语</option>
+                                    <option value="sv">瑞典语</option>
                                 </select>
                             </div>
                             <div class="flex-grow-1 mr-2">
@@ -95,6 +108,11 @@
                                     <option value="ru">俄语</option>
                                     <option value="pt">葡萄牙语</option>
                                     <option value="ar">阿拉伯语</option>
+                                    <option value="hi">印地语</option>
+                                    <option value="th">泰语</option>
+                                    <option value="vi">越南语</option>
+                                    <option value="nl">荷兰语</option>
+                                    <option value="sv">瑞典语</option>
                                 </select>
                             </div>
                             <div>
@@ -144,12 +162,18 @@
                     </div>
                 </div>
                 <div class="mt-3">
-                    <div class="d-flex">
+                    <div class="d-flex align-items-center">
+                        <div class="d-flex align-items-center mr-2" style="position: relative">
+                            <button class="btn btn-link p-0 mr-2" onclick="showCameraMenu()">
+                                <i data-feather="camera" class="camera-icon"></i>
+                            </button>
+                            <span class="image-upload-count" id="imageCount">0</span>
+                        </div>
                         <div class="flex-grow-1 mr-2">
                             <textarea id="Q" class="form-control" rows="1" placeholder="输入您的问题,Ctrl+Enter 或 Shift+Enter 换行,Enter发送"></textarea>
                         </div>
-                        <div class="d-flex flex-column">
-                            <button id="send-button" class="btn btn-primary mb-1">
+                        <div>
+                            <button id="send-button" class="btn btn-primary">
                                 <i class="fas fa-paper-plane"></i> 发送
                             </button>
                         </div>
@@ -166,4 +190,4 @@
 <link href="~/system/css/atom-one-dark.min.css?v1" rel="stylesheet" />
 <script src="~/system/js/highlight.min.js"></script>
 <script src="~/system/js/dart.js"></script>
-<script src="~/system/js/chatpdf.js?v1.0.0"></script>
+<script src="~/system/js/chatpdf.js?v1.0.2"></script>

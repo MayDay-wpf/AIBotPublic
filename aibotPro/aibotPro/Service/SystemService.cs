@@ -277,8 +277,15 @@ public class SystemService : ISystemService
 
     public string DecodeBase64(string result)
     {
-        var outputb = Convert.FromBase64String(result);
-        return Encoding.UTF8.GetString(outputb);
+        try
+        {
+            var outputb = Convert.FromBase64String(result);
+            return Encoding.UTF8.GetString(outputb);
+        }
+        catch (Exception)
+        {
+            return result;
+        }
     }
 
     public string SaveFiles(string path, IFormFile file, string Account = "")
@@ -349,22 +356,59 @@ public class SystemService : ISystemService
         return null;
     }
 
-    public async Task<string> ImgConvertToBase64(string imagePath)
+    public async Task<string> ImgConvertToBase64(string imagePath, bool addHead = false)
     {
         byte[] imageBytes;
+        string mimeType;
 
         if (Uri.IsWellFormedUriString(imagePath, UriKind.Absolute))
+        {
             // 处理图片链接
             using (var client = new HttpClient())
             {
-                imageBytes = await client.GetByteArrayAsync(imagePath);
+                var response = await client.GetAsync(imagePath);
+                imageBytes = await response.Content.ReadAsByteArrayAsync();
+                mimeType = response.Content.Headers.ContentType?.MediaType ?? "image/jpeg";
             }
+        }
         else
+        {
             // 处理本地文件路径
             imageBytes = File.ReadAllBytes(imagePath);
+            mimeType = GetMimeTypeFromFilePath(imagePath);
+        }
 
         var base64String = Convert.ToBase64String(imageBytes);
-        return base64String;
+
+        if (addHead)
+        {
+            return $"data:{mimeType};base64,{base64String}";
+        }
+        else
+        {
+            return base64String;
+        }
+    }
+
+    private string GetMimeTypeFromFilePath(string filePath)
+    {
+        string extension = Path.GetExtension(filePath).ToLowerInvariant();
+        switch (extension)
+        {
+            case ".jpg":
+            case ".jpeg":
+                return "image/jpeg";
+            case ".png":
+                return "image/png";
+            case ".gif":
+                return "image/gif";
+            case ".bmp":
+                return "image/bmp";
+            case ".webp":
+                return "image/webp";
+            default:
+                return "application/octet-stream";
+        }
     }
 
     public int TokenMath(string str, double divisor)
@@ -478,7 +522,7 @@ public class SystemService : ISystemService
         //如果是txt文件
         if (fileType == ".txt") return await File.ReadAllTextAsync(path);
         //如果是pdf文件
-        if (fileType == ".pdf")
+        else if (fileType == ".pdf")
         {
             try
             {
@@ -549,10 +593,8 @@ public class SystemService : ISystemService
             {
             }
         }
-
-
         // 如果是Excel文件
-        if (fileType == ".xlsx" || fileType == ".xls")
+        else if (fileType == ".xlsx" || fileType == ".xls")
         {
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
             using (var stream = new FileStream(path, FileMode.Open))
@@ -582,7 +624,7 @@ public class SystemService : ISystemService
         }
         //如果是PPT
 
-        if (fileType == ".pptx" || fileType == ".ppt")
+        else if (fileType == ".pptx" || fileType == ".ppt")
             // 确保传入的文件不是null
             using (var memoryStream = new MemoryStream())
             {
@@ -608,9 +650,8 @@ public class SystemService : ISystemService
                     return sb.ToString();
                 }
             }
-
         //如果是word
-        if (fileType == ".docx" || fileType == ".doc")
+        else if (fileType == ".docx" || fileType == ".doc")
         {
             // 确保文件不为空
             var extractedText = string.Empty;
@@ -629,9 +670,41 @@ public class SystemService : ISystemService
 
                     // 遍历文档中的段落
                     foreach (Section section in document.Sections)
-                    foreach (Paragraph paragraph in section.Paragraphs)
-                        // 提取段落中的文本
-                        sb.AppendLine(paragraph.Text);
+                    {
+                        foreach (Paragraph paragraph in section.Paragraphs)
+                        {
+                            // 提取段落中的文本
+                            sb.AppendLine(paragraph.Text);
+                        }
+
+                        // 遍历文档中的表格
+                        foreach (Table table in section.Tables)
+                        {
+                            var rows = table.Rows.Cast<Spire.Doc.TableRow>().ToList();
+                            if (rows.Count > 0)
+                            {
+                                // 处理表头
+                                var headerCells = rows[0].Cells.Cast<TableCell>();
+                                sb.AppendLine("| " + string.Join(" | ",
+                                    headerCells.Select(cell =>
+                                        cell.Paragraphs.Cast<Paragraph>().Aggregate("",
+                                            (current, paragraph) => current + paragraph.Text))) + " |");
+
+                                // 处理表头和内容之间的分隔线
+                                sb.AppendLine("|" + string.Join("|", headerCells.Select(_ => "---")) + "|");
+
+                                // 处理表格内容
+                                for (int i = 1; i < rows.Count; i++)
+                                {
+                                    var cells = rows[i].Cells.Cast<TableCell>();
+                                    sb.AppendLine("| " + string.Join(" | ",
+                                        cells.Select(cell =>
+                                            cell.Paragraphs.Cast<Paragraph>().Aggregate("",
+                                                (current, paragraph) => current + paragraph.Text))) + " |");
+                                }
+                            }
+                        }
+                    }
 
                     // 将提取的文本转换为字符串
                     extractedText = sb.ToString();
@@ -645,8 +718,25 @@ public class SystemService : ISystemService
 
             return extractedText;
         }
+        else
+        {
+            try
+            {
+                // 尝试读取文件内容
+                string content = await File.ReadAllTextAsync(path);
 
-        return "暂不支持该文件类型";
+                // 如果成功读取，返回内容
+                return content;
+            }
+            catch (Exception ex)
+            {
+                // 如果读取失败，记录错误并返回错误信息
+                await WriteLog($"Error reading file {path}: {ex.Message}", LogLevel.Error, "system");
+                return $"无法读取文件内容。错误: {ex.Message}";
+            }
+        }
+
+        return "";
     }
 
     public string UrlEncode(string text)
@@ -805,55 +895,48 @@ public class SystemService : ISystemService
             CfgCode = "GoogleSearchEngineId",
             CfgValue = "After"
         };
-        var Alibaba_Captcha_AK = new SystemCfg
-        {
-            CfgName = "阿里巴巴滑动验证AccessKey(弃用)",
-            CfgKey = "Alibaba_Captcha_AK",
-            CfgCode = "Alibaba_Captcha_AK",
-            CfgValue = "After"
-        };
-        var Alibaba_Captcha_SK = new SystemCfg
-        {
-            CfgName = "阿里巴巴滑动验证SecretKey(弃用)",
-            CfgKey = "Alibaba_Captcha_SK",
-            CfgCode = "Alibaba_Captcha_SK",
-            CfgValue = "After"
-        };
-        var Alibaba_Captcha_Endpoint = new SystemCfg
-        {
-            CfgName = "阿里巴巴滑动验证Endpoint(弃用)",
-            CfgKey = "Alibaba_Captcha_Endpoint",
-            CfgCode = "Alibaba_Captcha_Endpoint",
-            CfgValue = "After"
-        };
-        var Domain = new SystemCfg
-        {
-            CfgName = "系统域名",
-            CfgKey = "Domain",
-            CfgCode = "Domain",
-            CfgValue = "After"
-        };
-        var Alibaba_DashVectorApiKey = new SystemCfg
-        {
-            CfgName = "阿里巴巴向量检索ApiKey(弃用)",
-            CfgKey = "Alibaba_DashVectorApiKey",
-            CfgCode = "Alibaba_DashVectorApiKey",
-            CfgValue = "After"
-        };
-        var Alibaba_DashVectorEndpoint = new SystemCfg
-        {
-            CfgName = "阿里巴巴向量检索Endpoint(弃用)",
-            CfgKey = "Alibaba_DashVectorEndpoint",
-            CfgCode = "Alibaba_DashVectorEndpoint",
-            CfgValue = "After"
-        };
-        var Alibaba_DashVectorCollectionName = new SystemCfg
-        {
-            CfgName = "阿里巴巴向量检索CollectionName(弃用)",
-            CfgKey = "Alibaba_DashVectorCollectionName",
-            CfgCode = "Alibaba_DashVectorCollectionName",
-            CfgValue = "After"
-        };
+        // var Alibaba_Captcha_AK = new SystemCfg
+        // {
+        //     CfgName = "阿里巴巴滑动验证AccessKey(弃用)",
+        //     CfgKey = "Alibaba_Captcha_AK",
+        //     CfgCode = "Alibaba_Captcha_AK",
+        //     CfgValue = "After"
+        // };
+        // var Alibaba_Captcha_SK = new SystemCfg
+        // {
+        //     CfgName = "阿里巴巴滑动验证SecretKey(弃用)",
+        //     CfgKey = "Alibaba_Captcha_SK",
+        //     CfgCode = "Alibaba_Captcha_SK",
+        //     CfgValue = "After"
+        // };
+        // var Alibaba_Captcha_Endpoint = new SystemCfg
+        // {
+        //     CfgName = "阿里巴巴滑动验证Endpoint(弃用)",
+        //     CfgKey = "Alibaba_Captcha_Endpoint",
+        //     CfgCode = "Alibaba_Captcha_Endpoint",
+        //     CfgValue = "After"
+        // };
+        // var Alibaba_DashVectorApiKey = new SystemCfg
+        // {
+        //     CfgName = "阿里巴巴向量检索ApiKey(弃用)",
+        //     CfgKey = "Alibaba_DashVectorApiKey",
+        //     CfgCode = "Alibaba_DashVectorApiKey",
+        //     CfgValue = "After"
+        // };
+        // var Alibaba_DashVectorEndpoint = new SystemCfg
+        // {
+        //     CfgName = "阿里巴巴向量检索Endpoint(弃用)",
+        //     CfgKey = "Alibaba_DashVectorEndpoint",
+        //     CfgCode = "Alibaba_DashVectorEndpoint",
+        //     CfgValue = "After"
+        // };
+        // var Alibaba_DashVectorCollectionName = new SystemCfg
+        // {
+        //     CfgName = "阿里巴巴向量检索CollectionName(弃用)",
+        //     CfgKey = "Alibaba_DashVectorCollectionName",
+        //     CfgCode = "Alibaba_DashVectorCollectionName",
+        //     CfgValue = "After"
+        // };
         var EmbeddingsUrl = new SystemCfg
         {
             CfgName = "嵌入AI模型BaseUrl",
@@ -1015,6 +1098,13 @@ public class SystemService : ISystemService
             CfgCode = "Rerank_ApiKey_Jina",
             CfgValue = ""
         };
+        var Rerank_Model_Jina = new SystemCfg
+        {
+            CfgName = "JinaAI重排器Model",
+            CfgKey = "Rerank_Model_Jina",
+            CfgCode = "Rerank_Model_Jina",
+            CfgValue = ""
+        };
         var AICodeCheckBaseUrl = new SystemCfg
         {
             CfgName = "Workflow代码检查模型URL（仅支持OpenAI API 且需要支持Jsonschema）",
@@ -1071,6 +1161,83 @@ public class SystemService : ISystemService
             CfgCode = "GoogleClientID",
             CfgValue = "After"
         };
+        var Allowed_File_Types = new SystemCfg
+        {
+            CfgName = "素材库允许上传的文件后缀",
+            CfgKey = "Allowed_File_Types",
+            CfgCode = "Allowed_File_Types",
+            CfgValue = ".txt,.pdf,.ppt,.doc,.docx,.xls,.xlsx"
+        };
+        var Forum_Interval_Duration = new SystemCfg
+        {
+            CfgName = "论坛发帖间时长（分钟）",
+            CfgKey = "Forum_Interval_Duration",
+            CfgCode = "Forum_Interval_Duration",
+            CfgValue = "5"
+        };
+        var Forum_Subtract_Points = new SystemCfg
+        {
+            CfgName = "论坛发帖消耗的积分数（单次消耗）",
+            CfgKey = "Forum_Subtract_Points",
+            CfgCode = "Forum_Subtract_Points",
+            CfgValue = "5"
+        };
+        var Forum_Subtract_Points_AI = new SystemCfg
+        {
+            CfgName = "论坛发帖邀请AI消耗的积分数（单次消耗）",
+            CfgKey = "Forum_Subtract_Points_AI",
+            CfgCode = "Forum_Subtract_Points_AI",
+            CfgValue = "10"
+        };
+        var Forum_AI_Model = new SystemCfg
+        {
+            CfgName = "论坛发帖邀请的AI模型",
+            CfgKey = "Forum_AI_Model",
+            CfgCode = "Forum_AI_Model",
+            CfgValue = "gpt-4o-mini"
+        };
+        var Forum_AI_BaseUrl = new SystemCfg
+        {
+            CfgName = "论坛发帖邀请的AI BaseUrl",
+            CfgKey = "Forum_AI_BaseUrl",
+            CfgCode = "Forum_AI_BaseUrl",
+            CfgValue = "https://api.openai.com"
+        };
+        var Forum_AI_ApiKey = new SystemCfg
+        {
+            CfgName = "论坛发帖邀请的AI ApiKey",
+            CfgKey = "Forum_AI_ApiKey",
+            CfgCode = "Forum_AI_ApiKey",
+            CfgValue = "After"
+        };
+        var Forum_AI_User = new SystemCfg
+        {
+            CfgName = "论坛充当AI的用户账号",
+            CfgKey = "Forum_AI_User",
+            CfgCode = "Forum_AI_User",
+            CfgValue = "robot_AIBOT"
+        };
+        var Cards_Limit = new SystemCfg
+        {
+            CfgName = "用户兑换码兑换频率（分钟）",
+            CfgKey = "Cards_Limit",
+            CfgCode = "Cards_Limit",
+            CfgValue = "1"
+        };
+        var SerperApiKey = new SystemCfg
+        {
+            CfgName = "SerperApiKey(https://serper.dev)",
+            CfgKey = "SerperApiKey",
+            CfgCode = "SerperApiKey",
+            CfgValue = "After"
+        };
+        var MaxCollectionCount = new SystemCfg
+        {
+            CfgName = "允许用户创建的最大对话合集数",
+            CfgKey = "MaxCollectionCount",
+            CfgCode = "MaxCollectionCount",
+            CfgValue = "5"
+        };
         _context.SystemCfgs.Add(Mail);
         _context.SystemCfgs.Add(MailPwd);
         _context.SystemCfgs.Add(SMTP_Server);
@@ -1080,13 +1247,12 @@ public class SystemService : ISystemService
         _context.SystemCfgs.Add(Baidu_TXT_SK);
         _context.SystemCfgs.Add(GoogleSearchApiKey);
         _context.SystemCfgs.Add(GoogleSearchEngineId);
-        _context.SystemCfgs.Add(Alibaba_Captcha_AK);
-        _context.SystemCfgs.Add(Alibaba_Captcha_SK);
-        _context.SystemCfgs.Add(Alibaba_Captcha_Endpoint);
-        _context.SystemCfgs.Add(Domain);
-        _context.SystemCfgs.Add(Alibaba_DashVectorApiKey);
-        _context.SystemCfgs.Add(Alibaba_DashVectorEndpoint);
-        _context.SystemCfgs.Add(Alibaba_DashVectorCollectionName);
+        // _context.SystemCfgs.Add(Alibaba_Captcha_AK);
+        // _context.SystemCfgs.Add(Alibaba_Captcha_SK);
+        // _context.SystemCfgs.Add(Alibaba_Captcha_Endpoint);
+        // _context.SystemCfgs.Add(Alibaba_DashVectorApiKey);
+        // _context.SystemCfgs.Add(Alibaba_DashVectorEndpoint);
+        // _context.SystemCfgs.Add(Alibaba_DashVectorCollectionName);
         _context.SystemCfgs.Add(EmbeddingsUrl);
         _context.SystemCfgs.Add(EmbeddingsApiKey);
         _context.SystemCfgs.Add(EmbeddingsModel);
@@ -1110,6 +1276,7 @@ public class SystemService : ISystemService
         _context.SystemCfgs.Add(Tokenize_ApiKey_Jina);
         _context.SystemCfgs.Add(Rerank_BaseUrl_Jina);
         _context.SystemCfgs.Add(Rerank_ApiKey_Jina);
+        _context.SystemCfgs.Add(Rerank_Model_Jina);
         _context.SystemCfgs.Add(AICodeCheckBaseUrl);
         _context.SystemCfgs.Add(AICodeCheckApiKey);
         _context.SystemCfgs.Add(AICodeCheckModel);
@@ -1118,6 +1285,17 @@ public class SystemService : ISystemService
         _context.SystemCfgs.Add(NewApiAccessToken);
         _context.SystemCfgs.Add(NewApiUrl);
         _context.SystemCfgs.Add(GoogleClientID);
+        _context.SystemCfgs.Add(Allowed_File_Types);
+        _context.SystemCfgs.Add(Forum_Interval_Duration);
+        _context.SystemCfgs.Add(Forum_Subtract_Points);
+        _context.SystemCfgs.Add(Forum_Subtract_Points_AI);
+        _context.SystemCfgs.Add(Forum_AI_Model);
+        _context.SystemCfgs.Add(Forum_AI_BaseUrl);
+        _context.SystemCfgs.Add(Forum_AI_ApiKey);
+        _context.SystemCfgs.Add(Forum_AI_User);
+        _context.SystemCfgs.Add(Cards_Limit);
+        _context.SystemCfgs.Add(SerperApiKey);
+        _context.SystemCfgs.Add(MaxCollectionCount);
 
 
         if (_context.SaveChanges() > 0)
@@ -1303,6 +1481,150 @@ public class SystemService : ISystemService
             return null;
         }
     }
+
+    public string CreateEncryptionKey()
+    {
+        Random random = new Random();
+        StringBuilder sb = new StringBuilder();
+
+        string numbers = "123456789";
+        string letters = "abcde";
+
+        for (int i = 0; i < 6; i++)
+        {
+            if (i % 2 == 0)
+            {
+                sb.Append(numbers[random.Next(numbers.Length)]);
+            }
+            else
+            {
+                sb.Append(letters[random.Next(letters.Length)]);
+            }
+        }
+
+        string encryptionKey = sb.ToString();
+        return encryptionKey;
+    }
+
+    public string CreateCipherText(string plainText, string encryptionKey)
+    {
+        string cipherText = EncryptWithKey(plainText, encryptionKey);
+
+        return cipherText;
+    }
+
+    public string DecryptCipherText(string cipherText, string encryptionKey)
+    {
+        string plainText = DecryptWithKey(cipherText, encryptionKey);
+
+        return plainText;
+    }
+
+    public string DecryptWithKey(string cipherText, string key)
+    {
+        string currentText = cipherText;
+
+        // 从后向前遍历密钥,逆序应用解密方法
+        for (int i = key.Length - 2; i >= 0; i -= 2)
+        {
+            int count = int.Parse(key[i].ToString());
+            char method = key[i + 1];
+
+            for (int j = 0; j < count; j++)
+            {
+                currentText = ApplyEncryptionMethod(currentText, method, CryptoType.Decrypt);
+            }
+        }
+
+        return currentText;
+    }
+
+    private string EncryptWithKey(string plainText, string key)
+    {
+        string currentText = plainText;
+
+        for (int i = 0; i < key.Length; i += 2)
+        {
+            int count = int.Parse(key[i].ToString());
+            char method = key[i + 1];
+
+            for (int j = 0; j < count; j++)
+            {
+                currentText = ApplyEncryptionMethod(currentText, method, CryptoType.Encrypt);
+            }
+        }
+
+        return currentText;
+    }
+
+    public enum CryptoType
+    {
+        Encrypt,
+        Decrypt
+    }
+
+    public string ApplyEncryptionMethod(string input, char method, CryptoType cryptoType)
+    {
+        switch (method)
+        {
+            case 'a': return ReverseString(input);
+            case 'b': return SwapCase(input);
+            case 'c': return ReverseWords(input);
+            case 'd': return ShiftVowels(input, cryptoType);
+            case 'e': return AddNumberToChars(input, cryptoType);
+            default: throw new ArgumentException("Invalid encryption method");
+        }
+    }
+
+    // 1. Reverse String
+    private string ReverseString(string input)
+    {
+        return new string(input.Reverse().ToArray());
+    }
+
+    // 2. Swap Case
+    private string SwapCase(string input)
+    {
+        return new string(input
+            .Select(c => char.IsLetter(c) ? (char.IsUpper(c) ? char.ToLower(c) : char.ToUpper(c)) : c).ToArray());
+    }
+
+    // 3. Reverse Words
+    private string ReverseWords(string input)
+    {
+        return string.Join(" ", input.Split(' ').Select(word => new string(word.Reverse().ToArray())));
+    }
+
+    // 4. Shift Vowels
+    private string ShiftVowels(string input, CryptoType cryptoType)
+    {
+        const string vowels = "aeiouAEIOU";
+        return new string(input.Select(c =>
+        {
+            int index = vowels.IndexOf(c);
+            if (index != -1)
+            {
+                int shiftedIndex = (index + (cryptoType == CryptoType.Encrypt ? 1 : 9)) % 10;
+                return vowels[shiftedIndex];
+            }
+
+            return c;
+        }).ToArray());
+    }
+
+    // 5. Add Number to Chars
+    private string AddNumberToChars(string input, CryptoType cryptoType)
+    {
+        const int shift = 5;
+        return new string(input.Select(c =>
+        {
+            if (!char.IsLetter(c)) return c;
+            char offset = char.IsUpper(c) ? 'A' : 'a';
+            int shiftedValue = (c - offset + (cryptoType == CryptoType.Encrypt ? shift : 26 - shift)) % 26;
+            return (char)(shiftedValue + offset);
+        }).ToArray());
+    }
+
 
     private string SaveImage(Stream stream, string fileName, string savePath)
     {

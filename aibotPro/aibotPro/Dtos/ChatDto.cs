@@ -20,7 +20,7 @@ public class ChatDto
     public string threadid { get; set; }
     public float temperature { get; set; } = 1;
 
-    public int maxtokens { get; set; } = 4095;
+    public int maxtokens { get; set; }
 
     //public float topp { get; set; } = 1;
     public float presence { get; set; } = 0;
@@ -34,6 +34,13 @@ public class ChatDto
     public int knowledgetopn { get; set; } = 3;
     public bool stream { get; set; } = true;
     public bool readingMode { get; set; } = false;
+    public string coderMsg { get; set; } = "";
+    public bool coderModel { get; set; } = false;
+    public bool globe { get; set; } = false;
+    public bool writerModel { get; set; } = false;
+    public string bookCode { get; set; } = "";
+    public int chapterId { get; set; } = 0;
+    public List<int> selectChapters { get; set; } = new List<int>();
 }
 
 public class ChatRes
@@ -72,6 +79,13 @@ public class AiChat
     public int? MaxTokens { get; set; }
 
     [JsonProperty("stream")] public bool Stream { get; set; }
+
+    [JsonProperty("stream_options")] public SOptions StreamOptions { get; set; } = new SOptions();
+}
+
+public class SOptions
+{
+    [JsonProperty("include_usage")] public bool StreamOptions { get; set; } = true;
 }
 
 public class ResponseFormat
@@ -119,6 +133,7 @@ public class AiRes
     [JsonProperty("system_fingerprint")] public object SystemFingerprint { get; set; } // 使用 object 类型因为它是 null
 
     [JsonProperty("choices")] public List<Choice> Choices { get; set; }
+    [JsonProperty("usage")] public StreamUsage Usages { get; set; }
 }
 
 public class Choice
@@ -132,22 +147,54 @@ public class Choice
     [JsonProperty("finish_reason")] public object FinishReason { get; set; } // 使用 object 类型因为它是 null
 }
 
+public class PromptTokensDetails
+{
+    [JsonProperty("cached_tokens")] public int CachedTokens { get; set; }
+    [JsonProperty("audio_tokens")] public int AudioTokens { get; set; }
+}
+
+public class CompletionTokensDetails
+{
+    [JsonProperty("reasoning_tokens")] public int ReasoningTokens { get; set; }
+    [JsonProperty("audio_tokens")] public int AudioTokens { get; set; }
+
+    [JsonProperty("accepted_prediction_tokens")]
+    public int AcceptedPredictionTokens { get; set; }
+
+    [JsonProperty("rejected_prediction_tokens")]
+    public int RejectedPredictionTokens { get; set; }
+}
+
+public class StreamUsage
+{
+    [JsonProperty("prompt_tokens")] public int PromptTokens { get; set; }
+    [JsonProperty("completion_tokens")] public int CompletionTokens { get; set; }
+    [JsonProperty("total_tokens")] public int TotalTokens { get; set; }
+
+    [JsonProperty("prompt_tokens_details")]
+    public PromptTokensDetails PromptTokensDetails { get; set; }
+
+    [JsonProperty("completion_tokens_details")]
+    public CompletionTokensDetails CompletionTokensDetails { get; set; }
+}
+
 public class DeltaContent
 {
     [JsonProperty("content")] public string Content { get; set; }
+    [JsonProperty("reasoning_content")] public string ReasoningContent { get; set; }
     [JsonProperty("role")] public string Role { get; set; }
 }
 
 public class VisionBody
 {
     [JsonProperty("max_tokens", NullValueHandling = NullValueHandling.Ignore)]
-    public int? MaxTokens { get; set; } = 4095;
+    public int? MaxTokens { get; set; }
 
     [JsonProperty("response_format", NullValueHandling = NullValueHandling.Ignore)]
     public ResponseFormat? response_format { get; set; }
 
     public bool stream { get; set; } = true;
-    public VisionChatMesssage[] messages { get; set; }
+    public VisionChatMessage[] messages { get; set; }
     public string model { get; set; }
 
     [JsonProperty("temperature", NullValueHandling = NullValueHandling.Ignore)]
@@ -160,12 +207,77 @@ public class VisionBody
 
     [JsonProperty("frequency_penalty", NullValueHandling = NullValueHandling.Ignore)]
     public float? FrequencyPenalty { get; set; }
+
+    [JsonProperty("stream_options")] public SOptions StreamOptions { get; set; } = new SOptions();
 }
 
-public class VisionChatMesssage
+public class VisionChatMessage
 {
     public string role { get; set; }
-    public List<VisionContent> content { get; set; }
+    public ContentWrapper content { get; set; }
+}
+
+[JsonConverter(typeof(ContentWrapperConverter))]
+public class ContentWrapper
+{
+    private List<VisionContent> _visionContentList;
+    private string _stringContent;
+
+    public List<VisionContent> visionContentList
+    {
+        get => _visionContentList;
+        set
+        {
+            _visionContentList = value;
+            _stringContent = null; // Clear string content if list is set
+        }
+    }
+
+    public string stringContent
+    {
+        get => _stringContent;
+        set
+        {
+            _stringContent = value;
+            _visionContentList = null; // Clear list content if string is set
+        }
+    }
+
+    // Omitting the isList and isString properties as we don't need them for serialization
+}
+
+public class ContentWrapperConverter : JsonConverter
+{
+    public override bool CanConvert(Type objectType)
+    {
+        return objectType == typeof(ContentWrapper);
+    }
+
+    public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+    {
+        // Implement if necessary: deserialize JSON back to ContentWrapper
+        throw new NotImplementedException();
+    }
+
+    public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+    {
+        var contentWrapper = value as ContentWrapper;
+        if (contentWrapper != null)
+        {
+            if (contentWrapper.stringContent != null)
+            {
+                serializer.Serialize(writer, contentWrapper.stringContent);
+            }
+            else if (contentWrapper.visionContentList != null)
+            {
+                serializer.Serialize(writer, contentWrapper.visionContentList);
+            }
+            else
+            {
+                writer.WriteNull();
+            }
+        }
+    }
 }
 
 public class VisionContent

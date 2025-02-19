@@ -1,0 +1,206 @@
+﻿@{
+    ViewData["Title"] = "发帖（Forum）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/system/forum/css/forumhome.css" rel="stylesheet" />
+<link href="~/system/forum/css/publisharticle.css" rel="stylesheet" />
+<link href="~/system/css/atom-one-dark.min.css?v1" rel="stylesheet" />
+<link href="~/system/forum/css/easymde.min.css" rel="stylesheet" />
+<div class="header">
+    <div class="header-left d-flex align-items-center">
+        <a id="menuMain" href="#" class="burger-menu">
+            <i data-feather="menu"></i>
+        </a>
+        <a id="menuBack" href="#" class="burger-menu d-none">
+            <i data-feather="arrow-left"></i>
+        </a>
+        @* <a href="#" class="header-help-link ml-2" onclick="SDinfo()">
+        <i data-feather="help-circle"></i>
+        </a> *@
+        <a href="/Forum/Index" class="btn btn-info ml-2">
+            <i class="fas fa-chevron-left"></i> 返回主页
+        </a>
+    </div>
+</div>
+<div class="forum-container">
+    <div class="row">
+        <div class="col-12 col-lg-9 main-content">
+            <div id="postForm">
+                <div class="form-group">
+                    <label for="title">标题 <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" maxlength="200" id="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="content">内容(Markdown,可使用Ctrl+V粘贴图片) <span class="text-danger">*</span></label>
+                    <textarea id="content"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="tags">标签(回车添加) <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="tags" placeholder="输入标签，按回车添加">
+                    <div id="tagContainer" class="mt-2"></div>
+                </div>
+                <div class="form-group form-check">
+                    <input type="checkbox" class="form-check-input" id="inviteAI">
+                    <label class="form-check-label" for="inviteAI">邀请AI评论 <span class="text-danger">注意:邀请不代表一定会回复，AI有拒绝邀请的权力😝</span></label>
+                </div>
+                <button id="submitPost" class="btn btn-primary"><i class="far fa-paper-plane"></i> 发布</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 自定义右侧侧边栏 -->
+<div id="customSidebar" class="custom-sidebar">
+    <div class="sidebar-content">
+        <div class="sidebar-section forum-info">
+            <p class="section-title">AIBotPro 轻论坛</p>
+            <p class="section-text">
+                一个理想主义的论坛，在这里可以讨论各种AI和你感兴趣的话题,但是在发帖前请一定记得，不要往中文互联网倒垃圾!<br /><br />
+                <span class="text-info">ℹ️站内允许推广自己的产品，但是务必要对自己的产品进行详细介绍、文案工整、篇幅长度合理，且必须在标题标注【推广】否则会被管理员删除!</span>
+                <br /><br />
+                <b>🚫禁止内容</b><br />
+                1、禁止散播无考证的谣言<br />
+                2、禁止散播反政府言论<br />
+                3、禁止挑起性别对立<br />
+                4、禁止重复发毫无营养的广告<br />
+                5、禁止使用一切拼音缩写<br />
+                6、允许激烈的讨论，禁止说脏话<br />
+            </p>
+        </div>
+    </div>
+</div>
+<script src="~/system/forum/js/easymde.min.js"></script>
+<script>
+    var easyMDE = new EasyMDE({
+        element: document.getElementById('content'),
+        autofocus: true,
+        spellChecker: false,
+        status: false,
+        maxHeight: '400px',
+        placeholder: '请输入文章内容...',
+        toolbar: [
+            {
+                name: "bold",
+                action: EasyMDE.toggleBold,
+                className: "fa fa-bold",
+                title: "粗体",
+            },
+            {
+                name: "italic",
+                action: EasyMDE.toggleItalic,
+                className: "fa fa-italic",
+                title: "斜体",
+            },
+            {
+                name: "heading",
+                action: EasyMDE.toggleHeadingSmaller,
+                className: "fa fa-header",
+                title: "标题",
+            },
+            "|",
+            {
+                name: "quote",
+                action: EasyMDE.toggleBlockquote,
+                className: "fa fa-quote-left",
+                title: "引用",
+            },
+            {
+                name: "code",
+                action: EasyMDE.toggleCodeBlock,
+                className: "fa fa-code",
+                title: "代码",
+            },
+            {
+                name: "unordered-list",
+                action: EasyMDE.toggleUnorderedList,
+                className: "fa fa-list-ul",
+                title: "无序列表",
+            },
+            {
+                name: "ordered-list",
+                action: EasyMDE.toggleOrderedList,
+                className: "fa fa-list-ol",
+                title: "有序列表",
+            },
+            "|",
+            {
+                name: "link",
+                action: EasyMDE.drawLink,
+                className: "fa fa-link",
+                title: "创建链接",
+            },
+            {
+                name: "image",
+                action: function customFunction(editor) {
+                    // 创建一个隐藏的文件输入元素
+                    var fileInput = document.createElement('input');
+                    fileInput.type = 'file';
+                    fileInput.accept = 'image/*';
+                    fileInput.style.display = 'none';
+                    document.body.appendChild(fileInput);
+
+                    // 触发文件选择对话框
+                    fileInput.click();
+
+                    // 监听文件选择事件
+                    fileInput.onchange = function () {
+                        if (fileInput.files && fileInput.files[0]) {
+                            var destroyAlert = balert(`<i data-feather="loader" style="width:20px;"></i> 正在上传...`, "info", false, 0, "center");
+                            uploadIMGFile(fileInput.files[0], destroyAlert);
+                        }
+                        // 移除临时创建的文件输入元素
+                        document.body.removeChild(fileInput);
+                    };
+                },
+                className: "fa fa-picture-o",
+                title: "插入图片",
+            },
+            "|",
+            {
+                name: "preview",
+                action: EasyMDE.togglePreview,
+                className: "fa fa-eye no-disable",
+                title: "切换预览",
+            },
+            {
+                name: "side-by-side",
+                action: EasyMDE.toggleSideBySide,
+                className: "fa fa-columns no-disable no-mobile",
+                title: "并排预览",
+            },
+            {
+                name: "fullscreen",
+                action: EasyMDE.toggleFullScreen,
+                className: "fa fa-arrows-alt no-disable no-mobile",
+                title: "全屏",
+            },
+            "|",
+            {
+                name: "guide",
+                action: "https://www.markdownguide.org/basic-syntax/",
+                className: "fa fa-question-circle",
+                title: "Markdown 指南",
+            },
+        ],
+        promptURLs: true,
+        renderingConfig: {
+            codeSyntaxHighlighting: true,
+            highlightingTheme: 'atom-one-dark'
+        },
+        previewRender: function (plainText, preview) { // Async method
+            setTimeout(function () {
+                preview.innerHTML = this.parent.markdown(plainText);
+                hljs.highlightAll();
+            }.bind(this), 0);
+            return "加载中...";
+        },
+        uploadImage: true,
+        imageUploadFunction: function (file, onSuccess, onError) {
+            var destroyAlert = balert(`<i data-feather="loader" style="width:20px;"></i> 正在上传...`, "info", false, 0, "center");
+            uploadIMGFile(file, destroyAlert);
+        },
+    });
+
+</script>
+<script src="~/system/js/highlight.min.js"></script>
+<script src="~/system/forum/js/publisharticle.js"></script>

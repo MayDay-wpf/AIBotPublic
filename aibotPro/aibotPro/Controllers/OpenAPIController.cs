@@ -6,6 +6,7 @@ using aibotPro.Service;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using OpenAI;
 using OpenAI.Builders;
@@ -97,7 +98,7 @@ public class OpenAPIController : Controller
                 .Where(x => x.Account == username && x.Pfunctionname == Pfunctionname).FirstOrDefault();
             if (result == null)
                 _context.SystemPlugins.Add(new SystemPlugin
-                    { Account = username, ApiKey = apikey, Pfunctionname = Pfunctionname });
+                { Account = username, ApiKey = apikey, Pfunctionname = Pfunctionname });
         }
         else if (type == "remove")
         {
@@ -294,6 +295,19 @@ public class OpenAPIController : Controller
         }
 
         chatCompletionCreate.Model = chatSession.Model;
+        if (usedefaultModel != null && !string.IsNullOrEmpty(usedefaultModel.AdminPrompt))
+        {
+            var systemMessage = chatSession.Messages.FirstOrDefault(item => item.Role == "system");
+
+            if (systemMessage != null)
+            {
+                systemMessage.Content = usedefaultModel.AdminPrompt + "\n\n" + systemMessage.Content;
+            }
+            else
+            {
+                chatMessages.Insert(0, ChatMessage.FromSystem(usedefaultModel.AdminPrompt));
+            }
+        }
         try
         {
             if (chatSession.Stream)

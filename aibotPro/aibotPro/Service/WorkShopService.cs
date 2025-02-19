@@ -207,7 +207,8 @@ namespace aibotPro.Service
             return true;
         }
 
-        public WorkShopPlugin GetPlugin(int pluginId, string account, string pcode = "", string pfunctionName = "", bool running = false)
+        public WorkShopPlugin GetPlugin(int pluginId, string account, string pcode = "", string pfunctionName = "",
+            bool running = false)
         {
             Models.Plugin plugin = new Models.Plugin();
             //获取插件信息，如果pcode不为空，则根据pcode获取
@@ -394,7 +395,9 @@ namespace aibotPro.Service
         }
 
         public async Task<PluginResDto> RunPlugin(string account, FunctionCall fn, string chatId = "",
-            string senMethod = "", List<string> typeCode = null, [EnumeratorCancellation] CancellationToken cancellationToken = default, int topK = 3, bool reranker = false, int topN = 3)
+            string senMethod = "", List<string> typeCode = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default, int topK = 3, bool reranker = false,
+            int topN = 3)
         {
             PluginResDto pluginResDto = new PluginResDto();
             //获取插件信息
@@ -464,7 +467,7 @@ namespace aibotPro.Service
                 string thumbKey = string.Empty;
                 string newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" +
                                      Guid.NewGuid().ToString().Replace("-", "");
-                Task.Run(async () =>
+                _ = Task.Run(async () =>
                 {
                     using (var scope = _serviceProvider.CreateScope()) // _serviceProvider 是 IServiceProvider 的一个实例。
                     {
@@ -526,17 +529,17 @@ namespace aibotPro.Service
             else if (fnName == "search_knowledge_base")
             {
                 List<SystemCfg> systemCfgs = _systemService.GetSystemCfgs();
-                var Alibaba_DashVectorApiKey =
-                    systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorApiKey")?.CfgValue;
-                var Alibaba_DashVectorEndpoint =
-                    systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorEndpoint")?.CfgValue;
-                var Alibaba_DashVectorCollectionName =
-                    systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorCollectionName")?.CfgValue;
+                // var Alibaba_DashVectorApiKey =
+                //     systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorApiKey")?.CfgValue;
+                // var Alibaba_DashVectorEndpoint =
+                //     systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorEndpoint")?.CfgValue;
+                // var Alibaba_DashVectorCollectionName =
+                //     systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorCollectionName")?.CfgValue;
                 var EmbeddingsUrl = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsUrl")?.CfgValue;
                 var EmbeddingsApiKey = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsApiKey")?.CfgValue;
                 var EmbeddingsModel = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsModel")?.CfgValue;
-                VectorHelper vectorHelper = new VectorHelper(_redisService, Alibaba_DashVectorApiKey,
-                    Alibaba_DashVectorEndpoint, Alibaba_DashVectorCollectionName, EmbeddingsUrl, EmbeddingsApiKey, EmbeddingsModel);
+                VectorHelper vectorHelper = new VectorHelper(_redisService, EmbeddingsUrl, EmbeddingsApiKey,
+                    EmbeddingsModel);
                 pluginResDto.doubletreating = true;
                 pluginResDto.doubletype = "knowledge";
                 string query = string.Empty;
@@ -561,30 +564,33 @@ namespace aibotPro.Service
                 searchVectorPr.topk = topK;
                 searchVectorPr.vector = vectorList[0];
                 SearchVectorResult searchVectorResult = new SearchVectorResult();
+                List<float> vectorByMilvus = searchVectorPr.vector.ConvertAll(x => (float)x);
+                SearchVectorResultByMilvus resultByMilvus = new SearchVectorResultByMilvus();
                 if (typeCode != null && typeCode.Count > 0)
                 {
-                    List<float> vectorByMilvus = searchVectorPr.vector.ConvertAll(x => (float)x);
-                    var resultByMilvus =
+                    resultByMilvus =
                         await _milvusService.SearchVector(vectorByMilvus, account, typeCode, searchVectorPr.topk);
-                    searchVectorResult = new SearchVectorResult
-                    {
-                        code = resultByMilvus.Code,
-                        request_id = Guid.NewGuid().ToString(),
-                        message = string.Empty,
-                        output = resultByMilvus.Data.Select(data => new Output
-                        {
-                            id = data.Id,
-                            fields = new Fields
-                            {
-                                account = string.Empty,
-                                knowledge = data.VectorContent
-                            },
-                            score = (double)data.Distance
-                        }).ToList()
-                    };
                 }
                 else
-                    searchVectorResult = vectorHelper.SearchVector(searchVectorPr);
+                    resultByMilvus =
+                        await _milvusService.SearchVector(vectorByMilvus, account);
+
+                searchVectorResult = new SearchVectorResult
+                {
+                    code = resultByMilvus.Code,
+                    request_id = Guid.NewGuid().ToString(),
+                    message = string.Empty,
+                    output = resultByMilvus.Data.Select(data => new Output
+                    {
+                        id = data.Id,
+                        fields = new Fields
+                        {
+                            account = string.Empty,
+                            knowledge = data.VectorContent
+                        },
+                        score = (double)data.Distance
+                    }).ToList()
+                };
 
                 string knowledge = string.Empty;
                 if (searchVectorResult.output != null)
@@ -596,9 +602,11 @@ namespace aibotPro.Service
                         knowledge += $"{i + 1}：{output.fields.knowledge} \n";
                         docs.Add(output.fields.knowledge);
                     }
+
                     if (reranker)
                     {
-                        var rerankRes = await _aiServer.RerankerJinaAI(docs, "jina-reranker-v2-base-multilingual", query, topN);
+                        var rerankRes =
+                            await _aiServer.RerankerJinaAI(docs, query, topN);
                         if (rerankRes != null && rerankRes.Results.Count > 0)
                         {
                             knowledge = string.Empty;

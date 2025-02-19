@@ -220,6 +220,15 @@ namespace aibotPro.Controllers
             }
             return View();
         }
+        public IActionResult Limit()
+        {
+            var username = GetUserFromToken();
+            if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
+            {
+                return RedirectToAction("Login", "Users");
+            }
+            return View();
+        }
 
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
@@ -563,9 +572,10 @@ namespace aibotPro.Controllers
         }
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
-        public async Task<IActionResult> SaveAiChatSetting([FromForm] List<AImodel> aImodel)
+        public async Task<IActionResult> SaveAiChatSetting(string aImodel)
         {
-            bool result = await _adminsService.SaveAiChatSetting(aImodel);
+            List<AImodel> aImodels = JsonConvert.DeserializeObject<List<AImodel>>(aImodel);
+            bool result = await _adminsService.SaveAiChatSetting(aImodels);
             if (result)
             {
                 return Json(new
@@ -719,9 +729,10 @@ namespace aibotPro.Controllers
         }
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
-        public async Task<IActionResult> SaveModelPrice([FromForm] List<ModelPrice> modelPrice)
+        public async Task<IActionResult> SaveModelPrice(string modelPrice)
         {
-            bool result = await _adminsService.SaveModelPrice(modelPrice);
+            List<ModelPrice> modelPriceList = JsonConvert.DeserializeObject<List<ModelPrice>>(modelPrice);
+            bool result = await _adminsService.SaveModelPrice(modelPriceList);
             if (result)
             {
                 return Json(new
@@ -917,7 +928,7 @@ namespace aibotPro.Controllers
                 });
             }
         }
-        
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult CreateCards(string account, decimal mcoin, string viptype, int vipdays, int count)
@@ -1066,6 +1077,69 @@ namespace aibotPro.Controllers
             good.OnShelves = shelves;
             _context.Goods.Update(good);
             return _context.SaveChanges() > 0 ? Json(new { success = true }) : Json(new { success = false });
+        }
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public IActionResult SaveLimit(string account, List<string> selectedModels, int limitValue)
+        {
+            var hasUserLimit = _context.UsersLimits.Where(x => x.Account == account).FirstOrDefault();
+            if (hasUserLimit != null)
+            {
+                return Json(new
+                {
+                    success = false,
+                    msg = "该用户已存在限制，请先删除该用户再添加限制。"
+                });
+            }
+            var usersLimit = new UsersLimit
+            {
+                Account = account,
+                ModelName = string.Join(",", selectedModels),
+                Limit = limitValue,
+                Enable = true,
+                CreateTime = DateTime.Now
+            };
+            _context.Add(usersLimit);
+            return Json(new
+            {
+                success = _context.SaveChanges() > 0
+            });
+        }
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public IActionResult EnableUsersLimits(int Id, bool enable)
+        {
+            var usersLimit = _adminsService.EnableUsersLimits(Id, enable);
+            return Json(new
+            {
+                success = usersLimit
+            });
+        }
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public IActionResult GetUsersLimits(int page, int size, string account = "")
+        {
+            var usersLimit = _adminsService.GetUsersLimits(page, size, out int total, account);
+            return Json(new
+            {
+                data = usersLimit,
+                total = total
+            });
+        }
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public IActionResult DeleteLimit(int id)
+        {
+            var userLimit = _context.UsersLimits.Where(x => x.Id == id).FirstOrDefault();
+            if (userLimit != null)
+            {
+                _context.UsersLimits.Remove(userLimit);
+                _context.SaveChanges();
+            }
+            return Json(new
+            {
+                success = true
+            });
         }
     }
 }

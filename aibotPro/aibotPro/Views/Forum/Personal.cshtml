@@ -1,0 +1,130 @@
+﻿@{
+    ViewData["Title"] = "个人中心（Forum）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/system/forum/css/forumhome.css" rel="stylesheet" />
+<link href="~/system/forum/css/personal.css" rel="stylesheet"/>
+<div class="header">
+    <div class="header-left d-flex align-items-center">
+        <a id="menuMain" href="#" class="burger-menu">
+            <i data-feather="menu"></i>
+        </a>
+        <a id="menuBack" href="#" class="burger-menu d-none">
+            <i data-feather="arrow-left"></i>
+        </a>
+        @* <a href="#" class="header-help-link ml-2" onclick="SDinfo()">
+        <i data-feather="help-circle"></i>
+        </a> *@
+        <a href="/Forum/Index" class="btn btn-info ml-2">
+            <i class="fas fa-chevron-left"></i> 返回主页
+        </a>
+    </div>
+</div>
+<!-- 编辑用户信息的模态框 -->
+<div class="modal fade" id="editUserInfoModal" tabindex="-1" role="dialog" aria-labelledby="editUserInfoModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editUserInfoModalLabel">编辑用户信息</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserInfoForm">
+                    <div class="form-group">
+                        <label for="introductionInput">简介</label>
+                        <textarea class="form-control" id="introductionInput" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="websiteInput">网站</label>
+                        <input type="url" class="form-control" id="websiteInput">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="saveUserInfo">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 附言模态框 -->
+<div class="modal fade" id="appendModal" tabindex="-1" role="dialog" aria-labelledby="appendModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="appendModalLabel">添加附言</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <textarea class="form-control" id="appendContent" rows="3"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="submitAppend">提交</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="forum-container">
+    <div class="row">
+        <div class="col-12 col-lg-9 main-content">
+            <div class="sidebar-section person-user-info">
+                <img src="https://www.wetools.com/imgplaceholder/180x180" class="userHeadImg" id="userHeadImg" alt="头像">
+                <p class="user-name" id="user-name">--</p>
+                <div class="usersetting">
+                    <i data-feather="edit" id="editUserInfoBtn"></i>
+                    <p class="user-bio">我的简介:<span id="introduction">--</span></p>
+                    <p class="user-bio">我的网站:<span id="website">--</span></p>
+                </div>
+                <div class="userPoints">
+                    <i class="fas fa-coins text-warning"></i> 论坛积分：<span id="points">--</span>
+                </div>
+            </div>
+            <div class="mytopic">
+                <h5>发布的主题</h5>
+                <div class="card mb-3 post-card">
+                    <div class="card-body" id="topicList">
+                        <div id="loading" style="text-align: center;">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 分页 -->
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- 自定义右侧侧边栏 -->
+<div id="customSidebar" class="custom-sidebar">
+    <div class="sidebar-content">
+        <div class="sidebar-section forum-info">
+            <p class="section-title">AIBotPro 轻论坛</p>
+            <p class="section-text">
+                一个理想主义的论坛，在这里可以讨论各种AI和你感兴趣的话题,但是在发帖前请一定记得，不要往中文互联网倒垃圾!<br /><br />
+                <span class="text-info">ℹ️站内允许推广自己的产品，但是务必要对自己的产品进行详细介绍、文案工整、篇幅长度合理，且必须在标题标注【推广】否则会被管理员删除!</span>
+                <br /><br />
+                <b>🚫禁止内容</b><br />
+                1、禁止散播无考证的谣言<br />
+                2、禁止散播反政府言论<br />
+                3、禁止挑起性别对立<br />
+                4、禁止重复发毫无营养的广告<br />
+                5、禁止使用一切拼音缩写<br />
+                6、允许激烈的讨论，禁止说脏话<br />
+            </p>
+        </div>
+    </div>
+</div>
+
+<script src="~/system/forum/js/emojimap.js"></script>
+<script src="~/system/forum/js/personal.js"></script>

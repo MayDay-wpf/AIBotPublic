@@ -33,6 +33,10 @@ async function uploadChunk(file, chunk, chunks, start, chunkSize, isManualUpload
         success: function (data) {
             var progress = (chunk / chunks) * 100;
             $('#p1').css('width', progress + '%').attr('aria-valuenow', progress).text(Math.round(progress) + '%');
+        },
+        error: function (xhr, status, error) {
+            balert(xhr.responseText, "danger", false, 1500, "top");
+            closeModal();
         }
     });
 
@@ -232,12 +236,22 @@ function processFile(file, isManualUpload) {
         balert('文件大小不能超过30兆', 'danger', true, 2000, "center");
         return;
     }
-    var allowedExtensions = ['txt', 'pdf', 'ppt', 'pptx', 'doc', 'docx', 'xls', 'xlsx'];
-    var fileExtension = file.name.split('.').pop().toLowerCase();
-    if (!allowedExtensions.includes(fileExtension)) {
-        balert('只允许上传TXT, PDF, PPT, WORD, EXCEL文件', 'danger', true, 2000, "top");
-        return;
-    }
+    // var allowedExtensions = [
+    //     // 纯文本文件
+    //     'txt', 'log', 'md', 'markdown',
+    //     // 代码文件
+    //     'js', 'py', 'java', 'c', 'cpp', 'h', 'hpp', 'cs', 'php', 'rb', 'go', 'swift', 'kt', 'ts',
+    //     'html', 'css', 'scss', 'less', 'sql', 'sh', 'bat', 'ps1',
+    //     // 数据交换格式
+    //     'json', 'xml', 'yaml', 'yml',
+    //     // 配置文件
+    //     'ini', 'conf', 'cfg', 'config'
+    // ];
+    // var fileExtension = file.name.split('.').pop().toLowerCase();
+    // if (!allowedExtensions.includes(fileExtension)) {
+    //     balert('只支持文本格式的文件', 'danger', true, 2000, "top");
+    //     return;
+    // }
     var chunkSize = 100 * 1024; // 100KB
     var chunks = Math.ceil(file.size / chunkSize);
     var chunk = 0;

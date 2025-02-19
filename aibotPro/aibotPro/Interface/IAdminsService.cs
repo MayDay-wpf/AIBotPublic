@@ -20,5 +20,7 @@ namespace aibotPro.Interface
         bool SendNotice(int id, string title, string content); //发送公告
         List<Notice> GetNotices(int page, int size, out int total); //获取公告列表
         bool ApiKeyCheck(string key);//API Key验证
+        List<UsersLimit> GetUsersLimits(int page, int size, out int total, string account = "");//获取用户限制列表
+        bool EnableUsersLimits(int Id, bool enable);//启用/禁用用户限制
     }
 }

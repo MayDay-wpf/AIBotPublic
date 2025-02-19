@@ -61,14 +61,7 @@ function bindUser() {
     var type = $("#accountType").val();
     var username = $("#username").val();
     var password = $("#password").val();
-
-    // 用户名验证
-    if (!/^[a-zA-Z0-9]{4,20}$/.test(username)) {
-        balert("用户名只允许4-20位字母和数字组合", "danger", true, 2000, "top");
-        unloadingBtn(".bind");
-        return;
-    }
-
+    
     // 密码验证
     if (type == "create") {
         if (password === "") {

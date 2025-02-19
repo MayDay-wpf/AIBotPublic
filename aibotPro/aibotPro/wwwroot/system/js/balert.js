@@ -126,13 +126,13 @@ function createConfirmationModal(title, content) {
 
     // 创建模态框结构
     var modalHtml = `
-      <div class="modal fade" id="confirmationModal" tabindex="-1" role="dialog" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+      <div class="modal fade" id="confirmationModal" tabindex="-1" role="dialog" aria-labelledby="confirmationModalLabel">
         <div class="modal-dialog modal-dialog-centered" role="document">
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title" id="confirmationModalLabel">`+ title + `</h5>
               <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
+                <span>&times;</span>
               </button>
             </div>
             <div class="modal-body">
@@ -187,13 +187,13 @@ function createPromptModal(title, content) {
 
     // 创建模态框结构
     var modalHtml = `
-      <div class="modal fade" id="confirmationModal" tabindex="-1" role="dialog" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+      <div class="modal fade" id="confirmationModal" tabindex="-1" role="dialog" aria-labelledby="confirmationModalLabel">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
           <div class="modal-header">
               <h5 class="modal-title" id="confirmationModalLabel">`+ title + `</h5>
               <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
+                <span>&times;</span>
               </button>
             </div>
             <div class="modal-body">
@@ -249,13 +249,13 @@ function createMultilinePromptModal(title, content) {
 
     // 创建模态框结构
     var modalHtml = `
-      <div class="modal fade" id="multilinePromptModal" tabindex="-1" role="dialog" aria-labelledby="multilinePromptModalLabel" aria-hidden="true">
+      <div class="modal fade" id="multilinePromptModal" tabindex="-1" role="dialog" aria-labelledby="multilinePromptModalLabel">
         <div class="modal-dialog modal-dialog-centered" role="document">
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title" id="multilinePromptModalLabel">${title}</h5>
               <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
+                <span>&times;</span>
               </button>
             </div>
             <div class="modal-body">

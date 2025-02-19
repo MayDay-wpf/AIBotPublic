@@ -41,13 +41,36 @@ namespace aibotPro.Service
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        public ClaimsPrincipal ValidateToken(string token)
+        public ClaimsPrincipal? ValidateToken(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var validationParameters = GetValidationParameters();
 
             SecurityToken validatedToken;
-            return tokenHandler.ValidateToken(token, validationParameters, out validatedToken);
+            var claimsPrincipal = tokenHandler.ValidateToken(token, validationParameters, out validatedToken);
+
+            // 添加用户验证逻辑
+            if (claimsPrincipal != null)
+            {
+                string? account = claimsPrincipal.Identity?.Name;
+                if (!string.IsNullOrEmpty(account))
+                {
+                    using (var scope = _serviceProvider.CreateScope())
+                    {
+                        var scopedContext = scope.ServiceProvider.GetRequiredService<AIBotProContext>();
+                        var user = scopedContext.Users
+                            .Where(x => x.Account == account && x.IsBan == 0)
+                            .FirstOrDefault();
+
+                        if (user == null)
+                        {
+                            throw new SecurityTokenException("User is banned or not found.");
+                        }
+                    }
+                }
+            }
+
+            return claimsPrincipal;
         }
 
         public bool isTokenValid(string token)

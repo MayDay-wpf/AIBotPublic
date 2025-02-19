@@ -8,6 +8,7 @@ using OpenAI;
 using OpenAI.Managers;
 using OpenAI.ObjectModels.RequestModels;
 using OpenAI.ObjectModels.ResponseModels;
+using StackExchange.Redis;
 using TiktokenSharp;
 using LogLevel = aibotPro.Dtos.LogLevel;
 
@@ -128,6 +129,7 @@ public class OpenAPIService : IOpenAPIService
                             !string.IsNullOrEmpty(chatCompletionResponse.Choices
                                 .FirstOrDefault().delta.Content))
                         {
+                            chatCompletionResponse.Model = chatCompletionCreate.Model;
                             var msgBytes = CreateStream(chatCompletionResponse);
                             await SendStream(response, msgBytes);
                             output += chatCompletionResponse.Choices[0].delta.Content;
@@ -147,6 +149,7 @@ public class OpenAPIService : IOpenAPIService
                                     {
                                         var res = DoubletypeRes(pluginResDto);
                                         responseContent.Choices[0].Message.Content = res;
+                                        responseContent.Model = chatCompletionCreate.Model;
                                         chatCompletionResponse =
                                             CreateOpenAIStreamResult(responseContent);
                                         var msgBytes = CreateStream(chatCompletionResponse);
@@ -175,6 +178,7 @@ public class OpenAPIService : IOpenAPIService
                                                         !string.IsNullOrEmpty(chatCompletionResponse.Choices
                                                             .FirstOrDefault().delta.Content))
                                                     {
+                                                        chatCompletionResponse.Model = chatCompletionCreate.Model;
                                                         var msgBytes = CreateStream(chatCompletionResponse);
                                                         await SendStream(response, msgBytes);
                                                         output += chatCompletionResponse.Choices[0].delta.Content;
@@ -227,12 +231,12 @@ public class OpenAPIService : IOpenAPIService
                 chatCompletionCreate.Messages = chatMessages;
                 chatCompletionCreate.Tools = null;
                 completionResult = await _baiduService.CallBaiduAI(chatCompletionCreate, openAiOptions);
-                chatCompletionResponse.Usage.prompt_tokens += tikToken.Encode(fn.Thoughts).Count;
-                chatCompletionResponse.Usage.prompt_tokens += tikToken.Encode(pluginResDto.result).Count;
+                completionResult.Usage.PromptTokens += tikToken.Encode(fn.Thoughts).Count;
+                completionResult.Usage.PromptTokens += tikToken.Encode(pluginResDto.result).Count;
             }
 
             if (!string.IsNullOrEmpty(fn.Arguments))
-                chatCompletionResponse.Usage.completion_tokens += tikToken.Encode(fn.Arguments).Count;
+                completionResult.Usage.CompletionTokens += tikToken.Encode(fn.Arguments).Count;
         }
 
         chatCompletionResponse = CreateERNIEUnStreamResult(completionResult);
@@ -261,6 +265,7 @@ public class OpenAPIService : IOpenAPIService
                     if (!pluginResDto.doubletreating)
                     {
                         var res = DoubletypeRes(pluginResDto);
+                        completionResult.Model = chatCompletionCreate.Model;
                         completionResult.Choices[0].Message.Content = res;
                         chatCompletionResponse = CreateOpenAIUnStreamResult(completionResult);
                     }
@@ -279,6 +284,7 @@ public class OpenAPIService : IOpenAPIService
                             var choice_sec = completionResult.Choices.FirstOrDefault();
                             if (choice_sec != null)
                             {
+                                completionResult.Model = chatCompletionCreate.Model;
                                 chatCompletionResponse = CreateOpenAIUnStreamResult(completionResult);
                                 chatCompletionResponse.Usage.prompt_tokens +=
                                     tikToken.Encode(pluginResDto.result).Count;
@@ -292,6 +298,7 @@ public class OpenAPIService : IOpenAPIService
             }
             else
             {
+                completionResult.Model = chatCompletionCreate.Model;
                 chatCompletionResponse = CreateOpenAIUnStreamResult(completionResult);
             }
         }
@@ -415,7 +422,8 @@ public class OpenAPIService : IOpenAPIService
                 finish_reason = null,
                 message = new DeltaContent
                 {
-                    Content = responseContent.Result
+                    Content = responseContent.Result,
+                    Role = "assistant"
                 }
             }
         };

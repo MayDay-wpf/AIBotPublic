@@ -6,35 +6,57 @@
     $("#role-main-menu").parent().siblings().removeClass('show');
     $("#list-role-nav").addClass('active');
     getRoleList('init');
+    window.addEventListener('scroll', handleScroll); // 添加滚动监听
 });
 let page = 1;
 let pageSize = 12;
 let noMoreData = false;
+let isLoading = false;
+const scrollThreshold = 50;
+
+function handleScroll() {
+    const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+    const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight;
+    const clientHeight = window.innerHeight || document.documentElement.clientHeight;
+
+    if (scrollHeight - scrollTop - clientHeight < scrollThreshold && !isLoading && !noMoreData) {
+        isLoading = true;
+        getRoleList('loadmore');
+    }
+}
+
 function getRoleList(type) {
     loadingOverlay.show();
+    isLoading = true;
+
     var name = $('#searchKey').val();
     if (type == 'init') {
         page = 1;
         pageSize = 12;
+        noMoreData = false;
     }
-    if (type == 'loadmore' && noMoreData) { // 加载更多但标志已表示没有更多数据
+    if (type == 'loadmore' && noMoreData) {
         loadingOverlay.hide();
+        isLoading = false;
         balert('没有更多了', "info", false, 1500, "center");
-        return; // 直接返回，不再进行请求
+        return;
     }
     if (type == 'loadmore') {
         page++;
     }
+
     var data = {
         name: name,
         page: page,
         pageSize: pageSize
     };
+
     $.ajax({
         type: 'Post',
         url: '/Role/GetRoleList',
         data: data,
         success: function (res) {
+            isLoading = false;
             loadingOverlay.hide();
             if (res.success) {
                 var html = '';
@@ -49,7 +71,7 @@ function getRoleList(type) {
                     html += '<div class="d-flex justify-content-center">';
                     html += `<a href="/Home/Index?type=` + item.roleCode + `" class="btn btn-primary"><i data-feather="message-circle"></i> 对话</a>`;
                     html += `<a href="/Role/CustomRole?code=` + item.roleCode + `" class="btn btn-info"><i data-feather="edit"></i> 编辑</a>`;
-                    if (item.canDelete)
+                    if (item.canDelete || IsAdmin)
                         html += `<button onclick="delRole('${item.roleCode}')" class="btn btn-danger"><i data-feather="trash-2"></i> 删除</button>`;
                     html += '</div>';
                     html += '</div>';
@@ -58,23 +80,21 @@ function getRoleList(type) {
                 }
                 if (type == 'loadmore') {
                     $('#masonry-layout').append(html);
-                    if (res.data.length < pageSize) {
-                        noMoreData = true;
-                    }
+                    noMoreData = res.data.length < pageSize;
                 } else {
                     $('#masonry-layout').html(html);
-                    if (res.data.length < pageSize) {
-                        noMoreData = true;
-                    }
+                    noMoreData = res.data.length < pageSize;
                 }
                 feather.replace();
             }
         },
         error: function (res) {
+            isLoading = false;
             loadingOverlay.hide();
         }
     });
 }
+
 function delRole(code) {
     //二次确认
     showConfirmationModal("提示", "确定删除这个角色吗？", function () {
@@ -99,31 +119,7 @@ function delRole(code) {
         });
     });
 }
-//function throttle(func, limit) {
-//    var lastFunc, lastRan;
-//    return function () {
-//        var context = this, args = arguments;
-//        if (!lastRan) {
-//            func.apply(context, args);
-//            lastRan = Date.now();
-//        } else {
-//            clearTimeout(lastFunc);
-//            lastFunc = setTimeout(function () {
-//                if ((Date.now() - lastRan) >= limit) {
-//                    func.apply(context, args);
-//                    lastRan = Date.now();
-//                }
-//            }, limit - (Date.now() - lastRan));
-//        }
-//    }
-//}
 
-//$(window).scroll(throttle(function () {
-//    if ($(window).scrollTop() + $(window).height() >= $(document).height() && !isLoading) {
-//        isLoading = true;
-//        getRoleList('loadmore');
-//    }
-//}, 500)); // limit to run every 250 milliseconds
 $(document).keypress(function (e) {
     if ($("#searchKey").is(":focus")) {
         if (e.which == 13) {

@@ -35,12 +35,29 @@ namespace aibotPro.Controllers
                 return BadRequest("请选择文件");
             }
 
-            var allowedExtensions = new List<string> { ".txt", ".pdf", ".ppt", ".doc", ".docx", ".xls", ".xlsx" };
-            var fileExtension = Path.GetExtension(fileName).ToLower();
+            var systemCfgs = _systemService.GetSystemCfgs();
+            var allowedFileTypes = systemCfgs.FirstOrDefault(x => x.CfgKey == "Allowed_File_Types");
+            List<string> allowedExtensions;
+            if (allowedFileTypes != null && !string.IsNullOrWhiteSpace(allowedFileTypes.CfgValue))
+            {
+                // 从配置中获取允许的文件类型,并转换为小写
+                allowedExtensions = allowedFileTypes.CfgValue.Split(',')
+                    .Select(x => x.Trim().ToLowerInvariant())
+                    .ToList();
+            }
+            else
+            {
+                // 如果配置为空,使用默认值
+                allowedExtensions = new List<string> { ".txt", ".pdf", ".ppt", ".doc", ".docx", ".xls", ".xlsx" };
+            }
+
+            var fileExtension = Path.GetExtension(fileName).ToLowerInvariant();
 
             if (!allowedExtensions.Contains(fileExtension))
             {
-                return BadRequest("只允许上传 TXT, PDF, PPT, WORD, EXCEL 文件");
+                var allowedTypesMessage =
+                    string.Join(", ", allowedExtensions.Select(ext => ext.TrimStart('.')).ToArray());
+                return BadRequest($"只允许上传以下类型的文件: {allowedTypesMessage}");
             }
 
             var path = await _systemService.UploadFileChunkAsync(file, chunkNumber, fileName, "wwwroot/files/fileslib");

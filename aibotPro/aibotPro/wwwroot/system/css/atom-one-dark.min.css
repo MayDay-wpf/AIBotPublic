@@ -51,35 +51,20 @@
     text-decoration: underline
 }
 
-code.language-vue {
+/*code.language-vue,
+code.language-nginx,
+code.language-pro,
+code.language-log,
+code.language-http,
+code.language-gradle,
+code.language-properties,
+code.language-mermaid {
     display: block;
     background-color: #282c34;
     padding: 10px;
-}
+}*/
 
-code.language-nginx {
-    display: block;
-    background-color: #282c34;
-    padding: 10px;
-}
-
-code.language-pro {
-    display: block;
-    background-color: #282c34;
-    padding: 10px;
-}
-
-code.language-dart {
-    display: block;
-    background-color: #282c34;
-    padding: 10px;
-}
-code.language-log {
-    display: block;
-    background-color: #282c34;
-    padding: 10px;
-}
-code.language-http {
+[class^="language-"] {
     display: block;
     background-color: #282c34;
     padding: 10px;

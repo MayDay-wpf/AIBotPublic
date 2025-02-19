@@ -1,0 +1,63 @@
+﻿@{
+    ViewData["Title"] = "用户限制（Limit）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/system/js/openall/select2.min.css" rel="stylesheet"/>
+<link href="~/system/css/limit.css" rel="stylesheet" />
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        <button class="btn btn-success" onclick="addLimit()"><i data-feather="plus"></i> 添加限制</button>
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px;">
+    <div class="card">
+        <div class="card-header">
+            <h5>用户限制列表</h5>
+        </div>
+        <div class="card-body">
+            <div class="header-search mb-4">
+                <i data-feather="search"></i>
+                <input type="search" class="form-control" placeholder="输入账号，回车搜索" id="name" style="width: 100%;">
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            <th>账号</th>
+                            <th>限制模型</th>
+                            <th>速率</th>
+                            <th>时间</th>
+                            <th>是否启用</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="limitList">
+                        <tr>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <nav aria-label="Page navigation example">
+                    <ul class="pagination" id="pagination">
+                        <!-- 页码链接将在这里动态插入 -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/system/js/openall/select2.min.js"></script>
+<script src="~/system/js/openall/limit.js"></script>

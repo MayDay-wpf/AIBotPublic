@@ -1,6 +1,7 @@
 let page = 1;
 let pageSize = 12;
 let isLoading = false;
+let hasMore = true;
 $(function () {
     $('.nav-sub-link').removeClass('active');
     $('.nav-link').removeClass('active');
@@ -77,6 +78,7 @@ $(document).keypress(function (e) {
     }
 });
 let noMoreData = false;
+
 function getWorkShopPlugins(type) {
     loadingOverlay.show();
     var name = $('#searchKey').val();
@@ -142,6 +144,7 @@ function getWorkShopPlugins(type) {
         }
     });
 }
+
 function insertPlugin(id, price) {
     //二次确认
     showConfirmationModal('安装插件', '确认消耗<span style="color:#f2c044">【' + price + '】</span>安装此插件？（插件作者无需付费）', function () {
@@ -150,7 +153,7 @@ function insertPlugin(id, price) {
         $.ajax({
             type: 'Post',
             url: '/WorkShop/InstallPlugin',
-            data: { id: id },
+            data: {id: id},
             success: function (res) {
                 loadingOverlay.hide();
                 if (res.success) {
@@ -168,13 +171,12 @@ function seePlugin(id) {
     $.ajax({
         type: 'Post',
         url: '/WorkShop/SeePlugin',
-        data: { id: id },
+        data: {id: id},
         success: function (res) {
             if (res.success) {
                 if (res.data == null) {
                     balert('无法查看该插件', "danger", false, 2000, "center");
-                }
-                else {
+                } else {
                     window.location.href = '/WorkShop/MyWork?plugincode=' + res.data.pcode + '&id=' + res.data.id + '&type=see';
                 }
             } else {
@@ -205,14 +207,17 @@ function getSystemPluginsInstallList() {
         }
     });
 }
+
 function dalleinfo() {
     var content = `<p>当您安装此插件，您可以在<b>【创意工坊对话】</b>中，描述您的<b>【绘画要求】</b>，插件会根据您的语义选择调用时机</p>`;
     showConfirmationModal("DALL·E3插件说明", content);
 }
+
 function googlesearchinfo() {
     var content = `<p>当您安装此插件，您可以在<b>【创意工坊对话】</b>中，要求AI进行<b>【谷歌搜索】</b>，适用于工坊中所有AI模型</p>`;
     showConfirmationModal("谷歌搜索插件说明", content);
 }
+
 function knowledgeinfo() {
     var content = `<p>当您安装此插件，您可以在<b>【知识库对话】</b>中，令AI查询您的私有知识库，如<b>【未安装】</b>此插件，您将<b>【无法使用知识库对话】</b></p>`;
     showConfirmationModal("知识库检索插件说明", content);

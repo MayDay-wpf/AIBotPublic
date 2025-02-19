@@ -18,6 +18,9 @@ namespace aibotPro.Models
         {
         }
 
+        public virtual DbSet<AIBook> AIBooks { get; set; }
+        public virtual DbSet<AIBookChapter> AIBookChapters { get; set; }
+        public virtual DbSet<AIBookPortraitImage> AIBookPortraitImages { get; set; }
         public virtual DbSet<AIdraw> AIdraws { get; set; }
         public virtual DbSet<AIdrawRe> AIdrawRes { get; set; }
         public virtual DbSet<AImodel> AImodels { get; set; }
@@ -29,11 +32,18 @@ namespace aibotPro.Models
         public virtual DbSet<AssistantModelPrice> AssistantModelPrices { get; set; }
         public virtual DbSet<BindNewApi> BindNewApis { get; set; }
         public virtual DbSet<Card> Cards { get; set; }
+        public virtual DbSet<ChatCollection> ChatCollections { get; set; }
         public virtual DbSet<ChatHistory> ChatHistories { get; set; }
         public virtual DbSet<ChatSetting> ChatSettings { get; set; }
         public virtual DbSet<EasyPaySetting> EasyPaySettings { get; set; }
         public virtual DbSet<ErrorBilling> ErrorBillings { get; set; }
         public virtual DbSet<FilesLib> FilesLibs { get; set; }
+        public virtual DbSet<ForumNotification> ForumNotifications { get; set; }
+        public virtual DbSet<ForumTopic> ForumTopics { get; set; }
+        public virtual DbSet<ForumTopicAddendum> ForumTopicAddenda { get; set; }
+        public virtual DbSet<ForumTopicComment> ForumTopicComments { get; set; }
+        public virtual DbSet<ForumTopicStatement> ForumTopicStatements { get; set; }
+        public virtual DbSet<ForumUserSetting> ForumUserSettings { get; set; }
         public virtual DbSet<Good> Goods { get; set; }
         public virtual DbSet<IPlook> IPlooks { get; set; }
         public virtual DbSet<IPlook_Stats_View> IPlook_Stats_Views { get; set; }
@@ -41,6 +51,7 @@ namespace aibotPro.Models
         public virtual DbSet<KnowledgeList> KnowledgeLists { get; set; }
         public virtual DbSet<KnowledgeType> KnowledgeTypes { get; set; }
         public virtual DbSet<ModelPrice> ModelPrices { get; set; }
+        public virtual DbSet<MutedUser> MutedUsers { get; set; }
         public virtual DbSet<NewApiCollectLog> NewApiCollectLogs { get; set; }
         public virtual DbSet<Notice> Notices { get; set; }
         public virtual DbSet<NoticeRead> NoticeReads { get; set; }
@@ -68,6 +79,8 @@ namespace aibotPro.Models
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<UserPrompt> UserPrompts { get; set; }
         public virtual DbSet<UserSetting> UserSettings { get; set; }
+        public virtual DbSet<UsersLimit> UsersLimits { get; set; }
+        public virtual DbSet<UsersMessage> UsersMessages { get; set; }
         public virtual DbSet<VIP> VIPs { get; set; }
         public virtual DbSet<WorkFlow> WorkFlows { get; set; }
         public virtual DbSet<WorkShopAIModel> WorkShopAIModels { get; set; }
@@ -77,7 +90,8 @@ namespace aibotPro.Models
         {
             if (!optionsBuilder.IsConfigured)
             {
-
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
+                optionsBuilder.UseSqlServer("Data Source=.;Initial Catalog=AIBotPro;Persist Security Info=True;User ID=sa;Password=Abc123@#");
             }
         }
 
@@ -86,6 +100,11 @@ namespace aibotPro.Models
             modelBuilder.Entity<AImodel>(entity =>
             {
                 entity.Property(e => e.VisionModel).HasDefaultValueSql("((0))");
+            });
+
+            modelBuilder.Entity<ChatHistory>(entity =>
+            {
+                entity.Property(e => e.IsTop).HasDefaultValueSql("((0))");
             });
 
             modelBuilder.Entity<IPlook_Stats_View>(entity =>

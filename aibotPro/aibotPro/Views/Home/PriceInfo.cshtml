@@ -1,0 +1,67 @@
+﻿@{
+    ViewData["Title"] = "价格说明（Price Info）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/system/css/priceinfo.css?v1.0.0" rel="stylesheet"/>
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu"></i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left"></i>
+        </a>
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px;">
+    <h4 class="content-title">
+        <b style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105));
+           -webkit-background-clip: text;
+           color: transparent;">计费说明</b>
+    </h4>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-3 filter-sidebar">
+                <h4>筛选</h4>
+                <div class="filter-buttons">
+                </div>
+                <hr/>
+                <div class="pricing-info" style="font-size: 0.9em; line-height: 1.4;">
+                    <p><strong>原则：</strong>不限期无理由退款，用户体验第一，余额长期有效</p>
+                    <p><strong>退款：</strong>加【菜单】【左下角QQ群】找任意【管理员】或群主 | <strong>金额：</strong>充值-使用-所有赠送金额
+                    </p>
+                    <p><strong>计费：</strong>1k token≈600汉字 | (输入+输出)*倍率，倍率 < 1 为折扣</p>
+                    <p><strong>频率：</strong>所有模型无频率限制，含免费模型、订阅会员</p>
+                    <p><strong>标签：</strong>
+                    <ul>
+                        <li>🆓:全员免费，非订阅会员余额需>0</li>
+                        <li>✨:VIP折扣，可能是免费亦可能是折扣价格，以实时计费显示为准</li>
+                        <li>👑:SVIP折扣，可能是免费亦可能是折扣价格，以实时计费显示为准</li>
+                        <li>🖼️:可AI识图的模型，没有这个标识系统会自动使用文字识别和场景识别</li>
+                        <li>⚠️:稳定性较差的模型，当前不建议使用</li>
+                        <li>🚀:高质量直连模型，高可用，价格较贵</li>
+                    </ul>
+                    <p>
+                        <strong>什么是Azure、官方直连、逆向：</strong>
+                    </p>
+                    <ul>
+                        <li>Azure:微软提供的API，价格便宜，但是有严格的内容审查，其他与官方直连无差别</li>
+                        <li>官方直连:直接调用各个官方的API，价格贵，质量高，内容审查比Azure轻</li>
+                        <li>逆向:特殊技术手段从各个官方的对话页面转换来的API，稳定性差，但是功能与官方对话系统一致</li>
+                    </ul>
+                    <p style="color:orangered;font-size: 1.2em;">
+                        <strong>注意1：</strong>本站是按量计费，不是按次计费，每次对话的消耗量并不一致，详细计算在【个人中心】->【统计】
+                    </p>
+                    <p style="color:orangered;font-size: 1.2em;">
+                        <strong>注意2：</strong>模型价格、会员权益，可能因官方调整或活动而变动，本站保留在合理范围内调整的权利，当您使用本系统，代表您无条件接受此条声明。
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="row model-list">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/system/js/priceinfo.js?v1.0.1"></script>

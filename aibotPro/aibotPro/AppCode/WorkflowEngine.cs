@@ -326,30 +326,31 @@ namespace aibotPro.AppCode
             csData.Output.Csharp = FillScriptWithValues(csData.Output.Csharp, result);
 
             string prompt =
-                $@"# Carefully analyze the following C# code to determine if there are any infinite loops:
+            $@"# Carefully analyze the following C# code for potential security risks and harmful operations, specifically focusing on file system access, process management, database interactions, and execution of dangerous commands. Do **NOT** suggest any code modifications.
 
-                   **Guidelines**:
-   
-                   * Examine all loop structures (while, for, do-while, etc.).
-                   * Analyze loop conditions and the code within loop bodies.
-                   * Determine if there are explicit, guaranteed-to-be-reached exit conditions.
-                   * Be aware of edge cases or data type limitations that might cause loops to never terminate.
-                   * Don't be misled by comments or seemingly reasonable code structures.
-                   * Consider all possible execution paths, including exception handling.
-                   * Evaluate whether loops will end within a reasonable time (about 30 seconds). HTTP request code is not within the scope of consideration, as HTTP request times are not stable.
-                   * Analyze changes in loop variables to ensure they're moving towards termination conditions.
-   
-                   **Result Requirements**:
-   
-                   * Return true if there's any scenario that could lead to an infinite loop or a loop running for an excessively long time (over 30 seconds).
-                   * Return false if all loops have clear and guaranteed-to-be-reached exit conditions and can finish within a reasonable time.
-                   * Provide a concise explanation for your judgment, explaining your analysis process and conclusions.
-   
-                   # Code:
-                   
-                   ```csharp
-                   {csData.Output.Csharp}
-                   ```";
+            **Guidelines**:
+
+            * **File System:** Identify any attempts to delete, modify, or upload files. Flag the use of `System.IO` operations, especially `File.Delete`, `File.Move`, `File.Copy`, `Directory.Delete`, etc. Pay close attention to any code that constructs file paths, particularly if user input is involved.
+            * **Process Management:** Identify any attempts to start new processes, especially if command-line arguments are involved. Flag the use of `System.Diagnostics.Process`, `System.Diagnostics.ProcessStartInfo`, etc. Be wary of code that constructs command lines from user input.
+            * **Database Interactions:** Identify any attempts to execute DELETE statements against a database. Other database operations (SELECT, INSERT, UPDATE) are permissible. Flag any dynamic SQL construction, especially if it incorporates user-provided values.
+            * **High-Risk Commands:** Explicitly flag the use of commands that pose a significant security risk.  This includes, but is not limited to, commands like `rm`, `del`, `format`, `rd`, `shutdown`, `net user`, `reg add`, `wmic`, and other commands commonly associated with malicious activity, especially in a Windows environment. Consider the context of the command; for instance, `format c:` is extremely dangerous.
+            * **Windows Specific Risks:**  Be particularly vigilant about commands that could exploit vulnerabilities specific to the Windows operating system.
+
+            **Result Requirements**:
+
+            * Return `true` if the code contains any of the following:
+                * Attempts to delete, modify, or upload files.
+                * Use of high-risk commands (like those listed above, or similar).
+                * Execution of SQL DELETE statements.
+                * Any other operations that could potentially harm the system.
+            * Return `false` if the code is deemed safe.
+            * Provide a detailed explanation of your analysis, including specific line numbers and the identified risky operations. Explain why these operations are considered harmful. For example, if the code uses `format c:`, explain that this command would format the C: drive, resulting in data loss.
+
+            # Code:
+
+            ```csharp
+            {csData.Output.Csharp}
+            ```";
 
             var (isValid, reason) = await AICodeCheck(prompt);
             if (isValid)
@@ -1172,17 +1173,11 @@ namespace aibotPro.AppCode
             bool reranker = knowledgeData.Output.Reranker;
             int topn = knowledgeData.Output.TopN;
             List<SystemCfg> systemCfgs = _systemService.GetSystemCfgs();
-            var Alibaba_DashVectorApiKey =
-                systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorApiKey")?.CfgValue;
-            var Alibaba_DashVectorEndpoint =
-                systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorEndpoint")?.CfgValue;
-            var Alibaba_DashVectorCollectionName =
-                systemCfgs.FirstOrDefault(x => x.CfgKey == "Alibaba_DashVectorCollectionName")?.CfgValue;
             var EmbeddingsUrl = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsUrl")?.CfgValue;
             var EmbeddingsApiKey = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsApiKey")?.CfgValue;
             var EmbeddingsModel = systemCfgs.FirstOrDefault(x => x.CfgKey == "EmbeddingsModel")?.CfgValue;
-            VectorHelper vectorHelper = new VectorHelper(_redisService, Alibaba_DashVectorApiKey,
-                Alibaba_DashVectorEndpoint, Alibaba_DashVectorCollectionName, EmbeddingsUrl, EmbeddingsApiKey, EmbeddingsModel);
+            VectorHelper vectorHelper =
+                new VectorHelper(_redisService, EmbeddingsUrl, EmbeddingsApiKey, EmbeddingsModel);
             List<string> pm = new List<string>();
             pm.Add(prompt);
             List<List<double>> vectorList = new List<List<double>>();
@@ -1235,8 +1230,8 @@ namespace aibotPro.AppCode
                     }).ToList()
                 };
             }
-            else
-                searchVectorResult = vectorHelper.SearchVector(searchVectorPr);
+            // else
+            //     searchVectorResult = vectorHelper.SearchVector(searchVectorPr);
 
             string data = string.Empty;
             if (searchVectorResult.output != null)
@@ -1252,7 +1247,7 @@ namespace aibotPro.AppCode
                 if (reranker)
                 {
                     var rerankRes =
-                        await _aiServer.RerankerJinaAI(docs, "jina-reranker-v2-base-multilingual", prompt, topn);
+                        await _aiServer.RerankerJinaAI(docs, prompt, topn);
                     if (rerankRes != null && rerankRes.Results.Count > 0)
                     {
                         data = string.Empty;
@@ -1288,7 +1283,7 @@ namespace aibotPro.AppCode
             string type = endData.Output.EndAction;
             string jsData = FillScriptWithValues(endData.Output.EndScript, result);
             var nodeName = node.Name;
-            if (type != "js")
+            if (type != "js" && type != "unhand")
             {
                 string ExecuteResult = RunScript(nodeName, jsData);
                 nodeOutput.NodeName = nodeName;
@@ -1406,7 +1401,7 @@ namespace aibotPro.AppCode
             {
                 try
                 {
-                    var json = JObject.Parse(result.OutputData);
+                    var json = ParseNestedJson(result.OutputData);
                     var token = json.SelectToken(path); // 使用SelectToken提取路径对应的值
 
                     // 如果找到了对应的值,返回它
@@ -1425,6 +1420,35 @@ namespace aibotPro.AppCode
 
             // 如果没有找到任何匹配的路径,则抛出异常
             throw new Exception($"Value for path '{path}' not found in any NodeOutput.");
+        }
+
+        private static JObject ParseNestedJson(string json)
+        {
+            try
+            {
+                // 首先尝试直接解析
+                return JObject.Parse(json);
+            }
+            catch (Newtonsoft.Json.JsonReaderException)
+            {
+                // 如果直接解析失败，则尝试修复嵌套的 JSON 字符串
+                try
+                {
+                    // 使用正则表达式替换所有嵌套的 JSON 字符串
+                    string fixedJson = System.Text.RegularExpressions.Regex.Replace(
+                        json,
+                        @"""(\{.*?\})""", // 匹配嵌套的 JSON 字符串，懒惰匹配
+                        m => $"\"{m.Groups[1].Value.Replace("\"", "\\\"")}\""); // 转义内部双引号
+
+                    return JObject.Parse(fixedJson);
+                }
+                catch
+                {
+                    // 如果修复后仍然无法解析，则抛出异常或返回 null
+                    // 根据你的需求处理错误
+                    throw; // 或者 return null;
+                }
+            }
         }
 
         private static string FillScriptWithValues(string script, List<NodeOutput> results, string thisJson = null)

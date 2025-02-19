@@ -1,6 +1,6 @@
 ﻿var workflowcode = '';
 var plugincode = '';
-var jsonmodelAI = ['gpt-3.5-turbo', 'gpt-3.5-turbo-0125', 'gpt-4o', 'gpt-4o-openai', 'gpt-4o-mini', 'gpt-4o-mini-openai', 'gpt-4-0125-preview', 'gpt-4-0125-preview-openai', 'deepseek-chat', 'deepseek-coder', 'chatgpt-4o-latest', 'chatgpt-4o-latest-openai'];
+var jsonmodelAI = ['gpt-3.5-turbo', 'gpt-3.5-turbo-0125', 'gpt-4o', 'gpt-4o-openai', 'gpt-4o-mini', 'gpt-4o-mini-openai', 'gpt-4-0125-preview', 'gpt-4-0125-preview-openai', 'deepseek-chat', 'chatgpt-4o-latest', 'chatgpt-4o-latest-openai'];
 var jsonschemaAI = ['gpt-4o-mini', 'gpt-4o-mini-openai', 'gpt-4o', 'gpt-4o-openai', 'chatgpt-4o-latest', 'chatgpt-4o-latest-openai'];
 let pageIndex_k = 1;
 let pageSize_k = 20;
@@ -8,7 +8,7 @@ $(function () {
     //changeMode('lock');
     workflowcode = getUrlParam('workflowcode');
     plugincode = getUrlParam('plugincode');
-    if (workflowcode == '' || plugincode == '') layer.msg("未经许可的访问方式", { icon: 2, time: 1500 }, function () {
+    if (workflowcode == '' || plugincode == '') layer.msg("未经许可的访问方式", {icon: 2, time: 1500}, function () {
         window.location.href = "/Home/Index";
     });
     else
@@ -56,7 +56,7 @@ $(document).ready(function () {
             var thisAIModel = $('.aimodel').val();
             if (jsonmodelAI.indexOf(thisAIModel) == -1) {
                 $(this).val('false');
-                layer.msg('当前模型不支持JsonModel', { icon: 2, time: 2500 });
+                layer.msg('当前模型不支持JsonModel', {icon: 2, time: 2500});
                 return;
             }
             $('.stream').val('false');
@@ -71,7 +71,7 @@ $(document).ready(function () {
             var thisAIModel = $('.aimodel').val();
             if (jsonschemaAI.indexOf(thisAIModel) == -1) {
                 $(this).val('false');
-                layer.msg('当前模型不支持JsonSchema', { icon: 2, time: 2500 });
+                layer.msg('当前模型不支持JsonSchema', {icon: 2, time: 2500});
                 $('.jsonschemaBox').hide();
                 $('.editJsonschema').hide();
                 return;
@@ -337,19 +337,19 @@ editor.on('nodeCreated', function (id) {
     // 如果当前节点不是"start"，检查是否已存在"start"节点
     if (startNodesCount === 0) { // 如果不存在"start"节点，则不允许创建非"start"节点
         editor.removeNodeId(`node-${id}`);
-        layer.msg("请先配置开始节点", { icon: 2, time: 2500 });
+        layer.msg("请先配置开始节点", {icon: 2, time: 2500});
         return;
     }
     if (currentNodeName === "start" || currentNodeName === "end") {
         // 如果尝试创建的是"start"节点，但已存在一个，则删除
         if (startNodesCount > 1) { // 因为当前节点已创建，所以计数大于1表示之前已存在"start"节点
             editor.removeNodeId(`node-${id}`);
-            layer.msg("不可以出现多个start节点", { icon: 2, time: 2500 });
+            layer.msg("不可以出现多个start节点", {icon: 2, time: 2500});
             return;
         }
         if (endNodesCount > 1) {
             editor.removeNodeId(`node-${id}`);
-            layer.msg("不可以出现多个end节点", { icon: 2, time: 2500 });
+            layer.msg("不可以出现多个end节点", {icon: 2, time: 2500});
             return;
         }
     }
@@ -1549,14 +1549,14 @@ function pushtoPlugin(showlayer = true) {
                             window.location.href = '/WorkShop/MyPlugins?tab=mycreate';
                         });
                     } else {
-                        layer.msg(data.msg, { icon: 2, time: 2000 });
+                        layer.msg(data.msg, {icon: 2, time: 2000});
                     }
                 }
             },
             error: function () {
                 // 关闭加载中的弹窗
                 layer.closeAll('loading');
-                layer.msg('请求失败，请重试', { icon: 2, time: 2000 });
+                layer.msg('请求失败，请重试', {icon: 2, time: 2000});
             }
         });
     });
@@ -1661,7 +1661,6 @@ var bottomPanel = document.getElementById('bottomPanel');
 var closePanelBtn = document.getElementById('debugerclosePanelBtn');
 var chatBody = $(".bottom-panel-content");
 
-var md = window.markdownit();
 var sysmsg = "";
 var jishuqi = 0;
 
@@ -1693,15 +1692,13 @@ connection.on('ReceiveWorkShopMessage', function (message) {
     if (!message.isfinish) {
         if (jishuqi == 0) {
             chatid = message.chatid;
-        }
-        else if (message.loading) {
+        } else if (message.loading) {
             $("#pluginloading").html(message.message);
-        }
-        else {
+        } else {
             if (message.message != null) {
                 sysmsg += message.message;
                 $("#" + assistansBoxId).html(md.render(sysmsg));
-                MathJax.typeset();
+                //MathJax.typeset();
                 //hljs.highlightAll();
                 $("#" + assistansBoxId + " pre code").each(function (i, block) {
                     hljs.highlightElement(block);
@@ -1716,7 +1713,7 @@ connection.on('ReceiveWorkShopMessage', function (message) {
         $("#sendBtn").css('background-color', 'rgb(0,123,255)');
         $("#sendBtn").text('发送');
         $("#" + assistansBoxId).html(marked(completeMarkdown(sysmsg)));
-        MathJax.typeset();
+        //MathJax.typeset();
         //hljs.highlightAll();
         $("#" + assistansBoxId + " pre code").each(function (i, block) {
             hljs.highlightElement(block);
@@ -1739,11 +1736,11 @@ connection.on('ReceiveWorkShopMessage', function (message) {
 function sendMsg() {
     var msg = $("#Q").val().trim();
     if (msg == "") {
-        layer.msg('请输入问题', { icon: 3, time: 2000 });
+        layer.msg('请输入问题', {icon: 3, time: 2000});
         return;
     }
     if (!processOver) {
-        layer.msg('对话进行中,请结束后再试', { icon: 3, time: 2000 });
+        layer.msg('对话进行中,请结束后再试', {icon: 3, time: 2000});
         return;
     }
     processOver = false;
@@ -1767,7 +1764,8 @@ function sendMsg() {
     };
     $("#Q").val("");
     $("#Q").focus();
-    var html = `<div class="chat-message user"><pre id="` + msgid_u + `"></pre></div>`;
+    var html = `<div class="chat-message user"><pre id="` + msgid_u + `" style="white-space: pre-wrap;
+    word-break: break-all;"></pre></div>`;
     $(".bottom-panel-content").append(html);
     if (msg.length > 1000) {
         setInputToCache(data, function (responseData) {
@@ -1800,7 +1798,7 @@ function sendMsg() {
 //新建会话
 function newChat() {
     if (!processOver) {
-        layer.msg('对话进行中,请结束后再试', { icon: 3, time: 2000 });
+        layer.msg('对话进行中,请结束后再试', {icon: 3, time: 2000});
         return;
     }
     chatid = "";
@@ -1816,7 +1814,7 @@ function stopGenerate() {
     $('.LDI').remove();
     if (sysmsg != '')
         $("#" + assistansBoxId).html(marked(completeMarkdown(sysmsg)));
-    MathJax.typeset();
+    //MathJax.typeset();
     $("#" + assistansBoxId + " pre code").each(function (i, block) {
         hljs.highlightElement(block);
     });
@@ -1832,7 +1830,7 @@ function stopGenerate() {
             console.log(`workshop停止生成，Id：${chatgroupid} --${getCurrentDateTime()}`);
         },
         error: function (err) {
-            layer.msg('出现了一些未经处理的异常，请联系管理员', { icon: 2, time: 2000 }, function () {
+            layer.msg('出现了一些未经处理的异常，请联系管理员', {icon: 2, time: 2000}, function () {
                 sendExceptionMsg(err.toString());
             });
         }
@@ -1865,7 +1863,7 @@ $(document).ready(function () {
     $('#modelSelect').change(function () {
         var selectedModel = $(this).val();
         thisAiModel = selectedModel;
-        layer.msg('切换成功', { icon: 1, time: 2000 });
+        layer.msg('切换成功', {icon: 1, time: 2000});
     });
     $("#sendBtn").on("click", function () {
         if (!processOver) {
@@ -1891,7 +1889,7 @@ function getWorkShopAIModelList(callback) {
             }
         },
         error: function (err) {
-            layer.msg('系统未配置AI模型', { icon: 2, time: 2000 });
+            layer.msg('系统未配置AI模型', {icon: 2, time: 2000});
 
         }
     });

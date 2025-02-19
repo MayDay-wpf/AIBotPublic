@@ -52,7 +52,7 @@
                     <h5 class="card-title">初级会员</h5>
                     <p class="card-text">价格：<b style="color:darkgoldenrod">￥20/月</b></p>
                     <p class="card-text">
-                        1、享有免费模型（详见模型列表：带【✨】标志的模型）
+                        1、享有优惠模型（详见模型列表：带【✨】标志的模型）
                         <br />
                         2、专项会员折扣
                         <br />
@@ -60,15 +60,15 @@
                         <br />
                         4、客服优先处理
                         <br />
-                        5、无签到奖励
+                        5、获得10余额
                         <br />
+                        6、每日签到，随机抽取0.5~0.6余额,每月可获得总余额15~18
+                        <br/>
                         7、无专属模型
-                        <br />
-                        8、无余额奖励
                     </p>
                     <button class="btn btn-success" onclick="Pay(20,'wxpay','VIP|20')"><img src="~/system/images/wechatpay.png" class="payimg" /> 微信支付</button>
                     <button class="btn btn-primary" onclick="Pay(20,'alipay','VIP|20')"><img src="~/system/images/alipay.png" class="payimg" /> 支付宝支付</button>
-                    <button class="btn btn-info" onclick="BalncePayVIP(15)"><i data-feather="dollar-sign"></i> 余额支付</button>
+                    @* <button class="btn btn-info" onclick="BalncePayVIP(15)"><i data-feather="dollar-sign"></i> 余额支付</button> *@
                 </div>
             </div>
         </div>
@@ -80,19 +80,19 @@
                     <h5 class="card-title">高级会员</h5>
                     <p class="card-text">价格：<b style="color:darkgoldenrod">￥50/月</b></p>
                     <p class="card-text">
-                        1、享有免费模型（详见模型列表：带【✨】标志的模型）
+                        1、享有优惠模型（详见模型列表：带【✨】标志的模型）
+                        <br/>
+                        <b style="color:orangered">2、享有专属优惠模型（详见模型列表：带【👑】标志的模型）</b>
                         <br />
-                        <b style="color:orangered">2、专项高级会员折扣</b>
+                        <b style="color:orangered">3、专项高级会员折扣</b>
                         <br />
-                        3、专属会员功能
+                        4、专属会员功能
                         <br />
-                        4、客服优先处理
+                        5、客服优先处理
                         <br />
-                        <b style="color:orangered">6、每日签到，随机抽取0.5~1余额</b>
-                        <br />
-                        <b style="color:orangered">7、享有专属模型（详见模型列表：带【👑】标志的模型）</b>
-                        <br />
-                        <b style="color:orangered">8、获得50余额</b>
+                        6、获得25余额
+                        <br/>
+                        <b>7、每日签到，随机抽取0.5~0.6余额,每月可获得总余额15~18</b>
 
                     </p>
                     <button class="btn btn-success" onclick="Pay(50,'wxpay','VIP|50')"><img src="~/system/images/wechatpay.png" class="payimg" /> 微信支付</button>
@@ -102,4 +102,4 @@
         </div>
     </div>
 </div>
-<script src="~/system/js/vip.js?v1.2"></script>
+<script src="~/system/js/vip.js?v1.2.1"></script>

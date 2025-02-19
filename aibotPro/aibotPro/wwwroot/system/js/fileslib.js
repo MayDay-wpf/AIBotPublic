@@ -10,6 +10,7 @@
 let page = 1;
 let pageSize = 12;
 let noMoreData = false;
+
 async function uploadChunk(file, chunk, chunks, start, chunkSize) {
     var end = Math.min(start + chunkSize, file.size);
     var chunkBlob = file.slice(start, end);
@@ -27,6 +28,10 @@ async function uploadChunk(file, chunk, chunks, start, chunkSize) {
         success: function (data) {
             var progress = (chunk / chunks) * 100;
             $('#p1').css('width', progress + '%').attr('aria-valuenow', progress).text(Math.round(progress) + '%');
+        },
+        error: function (xhr, status, error) {
+            balert(xhr.responseText, "danger", false, 1500, "top");
+            closeModal();
         }
     });
 
@@ -37,7 +42,7 @@ async function uploadChunk(file, chunk, chunks, start, chunkSize) {
         $.ajax({
             url: '/FilesAI/MergeFiles',
             type: 'POST',
-            data: JSON.stringify({ fileName: file.name, totalChunks: chunks }),
+            data: JSON.stringify({fileName: file.name, totalChunks: chunks}),
             contentType: 'application/json',
             success: function (response) {
                 getFiles('init');
@@ -64,16 +69,26 @@ async function uploadFiles() {
             balert('请选择文件', 'danger', true, 2000, "center");
             return;
         }
-        if (file.size > 30 * 1024 * 1024) {
-            balert('文件大小不能超过30兆', 'danger', true, 2000, "center");
+        if (file.size > 10 * 1024 * 1024) {  // 限制为10MB
+            balert('文件大小不能超过10MB', 'danger', true, 2000, "center");
             return;
         }
-        var allowedExtensions = ['txt', 'pdf', 'ppt', 'doc', 'docx', 'xls', 'xlsx'];
-        var fileExtension = file.name.split('.').pop().toLowerCase();
-        if (!allowedExtensions.includes(fileExtension)) {
-            balert('只允许上传TXT, PDF, PPT, WORD, EXCEL文件', 'danger', true, 2000, "top");
-            return;
-        }
+        // var allowedExtensions = [
+        //     // 纯文本文件
+        //     'txt', 'log', 'md', 'markdown',
+        //     // 代码文件
+        //     'js', 'py', 'java', 'c', 'cpp', 'h', 'hpp', 'cs', 'php', 'rb', 'go', 'swift', 'kt', 'ts',
+        //     'html', 'css', 'scss', 'less', 'sql', 'sh', 'bat', 'ps1',
+        //     // 数据交换格式
+        //     'json', 'xml', 'yaml', 'yml',
+        //     // 配置文件
+        //     'ini', 'conf', 'cfg', 'config'
+        // ];
+        // var fileExtension = file.name.split('.').pop().toLowerCase();
+        // if (!allowedExtensions.includes(fileExtension)) {
+        //     balert('只支持文本格式的文件', 'danger', true, 2000, "top");
+        //     return;
+        // }
         var chunkSize = 100 * 1024; // 100KB
         var chunks = Math.ceil(file.size / chunkSize);
         var chunk = 0;
@@ -87,6 +102,7 @@ async function uploadFiles() {
     // 触发 file input 元素点击事件
     fileInput.click();
 }
+
 function getFiles(type) {
     loadingOverlay.show();
     var name = $('#searchKey').val();
@@ -130,7 +146,7 @@ function getFiles(type) {
                     else if (fileType == ".xls" || fileType == ".xlsx")
                         avatarpath = '/static/image/XLS.png';
                     else
-                        avatarpath = '';
+                        avatarpath = '/static/image/unknowfile.png';
                     html += '<div class="col-lg-3 col-md-6 col-sm-12 mb-4 grid-item">';
                     html += '<div class="card h-100">';
                     html += '<img class="card-img-top" style="width: 50px;height: 50px;margin:10px auto;" src="' + avatarpath + '">';
@@ -138,7 +154,8 @@ function getFiles(type) {
                     html += '<h5 class="card-title" style="max-height: 100px; overflow: auto;">' + item.fileName + '</h5>';
                     html += '<p class="card-text">' + item.createTime + '</p>';
                     html += '<div class="d-flex justify-content-center">';
-                    html += `<a href="#" class="btn btn-danger" style="margin-right:10px;" onclick="deleteFiles('` + item.fileCode + `')">删除</a>`;
+                    html += `<a href="javascript:void(0)" class="btn btn-danger" style="margin-right:10px;" onclick="deleteFiles('` + item.fileCode + `')"><i class="fas fa-trash-alt"></i> 删除</a>`;
+                    html += `<a href="${item.filePath}" class="btn btn-primary" download="${item.fileName}"><i class="fas fa-cloud-download-alt"></i> 下载</a>`;
                     html += '</div>';
                     html += '</div>';
                     html += '</div>';
@@ -162,13 +179,14 @@ function getFiles(type) {
         }
     });
 }
+
 function deleteFiles(fileCode) {
     showConfirmationModal('警告', '确认删除文件？', function () {
         //发送请求
         $.ajax({
             type: 'Post',
             url: '/FilesAI/DeleteFilesLibs',
-            data: { fileCode: fileCode },
+            data: {fileCode: fileCode},
             success: function (res) {
                 if (res.success) {
                     balert('删除成功', "success", false, 1500);

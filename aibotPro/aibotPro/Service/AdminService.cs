@@ -2,6 +2,7 @@
 using aibotPro.Models;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using System;
 
 namespace aibotPro.Service
 {
@@ -200,6 +201,26 @@ namespace aibotPro.Service
         {
             var result = _context.APIKEYs.Where(x => x.ApiKey1 == key).FirstOrDefault();
             return result != null;
+        }
+        public List<UsersLimit> GetUsersLimits(int page, int size, out int total, string account = "")
+        {
+            IQueryable<UsersLimit> query = _context.UsersLimits.Where(x => string.IsNullOrEmpty(account) || x.Account.Contains(account));
+            total = query.Count();
+            var usersLimit = query.OrderByDescending(x => x.Id)
+                                .Skip((page - 1) * size)
+                                .Take(size)
+                                .ToList();
+            return usersLimit;
+        }
+        public bool EnableUsersLimits(int Id, bool enable)
+        {
+            var usersLimit = _context.UsersLimits.Where(l => l.Id == Id).FirstOrDefault();
+            if (usersLimit != null)
+            {
+                usersLimit.Enable = enable;
+                _context.SaveChanges();
+            }
+            return true;
         }
     }
 }

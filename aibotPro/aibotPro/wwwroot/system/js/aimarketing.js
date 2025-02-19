@@ -124,21 +124,31 @@ function combinedTrack() {
             success: function (res) {
                 if (res.success) {
                     writelogview(`信息：合并音频成功（100%）`);
-                    // 首先移除已存在的下载链接
+                    // 首先移除已存在的下载链接和试听播放器
                     $("#step3 .download-link").remove();
+                    $("#step3 .audio-player").remove();
+                    combinedMp3 = res.data.replace("/wwwroot", "");
+                    // 创建一个音频播放器并追加到页面
+                    var audioPlayer = document.createElement('audio');
+                    audioPlayer.classList.add('audio-player');
+                    audioPlayer.controls = true; // 添加音频控制，允许播放、暂停等操作
+                    audioPlayer.src = combinedMp3; // 设置音频源为合成的音频文件
 
-                    //创建一个下载链接追加到页面
+                    // 将音频播放器加入到页面中
+                    $("#step3").append(audioPlayer);
+
+                    unloadingBtn('.btnTTS');
+                    $("html, body").animate({ scrollTop: $(document).height() }, "slow");
+                    // $("#toStep4").show();
+                    // 创建一个下载链接追加到页面
                     var a = document.createElement('a');
                     a.classList.add('btn', 'btn-primary', 'download-link');
-                    combinedMp3 = res.data.replace("/wwwroot", "");
                     a.href = combinedMp3;
                     a.download = '合成音频.mp3';
                     a.innerHTML = '<i class="fas fa-download"></i> 点击下载合成音频';
-                    //加入到页面中
+
+                    // 将下载链接加入到页面中
                     $("#step3").append(a);
-                    unloadingBtn('.btnTTS');
-                    $("html, body").animate({ scrollTop: $(document).height() }, "slow");
-                    //$("#toStep4").show();
                 }
             },
             error: function (error) {

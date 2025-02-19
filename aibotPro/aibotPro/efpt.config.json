@@ -20,6 +20,18 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[AIBookChapters]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[AIBookPortraitImages]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[AIBooks]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[AIdraw]",
          "ObjectType": 0
       },
@@ -60,6 +72,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[ChatCollection]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[ChatHistory]",
          "ObjectType": 0
       },
@@ -77,6 +93,30 @@
       },
       {
          "Name": "[dbo].[FilesLib]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ForumNotifications]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ForumTopic]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ForumTopicAddendum]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ForumTopicComments]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ForumTopicStatement]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ForumUserSetting]",
          "ObjectType": 0
       },
       {
@@ -101,6 +141,10 @@
       },
       {
          "Name": "[dbo].[ModelPrice]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[MutedUsers]",
          "ObjectType": 0
       },
       {
@@ -208,6 +252,14 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[UsersLimit]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[UsersMessage]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[UseUpLog]",
          "ObjectType": 0
       },
@@ -232,7 +284,7 @@
          "ObjectType": 3
       }
    ],
-   "UiHint": "win-l2mf25l7av2.AIBotPro.dbo",
+   "UiHint": "cunngadtpd.AIBotPro.dbo",
    "UncountableWords": null,
    "UseBoolPropertiesWithoutDefaultSql": false,
    "UseDatabaseNames": true,

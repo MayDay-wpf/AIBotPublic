@@ -22,7 +22,7 @@ namespace aibotPro.Interface
         List<WorkShopAIModel> GetWorkShopAImodel();//获取插件基底模型
         string SaveFiles(string path, IFormFile file, string Account = ""); //保存文件到指定路径,返回图片路径
         Task<string> UploadFileToImageHosting(IFormFile file, string Account = "");//图片上传到“只是图床”
-        Task<string> ImgConvertToBase64(string imagePath);//图片转base64
+        Task<string> ImgConvertToBase64(string imagePath, bool addHead = false);//图片转base64
         int TokenMath(string str, double divisor);//计算token
         List<SystemCfg> GetSystemCfgs();//获取系统配置
         Task<string> UploadFileChunkAsync(IFormFile file, int chunkNumber, string fileName, string filePathhead);//上传文件分片
@@ -42,5 +42,8 @@ namespace aibotPro.Interface
         string CompressImage(string inputFile, int quality);//压缩图片质量，不改变尺寸
         double CalculateTimeDifference(DateTime startTime, DateTime endTime);
         Task<string> DownloadFileByUrl(string url, string savePath, string account);//根据链接下载文件
+        string CreateEncryptionKey();//生成加密密钥
+        string CreateCipherText(string plainText, string encryptionKey);//去中心加密
+        string DecryptWithKey(string cipherText, string key);//私钥解密
     }
 }

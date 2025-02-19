@@ -1,0 +1,267 @@
+﻿.cover-upload {
+    border: 1px dashed #ced4da;
+    border-radius: .25rem;
+    text-align: center;
+    cursor: pointer;
+    width: 100%;
+    padding-top: 150%;
+    position: relative;
+    overflow: hidden;
+}
+
+    .cover-upload img {
+        max-height: none;
+        object-fit: cover;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100%;
+        height: 100%;
+    }
+
+
+.remove-tag {
+    margin-left: 5px;
+    cursor: pointer;
+}
+
+/*书架*/
+
+.book-list {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 20px;
+}
+
+.book-card {
+    /* 桌面端保持原来宽度 */
+    width: 200px;
+    margin: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease-in-out;
+    overflow: hidden;
+}
+
+    .book-card:hover {
+        /* 桌面端保持hover效果 */
+        transform: translateY(-5px);
+    }
+
+.book-card-img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+}
+
+.book-card-body {
+    padding: 10px;
+    background-color: white;
+    position: relative;
+}
+
+.book-title {
+    font-size: 16px;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.book-type {
+    margin-top: 5px;
+}
+
+    .book-type .badge {
+        margin-right: 3px;
+    }
+
+.book-tag {
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+    .book-tag .badge {
+        margin-right: 3px;
+        border-radius: 5px;
+    }
+
+.book-type .badge {
+    margin-right: 3px;
+    border-radius: 5px;
+}
+
+.book-remark {
+    font-size: 14px;
+    color: #333;
+    margin-top: 5px;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+
+.book-word-count {
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+}
+
+.pagination {
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.header-search {
+    position: relative;
+    width: 250px;
+    margin-left: 15px;
+}
+
+    .header-search input {
+        padding-left: 30px;
+    }
+
+    .header-search i {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #999;
+    }
+
+.burger-menu {
+    display: none;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.book-card-buttons {
+    /* 按钮组默认显示 */
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+}
+
+.book-card-button {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    padding: 2px 5px;
+    font-size: 12px;
+    color: #333;
+    cursor: pointer;
+    margin: 2px;
+    white-space: nowrap;
+}
+
+    .book-card-button i {
+        margin-right: 3px;
+    }
+
+    .book-card-button.btn-continue {
+        background-color: #28a745;
+        border-color: #28a745;
+        color: white;
+    }
+
+    .book-card-button.btn-publish {
+        background-color: #17a2b8;
+        border-color: #17a2b8;
+        color: white;
+    }
+
+    .book-card-button.btn-unpublish {
+        background-color: #ffc107;
+        border-color: #ffc107;
+        color: white;
+    }
+
+/* Media query for smaller screens */
+@media (max-width: 768px) {
+    .header-search {
+        width: 180px;
+        margin-left: 10px;
+    }
+
+    /* 移动端两本书占一行 */
+    .book-card {
+        width: calc(50% - 20px);
+    }
+
+        .book-card:hover {
+            /* 移动端取消hover效果 */
+            transform: none;
+        }
+
+    .burger-menu {
+        display: block;
+    }
+
+    .header-search input {
+        padding-left: 25px;
+    }
+}
+
+/* Media query for smaller screens */
+@media (max-width: 500px) {
+    .header-left {
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+    .header-search {
+        order: 3;
+        width: 100%;
+        margin: 10px 0 0 0;
+    }
+    /* 更小屏幕上，还是一本书一行 */
+    .book-card {
+        width: calc(100% - 20px);
+    }
+}
+
+.page-item.disabled .page-link {
+    color: #6c757d;
+    pointer-events: none;
+    cursor: not-allowed;
+    background-color: #fff;
+    border-color: #dee2e6;
+}
+
+.simple-confirm-delete {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1500;
+}
+
+.simple-confirm-delete-content {
+    background: white;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.simple-confirm-delete-content p {
+    margin-bottom: 20px;
+}
+
+.simple-confirm-delete-content .btn {
+    margin: 5px;
+}

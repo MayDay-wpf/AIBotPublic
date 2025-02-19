@@ -100,7 +100,7 @@ $(document).ready(function () {
             //发起请求
             $("#resview").show();
             $("#resBox").empty();
-            $('html, body').animate({ scrollTop: $('.content-body').height() }, 1000);
+            $('html, body').animate({scrollTop: $('.content-body').height()}, 1000);
             balert('发送任务创建请求成功', 'success', false, 1000, "center");
             $("#nt").text('绘图中，请勿刷新页面...');
             $.ajax({
@@ -155,7 +155,7 @@ $(document).ready(function () {
                         //恢复按钮
                         $("#createTaskBtn").prop('disabled', false).addClass('btn-success').removeClass('btn-secondary');
                         //跳转到任务列表
-                        $('html, body').animate({ scrollTop: $('.content-body').height() }, 1000);
+                        $('html, body').animate({scrollTop: $('.content-body').height()}, 1000);
                         $('.image-popup').magnificPopup({
                             type: 'image', gallery: {
                                 enabled: true
@@ -179,7 +179,7 @@ $(document).ready(function () {
             });
         } else {
             balert('请输入绘画提示词', 'danger', false, 1000, "center");
-            $('html, body').animate({ scrollTop: 0 }, 'slow');
+            $('html, body').animate({scrollTop: 0}, 'slow');
             //输入框获得焦点
             $('#inputText').focus();
         }
@@ -187,7 +187,7 @@ $(document).ready(function () {
 
     $('#modelSelect').change(function () {
         var selectedValue = $(this).val();  // 获取选中选项的值
-        if (selectedValue === "black-forest-labs/FLUX.1-schnell") {
+        if (selectedValue === "black-forest-labs/FLUX.1-schnell" || selectedValue === "black-forest-labs/FLUX.1-dev") {
             $('.numberImagesValue').slideUp();
             $('.inferenceSteps').slideUp();
             $('.guidanceScale').slideUp();

@@ -23,7 +23,10 @@ function addStLine() {
                  <td><input type="text" class="form-control" placeholder="分组"  /></td>
                  <td><input type="number" class="form-control seq-input" placeholder="排序"  /></td>
                  <td><input type="number" class="form-control" placeholder="流延时(ms)"  /></td>
-                 <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`
+                 <td><input type="text" class="form-control" placeholder="预设系统提示词"  /></td>
+                 <td><input type="text" class="form-control" placeholder="模型说明"  /></td>
+                 <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td>
+                 <td><i data-feather="edit" style="color:skyblue;cursor:pointer;" onclick="editRow(this)"></i></td></tr>`
     $("#AddSt").append(str);
     feather.replace();
     $('#AddSt tr').each(function (index) {
@@ -37,7 +40,7 @@ function delLine() {
     });
 }
 function saveChatSetting() {
-    var formData = new FormData();
+    var aiModels = [];
     var rows = $("#AddSt").find("tr");
     var issave = true;
     rows.each(function (index, row) {
@@ -50,19 +53,25 @@ function saveChatSetting() {
         var group = $(row).find("input").eq(5).val();
         var seq = $(row).find("input").eq(6).val();
         var delay = $(row).find("input").eq(7).val() < 0 ? 0 : $(row).find("input").eq(7).val();
+        adminPrompt = $(row).find("input").eq(8).val();
+        modelInfo = $(row).find("input").eq(9).val();
         if (!removeSpaces(nickname) || !removeSpaces(name) || !removeSpaces(baseUrl) || !removeSpaces(apiKey)) {
             balert('请将空的【自定义对话模型】输入行删除，或填写完整', 'danger', false, 1500, 'top');
             issave = false;
             return;
         } else {
-            formData.append(`AImodel[${index}].ModelNick`, nickname);
-            formData.append(`AImodel[${index}].ModelName`, name);
-            formData.append(`AImodel[${index}].BaseURL`, baseUrl);
-            formData.append(`AImodel[${index}].ApiKey`, apiKey);
-            formData.append(`AImodel[${index}].VisionModel`, visionModel);
-            formData.append(`AImodel[${index}].ModelGroup`, group);
-            formData.append(`AImodel[${index}].Seq`, seq);
-            formData.append(`AImodel[${index}].Delay`, delay);
+            aiModels.push({
+                ModelNick: nickname,
+                ModelName: name,
+                BaseURL: baseUrl,
+                ApiKey: apiKey,
+                VisionModel: visionModel,
+                ModelGroup: group,
+                Seq: seq,
+                Delay: delay,
+                ModelInfo: modelInfo,
+                AdminPrompt: adminPrompt
+            });
         }
     });
     if (issave) {
@@ -70,9 +79,10 @@ function saveChatSetting() {
         $.ajax({
             type: 'POST',
             url: '/OpenAll/SaveAiChatSetting',
-            processData: false,  // 告诉jQuery不要处理发送的数据
-            contentType: false,  // 告诉jQuery不要设置contentType
-            data: formData,
+            dataType: 'json',
+            data: {
+                aImodel: JSON.stringify(aiModels)
+            },
             success: function (res) {
                 unloadingBtn('.save');
                 if (res.success) {
@@ -112,7 +122,10 @@ function getChatSetting() {
                                 <td><input type="text" class="form-control" placeholder="分组" value="${data[i].modelGroup}" /></td>
                                 <td><input type="number" class="form-control seq-input" placeholder="排序" value="${data[i].seq}" /></td>
                                 <td><input type="number" class="form-control" placeholder="流延时(ms)" value="${data[i].delay}" /></td>
-                                <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`
+                                <td><input type="text" class="form-control" placeholder="预设系统提示词"value="${data[i].adminPrompt == null ? '' : data[i].adminPrompt}"  /></td>
+                                <td><input type="text" class="form-control" placeholder="模型说明" value="${data[i].modelInfo == null ? '' : data[i].modelInfo}" /></td>
+                                <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td>
+                                <td><i data-feather="edit" style="color:skyblue;cursor:pointer;" onclick="editRow(this)"></i></td></tr>`
                     $("#AddSt").append(str);
                     feather.replace();
                     // 初始化拖动排序
@@ -138,5 +151,103 @@ function getChatSetting() {
                 balert(res.msg, "danger", false, 1500, 'top');
             }
         }
+    });
+}
+
+function editRow(row) {
+    // 记录当前点击的行
+    currentRow = $(row).closest('tr');
+
+    // 动态生成模态框的 HTML
+    var modalHTML = `
+        <div class="modal fade" id="editRowModal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editModalLabel">编辑表格行</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" style="max-height: 600px; overflow-y: auto;">
+                        <form id="editRowForm">
+                            <div class="form-group">
+                                <label>模型昵称</label>
+                                <input type="text" class="form-control" id="edit-model-nick" value="${currentRow.find('td:eq(1) input').val()}"/>
+                            </div>
+                            <div class="form-group">
+                                <label>模型名称</label>
+                                <input type="text" class="form-control" id="edit-model-name" value="${currentRow.find('td:eq(2) input').val()}"/>
+                            </div>
+                            <div class="form-group">
+                                <label>Base URL</label>
+                                <input type="text" class="form-control" id="edit-base-url" value="${currentRow.find('td:eq(3) input').val()}"/>
+                            </div>
+                            <div class="form-group">
+                                <label>API KEY</label>
+                                <input type="text" class="form-control" id="edit-api-key" value="${currentRow.find('td:eq(4) input').val()}"/>
+                            </div>
+                            <div class="form-group">
+                                <label>是否启用</label>
+                                <input type="checkbox" id="edit-vision-model" ${currentRow.find('td:eq(5) input').prop('checked') ? 'checked' : ''}/>
+                            </div>
+                            <div class="form-group">
+                                <label>分组</label>
+                                <input type="text" class="form-control" id="edit-model-group" value="${currentRow.find('td:eq(6) input').val()}"/>
+                            </div>
+                            <div class="form-group">
+                                <label>排序</label>
+                                <input type="number" class="form-control" id="edit-seq" value="${currentRow.find('td:eq(7) input').val()}"/>
+                            </div>
+                            <div class="form-group">
+                                <label>流延时(ms)</label>
+                                <input type="number" class="form-control" id="edit-delay" value="${currentRow.find('td:eq(8) input').val()}"/>
+                            </div>
+                            <div class="form-group">
+                                <label>预设系统提示词</label>
+                                <textarea class="form-control" id="edit-admin-prompt">${currentRow.find('td:eq(9) input').val()}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>模型说明</label>
+                                <textarea class="form-control" id="edit-model-info">${currentRow.find('td:eq(10) input').val()}</textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+                        <button type="button" class="btn btn-primary" id="save-row-btn">保存</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // 将生成的模态框添加到body
+    $('body').append(modalHTML);
+
+    // 显示模态框
+    $('#editRowModal').modal('show');
+
+    // 监听模态框关闭事件，删除模态框的 HTML 避免残留
+    $('#editRowModal').on('hidden.bs.modal', function () {
+        $('#editRowModal').remove();
+    });
+
+    // 保存按钮的点击事件
+    $('#save-row-btn').click(function () {
+        // 将模态框中的值写回表格中的对应行
+        currentRow.find('td:eq(1) input').val($('#edit-model-nick').val());
+        currentRow.find('td:eq(2) input').val($('#edit-model-name').val());
+        currentRow.find('td:eq(3) input').val($('#edit-base-url').val());
+        currentRow.find('td:eq(4) input').val($('#edit-api-key').val());
+        currentRow.find('td:eq(5) input').prop('checked', $('#edit-vision-model').prop('checked'));
+        currentRow.find('td:eq(6) input').val($('#edit-model-group').val());
+        currentRow.find('td:eq(7) input').val($('#edit-seq').val());
+        currentRow.find('td:eq(8) input').val($('#edit-delay').val());
+        currentRow.find('td:eq(9) input').val($('#edit-admin-prompt').val());
+        currentRow.find('td:eq(10) input').val($('#edit-model-info').val());
+
+        // 隐藏模态框
+        $('#editRowModal').modal('hide');
     });
 }

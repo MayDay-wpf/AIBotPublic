@@ -124,7 +124,7 @@ function updatePagination(currentPage, totalPages) {
             e.preventDefault(); // 阻止默认事件
             var page = parseInt($(this).text());
             var account = $("#account").val();
-            loadOrders(page, page_size, account);
+            loadErrList(page, page_size, account);
         });
     }
 

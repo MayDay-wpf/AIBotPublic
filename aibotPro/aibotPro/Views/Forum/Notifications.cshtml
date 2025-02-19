@@ -1,0 +1,78 @@
+﻿@{
+    ViewData["Title"] = "消息列表（Forum）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/system/css/atom-one-dark.min.css?v1" rel="stylesheet"/>
+<link href="~/system/forum/css/forumhome.css" rel="stylesheet" />
+<link href="~/system/forum/css/notifications.css" rel="stylesheet" />
+<div class="header">
+    <div class="header-left d-flex align-items-center">
+        <a id="menuMain" href="#" class="burger-menu">
+            <i data-feather="menu"></i>
+        </a>
+        <a id="menuBack" href="#" class="burger-menu d-none">
+            <i data-feather="arrow-left"></i>
+        </a>
+        @* <a href="#" class="header-help-link ml-2" onclick="SDinfo()">
+        <i data-feather="help-circle"></i>
+        </a> *@
+        <a href="/Forum/Index" class="btn btn-info ml-2">
+            <i class="fas fa-chevron-left"></i> 返回主页
+        </a>
+    </div>
+</div>
+<div class="forum-container">
+    <div class="row">
+        <div class="col-12 col-lg-9 main-content">
+            <div class="message-list">
+                <div id="loading" style="text-align: center;">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+            <nav aria-label="Message pagination">
+                <ul class="pagination justify-content-center">
+                   
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- 自定义右侧侧边栏 -->
+<div id="customSidebar" class="custom-sidebar">
+    <div class="sidebar-content">
+        <div class="sidebar-section forum-info">
+            <p class="section-title">AIBotPro 轻论坛</p>
+            <p class="section-text">
+                一个理想主义的论坛，在这里可以讨论各种AI和你感兴趣的话题,但是在发帖前请一定记得，不要往中文互联网倒垃圾!<br /><br />
+                <span class="text-info">ℹ️站内允许推广自己的产品，但是务必要对自己的产品进行详细介绍、文案工整、篇幅长度合理，且必须在标题标注【推广】否则会被管理员删除!</span>
+                <br /><br />
+                <b>🚫禁止内容</b><br />
+                1、禁止散播无考证的谣言<br />
+                2、禁止散播反政府言论<br />
+                3、禁止挑起性别对立<br />
+                4、禁止重复发毫无营养的广告<br />
+                5、禁止使用一切拼音缩写<br />
+                6、允许激烈的讨论，禁止说脏话<br />
+            </p>
+        </div>
+    </div>
+</div>
+<script>
+    MathJax = {
+        tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']]
+        },
+        processHtmlClass: "chat-body-content",
+        options: {
+            skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code", "a", "b", "txt"]
+        }
+    };
+</script>
+<script src="~/system/js/markdown-it.min.js"></script>
+<script src="~/system/js/tex-chtml.js"></script>
+<script src="~/system/js/highlight.min.js"></script>
+<script src="~/system/forum/js/notifications.js"></script>

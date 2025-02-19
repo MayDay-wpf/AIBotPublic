@@ -437,6 +437,35 @@
     flex-grow: 1;
 }
 
+/* Styles for the submenu */
+.custom-context-menu .collection-submenu .submenu {
+    display: none; /* Hide by default */
+    position: absolute;
+    min-width: 150px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 1010; /* Ensure it's above the main menu */
+}
+
+.custom-context-menu .collection-submenu .submenu li {
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-radius: 5px;
+}
+
+.custom-context-menu .collection-submenu .submenu li:hover {
+    background-color: #f5f5f5;
+}
+
+/* Style for the loading message */
+.custom-context-menu .collection-submenu .submenu .loading {
+    color: gray;
+    font-style: italic;
+}
+
 
 #promptList {
     height: 100vh;
@@ -613,10 +642,59 @@
     left: 50%;
     transform: translate(-50%, -50%);
     background-color: rgba(255, 255, 255, 0.9);
-    padding: 25px;
+    padding: 20px;
     border-radius: 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     text-align: center;
+    max-width: 100%;
+}
+
+.gradient-text {
+    font-size: 20px;
+    font-weight: bold;
+    background: linear-gradient(to right, #ff9966, #ff5e62);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.model-icons-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+.model-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0 8px;
+    flex-shrink: 0;
+}
+
+.model-emoji {
+    font-size: 50px;
+    margin-bottom: 3px;
+}
+
+.model-icon .label {
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+/* 小屏幕响应式 */
+@media (max-width: 480px) {
+    .model-icon {
+        margin: 0 5px;
+    }
+
+    .model-emoji {
+        font-size: 24px;
+    }
+
+    .model-icon .label {
+        font-size: 8px;
+    }
 }
 
 .history-list-info {
@@ -651,31 +729,6 @@
     font-weight: bold;
 }
 
-.gradient-text {
-    font-size: 24px;
-    font-weight: bold;
-    background: linear-gradient(to right, #ff9966, #ff5e62);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.model-icons-wrapper {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.model-icon {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin: 0 20px;
-}
-
-.model-emoji {
-    font-size: 48px;
-    margin-bottom: 10px;
-}
 
 .label {
     font-size: 18px;
@@ -685,18 +738,6 @@
 }
 
 @media (max-width: 768px) {
-    .model-icons-container {
-        padding: 20px;
-    }
-
-    .model-icons-wrapper {
-        flex-direction: column;
-    }
-
-    .model-icon {
-        margin: 15px 0;
-    }
-
     .model-emoji {
         font-size: 36px;
     }
@@ -1030,4 +1071,491 @@
 
 .icon-cohere {
     background-image: url('../images/modelsvg/cohere.svg');
+}
+
+.icon-internlm {
+    background-image: url('../images/modelsvg/internlm.svg');
+}
+
+.icon-yi {
+    background-image: url('../images/modelsvg/yi.svg');
+}
+
+.icon-xai {
+    background-image: url('../images/modelsvg/xai.svg');
+}
+
+.icon-doubao {
+    background-image: url('../images/modelsvg/doubao.png');
+}
+
+.icon-amazon {
+    background-image: url('../images/modelsvg/amazon.svg');
+}
+
+.shortcut-container {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.shortcut-label {
+    margin-right: 10px;
+}
+
+.shortcut-key {
+    font-weight: bold;
+}
+
+/* 更改快捷键按钮样式 */
+.change-shortcut {
+    padding: 2px 6px;
+}
+
+.markdown-preview-area pre, .markdown-preview-area code {
+    border-radius: 10px;
+}
+
+.dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+.signin-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: -150px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    min-width: 300px;
+    margin-top: 5px;
+}
+
+.dropdown-content {
+    padding: 15px;
+}
+
+/* 移动端样式 */
+@media screen and (max-width: 768px) {
+    .signin-dropdown {
+        position: absolute;
+        top: 100%;
+        right: -150px;
+        width: 90vw;
+        min-width: auto;
+        max-width: 300px;
+        margin-top: 5px;
+    }
+
+    /* 当靠右显示会超出屏幕时，改为靠左显示 */
+    @media screen and (max-width: 350px) {
+        .signin-dropdown {
+            right: auto;
+            left: 0;
+        }
+    }
+}
+
+.dropdown-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.2);
+    z-index: 999;
+}
+
+.dropdown-overlay.active {
+    display: block;
+}
+
+.calendar {
+    background-color: white;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 300px;
+    position: relative;
+}
+
+.calendar-header {
+    text-align: center;
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.calendar-body {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.calendar-day.active {
+    background-color: #ffa500;
+    color: white;
+}
+
+.signInBtn {
+    margin-top: 10px;
+    font-size: 14px;
+    padding: 5px 10px;
+}
+
+.calendar-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.upgrade-btn {
+    z-index: 10;
+}
+
+/* 添加摇晃动画关键帧 */
+@keyframes shake {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+
+    20% {
+        transform: rotate(-10deg);
+    }
+
+    40% {
+        transform: rotate(10deg);
+    }
+
+    60% {
+        transform: rotate(-7deg);
+    }
+
+    80% {
+        transform: rotate(7deg);
+    }
+}
+
+/* 给 gift 按钮添加动画类 */
+.gift {
+    display: inline-block; /* 确保动画效果正常 */
+    animation: shake 1.5s ease-in-out infinite;
+    /* 鼠标悬停时暂停动画 */
+
+    &:hover {
+        animation-play-state: paused;
+    }
+
+}
+
+/* 如果需要减少动画频率，可以添加这个类 */
+.gift.shake-slow {
+    animation: shake 2.5s ease-in-out infinite;
+}
+
+
+.newgroup-container {
+    display: flex;
+    width: 750px;
+    height: 500px;
+    background: #fff;
+    border-radius: 8px;
+}
+
+.newgroup-sidebar {
+    width: 200px;
+    border-right: 1px solid #e6e6e6;
+    padding: 15px;
+}
+
+.newgroup-search {
+    margin-bottom: 15px;
+}
+
+.newgroup-search input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #e6e6e6;
+    border-radius: 4px;
+}
+
+.newgroup-categories {
+    overflow-y: auto;
+    height: calc(100% - 50px);
+}
+
+.newgroup-category {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.newgroup-category:hover {
+    background-color: #f5f5f5;
+}
+
+.newgroup-category.active {
+    background-color: #e8f0fe;
+}
+
+.newgroup-category-count {
+    background: #eee;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.newgroup-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.newgroup-models {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
+}
+
+.newgroup-model-card {
+    border: 1px solid #e6e6e6;
+    border-radius: 6px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.newgroup-model-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.newgroup-model-card:hover::after {
+    content: "点击开始对话";
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 12px;
+    color: #666;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.newgroup-model-title {
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.newgroup-model-desc {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 8px;
+    line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.newgroup-model-desc.expanded {
+    -webkit-line-clamp: unset;
+}
+
+.toggle-expand {
+    font-size: 12px;
+    color: #007bff;
+    cursor: pointer;
+    display: none;
+    margin-top: 4px;
+}
+
+.toggle-expand:hover {
+    text-decoration: underline;
+}
+
+.newgroup-model-tags {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.newgroup-model-tag {
+    font-size: 11px;
+    padding: 2px 6px;
+    background: #f5f5f5;
+    border-radius: 4px;
+}
+
+.systemtools {
+    cursor: pointer;
+}
+
+.systemtools svg {
+    width: 10px;
+    height: 10px;
+}
+
+.collection-content {
+    border-left: 2px solid #37BBF6;
+    background-color: #f8f8f8;
+}
+
+/* 下拉菜单的整体样式 */
+#selected-elements-dropdown .dropdown-menu {
+    border: 1px solid #ced4da; /* 边框颜色 */
+    border-radius: 0.25rem; /* 圆角 */
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15); /* 阴影 */
+    padding: 0.5rem 0; /* 内边距 */
+}
+
+/* 下拉菜单中列表项的样式 */
+#selected-elements-dropdown .list-group-item {
+    padding: 0.5rem 1rem; /* 内边距 */
+    border: none; /* 去除默认边框 */
+    cursor: pointer; /* 鼠标悬停时显示手型 */
+    transition: background-color 0.2s ease; /* 背景色过渡效果 */
+}
+
+/* 列表项中文本的样式 */
+#selected-elements-dropdown .list-group-item span {
+    color: #212529; /* 深灰色文本 */
+    word-break: break-all; /* 处理长文本，允许在单词内换行 */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3; /* 最多显示3行 */
+    overflow: hidden;
+    white-space: nowrap; /* 防止移除按钮换行 */
+}
+
+/* 移除按钮的样式 */
+#selected-elements-dropdown .remove-element {
+    background-color: transparent;
+    border: none;
+    color: #dc3545; /* 红色文本 */
+    padding: 0;
+    font-size: 0.8rem; /* 缩小字体大小 */
+    margin-left: 0.5rem;
+}
+
+/* 鼠标悬停在移除按钮上的样式 */
+#selected-elements-dropdown .remove-element:hover {
+    text-decoration: underline; /* 下划线 */
+}
+
+/* 清空按钮的样式 */
+#selected-elements-dropdown #clear-selected-elements {
+    width: calc(100% - 1rem); /* 宽度比列表项稍小 */
+    margin: 0.5rem auto; /* 居中 */
+}
+
+.btn-outline-magic {
+    --bs-btn-color: #6f42c1; /* 主色调：紫色 */
+    --bs-btn-border-color: #6f42c1;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #6f42c1;
+    --bs-btn-hover-border-color: #5c3799;
+    --bs-btn-focus-shadow-rgb: 111, 66, 193; /* 调整阴影颜色 */
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #5c3799;
+    --bs-btn-active-border-color: #56308e;
+    --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+    --bs-btn-disabled-color: #6f42c1;
+    --bs-btn-disabled-bg: transparent;
+    --bs-btn-disabled-border-color: #6f42c1;
+    --bs-gradient: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border-color: #6f42c1;
+    background-clip: padding-box;
+}
+
+.btn-outline-magic:hover {
+    color: #fff;
+    border-radius: 5px !important;
+    background-image: linear-gradient(to right, #6f42c1, #a25fd7);
+    animation: border-animation 2s infinite linear; /* 添加边框动画 */
+}
+
+.btn-outline-magic.active {
+    color: #fff;
+    border-radius: 5px !important;
+    background-image: linear-gradient(to right, #6f42c1, #a25fd7);
+    animation: border-animation 2s infinite linear;
+}
+
+summary {
+    background-color: #F5F5FC;
+    padding: 10px;
+    border-radius: 10px 10px 0 0;
+}
+
+.think-content {
+    padding: 15px;
+    background-color: #F5F5FC;
+    border-radius: 0 0 10px 10px;
+}
+
+html.dark summary {
+    background-color: #000000;
+    color: lightgray;
+}
+
+html.dark .think-content {
+    background-color: #000000;
+    color: lightgray;
+}
+
+#chatRoleList {
+    height: 100vh;
+    overflow-y: scroll;
+    border-left: 1px solid lightgray;
+}
+
+#chatRoleItems {
+    overflow-y: scroll;
+    cursor: pointer;
+}
+
+.preview-box {
+    position: absolute;
+    border: 1px solid #ddd;
+    background-color: white;
+    padding: 10px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 1000; /* 确保在其他内容之上 */
+    width: 300px; /* 限制最大宽度 */
+    display: none; /* 默认隐藏 */
+    overflow: hidden;
+    height: 200px;
 }

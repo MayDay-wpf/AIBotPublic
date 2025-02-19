@@ -35,5 +35,9 @@ namespace aibotPro.Models
         [Column(TypeName = "datetime")]
         public DateTime? CreateTime { get; set; }
         public int? IsDel { get; set; }
+        public int? IsLock { get; set; }
+        public bool? IsTop { get; set; }
+        [StringLength(50)]
+        public string CollectionCode { get; set; }
     }
 }

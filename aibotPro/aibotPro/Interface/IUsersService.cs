@@ -36,5 +36,12 @@ namespace aibotPro.Interface
         bool DeleteUserPrompt(int id, string account);//删除用户常用提示词
         string GetRegisterTokenByAnother(string email, string nick, string headImg); //通过第三方注册获取aibot token
 
+        bool UpdateCollectionTitle(string collectionCode, string collectionName, string account,
+            out string msg); //修改收藏夹标题&新增
+        bool DeleteCollection(string collectionCode, string account); //删除收藏夹
+        List<ChatCollection> GetCollection(string account); //获取收藏夹列表
+        bool SaveToCollection(string chatId, string collectionCode, string account); //保存到收藏夹
+        Task<List<ChatHistory>> GetChatHistoryByCollection(string collectionCode, string account); //获取收藏夹聊天记录
+        bool BackHistoryList(string chatId, string collectionCode, string account); //回退历史记录
     }
 }

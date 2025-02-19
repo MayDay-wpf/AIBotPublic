@@ -1,0 +1,162 @@
+﻿.filter-sidebar {
+    padding: 15px;
+    border-right: 1px solid #dee2e6;
+    /*height: calc(100vh - 260px);*/
+    overflow-y: auto;
+}
+
+.model-list {
+    height: calc(100vh - 60px);
+    overflow-y: auto;
+}
+
+.filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.filter-button {
+    background-color: #fff;
+    border: 1px solid #28a745;
+    color: #007bff;
+    border-radius: 20px;
+    padding: 3px 7px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+    .filter-button.active {
+        background-color: #28a745;
+        color: #fff;
+    }
+
+.model-card {
+    margin-bottom: 20px;
+}
+
+    .model-card .card-body {
+        padding: 10px;
+    }
+
+    .model-card .card-title {
+        font-size: 1rem;
+        margin-bottom: 5px;
+    }
+
+    .model-card .card-text {
+        font-size: 0.9rem;
+    }
+
+    .model-card .badge {
+        margin-right: 5px;
+        font-size: 0.8rem;
+    }
+
+@media (max-width: 767px) {
+    .filter-sidebar {
+        margin-bottom: 20px;
+        border-right: none;
+        border-bottom: 1px solid #dee2e6;
+        height: auto;
+    }
+}
+
+.icon {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    vertical-align: middle;
+}
+
+.icon-360 {
+    background-image: url('../images/modelsvg/360.svg');
+}
+
+.icon-bing {
+    background-image: url('../images/modelsvg/bing.svg');
+}
+
+.icon-claude {
+    background-image: url('../images/modelsvg/claude.svg');
+}
+
+.icon-deepseek {
+    background-image: url('../images/modelsvg/deepseek.svg');
+}
+
+.icon-ernie {
+    background-image: url('../images/modelsvg/ernie.svg');
+}
+
+.icon-gemini {
+    background-image: url('../images/modelsvg/gemini.svg');
+}
+
+.icon-glm {
+    background-image: url('../images/modelsvg/glm.svg');
+}
+
+.icon-gpt {
+    background-image: url('../images/modelsvg/gpt.svg');
+}
+
+.icon-hunyuan {
+    background-image: url('../images/modelsvg/hunyuan.svg');
+}
+
+.icon-llama {
+    background-image: url('../images/modelsvg/llama.svg');
+}
+
+.icon-minimax {
+    background-image: url('../images/modelsvg/minimax.svg');
+}
+
+.icon-mistral {
+    background-image: url('../images/modelsvg/mistral.svg');
+}
+
+.icon-moonshot {
+    background-image: url('../images/modelsvg/moonshot.svg');
+}
+
+.icon-qwen {
+    background-image: url('../images/modelsvg/qwen.svg');
+}
+
+.icon-sparkdesk {
+    background-image: url('../images/modelsvg/sparkdesk.svg');
+}
+
+.icon-suno {
+    background-image: url('../images/modelsvg/suno.svg');
+}
+
+.icon-cohere {
+    background-image: url('../images/modelsvg/cohere.svg');
+}
+
+.icon-internlm {
+    background-image: url('../images/modelsvg/internlm.svg');
+}
+
+.icon-yi {
+    background-image: url('../images/modelsvg/yi.svg');
+}
+
+.icon-xai {
+    background-image: url('../images/modelsvg/xai.svg');
+}
+
+.icon-doubao {
+    background-image: url('../images/modelsvg/doubao.png');
+}
+
+.icon-amazon {
+    background-image: url('../images/modelsvg/amazon.svg');
+}

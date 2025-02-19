@@ -1,9 +1,12 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Net.WebSockets;
+using System.Text;
+using System.Text.RegularExpressions;
 using aibotPro.AppCode;
 using aibotPro.Dtos;
 using aibotPro.Interface;
 using aibotPro.Models;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using OpenAI;
 using OpenAI.Builders;
@@ -30,11 +33,15 @@ public class ChatHub : Hub
     private readonly ISystemService _systemService;
     private readonly IUsersService _usersService;
     private readonly IWorkShop _workShop;
+    private ClientWebSocket _openAiWebSocket;
+    private readonly Dictionary<string, ClientWebSocket> _openAiWebSockets = new Dictionary<string, ClientWebSocket>();
+    private readonly IAiBookService _aiBookService;
 
     public ChatHub(JwtTokenManager jwtTokenManager, IUsersService usersService, ISystemService systemService,
         IRedisService redisService, IAiServer aiServer, IBaiduService baiduService, IWorkShop workShop,
         IFilesAIService filesAIService, AIBotProContext context, IFinanceService financeService,
-        IAssistantService assistantService, ChatCancellationManager chatCancellationManager)
+        IAssistantService assistantService, ChatCancellationManager chatCancellationManager,
+        IAiBookService aiBookService)
     {
         _jwtTokenManager = jwtTokenManager;
         _usersService = usersService;
@@ -48,6 +55,7 @@ public class ChatHub : Hub
         _financeService = financeService;
         _assistantService = assistantService;
         _chatCancellationManager = chatCancellationManager;
+        _aiBookService = aiBookService;
     }
 
     //基础对话模型交互
@@ -58,6 +66,7 @@ public class ChatHub : Hub
         var allTime = "-1";
         var isFirstResponse = true;
         var httpContext = Context.GetHttpContext();
+        var request = httpContext.Request;
         var token = string.Empty;
         token = httpContext?.Request.Query["access_token"];
         //缓存存入工作中状态
@@ -128,6 +137,7 @@ public class ChatHub : Hub
             var apiSetting = new APISetting();
             var aImodels = new List<AImodel>();
             var delay = 0;
+            var adminPrompt = string.Empty;
             if (chatSetting != null && chatSetting.MyChatModel != null && chatSetting.MyChatModel.Count > 0)
             {
                 foreach (var item in chatSetting.MyChatModel)
@@ -162,10 +172,25 @@ public class ChatHub : Hub
                             isVisionModel = useModel.VisionModel.Value;
                         if (useModel.Delay.HasValue && useModel.Delay.Value >= 0)
                             delay = useModel.Delay.Value;
+                        if (!string.IsNullOrEmpty(useModel.AdminPrompt))
+                            adminPrompt = useModel.AdminPrompt;
                     }
                     else
                     {
                         throw new Exception($"系统未配置{chatDto.aiModel}模型，请联系管理员");
+                    }
+
+                    //查询用户模型限制
+                    var userModelLimit = _context.UsersLimits.AsNoTracking()
+                        .Where(l => l.Account == Account && l.Enable.Value)
+                        .FirstOrDefault();
+                    if (userModelLimit != null)
+                    {
+                        var limitModel = userModelLimit.ModelName.Split(',').ToList();
+                        if (limitModel.Contains(chatDto.aiModel))
+                        {
+                            delay = userModelLimit.Limit.Value;
+                        }
                     }
                 }
                 else
@@ -177,6 +202,9 @@ public class ChatHub : Hub
             //生成AI请求参数
             var input = string.Empty;
             var output = string.Empty;
+            var streaminput = 0;
+            var streamoutput = 0;
+            int imageToken = 0;
             var aiChat = new AiChat();
             var visionBody = new VisionBody();
             visionBody.stream = chatDto.stream;
@@ -211,8 +239,7 @@ public class ChatHub : Hub
                     var isUrl = Regex.IsMatch(imagePath, urlPattern, RegexOptions.IgnoreCase);
                     if (!isVisionModel)
                     {
-                        var imageFullPath = isUrl ? imagePath : "wwwroot" + imagePath;
-                        var imageData = await _systemService.ImgConvertToBase64(imageFullPath);
+                        var imageData = await _systemService.ImgConvertToBase64(imagePath);
                         imgTxt = _baiduService.GetText(imageData);
                         imgRes = _baiduService.GetRes(imageData);
                         imageAnalysisResults.Add($"图像中的文字识别结果为：{imgTxt}, 图像中物体和场景识别结果为：{imgRes}");
@@ -222,30 +249,18 @@ public class ChatHub : Hub
                     {
                         var imageUrl = isUrl
                             ? imagePath
-                            : $"{Context.GetHttpContext().Request.Scheme}://{systemCfg.FirstOrDefault(x => x.CfgCode == "Domain")?.CfgValue}{imagePath.Replace("wwwroot", "")}"
+                            : $"{request.Scheme}://{request.Host}{imagePath.Replace("wwwroot", "")}"
                                 .Replace("\\", "/");
                         imageUrls.Add(imageUrl);
                     }
                     else
                     {
-                        if (isUrl)
+                        var imgBase64 = await _systemService.ImgConvertToBase64(imagePath, true);
+                        var visionImgitem = new VisionImg()
                         {
-                            var visionImgitem = new VisionImg()
-                            {
-                                url = imagePath
-                            };
-                            visionImg.Add(visionImgitem);
-                        }
-                        else
-                        {
-                            var imgBase64 = await _systemService.ImgConvertToBase64("wwwroot" + imagePath);
-                            var dataHeader = "data:image/jpeg;base64,";
-                            var visionImgitem = new VisionImg()
-                            {
-                                url = dataHeader + imgBase64
-                            };
-                            visionImg.Add(visionImgitem);
-                        }
+                            url = imgBase64
+                        };
+                        visionImg.Add(visionImgitem);
                     }
                 }
 
@@ -262,6 +277,7 @@ public class ChatHub : Hub
                 }
             }
 
+            //如果有文件
             if (chatDto.file_list != null && chatDto.file_list.Count > 0)
             {
                 var fileContent = await _filesAIService.PromptFromFiles(chatDto.file_list, Account);
@@ -270,7 +286,7 @@ public class ChatHub : Hub
                     promptHeadle += $"\n # 要求：{promptHeadle} \n\n";
                     for (var i = 0; i < chatDto.file_list.Count; i++)
                         promptHeadle +=
-                            $"# 文件地址{i + 1}：{Context.GetHttpContext().Request.Scheme}://{systemCfg.Where(x => x.CfgCode == "Domain").FirstOrDefault().CfgValue}{chatDto.file_list[i].Replace("wwwroot", "").Replace("\\", "/")} \n\n";
+                            $"# 文件地址{i + 1}：{request.Scheme}://{request.Host}{chatDto.file_list[i].Replace("wwwroot", "").Replace("\\", "/")} \n\n";
                     input += fileContent;
                 }
                 else
@@ -315,10 +331,162 @@ public class ChatHub : Hub
                 }
             }
 
+            //如果是Coder模式
+            if (chatDto.coderModel)
+            {
+                string originalText = !string.IsNullOrEmpty(chatDto.coderMsg)
+                    ? chatDto.coderMsg
+                    : "No original text available.";
+
+                chatDto.system_prompt = $@"<Prompt>
+                <Role>You are a professional code and text editor expert.</Role>
+                <Description>Your primary task is to make precise modifications to the provided text or code according to user requirements.</Description>
+                <Instructions>You should respond in the same language that users use in their requests. You can review the images provided by the user according to the requirements of the scenario.</Instructions>
+
+                <WorkRequirements>
+                    <Requirement>Must preserve all original content provided by users unless specifically requested to delete</Requirement>
+                    <Requirement>Make modifications strictly according to user requirements</Requirement>
+                    <Requirement><strong>Display the complete modified content in a single code block. Always ensure there is only ONE code block.</strong></Requirement>
+                    <Requirement>For code modifications, maintain proper formatting and indentation</Requirement>
+                    <Requirement>Use markdown to clearly highlight the modified parts</Requirement>
+                    <Requirement>Provide a brief explanation of the specific changes made after editing without including any code blocks</Requirement>
+                </WorkRequirements>
+
+                <Rules>
+                    <Rule>Proactively ask for clarification if user requirements are unclear</Rule>
+                    <Rule>Actively suggest improvements if potential issues are identified</Rule>
+                    <Rule>Ensure modifications don't compromise the integrity and coherence of the original content</Rule>
+                    <Rule>Respond in the same language as the user's request (e.g., if user writes in Chinese, respond in Chinese; if in English, respond in English)</Rule>
+                    <Rule>Never split code into multiple blocks, always keep it as one complete piece</Rule>
+                    <Rule>The entire response should contain only one code block for code; the explanation section should not contain any code blocks</Rule>
+                </Rules>
+
+                <Instruction>Please provide the content you want to edit and your specific modification requirements. I will process them according to the above standards.</Instruction>
+
+                <!-- Example: If a user wants to change the output of the following C# code from ""Hello World"" to ""Hello Universe"" -->
+                <Example>
+                    <UserRequest>
+                        <CodeLanguage>C#</CodeLanguage>
+                        <OriginalCode>
+                            <![CDATA[
+                            using System;
+                            class Program
+                            {{
+                                static void Main()
+                                {{
+                                    Console.WriteLine(""Hello World"");
+                                }}
+                            }}
+                            ]]>
+                        </OriginalCode>
+                        <ModificationRequirement>Change the output message to 'Hello Universe'</ModificationRequirement>
+                    </UserRequest>
+                    <SystemResponse>
+                     <NaturalLanguage>okay, here is the modified code:</NaturalLanguage>
+                        <![CDATA[
+                        ```csharp
+                        using System;
+                        class Program
+                        {{
+                            static void Main()
+                            {{
+                                Console.WriteLine(""Hello Universe"");
+                            }}
+                        }}
+                        ```
+                        ]]>
+                    </SystemResponse>
+                    <Explanation>The string inside `Console.WriteLine` was changed from 'Hello World' to 'Hello Universe' as requested.</Explanation>
+                </Example>
+
+                <InputContent>
+                    <OriginalTextOrCode>[{originalText}]</OriginalTextOrCode>
+                </InputContent>
+            </Prompt>";
+            }
+
+            //如果是Writer模式
+            if (chatDto.writerModel)
+            {
+                var book = _aiBookService.GetBookInfo(Account, chatDto.bookCode);
+                var chapter = _aiBookService.GetChapterInfo(Account, chatDto.bookCode, chatDto.chapterId);
+                List<string> selectChapters = new List<string>();
+                if (chatDto.selectChapters.Count > 0)
+                {
+                    foreach (var item in chatDto.selectChapters)
+                    {
+                        var objchapter = _aiBookService.GetChapterInfo(Account, chatDto.bookCode, item);
+                        if (!string.IsNullOrEmpty(objchapter.ChapterBody))
+                            selectChapters.Add(objchapter.ChapterBody.Substring(0,
+                                Math.Min(objchapter.ChapterBody.Length, 1000)));
+                    }
+                }
+
+                string selectedChapter = string.Empty;
+                if (selectChapters.Count > 0)
+                {
+                    foreach (var item in selectChapters)
+                    {
+                        selectedChapter += $"* Select Chapter Content: {item} \n\n";
+                    }
+
+                    selectedChapter = "# Select Chapter: \n\n" + selectedChapter;
+                }
+
+                string roleStr = string.IsNullOrEmpty(chatDto.system_prompt)
+                    ? "You are a professional and highly creative novel writer."
+                    : chatDto.system_prompt;
+                chatDto.system_prompt = $@"
+                               # Role Setting: {roleStr}
+                               # Task Objective:
+                               You will write, continue writing, or provide suggestions for chapters based on the provided novel background information and current chapter information. Your main responsibility is to generate high-quality text that fits the style and setting of the novel.
+
+                               # Important Instructions:
+                               1. **Output Format**: All your responses must contain only the novel's main body text, wrapped in a specific Markdown code block. For example:
+                                  ```body
+                                  This is the content of the novel's main body.
+                                  It can be paragraphs, dialogues, scene descriptions, etc.
+                                  ```
+                                  Only **one** ```body``` code block is allowed in each response.
+                               2. **Single Output**: Please output the complete body text at once. Do not reply in parts or complete it gradually.
+
+                               3. **Language**: Your responses should be in the same language as the **Chapter Content**.
+                               # Novel Background Information:
+                               * **Book Title**: {book.BookName}
+                               * **Synopsis**: {book.BookRemark}
+                               * **Genre**: {book.BookType}
+                               * **Tags**: {book.BookTag}
+
+                               # Current Chapter Information:
+                               * **Chapter Title**: {chapter.ChapterTitle}
+                               * **Chapter Content**: {chapter.ChapterBody}
+
+                               {selectedChapter}
+
+                               Please create based on your understanding of the existing chapter content, ensuring a natural connection with the previous content. If the current chapter content is empty, please create based on the novel's background information.
+                               # Creation Requirements:
+                               1. **Consistent Style**: Maintain consistency with the overall style and tone of the novel.
+                               2. **Continuity**: Ensure the new content flows smoothly with the existing chapter content.
+                               3. **Creativity**: Be creative within the setting of the novel.
+                               4. **Detailed Description**: Pay attention to details to make scenes, characters, and emotions more vivid.
+                               5. **Logic**: Ensure the story is logically clear and the plot develops reasonably.
+
+                               # Example of an Output:
+                               * Okay, I understand the user's request. I'll begin writing the content for you now.
+                                 ```body
+                                  The content you've written...
+                                 ```
+                                 Hope you like it.
+
+                               # What do you need to do?
+                               Based on the above information, please continue the novel content of the current chapter based on the context provided by the user or make suggestions based on the requirements.
+                               # Start your creation!";
+            }
+
             input += promptHeadle;
             visionBody.model = chatDto.aiModel;
             aiChat.Model = chatDto.aiModel;
-            var tmpmsg_v = new List<VisionChatMesssage>();
+            var tmpmsg_v = new List<VisionChatMessage>();
             var messages = new List<Message>();
             if (chatDto.chatid.Contains("gridview"))
                 newChat = true;
@@ -328,12 +496,23 @@ public class ChatHub : Hub
                 {
                     //如果是新对话直接填充用户输入
                     var message = new Message();
-                    if (!string.IsNullOrEmpty(chatDto.system_prompt))
+                    if (!string.IsNullOrEmpty(adminPrompt + chatDto.system_prompt))
                     {
                         message.Role = "system";
-                        message.Content = chatDto.system_prompt;
+                        message.Content = adminPrompt + "\n\n" + chatDto.system_prompt;
                         messages.Add(message);
                         input += chatDto.system_prompt;
+                    }
+
+                    //如果启用了联网
+                    if (chatDto.globe)
+                    {
+                        chatRes.message = "🌏我正在联网查询...\n";
+                        await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                        promptHeadle =
+                            await _aiServer.CreateSearchPrompt(promptHeadle, messages, null, "");
+                        chatRes.message = "✅我已经查询完成,请稍候我正在整理信息源...\n";
+                        await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                     }
 
                     message = new Message();
@@ -344,24 +523,38 @@ public class ChatHub : Hub
                 else
                 {
                     //Vision
-                    var promptvisionChatMesssage = new VisionChatMesssage();
+                    var promptvisionChatMesssage = new VisionChatMessage();
                     var promptcontent = new List<VisionContent>();
                     var promptvisionContent = new VisionContent();
 
                     // 系统提示部分
-                    if (!string.IsNullOrEmpty(chatDto.system_prompt))
+                    if (!string.IsNullOrEmpty(adminPrompt + chatDto.system_prompt))
                     {
                         promptvisionChatMesssage.role = "system";
-                        promptvisionContent.text = chatDto.system_prompt;
+                        promptvisionContent.text = adminPrompt + "\n\n" + chatDto.system_prompt;
                         promptcontent.Add(promptvisionContent);
-                        promptvisionChatMesssage.content = promptcontent;
+                        promptvisionChatMesssage.content = new ContentWrapper
+                        {
+                            stringContent = promptvisionContent.text
+                        };
                         tmpmsg_v.Add(promptvisionChatMesssage);
                         input += chatDto.system_prompt;
 
                         // 重置为用户消息
-                        promptvisionChatMesssage = new VisionChatMesssage();
+                        promptvisionChatMesssage = new VisionChatMessage();
                         promptcontent = new List<VisionContent>();
                         promptvisionContent = new VisionContent();
+                    }
+
+                    //如果启用了联网
+                    if (chatDto.globe)
+                    {
+                        chatRes.message = "🌏我正在联网查询...\n";
+                        await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                        promptHeadle =
+                            await _aiServer.CreateSearchPrompt(promptHeadle, null, tmpmsg_v, "");
+                        chatRes.message = "✅我已经查询完成,请稍候我正在整理信息源...\n";
+                        await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                     }
 
                     // 用户消息部分
@@ -378,10 +571,14 @@ public class ChatHub : Hub
                             promptvisionContent.type = "image_url";
                             promptvisionContent.image_url = visionImgitem;
                             promptcontent.Add(promptvisionContent);
+                            imageToken += _aiServer.GetImageTokenCount(visionImgitem.url, chatDto.aiModel);
                         }
                     }
 
-                    promptvisionChatMesssage.content = promptcontent;
+                    promptvisionChatMesssage.content = new ContentWrapper
+                    {
+                        visionContentList = promptcontent
+                    };
                     tmpmsg_v.Add(promptvisionChatMesssage);
                 }
             }
@@ -391,7 +588,8 @@ public class ChatHub : Hub
                 var historyCount = 5; //默认5
                 if (chatSetting.SystemSetting.HistoryCount != 5)
                     historyCount = chatSetting.SystemSetting.HistoryCount;
-                var chatHistories = _aiServer.GetChatHistories(Account, chatId, historyCount);
+                var chatHistories = _aiServer.GetChatHistories(Account, chatId, historyCount,
+                    (chatDto.coderModel || chatDto.writerModel));
                 //开始压缩的对话条数
                 var startCompress = systemCfg.Where(x => x.CfgCode == "History_Prompt_Start_Compress").FirstOrDefault();
                 if (startCompress == null)
@@ -399,46 +597,54 @@ public class ChatHub : Hub
                 else if (chatHistories.Count < int.Parse(startCompress.CfgValue) * 2) //历史记录长度小于2强制关闭优化
                     chatDto.createAiPrompt = false;
                 //遍历填充历史记录
-                var systemPromptAdded = false; // 添加一个标志来控制系统提示词是否已填充
                 var tempInput = string.Empty;
+
+                // 先添加系统提示词（如果存在）
+                if (!string.IsNullOrEmpty(adminPrompt + chatDto.system_prompt))
+                {
+                    if (!isVisionModel)
+                    {
+                        var systemMessage = new Message
+                        {
+                            Role = "system",
+                            Content = adminPrompt + "\n\n" + chatDto.system_prompt
+                        };
+                        messages.Add(systemMessage);
+                    }
+                    else
+                    {
+                        var systemVisionMessage = new VisionChatMessage
+                        {
+                            role = "system",
+                            content = new ContentWrapper
+                            {
+                                stringContent = adminPrompt + "\n\n" + chatDto.system_prompt
+                            }
+                        };
+                        tmpmsg_v.Add(systemVisionMessage);
+                    }
+
+                    input += chatDto.system_prompt;
+                }
+
                 foreach (var item in chatHistories)
                 {
                     tempInput += item.Chat;
                     if (!isVisionModel)
                     {
-                        var message = new Message();
-                        if (!systemPromptAdded && !string.IsNullOrEmpty(chatDto.system_prompt))
+                        var message = new Message
                         {
-                            message.Role = "system";
-                            message.Content = chatDto.system_prompt;
-                            messages.Add(message);
-                            input += chatDto.system_prompt;
-                            systemPromptAdded = true; // 更新标志状态，表明系统提示词已经添加
-                        }
-
-                        message = new Message();
-                        message.Role = item.Role;
-                        message.Content = item.Chat;
+                            Role = item.Role,
+                            Content = item.Chat
+                        };
                         messages.Add(message);
                     }
                     else
                     {
                         // Vision
-                        var hisvisionChatMesssage = new VisionChatMesssage();
+                        var hisvisionChatMesssage = new VisionChatMessage();
                         var hiscontent = new List<VisionContent>();
-                        var hisvisionContent = new VisionContent();
-                        if (!systemPromptAdded && !string.IsNullOrEmpty(chatDto.system_prompt))
-                        {
-                            hisvisionChatMesssage.role = "system";
-                            hisvisionContent.text = chatDto.system_prompt;
-                            hiscontent.Add(hisvisionContent);
-                            hisvisionChatMesssage.content = hiscontent;
-                            tmpmsg_v.Add(hisvisionChatMesssage);
-                            input += chatDto.system_prompt;
-                            systemPromptAdded = true; // 更新标志状态
-                        }
-
-                        hisvisionChatMesssage = new VisionChatMesssage();
+                        hisvisionChatMesssage.role = item.Role;
                         if (item.Chat.Contains("aee887ee6d5a79fdcmay451ai8042botf1443c04"))
                         {
                             // 分割文本和图片
@@ -448,15 +654,18 @@ public class ChatHub : Hub
                             // 提取并填充文本内容
                             if (parts.Length > 0)
                             {
-                                var textContent = new VisionContent();
-                                textContent.type = "text";
-                                textContent.text = parts[0];
+                                var textContent = new VisionContent
+                                {
+                                    type = "text",
+                                    text = parts[0]
+                                };
                                 hiscontent.Add(textContent);
                             }
 
                             // 提取并填充图片内容
                             if (parts.Length > 1)
                             {
+                                var urlPattern = @"^(http|https)://";
                                 for (int i = 1; i < parts.Length; i++)
                                 {
                                     const string pattern = @"<img.+?src=[""'](.*?)[""'].*?>";
@@ -466,25 +675,52 @@ public class ChatHub : Hub
 
                                     foreach (Match match in matches)
                                     {
+                                        var imageData = string.Empty;
+                                        // 检查输入字符串是否匹配正则表达式
+                                        var isUrl = Regex.IsMatch(match.Groups[1].Value, urlPattern,
+                                            RegexOptions.IgnoreCase);
+                                        if (isUrl)
+                                            imageData = match.Groups[1].Value;
+                                        else
+                                            imageData = "wwwroot" + match.Groups[1].Value;
                                         var imgContent = new VisionContent()
                                         {
                                             type = "image_url",
-                                            image_url = new VisionImg { url = match.Groups[1].Value }
+                                            image_url = new VisionImg
+                                                { url = await _systemService.ImgConvertToBase64(imageData, true) }
                                         };
+                                        imageToken += _aiServer.GetImageTokenCount(imgContent.image_url.url,
+                                            chatDto.aiModel);
                                         hiscontent.Add(imgContent);
                                     }
                                 }
                             }
+
+                            hisvisionChatMesssage.content = new ContentWrapper
+                            {
+                                visionContentList = hiscontent
+                            };
                         }
                         else
                         {
-                            hisvisionContent = new VisionContent();
-                            hisvisionContent.text = item.Chat;
-                            hiscontent.Add(hisvisionContent);
+                            if (item.Role == "user")
+                            {
+                                var hisvisionContent = new VisionContent { text = item.Chat };
+                                hiscontent.Add(hisvisionContent);
+                                hisvisionChatMesssage.content = new ContentWrapper
+                                {
+                                    visionContentList = hiscontent
+                                };
+                            }
+                            else
+                            {
+                                hisvisionChatMesssage.content = new ContentWrapper
+                                {
+                                    stringContent = item.Chat
+                                };
+                            }
                         }
 
-                        hisvisionChatMesssage.role = item.Role;
-                        hisvisionChatMesssage.content = hiscontent;
                         tmpmsg_v.Add(hisvisionChatMesssage);
                     }
                 }
@@ -517,6 +753,17 @@ public class ChatHub : Hub
                         input += tempInput;
                     }
 
+                    //如果启用了联网
+                    if (chatDto.globe)
+                    {
+                        chatRes.message = "🌏我正在联网查询...\n";
+                        await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                        promptHeadle =
+                            await _aiServer.CreateSearchPrompt(promptHeadle, messages, null, "");
+                        chatRes.message = "✅我已经查询完成,请稍候我正在整理信息源...\n";
+                        await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                    }
+
                     //填充用户输入
                     var message1 = new Message();
                     message1.Role = "user";
@@ -527,30 +774,24 @@ public class ChatHub : Hub
                 {
                     if (chatDto.createAiPrompt)
                     {
-                        var promptvisionChatMesssage0 = new VisionChatMesssage();
+                        var promptvisionChatMesssage0 = new VisionChatMessage();
                         var promptcontent0 = new List<VisionContent>();
                         var promptvisionContent0 = new VisionContent();
                         chatRes.message = "正在压缩历史记录📦... \n";
                         await Clients.Group(chatId).SendAsync(senMethod, chatRes);
-                        promptvisionContent0.text = await _aiServer.CreateHistoryPrompt(null, tmpmsg_v);
+                        string goodPR = await _aiServer.CreateHistoryPrompt(null, tmpmsg_v);
+                        promptvisionContent0.text = goodPR;
                         promptcontent0.Add(promptvisionContent0);
-                        if (visionImg != null && visionImg.Count > 0)
-                        {
-                            foreach (var visionImgitem in visionImg)
-                            {
-                                promptvisionContent0 = new VisionContent();
-                                promptvisionContent0.type = "image_url";
-                                promptvisionContent0.image_url = visionImgitem;
-                                promptcontent0.Add(promptvisionContent0);
-                            }
-                        }
 
                         promptvisionChatMesssage0.role = "user";
-                        promptvisionChatMesssage0.content = promptcontent0;
-                        if (!string.IsNullOrEmpty(promptvisionContent0.text))
+                        promptvisionChatMesssage0.content = new ContentWrapper
                         {
-                            tmpmsg_v = new List<VisionChatMesssage> { promptvisionChatMesssage0 };
-                            input += promptvisionContent0.text;
+                            visionContentList = promptcontent0
+                        };
+                        if (!string.IsNullOrEmpty(goodPR))
+                        {
+                            tmpmsg_v = new List<VisionChatMessage> { promptvisionChatMesssage0 };
+                            input += goodPR;
                             chatRes.message = "压缩完成✅ \n等待AI回复⏳ \n\n\n";
                             await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                         }
@@ -566,8 +807,19 @@ public class ChatHub : Hub
                         input += tempInput;
                     }
 
+                    //如果启用了联网
+                    if (chatDto.globe)
+                    {
+                        chatRes.message = "🌏我正在联网查询...\n";
+                        await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                        promptHeadle =
+                            await _aiServer.CreateSearchPrompt(promptHeadle, null, tmpmsg_v, "");
+                        chatRes.message = "✅我已经查询完成,请稍候我正在整理信息源...\n";
+                        await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                    }
+
                     //Vision
-                    var promptvisionChatMesssage = new VisionChatMesssage();
+                    var promptvisionChatMesssage = new VisionChatMessage();
                     var promptcontent = new List<VisionContent>();
                     var promptvisionContent = new VisionContent();
                     promptvisionContent.text = promptHeadle;
@@ -584,7 +836,10 @@ public class ChatHub : Hub
                     }
 
                     promptvisionChatMesssage.role = "user";
-                    promptvisionChatMesssage.content = promptcontent;
+                    promptvisionChatMesssage.content = new ContentWrapper
+                    {
+                        visionContentList = promptcontent
+                    };
                     tmpmsg_v.Add(promptvisionChatMesssage);
                 }
             }
@@ -594,11 +849,13 @@ public class ChatHub : Hub
             if (!isVisionModel)
                 visionBody = null;
             var sysmsg = string.Empty;
+            var thinkmsg = string.Empty;
+            bool thinkstart = false;
             int usageInput = 0;
             int usageOutput = 0;
             try
             {
-                if (chatDto.stream)
+                if (chatDto.stream && delay >= 0)
                 {
                     await foreach (var responseContent in _aiServer.CallingAI(aiChat, apiSetting, chatDto.chatgroupid,
                                        visionBody, cancellationToken))
@@ -612,13 +869,64 @@ public class ChatHub : Hub
                         if (semaphore.CurrentCount == 0)
                             // 被取消
                             break;
-                        sysmsg += responseContent.Choices[0].Delta.Content;
-                        chatRes.message = responseContent.Choices[0].Delta.Content;
-                        await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                        if (responseContent.Choices != null && responseContent.Choices.Count > 0 &&
+                            responseContent.Choices[0].Delta != null)
+                        {
+                            if (!string.IsNullOrEmpty(responseContent.Choices[0].Delta.ReasoningContent))
+                            {
+                                if (!thinkstart)
+                                {
+                                    thinkstart = true;
+                                    thinkmsg = "<think>" + responseContent.Choices[0].Delta.ReasoningContent;
+                                    chatRes.message = thinkmsg;
+                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                                }
+                                else
+                                {
+                                    thinkmsg += responseContent.Choices[0].Delta.ReasoningContent;
+                                    chatRes.message = responseContent.Choices[0].Delta.ReasoningContent;
+                                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                                }
+                            }
+                            else if (!string.IsNullOrEmpty(responseContent.Choices[0].Delta.Content))
+                            {
+                                if (thinkstart)
+                                {
+                                    thinkstart = false;
+                                    if (thinkmsg.IndexOf("<think>") > -1 && thinkmsg.IndexOf("</think>") == -1)
+                                    {
+                                        thinkmsg += "</think>";
+                                        chatRes.message = "</think>";
+                                        await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                                    }
+                                }
+
+                                sysmsg += responseContent.Choices[0].Delta.Content;
+                                chatRes.message = responseContent.Choices[0].Delta.Content;
+                                await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                            }
+                        }
+
+                        if (responseContent.Usages != null)
+                        {
+                            streaminput = responseContent.Usages.PromptTokens;
+                            streamoutput = responseContent.Usages.CompletionTokens;
+                            if (responseContent.Usages.CompletionTokensDetails != null)
+                                streaminput += responseContent.Usages.CompletionTokensDetails.ReasoningTokens;
+                        }
+
                         Thread.Sleep(delay);
                     }
+
+                    if (thinkstart)
+                    {
+                        thinkmsg += "</think>";
+                        chatRes.message = thinkmsg;
+                        await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                        thinkstart = false;
+                    }
                 }
-                else
+                else if (delay >= 0)
                 {
                     string jsonResponse = await _aiServer.CallingAINotStream(aiChat, apiSetting, visionBody, true);
                     ChatCompletionResponseUnStream response =
@@ -628,13 +936,19 @@ public class ChatHub : Hub
                     usageOutput = response.Usage.completion_tokens;
                     firstTime = _systemService.CalculateTimeDifference(startTime, DateTime.Now).ToString("F1");
                     chatRes.message = sysmsg;
-                    Thread.Sleep(delay);
                     await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                 }
             }
             catch (OperationCanceledException)
             {
                 //await _systemService.WriteLog("输出取消", Dtos.LogLevel.Info, Account); //输出取消
+                if (thinkstart)
+                {
+                    thinkmsg += "</think>";
+                    chatRes.message = thinkmsg;
+                    await Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                    thinkstart = false;
+                }
             }
             finally
             {
@@ -650,7 +964,7 @@ public class ChatHub : Hub
                     }
                 }
 
-                output = sysmsg;
+                output = thinkmsg + sysmsg;
                 var tikToken = TikToken.GetEncoding("cl100k_base");
                 if (chatDto.chatid.Contains("gridview"))
                 {
@@ -678,12 +992,31 @@ public class ChatHub : Hub
                 await Clients.Group(chatId).SendAsync(senMethod, chatRes);
                 await _aiServer.SaveChatHistory(Account, chatId, chatDto.msg, chatDto.msgid_u, chatDto.chatgroupid,
                     "user", chatDto.aiModel, firstTime, allTime);
-                await _aiServer.SaveChatHistory(Account, chatId, sysmsg, chatDto.msgid_g, chatDto.chatgroupid,
+                await _aiServer.SaveChatHistory(Account, chatId, thinkmsg + sysmsg, chatDto.msgid_g,
+                    chatDto.chatgroupid,
                     "assistant", chatDto.aiModel, firstTime, allTime);
                 if (!string.IsNullOrEmpty(output) && !useMyKey)
-                    await _financeService.CreateUseLogAndUpadteMoney(Account, chatDto.aiModel,
-                        usageInput > 0 ? usageInput : tikToken.Encode(input).Count,
-                        usageOutput > 0 ? usageOutput : tikToken.Encode(output).Count);
+                {
+                    int settlementInput = usageInput > 0 || usageOutput > 0 ? usageInput : streaminput;
+                    int settlementOutput = usageOutput > 0 || usageInput > 0 ? usageOutput : streamoutput;
+
+                    if (settlementInput == 0 && settlementOutput == 0)
+                    {
+                        settlementInput = tikToken.Encode(input).Count + imageToken;
+                        settlementOutput = tikToken.Encode(output).Count;
+                    }
+
+                    if (chatDto.globe)
+                    {
+                        settlementInput *= 2;
+                    }
+
+                    await _financeService.CreateUseLogAndUpadteMoney(
+                        Account, chatDto.aiModel,
+                        settlementInput,
+                        settlementOutput
+                    );
+                }
             }
         }
         catch (Exception e)
@@ -753,6 +1086,7 @@ public class ChatHub : Hub
         var imgRes = string.Empty;
         var input = string.Empty;
         var output = string.Empty;
+        int imageToken = 0;
         var promptHeadle = chatDto.msg;
         bool? visionModel = false;
         bool useMyKey = false;
@@ -950,18 +1284,11 @@ public class ChatHub : Hub
             {
                 foreach (var imagePath in chatDto.image_path)
                 {
-                    var urlPattern = @"^(http|https)://";
-                    // 检查输入字符串是否匹配正则表达式
-                    var isUrl = Regex.IsMatch(imagePath, urlPattern, RegexOptions.IgnoreCase);
                     var imageData = string.Empty;
-
                     if (visionModel.HasValue && visionModel.Value)
                     {
-                        imageData = isUrl
-                            ? imagePath
-                            : await _systemService.ImgConvertToBase64(imagePath);
-                        if (!isUrl) imageData = "data:image/jpeg;base64," + imageData;
-
+                        imageData = await _systemService.ImgConvertToBase64(imagePath, true);
+                        imageToken += _aiServer.GetImageTokenCount(imagePath, chatDto.aiModel);
                         // 如果visionModel为true，只需创建一次visionMessageContent
                         var messageContents = MessageContent.ImageUrlContent(
                             imageData,
@@ -1029,10 +1356,10 @@ public class ChatHub : Hub
                                     var imageUrl = match.Groups[1].Value;
                                     var urlPattern = @"^(http|https)://";
                                     var isUrl = Regex.IsMatch(imageUrl, urlPattern, RegexOptions.IgnoreCase);
-                                    var imageData =
-                                        isUrl ? imageUrl : await _systemService.ImgConvertToBase64(imageUrl);
-                                    if (!isUrl) imageData = "data:image/jpeg;base64," + imageData;
-
+                                    if (!isUrl)
+                                        imageUrl = "wwwwroot" + imageUrl;
+                                    var imageData = await _systemService.ImgConvertToBase64(imageUrl, true);
+                                    imageToken += _aiServer.GetImageTokenCount(imageData, chatDto.aiModel);
                                     // 添加图片内容到消息内容列表
                                     hisvisionMessageContent.Add(MessageContent.ImageUrlContent(
                                         imageData,
@@ -1315,13 +1642,14 @@ public class ChatHub : Hub
                 if (freePlan.RemainCount > 0)
                 {
                     await _financeService.UpdateFree(Account);
-                    await _financeService.CreateUseLog(Account, chatDto.aiModel, tikToken.Encode(input).Count,
+                    await _financeService.CreateUseLog(Account, chatDto.aiModel,
+                        tikToken.Encode(input).Count + imageToken,
                         tikToken.Encode(output).Count, 0);
                 }
                 else
                 {
                     await _financeService.CreateUseLogAndUpadteMoney(Account, chatDto.aiModel,
-                        tikToken.Encode(input).Count, tikToken.Encode(output).Count);
+                        tikToken.Encode(input).Count + imageToken, tikToken.Encode(output).Count);
                 }
             }
 
@@ -1449,6 +1777,7 @@ public class ChatHub : Hub
             await ExceptionHandling(chatId, senMethod, e.Message);
         }
     }
+
 
     // 重写OnConnectedAsync方法
     public override async Task OnConnectedAsync()

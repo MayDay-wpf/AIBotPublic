@@ -24,6 +24,7 @@ namespace aibotPro.Models
         public string ModelInfo { get; set; }
         [StringLength(500)]
         public string ModelGroup { get; set; }
+        public string AdminPrompt { get; set; }
         public bool? VisionModel { get; set; }
         public int? Seq { get; set; }
         public int? Delay { get; set; }
