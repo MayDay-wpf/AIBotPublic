@@ -35,6 +35,16 @@
 * [@weianweigan](https://github.com/weianweigan)——Milvus C# SDK Guide
 * [@kayhantolga](https://github.com/kayhantolga)——Betalgo OpenAI .NET SDK Guide
 
+## V4.0 Update
+- Removed the setup assistant
+- Added Coder mode
+- Added Writer mode
+- Optimized the workflow engine
+- Enhanced the file system
+- Revamped the role system
+- Redesigned the model list display
+**Note: There have been changes to the database, and it is not backward compatible. Please update the database tables according to this document [aibotpro.sql](https://github.com/MayDay-wpf/AIBotPublic/blob/main/aibotpro.sql)**
+
 ## Relevant Screenshots
 ![1](https://i.mij.rip/2024/02/27/b47660352729d9028be6f7edd0bd2c51.png)
 
@@ -79,3 +89,14 @@
 ![image](https://github.com/MayDay-wpf/AIBotPublic/assets/58774414/3dddc8d2-5edc-40df-b4fe-f4a28f7ec557)
 
 ![image](https://github.com/MayDay-wpf/AIBotPublic/assets/58774414/e8d12ff7-a300-4bab-bfca-56fd0d502e2f)
+
+## Coder
+![](https://img2anywhere-hk.maymay5.com/imgs/2025/02/2e99ced1c78448dc.png)
+
+![](https://img2anywhere-hk.maymay5.com/imgs/2025/02/7eed10afc296f73d.png)
+
+## Writer
+![](https://img2anywhere-hk.maymay5.com/imgs/2025/02/0e3b22b97a8351ba.png)
+
+![](https://img2anywhere-hk.maymay5.com/imgs/2025/02/60a62fcc7d1606cd.png)
+

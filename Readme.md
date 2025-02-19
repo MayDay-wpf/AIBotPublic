@@ -37,6 +37,16 @@
 * [@weianweigan](https://github.com/weianweigan)——Milvus C# SDK指导
 * [@kayhantolga](https://github.com/kayhantolga)——Betalgo OpenAI .NET SDK指导
 
+## V4.0 版本更新
+* 取消引导助手
+* 加入Coder模式
+* 加入作家模式 Writer
+* 流程引擎优化
+* 文件系统优化
+* 角色系统改版
+* 模型列表显示改版
+**注意：数据库有变动，不向下兼容，请对照此文件更新数据库表 [aibotpro.sql](https://github.com/MayDay-wpf/AIBotPublic/blob/main/aibotpro.sql)**
+
 ## 相关截图
 ![1](https://i.mij.rip/2024/02/27/b47660352729d9028be6f7edd0bd2c51.png)
 
@@ -82,6 +92,15 @@
 
 ![image](https://github.com/MayDay-wpf/AIBotPublic/assets/58774414/e8d12ff7-a300-4bab-bfca-56fd0d502e2f)
 
+## Coder
+![](https://img2anywhere-hk.maymay5.com/imgs/2025/02/2e99ced1c78448dc.png)
+
+![](https://img2anywhere-hk.maymay5.com/imgs/2025/02/7eed10afc296f73d.png)
+
+## Writer 作家模式
+![](https://img2anywhere-hk.maymay5.com/imgs/2025/02/0e3b22b97a8351ba.png)
+
+![](https://img2anywhere-hk.maymay5.com/imgs/2025/02/60a62fcc7d1606cd.png)
 
 
 
