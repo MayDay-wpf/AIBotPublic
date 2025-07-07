@@ -3,6 +3,8 @@
 # AIBotPro 开源版
 ## 作者运营地址：[https://embbot.com](https://embbot.com)
 ## 赞助我们❤：[https://afdian.com/a/aibotpro](https://afdian.com/a/aibotpro)
+## 赞助商：
+* 优云智算（上市云计算公司UCloud旗下GPU算力平台），提供高性价比GPU算力，万卡规模4090，资源充足不排队。支持windows操作系统，配备独立外IP地址，免费200GSSD磁盘。注册即享免费5小时4090！[点击立即领取](https://compshare.cn?ytag=GPU_yy_aibotpublic)
 ## QQ交流群：833716234 [点击加入群聊【AIBot-MayMay】](https://qm.qq.com/q/2Wqd6MpW3S)（群内免费提供技术支持，任何问题都会得到解答）
 ## 开源版与闭源版差异：开源版本移除了对用户历史记录、用户资料等敏感信息的特殊加密算法，改用简易的base64编码存储，其他与闭源完全一致
 ## 技术栈
