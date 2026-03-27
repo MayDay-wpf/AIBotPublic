@@ -1202,9 +1202,9 @@ html.dark .chapter-select-container .chapter-item {
     color: lightgray;
 }
 
-html.dark .chapter-select-container .chapter-item:hover {
-    background-color: black;
-}
+    html.dark .chapter-select-container .chapter-item:hover {
+        background-color: black;
+    }
 
 html.dark .loading-more {
     color: lightgray;
@@ -1224,15 +1224,185 @@ html.dark .role-item {
     color: lightgray;
 }
 
-html.dark .role-item:hover {
-    background-color: black;
-}
+    html.dark .role-item:hover {
+        background-color: black;
+    }
 
 html.dark .custom-context-menu .collection-submenu .submenu {
     background-color: #1F1F22;
     border-color: #5E5E5E;
 }
 
-html.dark .custom-context-menu .collection-submenu .submenu li:hover {
+    html.dark .custom-context-menu .collection-submenu .submenu li:hover {
+        background-color: black;
+    }
+
+html.dark .mermaid .label {
+    color: #f9f9f9 !important;
+    font-family: 'trebuchet ms', verdana, arial, sans-serif !important;
+}
+
+html.dark .mermaid .node rect,
+html.dark .mermaid .node circle,
+html.dark .mermaid .node ellipse,
+html.dark .mermaid .node polygon,
+html.dark .mermaid .node path {
+    fill: #2D3748 !important;
+    stroke: #8230ff !important;
+}
+
+html.dark .mermaid .cluster rect {
+    fill: #1e1e1e !important;
+    stroke: #4b9e5f !important;
+}
+
+html.dark .mermaid .edgePath .path {
+    stroke: #a3a3a5 !important;
+}
+
+html.dark .mermaid .edgeLabel {
+    background-color: #2D3748 !important;
+    color: #f9f9f9 !important;
+}
+
+html.dark .edgeLabel p {
+    background-color: #2D3748 !important;
+    color: #f9f9f9 !important;
+}
+
+html.dark .mermaid .flowchart-link {
+    stroke: #a3a3a5 !important;
+}
+
+html.dark .mermaid .actor {
+    stroke: #8230ff !important;
+    fill: #2D3748 !important;
+}
+
+html.dark .mermaid .messageLine0,
+html.dark .mermaid .messageLine1 {
+    stroke: #a3a3a5 !important;
+}
+
+html.dark .mermaid .noteText {
+    fill: #f9f9f9 !important;
+}
+
+html.dark .mermaid .loopText,
+html.dark .mermaid .loopLine {
+    stroke: #4b9e5f !important;
+}
+
+html.dark .katex * {
+    color: white;
+}
+html.dark .mcp-container{
+    background-color: #1E1E1E;
+}
+html.dark .mcp-left-panel{
+    background-color: #1E1E1E;
+}
+html.dark .mcp-right-panel{
+    background-color: #16161A;
+}
+html.dark .mcp-container .panel-header{ 
     background-color: black;
+    color: lightgray;
+    border:none;
+}
+html.dark .mcp-container .editor-footer{
+    background-color: black;
+    color: lightgray;
+    border:none;
+}
+html.dark #mcpConfigEditor{
+    color: lightgray;
+}
+html.dark .mcp-container .mcp-center-panel{
+    background-color: #16161A;
+}
+html.dark .mcp-container .mcp-center-panel .status-indicator{
+    background-color: #1E1E1E;
+    color: lightgray;
+}
+html.dark .panel-subheader{
+    background-color: black;
+    color: lightgray;
+}
+html.dark .server-item{
+    background-color: black;
+    color: white;
+    border: none;
+}
+html.dark .tool-item{
+    background-color: black;
+    color: white;
+    border: none;
+}
+.tool-schema pre{
+    color: black !important;
+}
+.modal-body pre{
+    color: black !important;
+}
+html.dark .tool-schema pre{
+    color: lightgray !important;
+    background-color: black;
+    border: none;
+}
+
+/* 工具调用组件深色模式样式 */
+html.dark .tool-call-container .tool-widget {
+    background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+}
+
+html.dark .tool-call-container .tool-name {
+    color: #e2e8f0 !important;
+}
+
+html.dark .tool-call-container .tool-icon-wrapper {
+    background: rgba(99, 102, 241, 0.2) !important;
+}
+
+html.dark .tool-call-container .tool-icon-wrapper i {
+    color: #818cf8 !important;
+}
+
+html.dark .tool-call-container .tool-status {
+    background: rgba(156, 163, 175, 0.2) !important;
+    color: #d1d5db !important;
+}
+
+html.dark .tool-call-container .result-divider {
+    background: rgba(255,255,255,0.1) !important;
+}
+
+html.dark .tool-call-container .result-content {
+    color: #9ca3af !important;
+    background: rgba(0,0,0,0.3) !important;
+}
+html.dark .server-config-item{
+    background-color: black;
+    color: lightgray;
+    border: none;
+}
+html.dark .config-form-group input, .config-form-group textarea{
+    background-color: #16161A;
+    color: lightgray;
+    border-color: black;
+}
+html.dark .config-form-group select{
+    border-color: black;
+}
+html.dark .config-form-group label{
+    color: lightgray;
+    background: none;
+}
+html.dark .env-vars-section label{
+    color: lightgray;
+    background: none;
+}
+html.dark .env-var-item input{
+    border-color: black;
 }

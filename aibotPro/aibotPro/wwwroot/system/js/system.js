@@ -31,7 +31,7 @@ $(document).ready(function () {
             // 确保 headers 对象存在
             options.headers = options.headers || {};
             options.headers['Authorization'] = 'Bearer ' + token;
-            Cookies.set('token', token, {expires: 30});
+            Cookies.set('token', token, { expires: 30 });
         } else {
             window.location.href = "/Home/Welcome";
             return; // 阻止后续的 prefilter 处理
@@ -172,6 +172,9 @@ $(document).ready(function () {
             }
         });
     }
+    
+    // 初始化滚动到底部按钮
+    initScrollToBottomButton();
 });
 
 //判断是否为移动端
@@ -337,9 +340,9 @@ function addExportButtonToTables() {
             // 将Worksheet添加到Workbook
             XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
             // 将Workbook转换为Excel文件的二进制数据
-            var wbout = XLSX.write(wb, {bookType: 'xlsx', type: 'array'});
+            var wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
             // 创建Blob对象
-            var blob = new Blob([wbout], {type: 'application/octet-stream'});
+            var blob = new Blob([wbout], { type: 'application/octet-stream' });
             // 创建下载链接
             var url = URL.createObjectURL(blob);
             var link = document.createElement("a");
@@ -508,6 +511,12 @@ function isAdmin() {
                             </a>
                             <a href="/OpenAll/AssistantSetting" class="nav-sub-link" id="assistantmodel_aisystem_nav">
                                 助理模型管理 (Assistant Model)
+                            </a>
+                            <a href="/OpenAll/VibeCodingModelSetting" class="nav-sub-link" id="vibecodingmodel_aisystem_nav">
+                                编程模型管理 (Coding Model)
+                            </a>
+                            <a href="/OpenAll/DeepResearchModelSetting" class="nav-sub-link" id="deepresearchmodel_aisystem_nav">
+                                研究模型管理 (DeepResearch)
                             </a>
                             <a href="/OpenAll/ModelPriceSetting" class="nav-sub-link" id="modelprice_aisystem_nav">
                                 价格管理 (Price)
@@ -678,7 +687,7 @@ function copyText(txt) {
 }
 
 function animateMcoinUpdate(oldValue, newValue) {
-    $({countNum: oldValue}).animate({countNum: newValue}, {
+    $({ countNum: oldValue }).animate({ countNum: newValue }, {
         duration: 1000, // 动画持续时间
         easing: 'linear', // 动画样式
         step: function () {
@@ -807,13 +816,7 @@ function customMenu() {
     if ($("#custommenu #QQ").length > 0 || $("#custommenu #ABOUTUS").length > 0 || $("#custommenu #GITHUB").length > 0) {
         return;
     }
-    var html = `<li class="nav-item" id="STATUS">
-                    <a href="https://status.aibotpro.cn/status/aibot" style="color:#17a2b8" class="nav-link" target="_blank">
-                        <i data-feather="activity">
-                        </i>
-                        模型可用性监控
-                    </a>
-                </li>
+    var html = `
                <li class="nav-item" id="QQ">
                     <a href="https://qm.qq.com/q/gNwQHVDhkc" style="color:rgb(23,223,135)" class="nav-link" target="_blank">
                         <i data-feather="message-circle">
@@ -978,7 +981,7 @@ function isVIP(callback, needQuery = false) {
     const cachedData = localStorage.getItem('vipStatus');
 
     if (cachedData && !needQuery) {
-        const {status, expiry} = JSON.parse(cachedData);
+        const { status, expiry } = JSON.parse(cachedData);
         if (now < expiry) {
             // 缓存有效，直接返回结果
             callback(status);
@@ -1222,7 +1225,7 @@ function bindEnglishPromptTranslation(selector) {
             showLoadingIndicator();
 
             $.ajax({
-                type: "POST", url: "/AIdraw/EnglishPrompt", dataType: "json", data: {"prompt": textBeforeM},
+                type: "POST", url: "/AIdraw/EnglishPrompt", dataType: "json", data: { "prompt": textBeforeM },
                 success: function (data) {
                     if (data.success) {
                         // 验证是否仍然包含 'mmmmm'，确保用户在加载时没有修改
@@ -1293,7 +1296,7 @@ function bindOptimizePrompt(selector) {
             showLoadingIndicator();
 
             $.ajax({
-                type: "POST", url: "/Home/OptimizePrompt", dataType: "json", data: {"prompt": textBeforeF},
+                type: "POST", url: "/Home/OptimizePrompt", dataType: "json", data: { "prompt": textBeforeF },
                 success: function (data) {
                     if (data.success) {
                         // 验证是否仍然包含 'fffff'，确保用户在加载时没有修改
@@ -1557,7 +1560,7 @@ function getRoleList_Right(type, name) {
                     $('#chatRoleItems').append(html);
                     roleListNoMoreData = res.data.length < roleListPageSize;
                     //向下滚动一点点像素
-                    $('#chatRoleItems').animate({scrollTop: $('#chatRoleItems')[0].scrollHeight}, 500);
+                    $('#chatRoleItems').animate({ scrollTop: $('#chatRoleItems')[0].scrollHeight }, 500);
                 } else {
                     $('#chatRoleItems').html(html);
                     roleListNoMoreData = res.data.length < roleListPageSize;
@@ -1645,7 +1648,7 @@ function showContextMenu(x, y, chatId, isTop = false, itemType = 'chat') {
     }
 
     // 设置菜单位置
-    $menu.css({top: y, left: x});
+    $menu.css({ top: y, left: x });
 
     // 给"转存合集"添加点击事件
     $menu.find('.collection-submenu').on('click', function (event) {
@@ -1702,6 +1705,20 @@ function showContextMenu(x, y, chatId, isTop = false, itemType = 'chat') {
 
     $menu.on('click', function (event) {
         event.stopPropagation();
+        
+        // 检查点击的是否是菜单项（li元素），但不是转存合集的子菜单
+        const $target = $(event.target);
+        const $clickedLi = $target.closest('li');
+        
+        // 如果点击的是菜单项，且不是转存合集的主菜单或其子菜单项
+        if ($clickedLi.length > 0 && 
+            !$clickedLi.hasClass('collection-submenu') && 
+            !$clickedLi.closest('.submenu').length) {
+            
+            // 隐藏菜单
+            $('.custom-context-menu').remove();
+            $(document).off('click.contextmenu');
+        }
     });
 
     // 获取合集列表并添加到二级菜单
@@ -1716,10 +1733,10 @@ function showContextMenu(x, y, chatId, isTop = false, itemType = 'chat') {
                 var data = res.data;
                 for (var i = 0; i < data.length; i++) {
                     var item = data[i];
-                    var str = `<li onclick="saveToCollection('${chatId}', '${item.collectionCode}'); event.stopPropagation();">${item.collectionName}</li>`; // 添加点击事件，阻止冒泡
+                    var str = `<li onclick="saveToCollection('${chatId}', '${item.collectionCode}'); $('.custom-context-menu').remove(); $(document).off('click.contextmenu'); event.stopPropagation();">${item.collectionName}</li>`; // 添加点击事件，阻止冒泡，并隐藏菜单
                     $submenu.append(str);
                 }
-                var strlast = `<li class="text-info" onclick="backHistoryList('${chatId}', '${item.collectionCode}'); event.stopPropagation();">恢复至列表</li>`;
+                var strlast = `<li class="text-info" onclick="backHistoryList('${chatId}', '${item.collectionCode}'); $('.custom-context-menu').remove(); $(document).off('click.contextmenu'); event.stopPropagation();">恢复至列表</li>`;
                 $submenu.append(strlast);
             } else {
                 $submenu.append('<li>暂无合集</li>');
@@ -2331,7 +2348,7 @@ function createPreviewWindow() {
     $('body').append(windowHtml);
     feather.replace();
     let isMinimized = false;
-    let originalSize = {width: '600px', height: '650px'};
+    let originalSize = { width: '600px', height: '650px' };
 
     previewWindow = {
         element: $('#preview-window'),
@@ -2345,7 +2362,7 @@ function createPreviewWindow() {
                     height: this.element.css('height')
                 };
                 this.element.find('.preview-header').nextAll().hide();
-                this.element.css({height: 'auto', width: '300px'});
+                this.element.css({ height: 'auto', width: '300px' });
                 this.element.find('.minimize-btn').html(`<i style="width: 15px;" data-feather="maximize"></i>`);
                 isMinimized = true;
                 feather.replace();
@@ -2437,7 +2454,7 @@ function createNewTab(chatId) {
         removeTab(chatId);
     });
 
-    chatTabs.push({chatId: chatId, tabId: tabId});
+    chatTabs.push({ chatId: chatId, tabId: tabId });
     activateTab(tabId);
     loadChatContent(chatId, tabId);
 }
@@ -2478,7 +2495,7 @@ function activateTab(tabId) {
 
 function loadChatContent(chatId, tabId) {
     $.ajax({
-        type: "Post", url: "/Home/ShowHistoryDetail", dataType: "json", data: {chatId: chatId},
+        type: "Post", url: "/Home/ShowHistoryDetail", dataType: "json", data: { chatId: chatId },
         success: function (res) {
             let html = "";
             var isvip = false;
@@ -2782,7 +2799,22 @@ $(document).on('click', '.custom-delete-btn-1', function (e) {
             // 如果找到了消息元素，可以选择使用它
             $chatgroup = $message; // 或者你可以根据需要进行其他操作
         }
+
+        // 添加标记删除的类
         $chatgroup.addClass('chatgroup-masked');
+
+        // 默认折叠被标记删除的对话
+        $chatgroup.addClass('folded');
+
+        // 更新折叠图标和文本
+        $chatgroup.find('.fold-chat-group').removeClass('fa-angle-up').addClass('fa-angle-down');
+        $chatgroup.find('.fold-text').text('展开');
+
+        // 隐藏对话内容，但保留遮罩层和按钮
+        $chatgroup.find('.chat-message-box').hide();
+        // 不要隐藏最后一个div，因为它可能包含遮罩层按钮
+        // $chatgroup.find('div:last').hide();
+
         createMaskedOverlays();
         $confirmDialog.removeClass('custom-show-1');
     });
@@ -2883,8 +2915,65 @@ function isURL(str) {
 }
 
 function renderMermaidDiagrams(selector = '.chat-message') {
-    // 渲染Mermaid图表
-    $(`${selector} pre code.language-mermaid`).each(function (i, block) {
+    // 检查是否有mermaid代码块
+    var $mermaidBlocks = $(`${selector} pre code.language-mermaid`);
+    if ($mermaidBlocks.length === 0) {
+        return; // 没有mermaid代码块，直接返回
+    }
+
+    // 检查是否已经加载了mermaid
+    if (typeof mermaid !== 'undefined') {
+        // 已经加载，直接渲染
+        renderMermaidBlocks($mermaidBlocks);
+    } else {
+        // 还没有加载，按需加载mermaid.min.js
+        loadMermaidScript().then(function() {
+            renderMermaidBlocks($mermaidBlocks);
+        }).catch(function(error) {
+            console.error('Failed to load Mermaid:', error);
+            // 如果加载失败，显示错误信息
+            $mermaidBlocks.each(function() {
+                $(this).parent().html('<div class="mermaid-error" style="color: #dc3545; padding: 10px; border: 1px solid #dc3545; border-radius: 4px;">⚠️ Mermaid图表加载失败</div>');
+            });
+        });
+    }
+}
+
+// 加载Mermaid脚本的函数
+function loadMermaidScript() {
+    return new Promise(function(resolve, reject) {
+        // 检查脚本是否已经在加载中
+        if (window.mermaidLoading) {
+            // 如果正在加载，等待加载完成
+            var checkInterval = setInterval(function() {
+                if (typeof mermaid !== 'undefined') {
+                    clearInterval(checkInterval);
+                    resolve();
+                }
+            }, 100);
+            return;
+        }
+
+        // 标记正在加载
+        window.mermaidLoading = true;
+
+        var script = document.createElement('script');
+        script.src = '/system/js/mermaid.min.js';
+        script.onload = function() {
+            window.mermaidLoading = false;
+            resolve();
+        };
+        script.onerror = function() {
+            window.mermaidLoading = false;
+            reject(new Error('Failed to load mermaid.min.js'));
+        };
+        document.head.appendChild(script);
+    });
+}
+
+// 渲染Mermaid代码块的函数
+function renderMermaidBlocks($mermaidBlocks) {
+    $mermaidBlocks.each(function (i, block) {
         var mermaidCode = $(block).text();
         var mermaidDiv = $('<div class="mermaid"></div>').text(mermaidCode);
         $(block).parent().replaceWith(mermaidDiv); // 移除外层的<pre>标签
@@ -2893,3 +2982,159 @@ function renderMermaidDiagrams(selector = '.chat-message') {
     // 重新初始化Mermaid
     mermaid.init(undefined, '.mermaid');
 }
+
+// 滚动到底部按钮功能
+function initScrollToBottomButton() {
+    // 创建滚动到底部按钮
+    var $scrollToBottomBtn = $('<button>', {
+        id: 'scrollToBottomBtn',
+        class: 'scroll-to-bottom-btn',
+        html: '<i class="fas fa-long-arrow-alt-down"></i>',
+        css: {
+            position: 'fixed',
+            bottom: '10%',
+            right: '3%',
+            zIndex: 1000,
+            display: 'none',
+            borderRadius: '50%',
+            padding: '10px 10px',
+            width: '50px',
+            height: '50px',
+            fontSize: '18px',
+            boxShadow: '0 5px 10px rgba(227, 58, 236, 0.2)',
+            backgroundColor: '#007bff',
+            color: '#fff',
+            border: 'none'
+        }
+    });
+
+    // 添加按钮到页面
+    $('body').append($scrollToBottomBtn);
+
+    // 点击按钮滚动到底部
+    $scrollToBottomBtn.on('click', function() {
+        var $chatMain = $('.chat-body-main');
+        if ($chatMain.length) {
+            $chatMain.animate({
+                scrollTop: $chatMain[0].scrollHeight
+            }, 500);
+        }
+    });
+
+    // 绑定滚动事件的函数
+    function bindScrollEvent() {
+        var $chatMain = $('.chat-body-main');
+        if ($chatMain.length) {
+            // 移除之前的事件监听器，避免重复绑定
+            $chatMain.off('scroll.scrollToBottom');
+            
+            // 绑定滚动事件
+            $chatMain.on('scroll.scrollToBottom', function() {
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(function() {
+                    checkScrollPosition();
+                }, 100);
+            });
+            
+            // 标记已绑定
+            $chatMain.data('scroll-bound', true);
+            
+            // 添加调试信息
+            // console.log('滚动事件已绑定到 .chat-body-main，元素数量:', $chatMain.length);
+        }
+    }
+
+    var scrollTimeout;
+    
+    // 初始绑定
+    bindScrollEvent();
+
+    // 检查滚动位置
+    function checkScrollPosition() {
+        var $chatMain = $('.chat-body-main');
+        if ($chatMain.length) {
+            // 检查对话记录是否为空或只有加载提示
+            var hasContent = $chatMain.children().length > 0;
+            var onlyLoadingOrEmpty = false;
+
+            if (hasContent) {
+                // 检查是否只有加载提示或空内容提示
+                var children = $chatMain.children();
+                onlyLoadingOrEmpty = children.length === 1 &&
+                    (children.hasClass('divider-text') ||
+                     children.find('.text-center.text-muted').length > 0 ||
+                     children.text().includes('加载中') ||
+                     children.text().includes('暂无对话记录'));
+            }
+
+            // 检查内容区域是否完全为空（没有子元素或者innerHTML为空字符串）
+            var isEmpty = !hasContent || $chatMain.html().trim() === "";
+
+            // 如果没有内容、只有加载/空提示，或者完全为空，隐藏按钮
+            if (isEmpty || onlyLoadingOrEmpty) {
+                $scrollToBottomBtn.fadeOut(300);
+                return;
+            }
+
+            var scrollTop = $chatMain.scrollTop();
+            var scrollHeight = $chatMain[0].scrollHeight;
+            var clientHeight = $chatMain.height();
+
+            // 当距离底部超过200px时显示按钮
+            var distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+
+            if (distanceFromBottom > 200) {
+                $scrollToBottomBtn.fadeIn(300);
+            } else {
+                $scrollToBottomBtn.fadeOut(300);
+            }
+        } else {
+            console.log('未找到 .chat-body-main 元素');
+            $scrollToBottomBtn.fadeOut(300);
+        }
+    }
+
+    // 使用MutationObserver监听DOM变化，当.chat-body-main元素被添加时重新绑定事件
+    var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            var shouldCheck = false;
+
+            // 检查节点的添加和删除
+            if (mutation.addedNodes.length || mutation.removedNodes.length) {
+                var nodes = [].concat(Array.from(mutation.addedNodes), Array.from(mutation.removedNodes));
+                nodes.forEach(function(node) {
+                    if (node.nodeType === 1) { // 元素节点
+                        var $node = $(node);
+                        if ($node.hasClass('chat-body-main') || $node.find('.chat-body-main').length) {
+                            shouldCheck = true;
+                        }
+                    }
+                });
+            }
+
+            // 检查.chat-body-main内容的直接变化
+            if (mutation.type === 'childList' && mutation.target) {
+                var $target = $(mutation.target);
+                if ($target.hasClass('chat-body-main') || $target.closest('.chat-body-main').length) {
+                    shouldCheck = true;
+                }
+            }
+
+            if (shouldCheck) {
+                setTimeout(function() {
+                    bindScrollEvent();
+                    checkScrollPosition();
+                }, 100);
+            }
+        });
+    });
+
+    // 开始观察DOM变化
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+}
+
+// 将滚动到底部按钮初始化合并到现有的document ready中
+// initScrollToBottomButton() 将在现有的 $(document).ready 中调用

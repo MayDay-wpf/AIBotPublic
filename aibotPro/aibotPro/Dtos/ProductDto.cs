@@ -29,4 +29,9 @@
     {
         public List<string> Questions { get; set; }
     }
+
+    public class ResearchList
+    {
+        public List<string> Researchs { get; set; }
+    }
 }

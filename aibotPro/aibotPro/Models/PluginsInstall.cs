@@ -6,19 +6,22 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Table("PluginsInstall")]
+public partial class PluginsInstall
 {
-    [Table("PluginsInstall")]
-    public partial class PluginsInstall
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string Account { get; set; }
-        [StringLength(50)]
-        public string PluginsCode { get; set; }
-        public bool? MustHit { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? CreateTime { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string Account { get; set; }
+
+    [StringLength(50)]
+    public string PluginsCode { get; set; }
+
+    public bool? MustHit { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? CreateTime { get; set; }
 }

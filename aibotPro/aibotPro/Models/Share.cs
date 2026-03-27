@@ -6,22 +6,26 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Table("Share")]
+public partial class Share
 {
-    [Table("Share")]
-    public partial class Share
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string Account { get; set; }
-        [StringLength(50)]
-        public string ParentAccount { get; set; }
-        [StringLength(50)]
-        public string ShareCode { get; set; }
-        [Column(TypeName = "money")]
-        public decimal? Mcoin { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? CreateTime { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string Account { get; set; }
+
+    [StringLength(50)]
+    public string ParentAccount { get; set; }
+
+    [StringLength(50)]
+    public string ShareCode { get; set; }
+
+    [Column(TypeName = "money")]
+    public decimal? Mcoin { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? CreateTime { get; set; }
 }

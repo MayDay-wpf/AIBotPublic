@@ -27,6 +27,11 @@ var httpdata = {
         httpdelayed: 0
     }
 }
+var webspiderdata = {
+    output: {
+        spiderurl: ""
+    }
+}
 var LLMdata = {
     output: {
         aimodel: "",
@@ -63,8 +68,7 @@ var downloadimagedata = {
 }
 var webdata = {
     output: {
-        prompt: "",
-        webjson: false
+        prompt: "", webjson: false, searchengine: "google"
     }
 }
 var enddata = {
@@ -94,6 +98,7 @@ var debug = {
     }
 }
 var regex = /'/;
+
 function saveNodeData() {
     switch (thisNodeName) {
         case 'start':
@@ -113,9 +118,10 @@ function saveNodeData() {
                 var PRconstant = columns.eq(3).find('input').val();
                 if (PRname.trim() === '' || PRvalue.trim() === '' || regex.test(PRname) || regex.test(PRvalue)) {
                     isEmpty = true;
-                    layer.msg('存在空的参数值，请填写完整！', { icon: 2, time: 2500 }, function () {
+                    layer.msg('存在空的参数值，请填写完整！', {icon: 2, time: 2500}, function () {
                         layer.closeAll();
-                        bottomPanel.classList.remove('show'); $('#overlay').hide();
+                        bottomPanel.classList.remove('show');
+                        $('#overlay').hide();
                     });
                     return false;
                 }
@@ -209,9 +215,10 @@ function saveNodeData() {
                 var ParamValue = columns.eq(1).find('input').val();
                 if (ParamKey.trim() === '' || ParamValue.trim() === '' || regex.test(ParamKey) || regex.test(ParamValue)) {
                     isEmpty = true;
-                    layer.msg('存在空的参数值，请填写完整！', { icon: 2, time: 2500 }, function () {
+                    layer.msg('存在空的参数值，请填写完整！', {icon: 2, time: 2500}, function () {
                         layer.closeAll();
-                        bottomPanel.classList.remove('show'); $('#overlay').hide();
+                        bottomPanel.classList.remove('show');
+                        $('#overlay').hide();
                     });
                     return false;
                 }
@@ -228,9 +235,10 @@ function saveNodeData() {
                 var HdValue = columns.eq(1).find('input').val();
                 if (HdKey.trim() === '' || HdValue.trim() === '' || regex.test(HdKey) || regex.test(HdValue)) {
                     isEmpty = true;
-                    layer.msg('存在空的Header值，请填写完整！', { icon: 2, time: 2500 }, function () {
+                    layer.msg('存在空的Header值，请填写完整！', {icon: 2, time: 2500}, function () {
                         layer.closeAll();
-                        bottomPanel.classList.remove('show'); $('#overlay').hide();
+                        bottomPanel.classList.remove('show');
+                        $('#overlay').hide();
                     });
                     return false;
                 }
@@ -247,9 +255,10 @@ function saveNodeData() {
                 var CkValue = columns.eq(1).find('input').val();
                 if (CkKey.trim() === '' || CkValue.trim() === '' || regex.test(CkKey) || regex.test(CkValue)) {
                     isEmpty = true;
-                    layer.msg('存在空的Cookie值，请填写完整！', { icon: 2, time: 2500 }, function () {
+                    layer.msg('存在空的Cookie值，请填写完整！', {icon: 2, time: 2500}, function () {
                         layer.closeAll();
-                        bottomPanel.classList.remove('show'); $('#overlay').hide();
+                        bottomPanel.classList.remove('show');
+                        $('#overlay').hide();
                     });
                     return false;
                 }
@@ -263,9 +272,10 @@ function saveNodeData() {
                 return false; // 如果检测到空值，立即退出函数
             }
             if ($('.requestUrl').val() == "") {
-                layer.msg('请填写请求地址', { icon: 2, time: 2500 }, function () {
+                layer.msg('请填写请求地址', {icon: 2, time: 2500}, function () {
                     layer.closeAll();
-                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                    bottomPanel.classList.remove('show');
+                    $('#overlay').hide();
                 });
                 return false;
             }
@@ -283,6 +293,26 @@ function saveNodeData() {
             else
                 httpdata.output.httpdelayed = 0;
             editor.updateNodeDataFromId(thisNodeId, httpdata);
+            saveNodeDataToCache();
+            return true;
+            break;
+        case 'webspider':
+            webspiderdata = {
+                output: {
+                    spiderurl: ""
+                }
+            }
+            var SpiderUrl = $('.spiderUrl').val();
+            if (SpiderUrl == "") {
+                layer.msg('请填写爬取链接', {icon: 2, time: 2500}, function () {
+                    layer.closeAll();
+                    bottomPanel.classList.remove('show');
+                    $('#overlay').hide();
+                });
+                return false;
+            }
+            webspiderdata.output.spiderurl = SpiderUrl;
+            editor.updateNodeDataFromId(thisNodeId, webspiderdata);
             saveNodeDataToCache();
             return true;
             break;
@@ -311,21 +341,23 @@ function saveNodeData() {
             var JsonSchema = $('.jsonschema').val();
             LLMdata.output.aimodel = AImodel;
             if (Prompt == "") {
-                layer.msg('请填写提示词', { icon: 2, time: 2500 }, function () {
+                layer.msg('请填写提示词', {icon: 2, time: 2500}, function () {
                     layer.closeAll();
-                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                    bottomPanel.classList.remove('show');
+                    $('#overlay').hide();
                 });
                 return false;
             }
             if (Retry == "") {
-                layer.msg('重试次数填写错误', { icon: 2, time: 2500 }, function () {
+                layer.msg('重试次数填写错误', {icon: 2, time: 2500}, function () {
                     layer.closeAll();
-                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                    bottomPanel.classList.remove('show');
+                    $('#overlay').hide();
                 });
                 return false;
             }
             if (JsonSchema == "true" && JsonSchemaInput == "") {
-                layer.msg('JsonSchema输入不能为空', { icon: 2, time: 2500 }, function () {
+                layer.msg('JsonSchema输入不能为空', {icon: 2, time: 2500}, function () {
                     layer.closeAll();
                     bottomPanel.classList.remove('show');
                     $('#overlay').hide();
@@ -355,32 +387,36 @@ function saveNodeData() {
             var Prompt = $('.prompt').val();
             var Retry = $('.retry').val();
             if (Prompt == "") {
-                layer.msg('请填写提示词', { icon: 2, time: 2500 }, function () {
+                layer.msg('请填写提示词', {icon: 2, time: 2500}, function () {
                     layer.closeAll();
-                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                    bottomPanel.classList.remove('show');
+                    $('#overlay').hide();
                 });
                 return false;
             }
             if (Retry == "") {
-                layer.msg('重试次数填写错误', { icon: 2, time: 2500 }, function () {
+                layer.msg('重试次数填写错误', {icon: 2, time: 2500}, function () {
                     layer.closeAll();
-                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                    bottomPanel.classList.remove('show');
+                    $('#overlay').hide();
                 });
                 return false;
             }
             var Size = $(".dallsize").val();
             if (Size == null) {
-                layer.msg('请选择绘制尺寸', { icon: 2, time: 2500 }, function () {
+                layer.msg('请选择绘制尺寸', {icon: 2, time: 2500}, function () {
                     layer.closeAll();
-                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                    bottomPanel.classList.remove('show');
+                    $('#overlay').hide();
                 });
                 return false;
             }
             var Quality = $(".dallquality").val();
             if (Quality == "") {
-                layer.msg('请选择绘制质量', { icon: 2, time: 2500 }, function () {
+                layer.msg('请选择绘制质量', {icon: 2, time: 2500}, function () {
                     layer.closeAll();
-                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                    bottomPanel.classList.remove('show');
+                    $('#overlay').hide();
                 });
                 return false;
             }
@@ -402,9 +438,10 @@ function saveNodeData() {
             var Prompt = $('.prompt').val();
             var Retry = $('.retry').val();
             if (Prompt == "") {
-                layer.msg('请填写提示词', { icon: 2, time: 2500 }, function () {
+                layer.msg('请填写提示词', {icon: 2, time: 2500}, function () {
                     layer.closeAll();
-                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                    bottomPanel.classList.remove('show');
+                    $('#overlay').hide();
                 });
                 return false;
             }
@@ -424,9 +461,10 @@ function saveNodeData() {
             var ImageUrl = $('.imageUrl').val();
             var downloadImgPrompt = $('.downloadImgPrompt').val();
             if (ImageUrl == "") {
-                layer.msg('请填写图片下载链接', { icon: 2, time: 2500 }, function () {
+                layer.msg('请填写图片下载链接', {icon: 2, time: 2500}, function () {
                     layer.closeAll();
-                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                    bottomPanel.classList.remove('show');
+                    $('#overlay').hide();
                 });
                 return false;
             }
@@ -440,20 +478,21 @@ function saveNodeData() {
         case 'web':
             webdata = {
                 output: {
-                    prompt: "",
-                    webjson: false
+                    prompt: "", webjson: false, searchengine: "google"
                 }
             }
             var Prompt = $('.prompt').val();
             if (Prompt == "") {
-                layer.msg('请填写搜索关键词', { icon: 2, time: 2500 }, function () {
+                layer.msg('请填写搜索关键词', {icon: 2, time: 2500}, function () {
                     layer.closeAll();
-                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                    bottomPanel.classList.remove('show');
+                    $('#overlay').hide();
                 });
                 return false;
             }
             webdata.output.prompt = Prompt;
             webdata.output.webjson = $(".webjson").val();
+            webdata.output.searchengine = $(".searchengine").val();
             editor.updateNodeDataFromId(thisNodeId, webdata);
             saveNodeDataToCache();
             return true;
@@ -487,30 +526,34 @@ function saveNodeData() {
             var Reranker = $('.reranker').val();
             var TopN = $('.topn').val();
             if (Prompt == "") {
-                layer.msg('请填写提示词', { icon: 2, time: 2500 }, function () {
+                layer.msg('请填写提示词', {icon: 2, time: 2500}, function () {
                     layer.closeAll();
-                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                    bottomPanel.classList.remove('show');
+                    $('#overlay').hide();
                 });
                 return false;
             }
             if (Retry == "" || Retry > 5) {
-                layer.msg('重试次数填写错误', { icon: 2, time: 2500 }, function () {
+                layer.msg('重试次数填写错误', {icon: 2, time: 2500}, function () {
                     layer.closeAll();
-                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                    bottomPanel.classList.remove('show');
+                    $('#overlay').hide();
                 });
                 return false;
             }
             if (TopK == "" || TopK > 100 || TopK < 3) {
-                layer.msg('TopK填写错误', { icon: 2, time: 2500 }, function () {
+                layer.msg('TopK填写错误', {icon: 2, time: 2500}, function () {
                     layer.closeAll();
-                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                    bottomPanel.classList.remove('show');
+                    $('#overlay').hide();
                 });
                 return false;
             }
             if (TopN > 100 || TopN < 3) {
-                layer.msg('TopN填写错误', { icon: 2, time: 2500 }, function () {
+                layer.msg('TopN填写错误', {icon: 2, time: 2500}, function () {
                     layer.closeAll();
-                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                    bottomPanel.classList.remove('show');
+                    $('#overlay').hide();
                 });
                 return false;
             }
@@ -522,9 +565,10 @@ function saveNodeData() {
                 }
             });
             if (knowledgedata.output.typecode.length == 0) {
-                layer.msg('请选用知识库', { icon: 2, time: 2500 }, function () {
+                layer.msg('请选用知识库', {icon: 2, time: 2500}, function () {
                     layer.closeAll();
-                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                    bottomPanel.classList.remove('show');
+                    $('#overlay').hide();
                 });
                 return false;
             }
@@ -545,9 +589,10 @@ function saveNodeData() {
             }
             var chatlog = $('.chatlog').val();
             if (chatlog == "") {
-                layer.msg('请填写需要发送的内容', { icon: 2, time: 2500 }, function () {
+                layer.msg('请填写需要发送的内容', {icon: 2, time: 2500}, function () {
                     layer.closeAll();
-                    bottomPanel.classList.remove('show'); $('#overlay').hide();
+                    bottomPanel.classList.remove('show');
+                    $('#overlay').hide();
                 });
                 return false;
             }
@@ -578,9 +623,10 @@ function saveNodeData() {
 function saveNodeDataToCache(callback) {
     var nodeData = JSON.stringify(editor.export(), null, 4);
     if (!checkStartAndEndNodesExist(nodeData)) {
-        layer.msg('流程中必须含有【start】和【end】节点，请添加后再保存', { icon: 2, time: 3500 }, function () {
+        layer.msg('流程中必须含有【start】和【end】节点，请添加后再保存', {icon: 2, time: 3500}, function () {
             layer.closeAll();
-            bottomPanel.classList.remove('show'); $('#overlay').hide();
+            bottomPanel.classList.remove('show');
+            $('#overlay').hide();
         });
         return;
     }
@@ -599,9 +645,8 @@ function saveNodeDataToCache(callback) {
                 if (typeof callback === "function") {
                     callback();
                 }
-            }
-            else {
-                layer.msg(data.msg, { icon: 2, offset: 't', time: 2000 }, layer.closeAll());
+            } else {
+                layer.msg(data.msg, {icon: 2, offset: 't', time: 2000}, layer.closeAll());
                 writeInfo(`<i class="fas fa-times-circle"></i> ${data.msg}`, "#c7221e");
                 bottomPanel.classList.remove('show');
                 $('#overlay').hide();
@@ -641,6 +686,7 @@ function checkStartAndEndNodesExist(nodesData) {
         return false;
     }
 }
+
 function getWorkFlowNodeData(workflowcode) {
     $.ajax({
         type: "POST",
@@ -657,6 +703,7 @@ function getWorkFlowNodeData(workflowcode) {
         }
     });
 }
+
 function writeInfo(text, color) {
     $('.infotext').html(text);
     $('.infotext').css("color", color);

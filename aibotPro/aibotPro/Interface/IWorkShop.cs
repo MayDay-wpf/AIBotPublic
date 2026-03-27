@@ -1,6 +1,6 @@
 ﻿using aibotPro.Dtos;
 using aibotPro.Models;
-using OpenAI.ObjectModels.RequestModels;
+using Betalgo.Ranul.OpenAI.ObjectModels.RequestModels;
 using System.Runtime.CompilerServices;
 using System.Security.Principal;
 

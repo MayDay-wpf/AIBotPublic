@@ -3,8 +3,8 @@ using aibotPro.Interface;
 using aibotPro.Models;
 using Microsoft.DotNet.Scaffolding.Shared.CodeModifier.CodeChange;
 using Newtonsoft.Json;
-using OpenAI.ObjectModels.RequestModels;
-using OpenAI;
+using Betalgo.Ranul.OpenAI.ObjectModels.RequestModels;
+using Betalgo.Ranul.OpenAI;
 using RestSharp;
 using static aibotPro.Dtos.BaiduResDto;
 using System.Text;
@@ -18,14 +18,15 @@ namespace aibotPro.Service
         private readonly IRedisService _redis;
         private readonly ISystemService _systemService;
         public static string AT = string.Empty;
+
         public BaiduService(IRedisService redisService, ISystemService systemService)
         {
             _redis = redisService;
             _systemService = systemService;
         }
+
         public string GetText(string Imgbase64)
         {
-
             List<SystemCfg> systemConfig = _systemService.GetSystemCfgs();
             string AK = systemConfig.Find(x => x.CfgKey == "Baidu_TXT_AK").CfgValue;
             string SK = systemConfig.Find(x => x.CfgKey == "Baidu_TXT_SK").CfgValue;
@@ -41,13 +42,16 @@ namespace aibotPro.Service
             RestResponse response = client.Execute(request);
             return response.Content;
         }
+
         public string GetRes(string Imgbase64)
         {
             List<SystemCfg> systemConfig = _systemService.GetSystemCfgs();
             string AK = systemConfig.Find(x => x.CfgKey == "Baidu_OBJ_AK").CfgValue;
             string SK = systemConfig.Find(x => x.CfgKey == "Baidu_OBJ_SK").CfgValue;
             string AT = GetAccessToken(AK, SK);
-            var client = new RestClient($"https://aip.baidubce.com/rest/2.0/image-classify/v2/advanced_general?access_token={AT}");
+            var client =
+                new RestClient(
+                    $"https://aip.baidubce.com/rest/2.0/image-classify/v2/advanced_general?access_token={AT}");
             var request = new RestRequest("", RestSharp.Method.Post);
             request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
             request.AddHeader("Accept", "application/json");
@@ -57,13 +61,13 @@ namespace aibotPro.Service
         }
 
         public async IAsyncEnumerable<BaiduResDto.StreamResult> CallBaiduAI_Stream(
-      ChatCompletionCreateRequest chatCompletionCreate,
-      OpenAiOptions openAiOptions,
-      string chatgroupId,
-      [EnumeratorCancellation] CancellationToken cancellationToken = default)
+            ChatCompletionCreateRequest chatCompletionCreate,
+            OpenAIOptions OpenAIOptions,
+            string chatgroupId,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            var arrApiKey = openAiOptions.ApiKey.Split("|");
-            string baseUrl = openAiOptions.BaseDomain;
+            var arrApiKey = OpenAIOptions.ApiKey.Split("|");
+            string baseUrl = OpenAIOptions.BaseDomain;
             var accessToken = GetAccessToken(arrApiKey[0], arrApiKey[1]);
             var url = $"{baseUrl}?access_token={accessToken}";
 
@@ -82,7 +86,8 @@ namespace aibotPro.Service
                 };
 
                 // 发送请求时，也传递取消令牌以便在请求级别处理取消
-                using (var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+                using (var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead,
+                           cancellationToken))
                 {
                     cancellationToken.ThrowIfCancellationRequested(); // 检查取消令牌，早期中断
 
@@ -98,7 +103,9 @@ namespace aibotPro.Service
                                 cancellationToken.ThrowIfCancellationRequested(); // 检查取消令牌，中断读取
                                 if (line.StartsWith("data:"))
                                 {
-                                    var streamResult = JsonConvert.DeserializeObject<BaiduResDto.StreamResult>(line.Replace("data:", ""));
+                                    var streamResult =
+                                        JsonConvert.DeserializeObject<BaiduResDto.StreamResult>(line.Replace("data:",
+                                            ""));
                                     yield return streamResult;
                                 }
                             }
@@ -108,11 +115,12 @@ namespace aibotPro.Service
             }
         }
 
-        public async Task<BaiduResDto.StreamResult> CallBaiduAI(ChatCompletionCreateRequest chatCompletionCreate, OpenAiOptions openAiOptions)
+        public async Task<BaiduResDto.StreamResult> CallBaiduAI(ChatCompletionCreateRequest chatCompletionCreate,
+            OpenAIOptions OpenAIOptions)
         {
             BaiduResDto.StreamResult result = new StreamResult();
-            var arrApiKey = openAiOptions.ApiKey.Split("|");
-            string BaseUrl = openAiOptions.BaseDomain;
+            var arrApiKey = OpenAIOptions.ApiKey.Split("|");
+            string BaseUrl = OpenAIOptions.BaseDomain;
             string AT = GetAccessToken(arrApiKey[0], arrApiKey[1]);
             var url = $"{BaseUrl}?access_token={AT}";
 
@@ -144,7 +152,9 @@ namespace aibotPro.Service
 
             return result;
         }
-        public async IAsyncEnumerable<StreamResult> SendMsgAgain(MessageDto messageDto, string BaseUrl, string chatgroupId)
+
+        public async IAsyncEnumerable<StreamResult> SendMsgAgain(MessageDto messageDto, string BaseUrl,
+            string chatgroupId)
         {
             var url = $"{BaseUrl}?access_token={AT}";
             // 创建HTTP客户端
@@ -172,9 +182,11 @@ namespace aibotPro.Service
                                         yield break;
                                     }
                                 }
+
                                 if (line.StartsWith("data:"))
                                 {
-                                    StreamResult streamResult = JsonConvert.DeserializeObject<StreamResult>(line.Replace("data:", ""));
+                                    StreamResult streamResult =
+                                        JsonConvert.DeserializeObject<StreamResult>(line.Replace("data:", ""));
                                     yield return streamResult;
                                 }
                             }
@@ -183,6 +195,7 @@ namespace aibotPro.Service
                 }
             }
         }
+
         private string GetAccessToken(string AK, string SK)
         {
             var client = new RestClient($"https://aip.baidubce.com/oauth/2.0/token");
@@ -195,6 +208,7 @@ namespace aibotPro.Service
             var result = JsonConvert.DeserializeObject<dynamic>(response.Content);
             return result.access_token.ToString();
         }
+
         public MessageDto AlignTheBody(ChatCompletionCreateRequest chatCompletionCreate)
         {
             MessageDto messageDto = new MessageDto();
@@ -212,6 +226,7 @@ namespace aibotPro.Service
                     Messages.Add(message);
                 }
             }
+
             messageDto.Messages = Messages;
             messageDto.Top_P = chatCompletionCreate.TopP;
             messageDto.Temperature = chatCompletionCreate.Temperature;
@@ -229,7 +244,10 @@ namespace aibotPro.Service
                     BaiduResDto.Parameter parameters = new BaiduResDto.Parameter();
                     parameters.Type = openaiFunction.Parameters.Type;
                     Dictionary<string, Property> keyValuePairs = new Dictionary<string, Property>();
-                    parameters.Required = openaiFunction.Parameters.Required.ToList();
+                    //非空验证
+                    parameters.Required = openaiFunction.Parameters.Required != null
+                        ? openaiFunction.Parameters.Required.ToList()
+                        : null;
                     foreach (var pr in openaiFunction.Parameters.Properties)
                     {
                         Property property = new Property()
@@ -240,23 +258,28 @@ namespace aibotPro.Service
 
                         keyValuePairs.Add(pr.Key, property);
                     }
+
                     parameters.Properties = keyValuePairs;
                     function.Parameters = parameters;
                     functions.Add(function);
                 }
+
                 if (functions.Count > 0)
                     messageDto.Functions = functions;
                 if (chatCompletionCreate.ToolChoice != null)
                 {
                     BaiduResDto.ToolChoice toolChoice = new BaiduResDto.ToolChoice();
-                    var choice = functions.Where(f => f.Name == chatCompletionCreate.ToolChoice.Function.Name).FirstOrDefault();
+                    var choice = functions.Where(f => f.Name == chatCompletionCreate.ToolChoice.Function.Name)
+                        .FirstOrDefault();
                     if (choice != null)
                     {
                         toolChoice.Function = choice;
                     }
+
                     messageDto.ToolChoice = toolChoice;
                 }
             }
+
             return messageDto;
         }
     }

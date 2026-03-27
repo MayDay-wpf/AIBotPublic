@@ -6,19 +6,25 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+public partial class ForumNotification
 {
-    public partial class ForumNotification
-    {
-        [Key]
-        public int Id { get; set; }
-        public int? AccountId { get; set; }
-        public int? FromAccountId { get; set; }
-        public int? TopicId { get; set; }
-        public int? CommentsId { get; set; }
-        public string NotificationContent { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? CreateTime { get; set; }
-        public bool? IsRead { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    public int? AccountId { get; set; }
+
+    public int? FromAccountId { get; set; }
+
+    public int? TopicId { get; set; }
+
+    public int? CommentsId { get; set; }
+
+    public string NotificationContent { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? CreateTime { get; set; }
+
+    public bool? IsRead { get; set; }
 }

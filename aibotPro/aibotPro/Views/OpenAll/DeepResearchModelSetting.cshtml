@@ -1,0 +1,63 @@
+@{
+    ViewData["Title"] = "深度研究模型管理 (DeepResearch Model)";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    table {
+        width: 100%;
+    }
+</style>
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        <button type="button" class="btn btn-primary save" onclick="saveDeepResearchModelSetting()">
+            <i data-feather="save"></i>保存设置
+        </button>
+    </div>
+</div>
+<div class="card-body" style="margin-top:10px;">
+    <div class="card">
+        <div class="card-header">
+            <h6>
+                研究模型设置
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <table class="form-table">
+                    <thead>
+                    <tr>
+                        <td>拖拽排序</td>
+                        <td>模型昵称</td>
+                        <td>模型名称</td>
+                        <td>BaseUrl</td>
+                        <td>ApiKey</td>
+                        <td>视觉模型</td>
+                        <td>排序</td>
+                        <td>流延时(ms)</td>
+                        <td>最低使用余额</td>
+                        <td>预设系统提示词</td>
+                        <td>模型说明</td>
+                        <td>删除</td>
+                        <td>编辑</td>
+                    </tr>
+                    </thead>
+                    <tbody id="AddSt">
+                    </tbody>
+                </table>
+                <button type="button" class="btn btn-success" onclick="addStLine()">
+                    <i data-feather="plus"></i>新增一行
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/system/js/openall/deepresearchmodelsetting.js"></script>

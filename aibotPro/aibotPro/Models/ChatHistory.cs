@@ -6,38 +6,55 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Table("ChatHistory")]
+[Index("Account", Name = "IX_ChatHistory_Account")]
+public partial class ChatHistory
 {
-    [Table("ChatHistory")]
-    public partial class ChatHistory
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(100)]
-        public string ChatId { get; set; }
-        [StringLength(100)]
-        public string ChatCode { get; set; }
-        [StringLength(100)]
-        public string ChatGroupId { get; set; }
-        [StringLength(3000)]
-        public string ChatTitle { get; set; }
-        public string Chat { get; set; }
-        [StringLength(50)]
-        public string Role { get; set; }
-        [StringLength(50)]
-        public string Model { get; set; }
-        [StringLength(100)]
-        public string Account { get; set; }
-        [StringLength(50)]
-        public string FirstTime { get; set; }
-        [StringLength(50)]
-        public string AllTime { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? CreateTime { get; set; }
-        public int? IsDel { get; set; }
-        public int? IsLock { get; set; }
-        public bool? IsTop { get; set; }
-        [StringLength(50)]
-        public string CollectionCode { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(100)]
+    public string ChatId { get; set; }
+
+    [StringLength(100)]
+    public string ChatCode { get; set; }
+
+    [StringLength(100)]
+    public string ChatGroupId { get; set; }
+
+    [StringLength(3000)]
+    public string ChatTitle { get; set; }
+
+    public string Chat { get; set; }
+
+    public string Reasoning { get; set; }
+
+    [StringLength(50)]
+    public string Role { get; set; }
+
+    [StringLength(50)]
+    public string Model { get; set; }
+
+    [StringLength(100)]
+    public string Account { get; set; }
+
+    [StringLength(50)]
+    public string FirstTime { get; set; }
+
+    [StringLength(50)]
+    public string AllTime { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? CreateTime { get; set; }
+
+    public int? IsDel { get; set; }
+
+    public int? IsLock { get; set; }
+
+    public bool? IsTop { get; set; }
+
+    [StringLength(50)]
+    public string CollectionCode { get; set; }
 }

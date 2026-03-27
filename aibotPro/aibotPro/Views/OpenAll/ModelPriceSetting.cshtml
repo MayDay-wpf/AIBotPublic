@@ -3,33 +3,316 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <style>
-    #modelPriceTable {
-        width: auto; /* 改为 auto，让表格宽度由内容决定 */
-        table-layout: fixed;
-        border-collapse: separate;
-        border-spacing: 0;
+    /* 价格卡片样式 */
+    .price-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
     }
-    #modelPriceTable td {
+
+    .price-card {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 16px;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+    }
+
+    .price-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        border-color: #007bff;
+    }
+
+    .price-card.hidden {
+        display: none;
+    }
+
+    .price-card.highlight-new {
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        border-color: #2196f3;
+        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+    }
+
+    .card-header-custom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #f8f9fa;
+    }
+
+    .model-title {
+        font-size: 1.1em;
+        font-weight: 600;
+        color: #495057;
+        margin: 0;
+    }
+
+    .card-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .card-actions .btn {
+        padding: 4px 8px;
+        font-size: 0.875em;
+    }
+
+    .card-actions .add-btn {
+        color: #28a745;
+        border: 1px solid #28a745;
+    }
+
+    .card-actions .add-btn:hover {
+        background: #28a745;
+        color: white;
+    }
+
+    .price-sections {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+
+    .price-section {
+        background: #f8f9fa;
+        padding: 12px;
+        border-radius: 6px;
+        border-left: 4px solid #007bff;
+    }
+
+    .price-section.vip {
+        border-left-color: #28a745;
+    }
+
+    .price-section.svip {
+        border-left-color: #ffc107;
+    }
+
+    .section-title {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 8px;
+        font-size: 0.9em;
+    }
+
+    .price-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .price-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .form-group-small {
+        margin-bottom: 0;
+    }
+
+    .form-group-small label {
+        font-size: 0.8em;
+        color: #6c757d;
+        margin-bottom: 2px;
+        display: block;
+        font-weight: 500;
+    }
+
+    .form-group-small input {
+        height: 32px;
+        font-size: 0.875em;
+        padding: 4px 8px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        transition: border-color 0.2s ease;
+    }
+
+    .form-group-small input:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.1rem rgba(0, 123, 255, .25);
+    }
+
+    .settings-section {
+        background: #fff3cd;
+        padding: 12px;
+        border-radius: 6px;
+        border-left: 4px solid #ffc107;
+        margin-top: 12px;
+    }
+
+    .settings-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 8px;
+    }
+
+    /* 搜索区域样式 */
+    .search-container {
+        background: #f8f9fa;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border: 1px solid #e9ecef;
+    }
+
+    .search-input-group {
         position: relative;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
+        max-width: 400px;
     }
-    #modelPriceTable td .ui-resizable-handle {
-        width: 8px;
-        cursor: col-resize;
+
+    .search-input {
+        padding-right: 80px;
+        border-radius: 25px;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+        height: 42px;
+    }
+
+    .search-input:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, .25);
+    }
+
+    .search-actions {
         position: absolute;
-        right: -4px;
-        top: 0;
-        bottom: 0;
-        z-index: 2;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        gap: 8px;
+        align-items: center;
     }
-    #modelPriceTable input {
-        width: 100%;
-        box-sizing: border-box;
+
+    #clearSearch {
+        border: none;
+        background: transparent;
+        color: #6c757d;
+        padding: 4px 8px;
+        border-radius: 15px;
     }
-    .ui-resizable-resizing {
-        z-index: 90;
+
+    #clearSearch:hover {
+        background: #f8f9fa;
+        color: #495057;
+    }
+
+    .search-stats {
+        margin-top: 12px;
+        color: #6c757d;
+        font-size: 0.9em;
+    }
+
+    /* 添加新模型卡片 */
+    .add-price-card {
+        border: 2px dashed #dee2e6;
+        background: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 80px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-radius: 8px;
+        margin-top: 12px;
+    }
+
+    .add-price-card:hover {
+        border-color: #007bff;
+        background: #e3f2fd;
+        color: #007bff;
+    }
+
+    .add-price-text {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+    }
+
+    /* 无结果提示 */
+    .no-results {
+        text-align: center;
+        padding: 40px;
+        color: #6c757d;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 2px dashed #dee2e6;
+        display: none;
+    }
+
+    /* 响应式设计 */
+    @@media (max-width: 992px) {
+        .price-sections {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .price-row {
+            grid-template-columns: 1fr;
+        }
+
+        .settings-row {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .card-header-custom {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+        }
+    }
+
+    /* 浮动保存按钮 */
+    .floating-save-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #28a745, #1e7e34);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        transition: all 0.3s ease;
+        opacity: 0.9;
+    }
+
+    .floating-save-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+        opacity: 1;
+    }
+
+    .floating-save-btn:active {
+        transform: scale(0.95);
+    }
+
+    @@media (max-width: 768px) {
+        .floating-save-btn {
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        .settings-row {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 <div class="header">
@@ -55,35 +338,49 @@
             </h6>
         </div>
         <div class="card-body">
-            <div class="form-group" style="width: 100%; overflow: scroll;">
-                <table class="form-table" id="modelPriceTable">
-                    <thead>
-                    <tr>
-                        <td id="col1">模型名称</td>
-                        <td id="col2">用户输入价格</td>
-                        <td id="col3">用户输出价格</td>
-                        <td id="col4">VIP输入价格</td>
-                        <td id="col5">VIP输出价格</td>
-                        <td id="col6">SVIP输入价格</td>
-                        <td id="col7">SVIP输出价格</td>
-                        <td id="col8">用户倍率</td>
-                        <td id="col9">VIP倍率</td>
-                        <td id="col10">SVIP倍率</td>
-                        <td id="col11">单次最大消耗</td>
-                        <td id="col12">按次计费</td>
-                        <td id="col13">VIP按次计费</td>
-                        <td id="col14">SVIP按次计费</td>
-                        <td id="col15">删除</td>
-                    </tr>
-                    </thead>
-                    <tbody id="AddSt">
-                    </tbody>
-                </table>
-                <button type="button" class="btn btn-success" onclick="addStLine()">
-                    <i data-feather="plus"></i>新增一行
-                </button>
+            <!-- 搜索区域 -->
+            <div class="search-container">
+                <div class="search-input-group">
+                    <input type="text" id="priceSearch" class="form-control search-input" placeholder="搜索模型名称...">
+                    <div class="search-actions">
+                        <button type="button" id="clearSearch" class="btn btn-sm" title="清除搜索">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <div class="search-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="search-stats" id="searchStats"></div>
             </div>
+
+            <!-- 价格卡片容器 -->
+            <div id="price-cards-container" class="price-cards">
+                <!-- 价格卡片将动态插入此处 -->
+            </div>
+
+            <!-- 无搜索结果提示 -->
+            <div id="noResults" class="no-results">
+                <div class="text-center">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">未找到匹配的模型</h5>
+                    <p class="text-muted">请尝试其他搜索关键词</p>
+                </div>
+            </div>
+
+            <!-- 添加新模型卡片 -->
+            <div class="add-price-card" onclick="addStLine()">
+                <div class="add-price-text">
+                    <i class="fas fa-plus"></i>
+                    <span>新增模型价格配置</span>
+                </div>
+            </div>
+
+            <!-- 浮动保存按钮 -->
+            <button class="floating-save-btn" onclick="saveModelPrice()" title="保存配置">
+                <i class="fas fa-save"></i>
+            </button>
         </div>
     </div>
 </div>
-<script src="~/system/js/openall/modelpricesetting.js?1.0.0"></script>
+<script src="~/system/js/openall/modelpricesetting.js?1.0.1"></script>

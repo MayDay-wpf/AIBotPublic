@@ -7,15 +7,16 @@
         window.location.href = "@Url.Action("Welcome", "Home")";
     }
 </script>
-<link href="~/system/css/chat.css?v3.7.3" rel="stylesheet"/>
+<link href="~/system/css/chat.css?v6.7.7" rel="stylesheet" />
 <link href="~/system/css/aicanver.css?v1.0.0" rel="stylesheet" />
 <link rel="stylesheet" href="~/system/js/markdownitplugin/katex.min.css">
+<link href="~/system/css/userinfopanel.css?v1.0.0" rel="stylesheet" />
 <script src="~/system/js/markdownitplugin/katex.min.js"></script>
 <script src="~/system/js/markdownitplugin/texmath.min.js"></script>
 <script src="https://unpkg.com/markdown-it-link-attributes@3.0.0/dist/markdown-it-link-attributes.min.js"></script>
 <script src="~/system/js/markdown-it.min.js"></script>
 @* <script src="~/system/js/tex-chtml.js"></script> *@
-<script src="~/system/js/mermaid.min.js"></script>
+@* mermaid.min.js 现在按需加载，不需要在这里引入 *@
 <link href="~/static/css/animate-4.1.1-mini.css" rel="stylesheet" />
 <script src="~/static/js/popper.min.js"></script>
 <script src="~/static/js/moment.min.js"></script>
@@ -23,7 +24,7 @@
     var md = window.markdownit()
         .use(texmath, {
             engine: katex,
-            delimiters: ['dollars', 'brackets'],
+            delimiters: ['dollars', 'gitlab', 'julia', 'brackets'],
             katexOptions: {
                 macros: {// 基本运算符
                     '\\defeq': ':=',
@@ -119,9 +120,6 @@
                     '\\floor': '\\left\\lfloor#1\\right\\rfloor',
 
                     // 求和、积分等
-                    '\\sum': '\\sum\\limits',
-                    '\\prod': '\\prod\\limits',
-                    '\\lim': '\\lim\\limits',
 
                     // 自定义环境
                     '\\cases': '\\begin{cases} #1 \\end{cases}',
@@ -230,7 +228,8 @@
             </div>
             <div class="notification-dropdown">
                 <h6 class="dropdown-header">
-                    系统通知<span class="close-btn-bell" style="cursor: pointer;
+                    系统通知 <a href="javascript:void(0)" onclick="readAllNotifications()">全部已读</a>
+                    <span class="close-btn-bell" style="cursor: pointer;
                         font-weight: bold;
                         margin-left: 10px;
                         color: #333;
@@ -291,7 +290,10 @@
                 </div>
 
             </div>
-            <div class="chat-sidebar-footer">
+
+            <!-- 用户信息展开区域将由JavaScript动态创建 -->
+
+            <div class="chat-sidebar-footer" style="position: relative;">
                 @* <button type="button" class="btn btn-primary" style="width:100%" id="loadMoreBtn" onclick="loadMoreHistory()"><i data-feather="loader" style="width:20px;"></i> 加载更多</button> *@
                 <div class="avatar avatar-sm avatar-online">
                     <img src="/static/picture/fff.png" id="HeadImg" class="rounded-circle" alt="">
@@ -307,9 +309,8 @@
                     @*     <i data-feather="mic"> *@
                     @*     </i> *@
                     @* </a> *@
-                    <a href="/Users/UserInfo" data-toggle="tooltip" title="个人中心">
-                        <i data-feather="user">
-                        </i>
+                    <a href="javascript:void(0)" title="个人中心" onclick="toggleUserInfo()">
+                        <i class="fas fa-angle-double-up" id="userInfoIcon"></i>
                     </a>
                 </div>
             </div>
@@ -450,11 +451,28 @@
                 <div id="editor-container" style="width: 100%; height: 98%;display:none">
                 </div>
                 <div class="toolbar">
-                    <div id="priceInfo" style="margin-bottom:5px;display:inline;">
+                    <div id="priceInfo" style="margin-bottom:0;display:inline-block;vertical-align:middle;">
                     </div>
-                    <span class="badge badge-pill badge-secondary systemtools t-globe" onclick="changeGlobe()">
-                        <i data-feather="globe"></i> 联网关闭
-                    </span>
+                    <div class="dropdown" style="display:inline-block;vertical-align:middle;">
+                        <span class="badge badge-pill badge-secondary systemtools t-globe" id="networkDropdown"
+                              data-toggle="dropdown"
+                              aria-haspopup="true" aria-expanded="false">
+                            <i data-feather="globe"></i> 联网 <i data-feather="chevron-up"
+                                                               style="width:14px;height:14px;"></i>
+                        </span>
+                        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="networkDropdown">
+                            <a class="dropdown-item" style="margin-left:0;" href="#" onclick="setNetworkMode('off')">关闭联网</a>
+                            <a class="dropdown-item" style="margin-left:0;" href="#" onclick="setNetworkMode('web')">
+                                普通联网
+                                <small class="text-danger">速度较快</small>
+                            </a>
+                            <a class="dropdown-item" style="margin-left:0;" href="#"
+                               onclick="setNetworkMode('multimodal')">
+                                多模态联网
+                                <small class="text-danger">速度较慢,会额外搜索视频和图片信息</small>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
             @*<div style="position:absolute;bottom:10%;margin-left:10px;">
@@ -484,6 +502,19 @@
                 <button class="btn btn-icon" id="sendBtn">
                     <i data-feather="send"></i>
                 </button>
+                <div class="btn-group d-none d-md-inline-block" style="margin-left: 3px;">
+                    <button type="button" class="btn btn-icon dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="sendModeBtn" title="发送模式切换">
+                        <i data-feather="corner-down-left" id="sendModeIcon"></i>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-right" style="min-width: 200px; overflow: hidden; padding: 0;">
+                        <a class="dropdown-item" href="#" onclick="setSendMode(true)" style="border-radius: 0; padding: 0.5rem 1rem; margin: 0; display: block;">
+                            <i data-feather="corner-down-left"></i> Enter发送
+                        </a>
+                        <a class="dropdown-item" href="#" onclick="setSendMode(false)" style="border-radius: 0; padding: 0.5rem 1rem; margin: 0; display: block;">
+                            <i data-feather="corner-up-left"></i> Shift+Enter发送
+                        </a>
+                    </div>
+                </div>
             </div>
             @* <button type="button" class="btn btn-danger" style="width:120px" id="stopBtn" onclick="stopGenerate()"><i data-feather="stop-circle"></i> 停止生成</button> *@
         </div>
@@ -568,7 +599,8 @@
 <script src="~/system/js/dart.js"></script>
 <script src="~/system/js/vueheightlight.js"></script>
 <script src="~/system/js/rolechat.js?v1.0.1"></script>
-<script src="~/system/js/personalsettings.js?v1.0.3"></script>
-<script src="~/system/js/chat.js?v20.1.5"></script>
-<script src="~/system/js/fileschat.js?v1.0.2"></script>
-<script src="~/system/js/aicanver.js?v1.0.3"></script>
+<script src="~/system/js/personalsettings.js?v1.0.6"></script>
+<script src="~/system/js/chat.js?v23.2.8"></script>
+<script src="~/system/js/filesystem/fileschat.js?v1.0.3"></script>
+<script src="~/system/js/aicanver.js?v1.0.5"></script>
+<script src="~/system/js/chatuserinfo.js?v1.0.0"></script>

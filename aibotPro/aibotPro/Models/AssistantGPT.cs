@@ -6,25 +6,32 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Table("AssistantGPT")]
+public partial class AssistantGPT
 {
-    [Table("AssistantGPT")]
-    public partial class AssistantGPT
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string Account { get; set; }
-        [StringLength(50)]
-        public string AssisId { get; set; }
-        [StringLength(200)]
-        public string AssisName { get; set; }
-        public string AssisSystemPrompt { get; set; }
-        [StringLength(50)]
-        public string AssisModel { get; set; }
-        public int? Codeinterpreter { get; set; }
-        public int? Retrieval { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? CreateTime { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string Account { get; set; }
+
+    [StringLength(50)]
+    public string AssisId { get; set; }
+
+    [StringLength(200)]
+    public string AssisName { get; set; }
+
+    public string AssisSystemPrompt { get; set; }
+
+    [StringLength(50)]
+    public string AssisModel { get; set; }
+
+    public int? Codeinterpreter { get; set; }
+
+    public int? Retrieval { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? CreateTime { get; set; }
 }

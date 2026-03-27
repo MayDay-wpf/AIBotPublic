@@ -1,0 +1,123 @@
+@{
+    ViewData["Title"] = "图片压缩（Image Compress）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/system/tools/imagecompress/css/imagecompress.css" rel="stylesheet"/>
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px">
+    <div class="content-header">
+        <div>
+            <h4 class="content-title content-title-sm">
+                <b style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105));
+    -webkit-background-clip: text;
+    color: transparent;">图片压缩（Image Compress）</b>
+            </h4>
+            <span>批量压缩各种图片，最多支持50张图片同时压缩</span>
+        </div>
+    </div>
+
+    <!-- 压缩设置面板 -->
+    <div class="row mg-t-20">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title"><i data-feather="settings"></i> 压缩设置</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 offset-md-3">
+                            <label for="qualitySlider">压缩质量: <span id="qualityValue">60</span>%</label>
+                            <input type="range" class="form-control-range" id="qualitySlider" min="10" max="100" value="60">
+                            <small id="qualityHint" class="form-text text-info">适中压缩率，画质轻微降低</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 文件上传区域 -->
+    <div class="row mg-t-20">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title"><i data-feather="upload"></i> 图片上传</h6>
+                </div>
+                <div class="card-body">
+                    <div id="dropZone" class="drop-zone">
+                        <div class="drop-zone-content">
+                            <i data-feather="image" class="drop-icon"></i>
+                            <p>拖拽图片到此处或点击选择文件</p>
+                            <p class="text-muted">支持 JPG、PNG、GIF、WebP 格式，最多50张图片</p>
+                            <button type="button" class="btn btn-primary btn-lg" id="selectImagesBtn">
+                                <i data-feather="folder"></i> 选择图片
+                            </button>
+                        </div>
+                        <input type="file" id="imageInput" accept="image/*" multiple style="display: none;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 图片列表和进度 -->
+    <div class="row mg-t-20" id="imageListContainer" style="display: none;">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="card-title"><i data-feather="list"></i> 图片列表</h6>
+                    <div>
+                        <button type="button" class="btn btn-success btn-sm" id="compressAllBtn" onclick="compressAll()">
+                            <i data-feather="zap"></i> 开始压缩
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="clearAll()">
+                            <i data-feather="trash-2"></i> 清空列表
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="overallProgress" class="mg-b-20" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center mg-b-5">
+                            <small>总体进度</small>
+                            <small><span id="currentProgress">0</span> / <span id="totalImages">0</span></small>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" id="overallProgressBar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div id="imageList" class="image-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 下载区域 -->
+    <div class="row mg-t-20" id="downloadContainer" style="display: none;">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title"><i data-feather="download"></i> 下载压缩结果</h6>
+                </div>
+                <div class="card-body text-center">
+                    <button type="button" class="btn btn-success btn-lg" id="downloadAllBtn" onclick="downloadAll()">
+                        <i data-feather="download"></i> 下载所有压缩图片
+                    </button>
+                    <div id="downloadStats" class="mg-t-15"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/system/tools/imagecompress/js/imagecompress.js"></script>

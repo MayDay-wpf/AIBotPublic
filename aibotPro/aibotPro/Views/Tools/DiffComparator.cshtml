@@ -1,0 +1,160 @@
+@{
+    ViewData["Title"] = "文本差异比较器（Diff Comparator）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/system/tools/diffcomparator/css/diffcomparator.css" rel="stylesheet"/>
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px">
+    <div class="content-header">
+        <div>
+            <h4 class="content-title content-title-sm">
+                <b style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105));
+    -webkit-background-clip: text;
+    color: transparent;">文本差异比较器（Diff Comparator）</b>
+            </h4>
+            <span>比较两段文本的差异，支持逐行比较、语法高亮、导出报告等功能</span>
+        </div>
+    </div>
+
+    <!-- 工具栏 -->
+    <div class="row mg-t-20">
+        <div class="col-md-12">
+            <div class="diff-toolbar-compact">
+                <div class="toolbar-section">
+                    <label class="toolbar-label">语言:</label>
+                    <select class="form-control form-control-sm" id="languageType">
+                        <option value="auto">自动检测</option>
+                        <option value="plaintext">纯文本</option>
+                        <option value="javascript">JavaScript</option>
+                        <option value="typescript">TypeScript</option>
+                        <option value="html">HTML</option>
+                        <option value="css">CSS</option>
+                        <option value="json">JSON</option>
+                        <option value="xml">XML</option>
+                        <option value="sql">SQL</option>
+                        <option value="python">Python</option>
+                        <option value="java">Java</option>
+                        <option value="csharp">C#</option>
+                        <option value="cpp">C++</option>
+                    </select>
+                </div>
+                <div class="toolbar-section">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="ignoreWhitespace">
+                        <label class="form-check-label" for="ignoreWhitespace">忽略空白</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="ignoreCase">
+                        <label class="form-check-label" for="ignoreCase">忽略大小写</label>
+                    </div>
+                </div>
+                <div class="toolbar-section ml-auto">
+                    <span id="diffStats" class="badge badge-info">实时比较</span>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="swapTexts()">
+                        <i data-feather="repeat"></i>
+                        文本交换
+                    </button>
+                    <button type="button" class="btn btn-success btn-sm" onclick="exportReport()" id="exportBtn">
+                        <i data-feather="download"></i>
+                        导出报告
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 文本输入区域 -->
+    <div class="row mg-t-20">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="card-title"><i data-feather="file-text"></i> 原始文本</h6>
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearText('original')">
+                            <i data-feather="trash-2"></i> 清空
+                        </button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadSample('original')">
+                            <i data-feather="code"></i> 示例
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="originalEditor" class="editor-container"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="card-title"><i data-feather="file-text"></i> 修改文本</h6>
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearText('modified')">
+                            <i data-feather="trash-2"></i> 清空
+                        </button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadSample('modified')">
+                            <i data-feather="code"></i> 示例
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="modifiedEditor" class="editor-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- 差异统计 -->
+    <div class="row mg-t-20" id="diffStatsContainer" style="display: none;">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title"><i data-feather="bar-chart-2"></i> 差异统计</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="stat-card added">
+                                <div class="stat-number" id="addedLines">0</div>
+                                <div class="stat-label">新增行数</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card deleted">
+                                <div class="stat-number" id="deletedLines">0</div>
+                                <div class="stat-label">删除行数</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card modified">
+                                <div class="stat-number" id="modifiedLines">0</div>
+                                <div class="stat-label">修改行数</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card unchanged">
+                                <div class="stat-number" id="unchangedLines">0</div>
+                                <div class="stat-label">未变化行数</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/system/monaco-editor-0.45.0/package/min/vs/loader.js"></script>
+<script src="~/system/tools/diffcomparator/js/diffcomparator.js"></script>

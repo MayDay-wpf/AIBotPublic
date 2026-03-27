@@ -6,24 +6,29 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Table("Knowledge")]
+public partial class Knowledge
 {
-    [Table("Knowledge")]
-    public partial class Knowledge
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(100)]
-        public string FileCode { get; set; }
-        [StringLength(500)]
-        public string FileName { get; set; }
-        [StringLength(500)]
-        public string FilePath { get; set; }
-        [StringLength(50)]
-        public string TypeCode { get; set; }
-        [StringLength(50)]
-        public string Account { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? CreateTime { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(100)]
+    public string FileCode { get; set; }
+
+    [StringLength(500)]
+    public string FileName { get; set; }
+
+    [StringLength(500)]
+    public string FilePath { get; set; }
+
+    [StringLength(50)]
+    public string TypeCode { get; set; }
+
+    [StringLength(50)]
+    public string Account { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? CreateTime { get; set; }
 }

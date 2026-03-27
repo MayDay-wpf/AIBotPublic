@@ -6,22 +6,27 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Table("ForumUserSetting")]
+public partial class ForumUserSetting
 {
-    [Table("ForumUserSetting")]
-    public partial class ForumUserSetting
-    {
-        [Key]
-        public int Id { get; set; }
-        public int? AccountId { get; set; }
-        [StringLength(200)]
-        public string Introduction { get; set; }
-        [StringLength(100)]
-        public string WebSite { get; set; }
-        [StringLength(50)]
-        public string AccessToken { get; set; }
-        [Column(TypeName = "money")]
-        public decimal? Points { get; set; }
-        public bool? Mute { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    public int? AccountId { get; set; }
+
+    [StringLength(200)]
+    public string Introduction { get; set; }
+
+    [StringLength(100)]
+    public string WebSite { get; set; }
+
+    [StringLength(50)]
+    public string AccessToken { get; set; }
+
+    [Column(TypeName = "money")]
+    public decimal? Points { get; set; }
+
+    public bool? Mute { get; set; }
 }

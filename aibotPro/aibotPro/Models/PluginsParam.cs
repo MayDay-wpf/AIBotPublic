@@ -6,21 +6,25 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+public partial class PluginsParam
 {
-    public partial class PluginsParam
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string PrCode { get; set; }
-        [StringLength(200)]
-        public string PrName { get; set; }
-        [StringLength(50)]
-        public string PrType { get; set; }
-        [StringLength(1000)]
-        public string PrInfo { get; set; }
-        [StringLength(500)]
-        public string PrConst { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string PrCode { get; set; }
+
+    [StringLength(200)]
+    public string PrName { get; set; }
+
+    [StringLength(50)]
+    public string PrType { get; set; }
+
+    [StringLength(1000)]
+    public string PrInfo { get; set; }
+
+    [StringLength(500)]
+    public string PrConst { get; set; }
 }

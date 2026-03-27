@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Betalgo.Ranul.OpenAI.ObjectModels.RequestModels;
 using System.Text.Json.Serialization;
 
 namespace aibotPro.Dtos
@@ -6,22 +7,31 @@ namespace aibotPro.Dtos
     public class ApiDto
     {
     }
-    public class ChatMessages
+    public interface IChatSession
     {
-        [JsonProperty("role")]
-        public string Role { get; set; }
-
-        [JsonProperty("content")]
-        public string Content { get; set; }
+        string Model { get; set; }
+        bool Stream { get; set; }
     }
 
-    public class ChatSession
+    public class ChatSession : IChatSession
     {
         [JsonProperty("model")]
         public string Model { get; set; }
 
         [JsonProperty("messages")]
-        public List<ChatMessages> Messages { get; set; }
+        public List<ChatMessage> Messages { get; set; }
+
+        [JsonProperty("stream")]
+        public bool Stream { get; set; } = false;
+    }
+
+    public class ChatVisionSession : IChatSession
+    {
+        [JsonProperty("model")]
+        public string Model { get; set; }
+
+        [JsonProperty("messages")]
+        public VisionChatMessage[] Messages { get; set; }
 
         [JsonProperty("stream")]
         public bool Stream { get; set; } = false;
@@ -37,7 +47,7 @@ namespace aibotPro.Dtos
         public string Object { get; set; }
 
         [JsonPropertyName("created")]
-        public long Created { get; set; }
+        public DateTimeOffset Created { get; set; }
 
         [JsonPropertyName("model")]
         public string Model { get; set; }
@@ -57,7 +67,7 @@ namespace aibotPro.Dtos
         public string Object { get; set; }
 
         [JsonPropertyName("created")]
-        public long Created { get; set; }
+        public DateTimeOffset Created { get; set; }
 
         [JsonPropertyName("model")]
         public string Model { get; set; }

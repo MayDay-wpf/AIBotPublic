@@ -15,94 +15,166 @@
     </div>
 </div>
 <div class="content-body" style="margin-top:10px;">
-    <div class="card">
-        <div class="card-header">
-            <h5>手动充值金额</h5>
+    <!-- 第一行：充值和会员功能 -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5>手动充值金额</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-group mb-2">
+                        <label for="account">用户账号：</label>
+                        <input type="text" class="form-control" id="account" style="width:100%;">
+                    </div>
+                    <div class="form-group mb-2">
+                        <label for="mcoin">充值金额：</label>
+                        <input type="number" class="form-control" id="mcoin" style="width:100%;">
+                    </div>
+                    <button class="btn btn-primary recharge" onclick="recharge()">充值</button>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <div class="form-group">
-                <label for="nickname">用户账号：</label>
-                <input type="text" class="form-control" id="account" style="width:200px;">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5>手动充值会员</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-group mb-2">
+                        <label for="account-vip">用户账号：</label>
+                        <input type="text" class="form-control" id="account-vip" style="width:100%;">
+                    </div>
+                    <div class="form-group mb-2">
+                        <label for="vipType">会员类型：</label>
+                        <select id="vipType" class="form-control" style="width:100%;">
+                            <option value="VIP|20">VIP|20</option>
+                            <option value="VIP|50">VIP|50</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary rechargevip" onclick="rechargevip()">充值</button>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="mcoin">充值金额：</label>
-                <input type="number" class="form-control" id="mcoin" style="width:200px;">
-            </div>
-            <button class="btn btn-primary recharge" onclick="recharge()">充值</button>
-        </div>
-    </div>
-    <p></p>
-    <div class="card">
-        <div class="card-header">
-            <h5>手动充值会员</h5>
-        </div>
-        <div class="card-body">
-            <div class="form-group">
-                <label for="nickname">用户账号：</label>
-                <input type="text" class="form-control" id="account-vip" style="width:200px;">
-            </div>
-            <div class="form-group">
-                <label for="money">会员类型：</label>
-                <select id="vipType" class="form-control" style="width:200px;">
-                    <option value="VIP|20">VIP|20</option>
-                    <option value="VIP|50">VIP|50</option>
-                </select>
-            </div>
-            <button class="btn btn-primary rechargevip" onclick="rechargevip()">充值</button>
-        </div>
-    </div>
-    <p></p>
-    <div class="card">
-        <div class="card-header">
-            <h5>手动创建账号</h5>
-        </div>
-        <div class="card-body">
-            <div class="form-group">
-                <label for="nickname">用户账号：</label>
-                <input type="text" class="form-control" id="account-create" style="width:200px;">
-            </div>
-            <div class="form-group">
-                <label for="nickname">用户密码：</label>
-                <input type="text" class="form-control" id="password" style="width:200px;">
-            </div>
-            <button class="btn btn-primary createaccount" onclick="createAccount()">创建</button>
         </div>
     </div>
-    <p></p>
-    <div class="card">
-        <div class="card-header">
-            <h5>兑换卡生成</h5>
+
+    <!-- 第二行：创建账号和兑换卡生成 -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5>手动创建账号</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-group mb-2">
+                        <label for="account-create">用户账号：</label>
+                        <input type="text" class="form-control" id="account-create" style="width:100%;">
+                    </div>
+                    <div class="form-group mb-2">
+                        <label for="password">用户密码：</label>
+                        <input type="text" class="form-control" id="password" style="width:100%;">
+                    </div>
+                    <button class="btn btn-primary createaccount" onclick="createAccount()">创建</button>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <div class="form-group">
-                <label for="nickname">创建人账号：</label>
-                <input type="text" class="form-control" id="account-card" style="width:200px;">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5>兑换卡生成</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-2">
+                                <label for="account-card">创建人账号：</label>
+                                <input type="text" class="form-control" id="account-card" style="width:100%;">
+                            </div>
+                            <div class="form-group mb-2">
+                                <label for="card-mcoin">卡片额度：</label>
+                                <input type="text" class="form-control" id="card-mcoin" style="width:100%;" value="0">
+                            </div>
+                            <div class="form-group mb-2">
+                                <label for="card-count">数量：</label>
+                                <input type="number" class="form-control" id="card-count" style="width:100%;">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-2">
+                                <label for="card-viptype">会员类型：</label>
+                                <select id="card-viptype" class="form-control" style="width:100%;">
+                                    <option value="VIP|20">VIP|20</option>
+                                    <option value="VIP|50">VIP|50</option>
+                                </select>
+                            </div>
+                            <div class="form-group mb-2">
+                                <label for="vip-days">会员天数：</label>
+                                <input type="text" class="form-control" id="vip-days" style="width:100%;" value="0">
+                            </div>
+                            <button class="btn btn-primary createcards" onclick="createCards()">生成</button>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <textarea id="cards" class="form-control" style="height:120px;background-color:antiquewhite;resize: none;" readonly="readonly"></textarea>
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="nickname">卡片额度：</label>
-                <input type="text" class="form-control" id="card-mcoin" style="width:200px;" value="0">
-            </div>
-            <div class="form-group">
-                <label for="nickname">会员类型：</label>
-                <select id="card-viptype" class="form-control" style="width:200px;">
-                    <option value="VIP|20">VIP|20</option>
-                    <option value="VIP|50">VIP|50</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="nickname">会员天数：</label>
-                <input type="text" class="form-control" id="vip-days" style="width:200px;" value="0">
-            </div>
-            <div class="form-group">
-                <label for="nickname">数量：</label>
-                <input type="number" class="form-control" id="card-count" style="width:200px;">
-            </div>
-            <button class="btn btn-primary createcards" onclick="createCards()">生成</button>
-            <p></p>
-            <textarea id="cards" class="form-control" style="height:200px;background-color:antiquewhite;resize: none;" readonly="readonly"></textarea>
         </div>
     </div>
-    <p></p>
+
+    <!-- 第三行：Token包生成 -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Token包生成</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group mb-2">
+                                <label for="token-account">创建人账号：</label>
+                                <input type="text" class="form-control" id="token-account" style="width:100%;">
+                            </div>
+                            <div class="form-group mb-2">
+                                <label for="token-total">Token数量：</label>
+                                <input type="number" class="form-control" id="token-total" style="width:100%;">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group mb-2">
+                                <label for="token-models">可用模型：</label>
+                                <select id="token-models" class="form-control" multiple style="width:100%;height:80px;">
+                                    <!-- 模型选项将通过JS动态加载 -->
+                                </select>
+                                <small class="form-text text-muted">不选择表示所有模型可用</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group mb-2">
+                                <label for="token-expiration">过期时间：</label>
+                                <input type="datetime-local" class="form-control" id="token-expiration" style="width:100%;">
+                            </div>
+                            <div class="form-group mb-2">
+                                <label for="token-count">生成数量：</label>
+                                <input type="number" class="form-control" id="token-count" style="width:100%;">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-primary createtokens" onclick="createTokenPackages()" style="margin-top:25px;">生成</button>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-12">
+                            <textarea id="token-codes" class="form-control" style="height:120px;background-color:antiquewhite;resize: none;" readonly="readonly"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户列表 -->
     <div class="card">
         <div class="card-header">
             <h5>用户列表</h5>
@@ -148,4 +220,6 @@
         </div>
     </div>
 </div>
-<script src="~/system/js/openall/userslist.js"></script>
+<link href="~/system/js/openall/select2.min.css" rel="stylesheet" />
+<script src="~/system/js/openall/select2.min.js"></script>
+<script src="~/system/js/openall/userslist.js?v1.0.1"></script>

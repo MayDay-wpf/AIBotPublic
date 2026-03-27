@@ -16,17 +16,18 @@ using iTextSharp.text.pdf;
 using iTextSharp.text.pdf.parser;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using OfficeOpenXml;
 using RestSharp;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Formats.Png;
 using Spire.Doc;
 using Spire.Doc.Documents;
-using Spire.Presentation;
+using ShapeCrawler;
 using TiktokenSharp;
 using FileFormat = Spire.Doc.FileFormat;
 using Image = SixLabors.ImageSharp.Image;
-using IShape = Spire.Presentation.IShape;
 using LogLevel = aibotPro.Dtos.LogLevel;
 using Path = System.IO.Path;
 using Section = Spire.Doc.Section;
@@ -39,13 +40,19 @@ public class SystemService : ISystemService
     private readonly AIBotProContext _context;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IRedisService _redis;
+    private readonly ICOSService _cosService;
 
-
-    public SystemService(AIBotProContext context, IHttpContextAccessor httpContextAccessor, IRedisService redis)
+    public SystemService(
+        AIBotProContext context,
+        IHttpContextAccessor httpContextAccessor,
+        IRedisService redis,
+        ICOSService cosService
+    )
     {
         _context = context;
         _httpContextAccessor = httpContextAccessor;
         _redis = redis;
+        _cosService = cosService;
     }
 
     public bool SendEmail(string toemail, string title, string content)
@@ -149,7 +156,8 @@ public class SystemService : ISystemService
         MD5 md5 = new MD5CryptoServiceProvider();
         var result = md5.ComputeHash(Encoding.UTF8.GetBytes(str));
         var sb = new StringBuilder();
-        for (var i = 0; i < result.Length; i++) sb.Append(result[i].ToString("x2"));
+        for (var i = 0; i < result.Length; i++)
+            sb.Append(result[i].ToString("x2"));
 
         if (lower)
             return sb.ToString().ToLower().Substring(0, length);
@@ -159,17 +167,20 @@ public class SystemService : ISystemService
     public bool SaveIP(string ip, string address)
     {
         //查询IP是否存在，今天是否已记录
-        var iplook_this = _context.IPlooks
-            .Where(x => x.IPv4 == ip && (x.LookTime == null || x.LookTime.Value.Date == DateTime.Now.Date))
+        var iplook_this = _context
+            .IPlooks.Where(x =>
+                x.IPv4 == ip && (x.LookTime == null || x.LookTime.Value.Date == DateTime.Now.Date)
+            )
             .FirstOrDefault();
         //如果存在，不处理，返回true
-        if (iplook_this != null) return true;
+        if (iplook_this != null)
+            return true;
 
         var iplook = new IPlook
         {
             IPv4 = ip,
             Address = address,
-            LookTime = DateTime.Now
+            LookTime = DateTime.Now,
         };
         _context.IPlooks.Add(iplook);
         _context.SaveChanges();
@@ -199,6 +210,98 @@ public class SystemService : ISystemService
         }
 
         return aiModel_lst;
+    }
+
+    public List<CollectionModelDto> GetMyCollectionModel(string account)
+    {
+        var cacheKey = account + "_collectionModels";
+        var cachedModels = _redis.GetAsync(cacheKey).Result;
+        if (!string.IsNullOrEmpty(cachedModels))
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<List<CollectionModelDto>>(cachedModels);
+        }
+        
+        var myCollectionModel = _context.ModelFavorites.Where(x => x.Account == account).ToList().FirstOrDefault();
+        string myModelsString = myCollectionModel?.Models;
+
+        if (string.IsNullOrEmpty(myModelsString))
+            return new List<CollectionModelDto>();
+
+        var favoriteModelNames = myModelsString.Split(',').Select(x => x.Trim()).Where(x => !string.IsNullOrEmpty(x))
+            .ToList();
+
+        // 联查模型和价格信息
+        var query = from model in _context.AImodels
+                    join price in _context.ModelPrices
+                    on model.ModelName equals price.ModelName
+                    where favoriteModelNames.Contains(model.ModelName)
+                    select new CollectionModelDto
+                    {
+                        Id = model.Id,
+                        ModelNick = model.ModelNick,
+                        ModelName = model.ModelName,
+                        ModelInfo = model.ModelInfo,
+                        ModelGroup = model.ModelGroup,
+                        AdminPrompt = model.AdminPrompt,
+                        VisionModel = model.VisionModel,
+                        MinimumBalance = model.MinimumBalance,
+                        Seq = model.Seq,
+                        Delay = model.Delay,
+                        Responses = model.Responses,
+                        ModelPriceInput = price.ModelPriceInput,
+                        ModelPriceOutput = price.ModelPriceOutput,
+                        VipModelPriceInput = price.VipModelPriceInput,
+                        VipModelPriceOutput = price.VipModelPriceOutput,
+                        SvipModelPriceInput = price.SvipModelPriceInput,
+                        SvipModelPriceOutput = price.SvipModelPriceOutput,
+                        Rebate = price.Rebate,
+                        VipRebate = price.VipRebate,
+                        SvipRebate = price.SvipRebate,
+                        Maximum = price.Maximum,
+                        OnceFee = price.OnceFee,
+                        VipOnceFee = price.VipOnceFee,
+                        SvipOnceFee = price.SvipOnceFee
+                    };
+
+        var aiModel_lst = query.ToList();
+
+        _redis.SetAsync(cacheKey, System.Text.Json.JsonSerializer.Serialize(aiModel_lst), TimeSpan.FromMinutes(10));
+
+        return aiModel_lst;
+    }
+
+    public bool UpdateMyCollectionModel(string account, string modelNames)
+    {
+        try
+        {
+            var existingRecord = _context.ModelFavorites.FirstOrDefault(x => x.Account == account);
+            
+            if (existingRecord == null)
+            {
+                var newRecord = new ModelFavorite
+                {
+                    Account = account,
+                    Models = modelNames,
+                    CreateTime = DateTime.Now
+                };
+                _context.ModelFavorites.Add(newRecord);
+            }
+            else
+            {
+                existingRecord.Models = modelNames;
+            }
+            
+            _context.SaveChanges();
+            
+            var cacheKey = account + "_collectionModels";
+            _redis.DeleteAsync(cacheKey);
+            
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     public List<AImodelsUserSeq> GetAImodelSeq(string account)
@@ -232,14 +335,21 @@ public class SystemService : ISystemService
         if (string.IsNullOrEmpty(workAiModelSeq))
         {
             // 从数据库加载AI模型序列信息
-            workAiModelSeq_lst = _context.WorkShopModelUserSeqs.Where(x => x.Account == account).ToList();
+            workAiModelSeq_lst = _context
+                .WorkShopModelUserSeqs.Where(x => x.Account == account)
+                .ToList();
             // 将配置信息存入Redis以便后续使用
-            _redis.SetAsync(account + "_workshopmodelSeq", JsonConvert.SerializeObject(workAiModelSeq_lst));
+            _redis.SetAsync(
+                account + "_workshopmodelSeq",
+                JsonConvert.SerializeObject(workAiModelSeq_lst)
+            );
         }
         else
         {
             // 将配置信息从Redis中取出并反序列化
-            workAiModelSeq_lst = JsonConvert.DeserializeObject<List<WorkShopModelUserSeq>>(workAiModelSeq);
+            workAiModelSeq_lst = JsonConvert.DeserializeObject<List<WorkShopModelUserSeq>>(
+                workAiModelSeq
+            );
         }
 
         return workAiModelSeq_lst;
@@ -315,45 +425,101 @@ public class SystemService : ISystemService
     {
         account = string.IsNullOrEmpty(account) ? "system" : account;
         var systemConfig = GetSystemCfgs();
-        var imgHost = systemConfig.FirstOrDefault(s => s.CfgKey == "ImageHosting");
 
-        if (imgHost == null)
-            throw new Exception("未配置“图床”服务");
+        // 检查是否启用COS
+        var cosSwitch = systemConfig.FirstOrDefault(s => s.CfgKey == "COS_Switch");
+        bool useCOS = cosSwitch != null && cosSwitch.CfgValue == "1";
 
-        var imgHostUrl = imgHost.CfgValue;
-        var client = new RestClient(imgHostUrl);
-        var request = new RestRequest("", Method.Post);
-        request.AddHeader("Accept", "*/*");
-        request.AddHeader("Connection", "keep-alive");
-
-        string newFileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName); // 用GUID重命名文件
-
-        using (var memoryStream = new MemoryStream())
+        if (useCOS)
         {
-            await file.CopyToAsync(memoryStream);
-            request.AddFile("file", memoryStream.ToArray(), newFileName, file.ContentType); // 使用新文件名上传
-        }
+            // 使用COS上传
+            try
+            {
+                // 生成唯一的文件名
+                string newFileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
 
-        var response = await client.ExecuteAsync(request);
-        if (response.IsSuccessful)
+                // 先保存到临时文件
+                var tempPath = Path.Combine(Path.GetTempPath(), newFileName);
+                using (var stream = new FileStream(tempPath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                // 生成COS对象键（路径）
+                string cosKey = $"images/{DateTime.Now:yyyy/MM/dd}/{newFileName}";
+
+                // 上传到COS
+                string cosUrl = _cosService.PutObject(cosKey, tempPath, newFileName);
+
+                if (!string.IsNullOrEmpty(cosUrl))
+                {
+                    await WriteLog($"文件{file.FileName}上传成功--COS", LogLevel.Info, account);
+                    return cosUrl;
+                }
+                else
+                {
+                    await WriteLog($"文件{file.FileName}上传失败--COS", LogLevel.Error, account);
+                    // 清理临时文件
+                    if (File.Exists(tempPath))
+                    {
+                        File.Delete(tempPath);
+                    }
+
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                await WriteLog($"文件{file.FileName}上传异常--COS: {ex.Message}", LogLevel.Error, account);
+                return null;
+            }
+        }
+        else
         {
-            await WriteLog($"文件{file.FileName}上传成功--图床", LogLevel.Info, account);
-            var responseContent = response.Content;
-            var json = JsonDocument.Parse(responseContent);
+            // 使用原来的图床上传
+            var imgHost = systemConfig.FirstOrDefault(s => s.CfgKey == "ImageHosting");
 
-            if (json.RootElement.TryGetProperty("code", out var codeElement) && codeElement.GetInt32() == 200)
+            if (imgHost == null)
+                throw new Exception("未配置图床服务");
+
+            var imgHostUrl = imgHost.CfgValue;
+            var client = new RestClient(imgHostUrl);
+            var request = new RestRequest("", Method.Post);
+            request.AddHeader("Accept", "*/*");
+            request.AddHeader("Connection", "keep-alive");
+
+            string newFileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+
+            using (var memoryStream = new MemoryStream())
             {
-                if (json.RootElement.TryGetProperty("url", out var fileUrlElement))
-                    return fileUrlElement.GetString();
+                await file.CopyToAsync(memoryStream);
+                request.AddFile("file", memoryStream.ToArray(), newFileName, file.ContentType);
             }
-            else if (json.RootElement.TryGetProperty("msg", out var msgElement))
+
+            var response = await client.ExecuteAsync(request);
+            if (response.IsSuccessful)
             {
-                var errorMsg = msgElement.GetString();
-                Debug.WriteLine($"文件上传失败: {errorMsg}");
+                await WriteLog($"文件{file.FileName}上传成功--图床", LogLevel.Info, account);
+                var responseContent = response.Content;
+                var json = JsonDocument.Parse(responseContent);
+
+                if (
+                    json.RootElement.TryGetProperty("code", out var codeElement)
+                    && codeElement.GetInt32() == 200
+                )
+                {
+                    if (json.RootElement.TryGetProperty("url", out var fileUrlElement))
+                        return fileUrlElement.GetString();
+                }
+                else if (json.RootElement.TryGetProperty("msg", out var msgElement))
+                {
+                    var errorMsg = msgElement.GetString();
+                    Debug.WriteLine($"文件上传失败: {errorMsg}");
+                }
             }
+
+            return null;
         }
-
-        return null;
     }
 
     public async Task<string> ImgConvertToBase64(string imagePath, bool addHead = false)
@@ -414,7 +580,7 @@ public class SystemService : ISystemService
     public int TokenMath(string str, double divisor)
     {
         var result = 0;
-        var tikToken = TikToken.GetEncoding("cl100k_base");
+        var tikToken = TikToken.GetEncoding("o200k_base");
         result = (int)Math.Floor(tikToken.Encode(str).Count * divisor);
         return result;
     }
@@ -432,8 +598,12 @@ public class SystemService : ISystemService
         return systemConfig;
     }
 
-    public async Task<string> UploadFileChunkAsync(IFormFile file, int chunkNumber, string fileName,
-        string filePathhead)
+    public async Task<string> UploadFileChunkAsync(
+        IFormFile file,
+        int chunkNumber,
+        string fileName,
+        string filePathhead
+    )
     {
         var folderName = Path.Combine(filePathhead, DateTime.Now.ToString("yyyyMMdd"));
         //如果文件夹不存在则创建
@@ -448,7 +618,12 @@ public class SystemService : ISystemService
         return filePath;
     }
 
-    public async Task<string> MergeFileAsync(string fileName, int totalChunks, string account, string filePathhead)
+    public async Task<string> MergeFileAsync(
+        string fileName,
+        int totalChunks,
+        string account,
+        string filePathhead
+    )
     {
         var folderName = Path.Combine(filePathhead, DateTime.Now.ToString("yyyyMMdd"));
         //如果文件夹不存在则创建
@@ -486,7 +661,7 @@ public class SystemService : ISystemService
             AccessKeyId = ak,
             // 您的AccessKey Secret
             AccessKeySecret = sk,
-            Endpoint = endpoint
+            Endpoint = endpoint,
         };
         var client = new Client(config);
         var request = new VerifyCaptchaRequest();
@@ -496,6 +671,7 @@ public class SystemService : ISystemService
             return bool.Parse(response.Body.Result.VerifyResult.ToString());
         return false;
     }
+
     //public async Task<string> CreateGraphicVerificationCode()
     //{
     //    var code = _securityCode.GetRandomEnDigitalText(4);
@@ -520,10 +696,12 @@ public class SystemService : ISystemService
         //判断文件类型
         var fileType = Path.GetExtension(path);
         //如果是txt文件
-        if (fileType == ".txt") return await File.ReadAllTextAsync(path);
+        if (fileType == ".txt")
+            return await File.ReadAllTextAsync(path);
         //如果是pdf文件
         else if (fileType == ".pdf")
         {
+            BaiduService baiduService = new BaiduService(_redis, this);
             try
             {
                 using (var reader = new PdfReader(path))
@@ -553,20 +731,246 @@ public class SystemService : ISystemService
                                             var subtype = obj.GetAsName(PdfName.SUBTYPE);
                                             if (subtype != null && subtype.Equals(PdfName.IMAGE))
                                             {
-                                                var imgBytes = PdfReader.GetStreamBytesRaw((PRStream)obj);
+                                                var imgBytes = PdfReader.GetStreamBytesRaw(
+                                                    (PRStream)obj
+                                                );
                                                 using (var ms = new MemoryStream(imgBytes))
                                                 {
                                                     ms.Position = 0;
-                                                    var formFile = new FormFile(ms, 0, ms.Length, "file",
-                                                        $"{Guid.NewGuid().ToString()}.jpg")
+
+                                                    // 检测图片格式
+                                                    string extension = ".jpg"; // 默认值
+                                                    string contentType = "image/jpeg"; // 默认值
+
+                                                    // 根据文件头字节检测图片格式
+                                                    if (
+                                                        imgBytes.Length > 2
+                                                        && imgBytes[0] == 0xFF
+                                                        && imgBytes[1] == 0xD8
+                                                    )
+                                                    {
+                                                        // JPEG
+                                                        extension = ".jpg";
+                                                        contentType = "image/jpeg";
+                                                    }
+                                                    else if (
+                                                        imgBytes.Length > 8
+                                                        && imgBytes[0] == 0x89
+                                                        && imgBytes[1] == 0x50
+                                                        && imgBytes[2] == 0x4E
+                                                        && imgBytes[3] == 0x47
+                                                        && imgBytes[4] == 0x0D
+                                                        && imgBytes[5] == 0x0A
+                                                        && imgBytes[6] == 0x1A
+                                                        && imgBytes[7] == 0x0A
+                                                    )
+                                                    {
+                                                        // PNG
+                                                        extension = ".png";
+                                                        contentType = "image/png";
+                                                    }
+                                                    else if (
+                                                        imgBytes.Length > 4
+                                                        && imgBytes[0] == 0x47
+                                                        && imgBytes[1] == 0x49
+                                                        && imgBytes[2] == 0x46
+                                                        && imgBytes[3] == 0x38
+                                                    )
+                                                    {
+                                                        // GIF
+                                                        extension = ".gif";
+                                                        contentType = "image/gif";
+                                                    }
+                                                    else if (
+                                                        imgBytes.Length > 2
+                                                        && imgBytes[0] == 0x42
+                                                        && imgBytes[1] == 0x4D
+                                                    )
+                                                    {
+                                                        // BMP
+                                                        extension = ".bmp";
+                                                        contentType = "image/bmp";
+                                                    }
+                                                    else if (
+                                                        imgBytes.Length > 12
+                                                        && imgBytes[8] == 0x57
+                                                        && imgBytes[9] == 0x45
+                                                        && imgBytes[10] == 0x42
+                                                        && imgBytes[11] == 0x50
+                                                    )
+                                                    {
+                                                        // WebP (检查RIFF头部后的"WEBP"标识)
+                                                        extension = ".webp";
+                                                        contentType = "image/webp";
+                                                    }
+                                                    else if (
+                                                        imgBytes.Length > 4
+                                                        && imgBytes[0] == 0x00
+                                                        && imgBytes[1] == 0x00
+                                                        && imgBytes[2] == 0x01
+                                                        && imgBytes[3] == 0x00
+                                                    )
+                                                    {
+                                                        // ICO
+                                                        extension = ".ico";
+                                                        contentType = "image/x-icon";
+                                                    }
+                                                    else if (
+                                                        imgBytes.Length > 4
+                                                        && imgBytes[0] == 0x49
+                                                        && imgBytes[1] == 0x49
+                                                        && imgBytes[2] == 0x2A
+                                                        && imgBytes[3] == 0x00
+                                                    )
+                                                    {
+                                                        // TIFF (Intel byte order)
+                                                        extension = ".tif";
+                                                        contentType = "image/tiff";
+                                                    }
+                                                    else if (
+                                                        imgBytes.Length > 4
+                                                        && imgBytes[0] == 0x4D
+                                                        && imgBytes[1] == 0x4D
+                                                        && imgBytes[2] == 0x00
+                                                        && imgBytes[3] == 0x2A
+                                                    )
+                                                    {
+                                                        // TIFF (Motorola byte order)
+                                                        extension = ".tif";
+                                                        contentType = "image/tiff";
+                                                    }
+                                                    else if (
+                                                        imgBytes.Length > 12
+                                                        && imgBytes[0] == 0x52
+                                                        && imgBytes[1] == 0x49
+                                                        && imgBytes[2] == 0x46
+                                                        && imgBytes[3] == 0x46
+                                                    )
+                                                    {
+                                                        // 检查是否为WebP的另一种方式 (RIFF标记)
+                                                        extension = ".webp";
+                                                        contentType = "image/webp";
+                                                    }
+                                                    else if (
+                                                        imgBytes.Length > 8
+                                                        && imgBytes[0] == 0x38
+                                                        && imgBytes[1] == 0x42
+                                                        && imgBytes[2] == 0x50
+                                                        && imgBytes[3] == 0x53
+                                                    )
+                                                    {
+                                                        // PSD
+                                                        extension = ".psd";
+                                                        contentType = "image/vnd.adobe.photoshop";
+                                                    }
+
+                                                    // 也可以考虑使用PDF文件中的过滤器类型来判断图片格式
+                                                    var filter = PdfReader.GetPdfObject(
+                                                        ((PRStream)obj).Get(PdfName.FILTER)
+                                                    );
+                                                    if (filter != null)
+                                                    {
+                                                        if (filter.ToString().Contains("DCTDecode"))
+                                                        {
+                                                            // DCTDecode通常用于JPEG
+                                                            extension = ".jpg";
+                                                            contentType = "image/jpeg";
+                                                        }
+                                                        else if (
+                                                            filter
+                                                            .ToString()
+                                                            .Contains("FlateDecode")
+                                                        )
+                                                        {
+                                                            // FlateDecode通常用于PNG
+                                                            extension = ".png";
+                                                            contentType = "image/png";
+                                                        }
+                                                        else if (
+                                                            filter
+                                                            .ToString()
+                                                            .Contains("CCITTFaxDecode")
+                                                        )
+                                                        {
+                                                            // CCITTFaxDecode通常用于黑白TIFF图像
+                                                            extension = ".tif";
+                                                            contentType = "image/tiff";
+                                                        }
+                                                    }
+
+                                                    var formFile = new FormFile(
+                                                        ms,
+                                                        0,
+                                                        ms.Length,
+                                                        "file",
+                                                        $"{Guid.NewGuid().ToString()}{extension}"
+                                                    )
                                                     {
                                                         Headers = new HeaderDictionary(),
-                                                        ContentType = "image/jpeg"
+                                                        ContentType = contentType,
                                                     };
-                                                    var imageUrl = await UploadFileToImageHosting(formFile);
+
+                                                    var imageUrl = await UploadFileToImageHosting(
+                                                        formFile
+                                                    );
                                                     if (!string.IsNullOrEmpty(imageUrl))
                                                     {
-                                                        markdownContent.AppendLine($"\n![Image]({imageUrl})\n");
+                                                        markdownContent.AppendLine(
+                                                            $"\n![Image]({imageUrl})\n"
+                                                        );
+                                                        int readFileByOCR = 0;
+                                                        var systemCfg = GetSystemCfgs()
+                                                            .FirstOrDefault(x =>
+                                                                x.CfgCode == "ReadFileByOCR"
+                                                            );
+                                                        if (systemCfg != null)
+                                                            readFileByOCR = Convert.ToInt32(
+                                                                systemCfg.CfgValue
+                                                            );
+                                                        if (readFileByOCR == 1)
+                                                        {
+                                                            string imgBase64 =
+                                                                await ImgConvertToBase64(imageUrl);
+                                                            string extractedText = "";
+                                                            string ocrResult = baiduService.GetText(
+                                                                imgBase64
+                                                            );
+                                                            try
+                                                            {
+                                                                // 使用 Newtonsoft.Json 解析
+                                                                JObject jsonResult = JObject.Parse(
+                                                                    ocrResult
+                                                                );
+                                                                JArray wordsResult = (JArray)
+                                                                    jsonResult["words_result"];
+                                                                bool hasText =
+                                                                    wordsResult != null
+                                                                    && wordsResult.Count > 0;
+                                                                if (hasText)
+                                                                {
+                                                                    extractedText = string.Join(
+                                                                        "\n",
+                                                                        wordsResult.Select(w =>
+                                                                            w["words"].ToString()
+                                                                        )
+                                                                    );
+                                                                }
+
+                                                                markdownContent.AppendLine(
+                                                                    extractedText
+                                                                );
+                                                                markdownContent.AppendLine();
+                                                            }
+                                                            catch (Exception ex)
+                                                            {
+                                                                // JSON 解析错误，可能是百度服务返回了错误信息，或者网络问题。
+                                                                await WriteLog(
+                                                                    $"OCR result parsing error: {ex.Message}",
+                                                                    Dtos.LogLevel.Error,
+                                                                    "system"
+                                                                );
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
@@ -576,7 +980,9 @@ public class SystemService : ISystemService
                                     {
                                         await WriteLog(
                                             $"/SystemServer/GetFileText:Error processing XObject: {ex.Message}",
-                                            Dtos.LogLevel.Error, "system");
+                                            Dtos.LogLevel.Error,
+                                            "system"
+                                        );
                                     }
                                 }
                             }
@@ -623,33 +1029,51 @@ public class SystemService : ISystemService
             }
         }
         //如果是PPT
-
         else if (fileType == ".pptx" || fileType == ".ppt")
-            // 确保传入的文件不是null
-            using (var memoryStream = new MemoryStream())
+        {
+            try
             {
-                // 初始化Presentation类的实例
-                using (var presentation = new Presentation())
+                // 使用ShapeCrawler处理PowerPoint文件，具有更好的跨平台兼容性
+                using (var presentation = new Presentation(path))
                 {
-                    // 从内存流加载PowerPoint文档
-                    presentation.LoadFromFile(path);
                     var sb = new StringBuilder();
 
                     // 遍历文档中的每张幻灯片
-                    foreach (ISlide slide in presentation.Slides)
+                    foreach (var slide in presentation.Slides)
+                    {
                         // 遍历每张幻灯片中的每个形状
-                    foreach (IShape shape in slide.Shapes)
-                        // 检查形状是否为IAutoShape类型
-                        if (shape is IAutoShape autoShape)
-                            // 以每种形状遍历所有段落
-                            foreach (TextParagraph tp in autoShape.TextFrame.Paragraphs)
-                                // 提取文本并保存到StringBuilder实例中
-                                sb.AppendLine(tp.Text);
+                        foreach (var shape in slide.Shapes)
+                        {
+                            // 检查形状是否包含文本框
+                            if (shape.TextBox != null)
+                            {
+                                // 获取文本内容
+                                var text = shape.TextBox.Text;
+                                if (!string.IsNullOrWhiteSpace(text))
+                                {
+                                    sb.AppendLine(text);
+                                }
+                            }
+                        }
+
+                        // 在每张幻灯片后添加换行分隔
+                        sb.AppendLine();
+                    }
 
                     // 返回提取的文本
                     return sb.ToString();
                 }
             }
+            catch (Exception ex)
+            {
+                // 记录PPT处理错误
+                await WriteLog($"PPT文件处理失败: {path}, 错误: {ex.Message}", LogLevel.Error, "system");
+
+                // 如果ShapeCrawler处理失败，返回友好的错误信息
+                return $"无法处理PPT文件 {Path.GetFileName(path)}。错误信息: {ex.Message}\n" +
+                       "建议: 1. 确认文件格式正确且未损坏；2. 将文件转换为PDF格式后重新上传；3. 手动复制文本内容。";
+            }
+        }
         //如果是word
         else if (fileType == ".docx" || fileType == ".doc")
         {
@@ -685,22 +1109,46 @@ public class SystemService : ISystemService
                             {
                                 // 处理表头
                                 var headerCells = rows[0].Cells.Cast<TableCell>();
-                                sb.AppendLine("| " + string.Join(" | ",
-                                    headerCells.Select(cell =>
-                                        cell.Paragraphs.Cast<Paragraph>().Aggregate("",
-                                            (current, paragraph) => current + paragraph.Text))) + " |");
+                                sb.AppendLine(
+                                    "| "
+                                    + string.Join(
+                                        " | ",
+                                        headerCells.Select(cell =>
+                                            cell.Paragraphs.Cast<Paragraph>()
+                                                .Aggregate(
+                                                    "",
+                                                    (current, paragraph) =>
+                                                        current + paragraph.Text
+                                                )
+                                        )
+                                    )
+                                    + " |"
+                                );
 
                                 // 处理表头和内容之间的分隔线
-                                sb.AppendLine("|" + string.Join("|", headerCells.Select(_ => "---")) + "|");
+                                sb.AppendLine(
+                                    "|" + string.Join("|", headerCells.Select(_ => "---")) + "|"
+                                );
 
                                 // 处理表格内容
                                 for (int i = 1; i < rows.Count; i++)
                                 {
                                     var cells = rows[i].Cells.Cast<TableCell>();
-                                    sb.AppendLine("| " + string.Join(" | ",
-                                        cells.Select(cell =>
-                                            cell.Paragraphs.Cast<Paragraph>().Aggregate("",
-                                                (current, paragraph) => current + paragraph.Text))) + " |");
+                                    sb.AppendLine(
+                                        "| "
+                                        + string.Join(
+                                            " | ",
+                                            cells.Select(cell =>
+                                                cell.Paragraphs.Cast<Paragraph>()
+                                                    .Aggregate(
+                                                        "",
+                                                        (current, paragraph) =>
+                                                            current + paragraph.Text
+                                                    )
+                                            )
+                                        )
+                                        + " |"
+                                    );
                                 }
                             }
                         }
@@ -723,20 +1171,187 @@ public class SystemService : ISystemService
             try
             {
                 // 尝试读取文件内容
-                string content = await File.ReadAllTextAsync(path);
+                //string content = await File.ReadAllTextAsync(path);
 
                 // 如果成功读取，返回内容
-                return content;
+                //return content;
+                return await ReadFileWithProperEncoding(path);
             }
             catch (Exception ex)
             {
                 // 如果读取失败，记录错误并返回错误信息
-                await WriteLog($"Error reading file {path}: {ex.Message}", LogLevel.Error, "system");
+                await WriteLog(
+                    $"Error reading file {path}: {ex.Message}",
+                    LogLevel.Error,
+                    "system"
+                );
                 return $"无法读取文件内容。错误: {ex.Message}";
             }
         }
 
         return "";
+    }
+
+    private async Task<string> ReadFileWithProperEncoding(string filePath)
+    {
+        // 读取文件的二进制数据
+        byte[] fileData = await File.ReadAllBytesAsync(filePath);
+
+        // 检测BOM标记
+        if (
+            fileData.Length >= 3
+            && fileData[0] == 0xEF
+            && fileData[1] == 0xBB
+            && fileData[2] == 0xBF
+        )
+        {
+            // UTF-8 with BOM
+            return Encoding.UTF8.GetString(fileData, 3, fileData.Length - 3);
+        }
+        else if (fileData.Length >= 2 && fileData[0] == 0xFF && fileData[1] == 0xFE)
+        {
+            // UTF-16 LE
+            return Encoding.Unicode.GetString(fileData, 2, fileData.Length - 2);
+        }
+        else if (fileData.Length >= 2 && fileData[0] == 0xFE && fileData[1] == 0xFF)
+        {
+            // UTF-16 BE
+            return Encoding.BigEndianUnicode.GetString(fileData, 2, fileData.Length - 2);
+        }
+        else if (
+            fileData.Length >= 4
+            && fileData[0] == 0xFF
+            && fileData[1] == 0xFE
+            && fileData[2] == 0x00
+            && fileData[3] == 0x00
+        )
+        {
+            // UTF-32 LE
+            return Encoding.UTF32.GetString(fileData, 4, fileData.Length - 4);
+        }
+        else if (
+            fileData.Length >= 4
+            && fileData[0] == 0x00
+            && fileData[1] == 0x00
+            && fileData[2] == 0xFE
+            && fileData[3] == 0xFF
+        )
+        {
+            // UTF-32 BE
+            var encoding = new UTF32Encoding(true, true);
+            return encoding.GetString(fileData, 4, fileData.Length - 4);
+        }
+
+        // 如果没有BOM，尝试使用启发式方法检测编码
+
+        // 首先尝试UTF-8（无BOM）
+        string utf8Text = Encoding.UTF8.GetString(fileData);
+        if (IsValidUtf8(fileData))
+        {
+            return utf8Text;
+        }
+
+        // 然后尝试检测中文编码
+        // 对于中文代码文件，常见的编码是GB18030/GB2312
+        try
+        {
+            Encoding gb18030 = Encoding.GetEncoding("GB18030");
+            string gb18030Text = gb18030.GetString(fileData);
+
+            // 如果GB18030解码后的文本看起来合理，使用它
+            if (LooksLikeChineseText(gb18030Text))
+            {
+                return gb18030Text;
+            }
+        }
+        catch
+        {
+            // 忽略编码不可用的错误
+        }
+
+        // 尝试其他可能的编码
+        try
+        {
+            Encoding big5 = Encoding.GetEncoding("BIG5");
+            string big5Text = big5.GetString(fileData);
+
+            if (LooksLikeChineseText(big5Text))
+            {
+                return big5Text;
+            }
+        }
+        catch
+        {
+            // 忽略编码不可用的错误
+        }
+
+        // 如果所有检测都失败，回退到系统默认编码
+        return Encoding.Default.GetString(fileData);
+    }
+
+    // 检查字节数组是否为有效的UTF-8编码
+    private bool IsValidUtf8(byte[] data)
+    {
+        int i = 0;
+        while (i < data.Length)
+        {
+            if (data[i] <= 0x7F) // 单字节字符
+            {
+                i++;
+            }
+            else if (data[i] >= 0xC2 && data[i] <= 0xDF) // 双字节字符开始
+            {
+                if (i + 1 >= data.Length || (data[i + 1] & 0xC0) != 0x80)
+                    return false;
+                i += 2;
+            }
+            else if (data[i] >= 0xE0 && data[i] <= 0xEF) // 三字节字符开始
+            {
+                if (
+                    i + 2 >= data.Length
+                    || (data[i + 1] & 0xC0) != 0x80
+                    || (data[i + 2] & 0xC0) != 0x80
+                )
+                    return false;
+                i += 3;
+            }
+            else if (data[i] >= 0xF0 && data[i] <= 0xF7) // 四字节字符开始
+            {
+                if (
+                    i + 3 >= data.Length
+                    || (data[i + 1] & 0xC0) != 0x80
+                    || (data[i + 2] & 0xC0) != 0x80
+                    || (data[i + 3] & 0xC0) != 0x80
+                )
+                    return false;
+                i += 4;
+            }
+            else
+            {
+                return false; // 无效的UTF-8序列
+            }
+        }
+
+        return true;
+    }
+
+    // 简单检查文本是否看起来像中文
+    private bool LooksLikeChineseText(string text)
+    {
+        // 检查是否包含常见的中文字符范围
+        bool containsChinese = text.Any(c =>
+            (c >= 0x4E00 && c <= 0x9FFF)
+            || // CJK统一汉字
+            (c >= 0x3400 && c <= 0x4DBF)
+            || // CJK扩展A
+            (c >= 0xF900 && c <= 0xFAFF)
+        ); // CJK兼容汉字
+
+        // 检查是否有明显的乱码特征
+        bool hasGarbledText =
+            text.Contains("�") || text.Count(c => c > 0xFFFF) > text.Length * 0.1; // 超过10%的字符是非常用Unicode
+
+        return containsChinese && !hasGarbledText;
     }
 
     public string UrlEncode(string text)
@@ -784,7 +1399,7 @@ public class SystemService : ISystemService
                 Sex = "unknow",
                 UserCode = GenerateCode(6),
                 IsBan = 0,
-                Mcoin = 999
+                Mcoin = 999,
             };
             _context.Users.Add(user);
             //设置用户默认设置
@@ -796,10 +1411,7 @@ public class SystemService : ISystemService
             userSetting.Scrolling = 1;
             _context.UserSettings.Add(userSetting);
             //添加管理员
-            var admin = new Admin
-            {
-                Account = account
-            };
+            var admin = new Admin { Account = account };
             _context.Admins.Add(admin);
             return _context.SaveChanges() > 0;
         }
@@ -819,10 +1431,7 @@ public class SystemService : ISystemService
 
         using (var image = Image.Load(inputFile))
         {
-            var encoder = new JpegEncoder
-            {
-                Quality = quality
-            };
+            var encoder = new JpegEncoder { Quality = quality };
 
             image.Save(thumbPath, encoder); // 强制保存为 JPEG 格式
         }
@@ -837,63 +1446,63 @@ public class SystemService : ISystemService
             CfgName = "系统邮箱",
             CfgKey = "Mail",
             CfgCode = "Mail",
-            CfgValue = "After"
+            CfgValue = "After",
         };
         var MailPwd = new SystemCfg
         {
             CfgName = "系统邮箱密码",
             CfgKey = "MailPwd",
             CfgCode = "MailPwd",
-            CfgValue = "After"
+            CfgValue = "After",
         };
         var SMTP_Server = new SystemCfg
         {
             CfgName = "SMTP服务器地址",
             CfgKey = "SMTP_Server",
             CfgCode = "SMTP_Server",
-            CfgValue = "smtp.googlemail.com"
+            CfgValue = "smtp.googlemail.com",
         };
         var RegiestMcoin = new SystemCfg
         {
             CfgName = "注册赠送M币",
             CfgKey = "RegiestMcoin",
             CfgCode = "RegiestMcoin",
-            CfgValue = "3"
+            CfgValue = "3",
         };
         var RegiestMail = new SystemCfg
         {
             CfgName = "注册邮箱后缀限制，删除或输入0则不限制，以逗号分隔",
             CfgKey = "RegiestMail",
             CfgCode = "RegiestMail",
-            CfgValue = "qq.com,gmail.com,163.com,126.com,outlook.com"
+            CfgValue = "qq.com,gmail.com,163.com,126.com,outlook.com",
         };
         var Baidu_TXT_AK = new SystemCfg
         {
             CfgName = "百度文字识别AccessKey",
             CfgKey = "Baidu_TXT_AK",
             CfgCode = "Baidu_TXT_AK",
-            CfgValue = "After"
+            CfgValue = "After",
         };
         var Baidu_TXT_SK = new SystemCfg
         {
             CfgName = "百度文字识别SecretKey",
             CfgKey = "Baidu_TXT_SK",
             CfgCode = "Baidu_TXT_SK",
-            CfgValue = "After"
+            CfgValue = "After",
         };
         var GoogleSearchApiKey = new SystemCfg
         {
             CfgName = "谷歌搜索ApiKey",
             CfgKey = "GoogleSearchApiKey",
             CfgCode = "GoogleSearchApiKey",
-            CfgValue = "After"
+            CfgValue = "After",
         };
         var GoogleSearchEngineId = new SystemCfg
         {
             CfgName = "谷歌搜索引擎Id",
             CfgKey = "GoogleSearchEngineId",
             CfgCode = "GoogleSearchEngineId",
-            CfgValue = "After"
+            CfgValue = "After",
         };
         // var Alibaba_Captcha_AK = new SystemCfg
         // {
@@ -942,301 +1551,399 @@ public class SystemService : ISystemService
             CfgName = "嵌入AI模型BaseUrl",
             CfgKey = "EmbeddingsUrl",
             CfgCode = "EmbeddingsUrl",
-            CfgValue = "After"
+            CfgValue = "After",
         };
         var EmbeddingsApiKey = new SystemCfg
         {
             CfgName = "嵌入AI模型ApiKey",
             CfgKey = "EmbeddingsApiKey",
             CfgCode = "EmbeddingsApiKey",
-            CfgValue = "After"
+            CfgValue = "After",
         };
         var EmbeddingsModel = new SystemCfg
         {
             CfgName = "嵌入模型",
             CfgKey = "EmbeddingsModel",
             CfgCode = "EmbeddingsModel",
-            CfgValue = "text-embedding-3-small"
+            CfgValue = "text-embedding-3-small",
         };
         var QAurl = new SystemCfg
         {
             CfgName = "数据清洗AI模型BaseUrl",
             CfgKey = "QAurl",
             CfgCode = "QAurl",
-            CfgValue = "After"
+            CfgValue = "After",
         };
         var QAapiKey = new SystemCfg
         {
             CfgName = "数据清洗AI模型ApiKey",
             CfgKey = "QAapiKey",
             CfgCode = "QAapiKey",
-            CfgValue = "After"
+            CfgValue = "After",
         };
         var QAmodel = new SystemCfg
         {
             CfgName = "QA清洗模型",
             CfgKey = "QAmodel",
             CfgCode = "QAmodel",
-            CfgValue = "gpt-4o-mini"
+            CfgValue = "gpt-4.1-nano-openai",
         };
         var ShareMcoin = new SystemCfg
         {
             CfgName = "分享注册用户获得M币",
             CfgKey = "ShareMcoin",
             CfgCode = "ShareMcoin",
-            CfgValue = "3"
+            CfgValue = "3",
         };
         var Baidu_OBJ_AK = new SystemCfg
         {
             CfgName = "百度场景识别AccessKey",
             CfgKey = "Baidu_OBJ_AK",
             CfgCode = "Baidu_OBJ_AK",
-            CfgValue = "After"
+            CfgValue = "After",
         };
         var Baidu_OBJ_SK = new SystemCfg
         {
             CfgName = "百度场景识别SecretKey",
             CfgKey = "Baidu_OBJ_SK",
             CfgCode = "Baidu_OBJ_SK",
-            CfgValue = "After"
+            CfgValue = "After",
         };
         var WorkShop_FreeModel = new SystemCfg
         {
             CfgName = "创意工坊免费模型",
             CfgKey = "WorkShop_FreeModel",
             CfgCode = "WorkShop_FreeModel",
-            CfgValue = "0"
+            CfgValue = "0",
         };
         var WorkShop_FreeModel_Count = new SystemCfg
         {
             CfgName = "创意工坊免费模型可用次数(用户)",
             CfgKey = "WorkShop_FreeModel_Count",
             CfgCode = "WorkShop_FreeModel_Count",
-            CfgValue = "0"
+            CfgValue = "0",
         };
         var WorkShop_FreeModel_Count_VIP = new SystemCfg
         {
             CfgName = "创意工坊免费模型可用次数(VIP)",
             CfgKey = "WorkShop_FreeModel_Count_VIP",
             CfgCode = "WorkShop_FreeModel_Count_VIP",
-            CfgValue = "0"
+            CfgValue = "0",
         };
         var WorkShop_FreeModel_UpdateHour = new SystemCfg
         {
             CfgName = "创意工坊免费模型更新频率(小时)",
             CfgKey = "WorkShop_FreeModel_UpdateHour",
             CfgCode = "WorkShop_FreeModel_UpdateHour",
-            CfgValue = "1"
+            CfgValue = "1",
         };
         var WorkFlow_Limit = new SystemCfg
         {
             CfgName = "流程引擎死循环保护的极限重复次数",
             CfgKey = "WorkFlow_Limit",
             CfgCode = "WorkFlow_Limit",
-            CfgValue = "20"
+            CfgValue = "20",
         };
         var ImageHosting = new SystemCfg
         {
-            CfgName = "“只是图床”API地址",
+            CfgName = "只是图床API地址",
             CfgKey = "ImageHosting",
             CfgCode = "ImageHosting",
-            CfgValue = ""
+            CfgValue = "",
+        };
+        var COS_Region = new SystemCfg
+        {
+            CfgName = "腾讯云COS地域",
+            CfgKey = "COS_Region",
+            CfgCode = "COS_Region",
+            CfgValue = "ap-beijing",
+        };
+        var COS_SecretId = new SystemCfg
+        {
+            CfgName = "腾讯云COS SecretId",
+            CfgKey = "COS_SecretId",
+            CfgCode = "COS_SecretId",
+            CfgValue = "After",
+        };
+        var COS_SecretKey = new SystemCfg
+        {
+            CfgName = "腾讯云COS SecretKey",
+            CfgKey = "COS_SecretKey",
+            CfgCode = "COS_SecretKey",
+            CfgValue = "After",
+        };
+        var COS_Bucket = new SystemCfg
+        {
+            CfgName = "腾讯云COS存储桶名称",
+            CfgKey = "COS_Bucket",
+            CfgCode = "COS_Bucket",
+            CfgValue = "After",
+        };
+        var COS_Switch = new SystemCfg
+        {
+            CfgName = "是否启用COS存储(1启用0禁用)",
+            CfgKey = "COS_Switch",
+            CfgCode = "COS_Switch",
+            CfgValue = "0",
         };
         var ImageHostingByUrl = new SystemCfg
         {
             CfgName = "图床API地址(URL上传)",
             CfgKey = "ImageHostingByUrl",
             CfgCode = "ImageHostingByUrl",
-            CfgValue = ""
+            CfgValue = "",
         };
         var History_Prompt_AIModel = new SystemCfg
         {
             CfgName = "用于总结历史记录的AI模型名",
             CfgKey = "History_Prompt_AIModel",
             CfgCode = "History_Prompt_AIModel",
-            CfgValue = "gpt-4o-mini"
+            CfgValue = "gpt-4.1-nano-openai",
         };
         var History_Prompt_Start_Compress = new SystemCfg
         {
             CfgName = "当用户启用历史总结时，开始压缩的对话数最小值，一问一答算一条对话",
             CfgKey = "History_Prompt_Start_Compress",
             CfgCode = "History_Prompt_Start_Compress",
-            CfgValue = "4"
+            CfgValue = "4",
         };
         var History_Prompt_Keep_Quantity = new SystemCfg
         {
             CfgName = "当用户启用历史总结后，保留最近的几条对话数据，一问一答算一条对话",
             CfgKey = "History_Prompt_Keep_Quantity",
             CfgCode = "History_Prompt_Keep_Quantity",
-            CfgValue = "1"
+            CfgValue = "1",
         };
         var Tokenize_BaseUrl_Jina = new SystemCfg
         {
             CfgName = "JinaAI分词器API地址",
             CfgKey = "Tokenize_BaseUrl_Jina",
             CfgCode = "Tokenize_BaseUrl_Jina",
-            CfgValue = "https://tokenize.jina.ai"
+            CfgValue = "https://tokenize.jina.ai",
         };
         var Tokenize_ApiKey_Jina = new SystemCfg
         {
             CfgName = "JinaAI分词器APIKEY(非必填，不填有RPM限制)",
             CfgKey = "Tokenize_ApiKey_Jina",
             CfgCode = "Tokenize_ApiKey_Jina",
-            CfgValue = ""
+            CfgValue = "",
         };
         var Rerank_BaseUrl_Jina = new SystemCfg
         {
             CfgName = "JinaAI重排器API地址",
             CfgKey = "Rerank_BaseUrl_Jina",
             CfgCode = "Rerank_BaseUrl_Jina",
-            CfgValue = "https://api.jina.ai/v1/rerank"
+            CfgValue = "https://api.jina.ai/v1/rerank",
         };
         var Rerank_ApiKey_Jina = new SystemCfg
         {
             CfgName = "JinaAI重排器APIKEY",
             CfgKey = "Rerank_ApiKey_Jina",
             CfgCode = "Rerank_ApiKey_Jina",
-            CfgValue = ""
+            CfgValue = "",
         };
         var Rerank_Model_Jina = new SystemCfg
         {
             CfgName = "JinaAI重排器Model",
             CfgKey = "Rerank_Model_Jina",
             CfgCode = "Rerank_Model_Jina",
-            CfgValue = ""
+            CfgValue = "",
+        };
+        var Read_BaseUrl_Jina = new SystemCfg
+        {
+            CfgName = "JinaAI读取器API地址",
+            CfgKey = "Read_BaseUrl_Jina",
+            CfgCode = "Read_BaseUrl_Jina",
+            CfgValue = "https://r.jina.ai",
+        };
+        var Read_ApiKey_Jina = new SystemCfg
+        {
+            CfgName = "JinaAI读取器APIKey(非必填，不填有RPM限制)",
+            CfgKey = "Read_ApiKey_Jina",
+            CfgCode = "Read_ApiKey_Jina",
+            CfgValue = "",
         };
         var AICodeCheckBaseUrl = new SystemCfg
         {
             CfgName = "Workflow代码检查模型URL（仅支持OpenAI API 且需要支持Jsonschema）",
             CfgKey = "AICodeCheckBaseUrl",
             CfgCode = "AICodeCheckBaseUrl",
-            CfgValue = "https://api.openai.com"
+            CfgValue = "https://api.openai.com",
         };
         var AICodeCheckApiKey = new SystemCfg
         {
             CfgName = "Workflow代码检查模型ApiKey（仅支持OpenAI API 且需要支持Jsonschema）",
             CfgKey = "AICodeCheckApiKey",
             CfgCode = "AICodeCheckApiKey",
-            CfgValue = "openai apikey"
+            CfgValue = "openai apikey",
         };
         var AICodeCheckModel = new SystemCfg
         {
             CfgName = "Workflow代码检查模型Model（仅支持OpenAI API 且需要支持Jsonschema）",
             CfgKey = "AICodeCheckModel",
             CfgCode = "AICodeCheckModel",
-            CfgValue = "gpt-4o-mini-2024-08-06"
+            CfgValue = "gpt-4.1-nano-openai",
         };
         var ReadingModelChunkLength = new SystemCfg
         {
             CfgName = "阅读模式下的最大文本字符数，超出将切片（该功能使用JinaAI分词器，最大64k）",
             CfgKey = "ReadingModelChunkLength",
             CfgCode = "ReadingModelChunkLength",
-            CfgValue = "60000"
+            CfgValue = "60000",
         };
         var ReadingModelMaxChunk = new SystemCfg
         {
             CfgName = "阅读模式允许的最大切片数（建议300）",
             CfgKey = "ReadingModelMaxChunk",
             CfgCode = "ReadingModelMaxChunk",
-            CfgValue = "300"
+            CfgValue = "300",
         };
         var NewApiAccessToken = new SystemCfg
         {
             CfgName = "NewAPI Access Token",
             CfgKey = "NewApiAccessToken",
             CfgCode = "NewApiAccessToken",
-            CfgValue = "After"
+            CfgValue = "After",
         };
         var NewApiUrl = new SystemCfg
         {
             CfgName = "NewAPI地址（含http或https请求头）",
             CfgKey = "NewApiUrl",
             CfgCode = "NewApiUrl",
-            CfgValue = "After"
+            CfgValue = "After",
         };
         var GoogleClientID = new SystemCfg
         {
             CfgName = "Google登录客户端ID",
             CfgKey = "GoogleClientID",
             CfgCode = "GoogleClientID",
-            CfgValue = "After"
+            CfgValue = "After",
+        };
+        var GitHubClientID = new SystemCfg
+        {
+            CfgName = "GitHub登录客户端ID",
+            CfgKey = "GitHubClientID",
+            CfgCode = "GitHubClientID",
+            CfgValue = "After",
+        };
+        var GitHubSecret = new SystemCfg
+        {
+            CfgName = "GitHub登录客户端密钥",
+            CfgKey = "GitHubSecret",
+            CfgCode = "GitHubSecret",
+            CfgValue = "After",
+        };
+        var LinuxDoClientID = new SystemCfg
+        {
+            CfgName = "LinuxDo登录客户端ID",
+            CfgKey = "LinuxDoClientID",
+            CfgCode = "LinuxDoClientID",
+            CfgValue = "After",
+        };
+        var LinuxDoSecret = new SystemCfg
+        {
+            CfgName = "LinuxDo登录客户端密钥",
+            CfgKey = "LinuxDoSecret",
+            CfgCode = "LinuxDoSecret",
+            CfgValue = "After",
         };
         var Allowed_File_Types = new SystemCfg
         {
             CfgName = "素材库允许上传的文件后缀",
             CfgKey = "Allowed_File_Types",
             CfgCode = "Allowed_File_Types",
-            CfgValue = ".txt,.pdf,.ppt,.doc,.docx,.xls,.xlsx"
+            CfgValue = ".txt,.pdf,.ppt,.doc,.docx,.xls,.xlsx",
+        };
+        var Allowed_FileCloud_Types = new SystemCfg
+        {
+            CfgName = "网盘允许上传的文件后缀",
+            CfgKey = "Allowed_FileCloud_Types",
+            CfgCode = "Allowed_FileCloud_Types",
+            CfgValue = ".diff,.patch,.mp3,.mp4,.zip,.rar,.gz,.7z",
         };
         var Forum_Interval_Duration = new SystemCfg
         {
             CfgName = "论坛发帖间时长（分钟）",
             CfgKey = "Forum_Interval_Duration",
             CfgCode = "Forum_Interval_Duration",
-            CfgValue = "5"
+            CfgValue = "5",
         };
         var Forum_Subtract_Points = new SystemCfg
         {
             CfgName = "论坛发帖消耗的积分数（单次消耗）",
             CfgKey = "Forum_Subtract_Points",
             CfgCode = "Forum_Subtract_Points",
-            CfgValue = "5"
+            CfgValue = "5",
         };
         var Forum_Subtract_Points_AI = new SystemCfg
         {
             CfgName = "论坛发帖邀请AI消耗的积分数（单次消耗）",
             CfgKey = "Forum_Subtract_Points_AI",
             CfgCode = "Forum_Subtract_Points_AI",
-            CfgValue = "10"
+            CfgValue = "10",
         };
         var Forum_AI_Model = new SystemCfg
         {
             CfgName = "论坛发帖邀请的AI模型",
             CfgKey = "Forum_AI_Model",
             CfgCode = "Forum_AI_Model",
-            CfgValue = "gpt-4o-mini"
+            CfgValue = "gpt-4.1-nano-openai",
         };
         var Forum_AI_BaseUrl = new SystemCfg
         {
             CfgName = "论坛发帖邀请的AI BaseUrl",
             CfgKey = "Forum_AI_BaseUrl",
             CfgCode = "Forum_AI_BaseUrl",
-            CfgValue = "https://api.openai.com"
+            CfgValue = "https://api.openai.com",
         };
         var Forum_AI_ApiKey = new SystemCfg
         {
             CfgName = "论坛发帖邀请的AI ApiKey",
             CfgKey = "Forum_AI_ApiKey",
             CfgCode = "Forum_AI_ApiKey",
-            CfgValue = "After"
+            CfgValue = "After",
         };
         var Forum_AI_User = new SystemCfg
         {
             CfgName = "论坛充当AI的用户账号",
             CfgKey = "Forum_AI_User",
             CfgCode = "Forum_AI_User",
-            CfgValue = "robot_AIBOT"
+            CfgValue = "robot_AIBOT",
         };
         var Cards_Limit = new SystemCfg
         {
             CfgName = "用户兑换码兑换频率（分钟）",
             CfgKey = "Cards_Limit",
             CfgCode = "Cards_Limit",
-            CfgValue = "1"
+            CfgValue = "1",
         };
         var SerperApiKey = new SystemCfg
         {
             CfgName = "SerperApiKey(https://serper.dev)",
             CfgKey = "SerperApiKey",
             CfgCode = "SerperApiKey",
-            CfgValue = "After"
+            CfgValue = "After",
         };
         var MaxCollectionCount = new SystemCfg
         {
             CfgName = "允许用户创建的最大对话合集数",
             CfgKey = "MaxCollectionCount",
             CfgCode = "MaxCollectionCount",
-            CfgValue = "5"
+            CfgValue = "5",
+        };
+        var ReadFileByOCR = new SystemCfg
+        {
+            CfgName = "阅读文件时使用OCR识图",
+            CfgKey = "ReadFileByOCR",
+            CfgCode = "ReadFileByOCR",
+            CfgValue = "0",
+        };
+        var DeepResearch_Leader_Model = new SystemCfg
+        {
+            CfgName = "深度研究指挥模型（需要支持Jsonschema）",
+            CfgKey = "DeepResearch_Leader_Model",
+            CfgCode = "DeepResearch_Leader_Model",
+            CfgValue = "gpt-4.1-nano-openai",
         };
         _context.SystemCfgs.Add(Mail);
         _context.SystemCfgs.Add(MailPwd);
@@ -1268,6 +1975,11 @@ public class SystemService : ISystemService
         _context.SystemCfgs.Add(WorkShop_FreeModel_UpdateHour);
         _context.SystemCfgs.Add(WorkFlow_Limit);
         _context.SystemCfgs.Add(ImageHosting);
+        _context.SystemCfgs.Add(COS_Region);
+        _context.SystemCfgs.Add(COS_SecretId);
+        _context.SystemCfgs.Add(COS_SecretKey);
+        _context.SystemCfgs.Add(COS_Bucket);
+        _context.SystemCfgs.Add(COS_Switch);
         _context.SystemCfgs.Add(ImageHostingByUrl);
         _context.SystemCfgs.Add(History_Prompt_AIModel);
         _context.SystemCfgs.Add(History_Prompt_Start_Compress);
@@ -1277,6 +1989,8 @@ public class SystemService : ISystemService
         _context.SystemCfgs.Add(Rerank_BaseUrl_Jina);
         _context.SystemCfgs.Add(Rerank_ApiKey_Jina);
         _context.SystemCfgs.Add(Rerank_Model_Jina);
+        _context.SystemCfgs.Add(Read_BaseUrl_Jina);
+        _context.SystemCfgs.Add(Read_ApiKey_Jina);
         _context.SystemCfgs.Add(AICodeCheckBaseUrl);
         _context.SystemCfgs.Add(AICodeCheckApiKey);
         _context.SystemCfgs.Add(AICodeCheckModel);
@@ -1285,7 +1999,12 @@ public class SystemService : ISystemService
         _context.SystemCfgs.Add(NewApiAccessToken);
         _context.SystemCfgs.Add(NewApiUrl);
         _context.SystemCfgs.Add(GoogleClientID);
+        _context.SystemCfgs.Add(GitHubClientID);
+        _context.SystemCfgs.Add(GitHubSecret);
+        _context.SystemCfgs.Add(LinuxDoClientID);
+        _context.SystemCfgs.Add(LinuxDoSecret);
         _context.SystemCfgs.Add(Allowed_File_Types);
+        _context.SystemCfgs.Add(Allowed_FileCloud_Types);
         _context.SystemCfgs.Add(Forum_Interval_Duration);
         _context.SystemCfgs.Add(Forum_Subtract_Points);
         _context.SystemCfgs.Add(Forum_Subtract_Points_AI);
@@ -1296,20 +2015,24 @@ public class SystemService : ISystemService
         _context.SystemCfgs.Add(Cards_Limit);
         _context.SystemCfgs.Add(SerperApiKey);
         _context.SystemCfgs.Add(MaxCollectionCount);
-
-
+        _context.SystemCfgs.Add(ReadFileByOCR);
+        _context.SystemCfgs.Add(DeepResearch_Leader_Model);
         if (_context.SaveChanges() > 0)
         {
             //在系统根目录生成aibotinstall.lock 文件
-            var lockFilePath =
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "aibotinstall.lock");
+            var lockFilePath = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "aibotinstall.lock"
+            );
             try
             {
                 if (!File.Exists(lockFilePath))
                     using (var lockFile = File.Create(lockFilePath))
                     {
                         // 写入一些内容到锁文件，可以是空内容或者一些标识信息
-                        var content = Encoding.UTF8.GetBytes("Lock file created by the application.");
+                        var content = Encoding.UTF8.GetBytes(
+                            "Lock file created by the application."
+                        );
                         lockFile.Write(content, 0, content.Length);
                         return true;
                     }
@@ -1400,8 +2123,10 @@ public class SystemService : ISystemService
     public void CopyPropertiesTo<T, TU>(T source, TU dest)
     {
         var sourceProps = typeof(T).GetProperties().Where(x => x.CanRead).ToList();
-        var destProps = typeof(TU).GetProperties()
-            .Where(x => x.CanWrite && sourceProps.Any(sp => sp.Name == x.Name)).ToList();
+        var destProps = typeof(TU)
+            .GetProperties()
+            .Where(x => x.CanWrite && sourceProps.Any(sp => sp.Name == x.Name))
+            .ToList();
 
         foreach (var sourceProp in sourceProps)
             if (destProps.Any(x => x.Name == sourceProp.Name))
@@ -1429,22 +2154,28 @@ public class SystemService : ISystemService
     {
         try
         {
-            using (var httpClient = new HttpClient(new HttpClientHandler { AllowAutoRedirect = true }))
+            using (
+                var httpClient = new HttpClient(new HttpClientHandler { AllowAutoRedirect = true })
+            )
             {
                 // 添加用户代理
                 httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+                );
 
                 // 添加授权头
                 // httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "Your-Token-Here");
 
                 var response = await httpClient.GetAsync(url);
 
-
                 if (!response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    await WriteLog($"Error response content: {content}", Dtos.LogLevel.Error, account);
+                    await WriteLog(
+                        $"Error response content: {content}",
+                        Dtos.LogLevel.Error,
+                        account
+                    );
                     return null;
                 }
 
@@ -1457,7 +2188,14 @@ public class SystemService : ISystemService
                 string fullPath = Path.Combine(savePath, fileName);
                 Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
 
-                using (var fileStream = new FileStream(fullPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                using (
+                    var fileStream = new FileStream(
+                        fullPath,
+                        FileMode.Create,
+                        FileAccess.Write,
+                        FileShare.None
+                    )
+                )
                 {
                     await response.Content.CopyToAsync(fileStream);
                 }
@@ -1560,19 +2298,25 @@ public class SystemService : ISystemService
     public enum CryptoType
     {
         Encrypt,
-        Decrypt
+        Decrypt,
     }
 
     public string ApplyEncryptionMethod(string input, char method, CryptoType cryptoType)
     {
         switch (method)
         {
-            case 'a': return ReverseString(input);
-            case 'b': return SwapCase(input);
-            case 'c': return ReverseWords(input);
-            case 'd': return ShiftVowels(input, cryptoType);
-            case 'e': return AddNumberToChars(input, cryptoType);
-            default: throw new ArgumentException("Invalid encryption method");
+            case 'a':
+                return ReverseString(input);
+            case 'b':
+                return SwapCase(input);
+            case 'c':
+                return ReverseWords(input);
+            case 'd':
+                return ShiftVowels(input, cryptoType);
+            case 'e':
+                return AddNumberToChars(input, cryptoType);
+            default:
+                throw new ArgumentException("Invalid encryption method");
         }
     }
 
@@ -1585,46 +2329,64 @@ public class SystemService : ISystemService
     // 2. Swap Case
     private string SwapCase(string input)
     {
-        return new string(input
-            .Select(c => char.IsLetter(c) ? (char.IsUpper(c) ? char.ToLower(c) : char.ToUpper(c)) : c).ToArray());
+        return new string(
+            input
+                .Select(c =>
+                    char.IsLetter(c) ? (char.IsUpper(c) ? char.ToLower(c) : char.ToUpper(c)) : c
+                )
+                .ToArray()
+        );
     }
 
     // 3. Reverse Words
     private string ReverseWords(string input)
     {
-        return string.Join(" ", input.Split(' ').Select(word => new string(word.Reverse().ToArray())));
+        return string.Join(
+            " ",
+            input.Split(' ').Select(word => new string(word.Reverse().ToArray()))
+        );
     }
 
     // 4. Shift Vowels
     private string ShiftVowels(string input, CryptoType cryptoType)
     {
         const string vowels = "aeiouAEIOU";
-        return new string(input.Select(c =>
-        {
-            int index = vowels.IndexOf(c);
-            if (index != -1)
-            {
-                int shiftedIndex = (index + (cryptoType == CryptoType.Encrypt ? 1 : 9)) % 10;
-                return vowels[shiftedIndex];
-            }
+        return new string(
+            input
+                .Select(c =>
+                {
+                    int index = vowels.IndexOf(c);
+                    if (index != -1)
+                    {
+                        int shiftedIndex =
+                            (index + (cryptoType == CryptoType.Encrypt ? 1 : 9)) % 10;
+                        return vowels[shiftedIndex];
+                    }
 
-            return c;
-        }).ToArray());
+                    return c;
+                })
+                .ToArray()
+        );
     }
 
     // 5. Add Number to Chars
     private string AddNumberToChars(string input, CryptoType cryptoType)
     {
         const int shift = 5;
-        return new string(input.Select(c =>
-        {
-            if (!char.IsLetter(c)) return c;
-            char offset = char.IsUpper(c) ? 'A' : 'a';
-            int shiftedValue = (c - offset + (cryptoType == CryptoType.Encrypt ? shift : 26 - shift)) % 26;
-            return (char)(shiftedValue + offset);
-        }).ToArray());
+        return new string(
+            input
+                .Select(c =>
+                {
+                    if (!char.IsLetter(c))
+                        return c;
+                    char offset = char.IsUpper(c) ? 'A' : 'a';
+                    int shiftedValue =
+                        (c - offset + (cryptoType == CryptoType.Encrypt ? shift : 26 - shift)) % 26;
+                    return (char)(shiftedValue + offset);
+                })
+                .ToArray()
+        );
     }
-
 
     private string SaveImage(Stream stream, string fileName, string savePath)
     {

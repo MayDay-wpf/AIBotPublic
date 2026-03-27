@@ -6,16 +6,18 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+public partial class PluginsCookie
 {
-    public partial class PluginsCookie
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string CkCode { get; set; }
-        [StringLength(500)]
-        public string CkName { get; set; }
-        public string CkValue { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string CkCode { get; set; }
+
+    [StringLength(500)]
+    public string CkName { get; set; }
+
+    public string CkValue { get; set; }
 }

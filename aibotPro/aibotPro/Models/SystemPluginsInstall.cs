@@ -6,16 +6,17 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Table("SystemPluginsInstall")]
+public partial class SystemPluginsInstall
 {
-    [Table("SystemPluginsInstall")]
-    public partial class SystemPluginsInstall
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string Account { get; set; }
-        [StringLength(500)]
-        public string PluginName { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string Account { get; set; }
+
+    [StringLength(500)]
+    public string PluginName { get; set; }
 }

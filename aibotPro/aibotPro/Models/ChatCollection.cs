@@ -6,21 +6,25 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Table("ChatCollection")]
+public partial class ChatCollection
 {
-    [Table("ChatCollection")]
-    public partial class ChatCollection
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string CollectionName { get; set; }
-        [StringLength(50)]
-        public string CollectionCode { get; set; }
-        [StringLength(50)]
-        public string Account { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? CreateTime { get; set; }
-        public bool? IsDel { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string CollectionName { get; set; }
+
+    [StringLength(50)]
+    public string CollectionCode { get; set; }
+
+    [StringLength(50)]
+    public string Account { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? CreateTime { get; set; }
+
+    public bool? IsDel { get; set; }
 }

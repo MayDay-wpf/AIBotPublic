@@ -4,10 +4,11 @@ using aibotPro.Interface;
 using aibotPro.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using OpenAI;
-using OpenAI.Managers;
-using OpenAI.ObjectModels.RequestModels;
-using OpenAI.ObjectModels.ResponseModels;
+using Betalgo.Ranul.OpenAI;
+using Betalgo.Ranul.OpenAI.Managers;
+using Betalgo.Ranul.OpenAI.ObjectModels.RequestModels;
+using Betalgo.Ranul.OpenAI.ObjectModels.ResponseModels;
+using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 using TiktokenSharp;
 using LogLevel = aibotPro.Dtos.LogLevel;
@@ -33,7 +34,7 @@ public class OpenAPIService : IOpenAPIService
     }
 
     public async Task<Dictionary<string, string>> CallERNIEAsStream(HttpResponse response,
-        ChatCompletionCreateRequest chatCompletionCreate, OpenAiOptions openAiOptions, WorkShopAIModel useModel,
+        ChatCompletionCreateRequest chatCompletionCreate, OpenAIOptions OpenAIOptions, WorkShopAIModel useModel,
         string account)
     {
         var fn = new BaiduResDto.FunctionCall();
@@ -43,7 +44,7 @@ public class OpenAPIService : IOpenAPIService
         var input = string.Empty;
         var output = string.Empty;
         var chatMessages = chatCompletionCreate.Messages;
-        await foreach (var responseContent in _baiduService.CallBaiduAI_Stream(chatCompletionCreate, openAiOptions,
+        await foreach (var responseContent in _baiduService.CallBaiduAI_Stream(chatCompletionCreate, OpenAIOptions,
                            ""))
         {
             if (responseContent != null && !string.IsNullOrEmpty(responseContent.Result))
@@ -85,7 +86,7 @@ public class OpenAPIService : IOpenAPIService
                     chatCompletionCreate.Stream = true;
                     chatCompletionCreate.Model = useModel.ModelName;
                     await foreach (var responseContent_sec in _baiduService.CallBaiduAI_Stream(chatCompletionCreate,
-                                       openAiOptions, ""))
+                                       OpenAIOptions, ""))
                         if (responseContent_sec != null && !string.IsNullOrEmpty(responseContent_sec.Result))
                         {
                             var chatCompletionResponse =
@@ -114,8 +115,11 @@ public class OpenAPIService : IOpenAPIService
         var valuePairs = new Dictionary<string, string>();
         var input = string.Empty;
         var output = string.Empty;
+        var delay = GetUserLimit(account, chatCompletionCreate.Model);
         var chatMessages = chatCompletionCreate.Messages;
         var completionResult = openAiService.ChatCompletion.CreateCompletionAsStream(chatCompletionCreate);
+        if (delay < 0)
+            throw new Exception("Rate limiting.");
         try
         {
             await foreach (var responseContent in completionResult)
@@ -125,14 +129,25 @@ public class OpenAPIService : IOpenAPIService
                     if (choice != null)
                     {
                         var chatCompletionResponse = CreateOpenAIStreamResult(responseContent);
-                        if (chatCompletionResponse.Choices.FirstOrDefault() != null &&
-                            !string.IsNullOrEmpty(chatCompletionResponse.Choices
-                                .FirstOrDefault().delta.Content))
+                        if (chatCompletionResponse.Choices.FirstOrDefault() != null
+                            && (!string.IsNullOrEmpty(chatCompletionResponse.Choices
+                                .FirstOrDefault().delta.Content) || !string.IsNullOrEmpty(chatCompletionResponse.Choices
+                                .FirstOrDefault().delta.reasoning_content)))
                         {
                             chatCompletionResponse.Model = chatCompletionCreate.Model;
                             var msgBytes = CreateStream(chatCompletionResponse);
                             await SendStream(response, msgBytes);
-                            output += chatCompletionResponse.Choices[0].delta.Content;
+                            if (!string.IsNullOrEmpty(chatCompletionResponse.Choices
+                                    .FirstOrDefault().delta.Content))
+                            {
+                                output += chatCompletionResponse.Choices.FirstOrDefault().delta.Content;
+                            }
+
+                            if (!string.IsNullOrEmpty(chatCompletionResponse.Choices
+                                    .FirstOrDefault().delta.reasoning_content))
+                            {
+                                output += chatCompletionResponse.Choices.FirstOrDefault().delta.reasoning_content;
+                            }
                         }
 
 
@@ -174,14 +189,28 @@ public class OpenAPIService : IOpenAPIService
                                                 {
                                                     chatCompletionResponse =
                                                         CreateOpenAIStreamResult(responseContent_sec);
-                                                    if (chatCompletionResponse.Choices.FirstOrDefault() != null &&
-                                                        !string.IsNullOrEmpty(chatCompletionResponse.Choices
-                                                            .FirstOrDefault().delta.Content))
+                                                    if (chatCompletionResponse.Choices.FirstOrDefault() != null
+                                                        && (!string.IsNullOrEmpty(chatCompletionResponse.Choices
+                                                            .FirstOrDefault().delta.Content) || !string.IsNullOrEmpty(
+                                                            chatCompletionResponse.Choices
+                                                                .FirstOrDefault().delta.reasoning_content)))
                                                     {
                                                         chatCompletionResponse.Model = chatCompletionCreate.Model;
                                                         var msgBytes = CreateStream(chatCompletionResponse);
                                                         await SendStream(response, msgBytes);
-                                                        output += chatCompletionResponse.Choices[0].delta.Content;
+                                                        if (!string.IsNullOrEmpty(chatCompletionResponse.Choices
+                                                                .FirstOrDefault().delta.Content))
+                                                        {
+                                                            output += chatCompletionResponse.Choices.FirstOrDefault()
+                                                                .delta.Content;
+                                                        }
+
+                                                        if (!string.IsNullOrEmpty(chatCompletionResponse.Choices
+                                                                .FirstOrDefault().delta.reasoning_content))
+                                                        {
+                                                            output += chatCompletionResponse.Choices.FirstOrDefault()
+                                                                .delta.reasoning_content;
+                                                        }
                                                     }
                                                 }
                                             }
@@ -191,8 +220,11 @@ public class OpenAPIService : IOpenAPIService
                                         output += fn.Arguments;
                                 }
                         }
-                    }
                 }
+
+                if (delay > 0)
+                    Thread.Sleep(delay);
+            }
         }
         catch (Exception e)
         {
@@ -204,13 +236,13 @@ public class OpenAPIService : IOpenAPIService
     }
 
     public async Task<ChatCompletionResponseUnStream> CallERNIE(ChatCompletionCreateRequest chatCompletionCreate,
-        OpenAiOptions openAiOptions, WorkShopAIModel useModel, string account)
+        OpenAIOptions OpenAIOptions, WorkShopAIModel useModel, string account)
     {
         var chatCompletionResponse = new ChatCompletionResponseUnStream();
         var pluginResDto = new PluginResDto();
-        var tikToken = TikToken.GetEncoding("cl100k_base");
+        var tikToken = TikToken.GetEncoding("o200k_base");
         var chatMessages = chatCompletionCreate.Messages;
-        var completionResult = await _baiduService.CallBaiduAI(chatCompletionCreate, openAiOptions);
+        var completionResult = await _baiduService.CallBaiduAI(chatCompletionCreate, OpenAIOptions);
         var fn = completionResult.Function_Call;
         if (fn != null)
         {
@@ -230,7 +262,7 @@ public class OpenAPIService : IOpenAPIService
                 chatMessages.Add(ChatMessage.FromUser(pluginResDto.result));
                 chatCompletionCreate.Messages = chatMessages;
                 chatCompletionCreate.Tools = null;
-                completionResult = await _baiduService.CallBaiduAI(chatCompletionCreate, openAiOptions);
+                completionResult = await _baiduService.CallBaiduAI(chatCompletionCreate, OpenAIOptions);
                 completionResult.Usage.PromptTokens += tikToken.Encode(fn.Thoughts).Count;
                 completionResult.Usage.PromptTokens += tikToken.Encode(pluginResDto.result).Count;
             }
@@ -248,8 +280,13 @@ public class OpenAPIService : IOpenAPIService
         OpenAIService openAiService, string account)
     {
         var pluginResDto = new PluginResDto();
-        var tikToken = TikToken.GetEncoding("cl100k_base");
+        var tikToken = TikToken.GetEncoding("o200k_base");
         var chatMessages = chatCompletionCreate.Messages;
+        int delay = GetUserLimit(account, chatCompletionCreate.Model);
+        if (delay < 0)
+            throw new Exception("Rate limiting.");
+        if (delay > 0)
+            Thread.Sleep(delay);
         var chatCompletionResponse = new ChatCompletionResponseUnStream();
         var completionResult = await openAiService.ChatCompletion.CreateCompletion(chatCompletionCreate);
         if (completionResult.Successful)
@@ -364,6 +401,7 @@ public class OpenAPIService : IOpenAPIService
             {
                 delta.Content = item.Delta.Content;
                 delta.Role = item.Delta.Role;
+                delta.reasoning_content = item.Delta.ReasoningContent;
                 chatChoiceResponse.delta = delta;
             }
 
@@ -456,6 +494,7 @@ public class OpenAPIService : IOpenAPIService
             {
                 delta.Content = item.Message.Content;
                 delta.Role = item.Message.Role;
+                delta.reasoning_content = item.Message.ReasoningContent;
                 chatChoiceResponse.message = delta;
             }
 
@@ -470,5 +509,24 @@ public class OpenAPIService : IOpenAPIService
             total_tokens = responseContent.Usage.TotalTokens
         };
         return chatCompletionResponse;
+    }
+
+    private int GetUserLimit(string account, string model)
+    {
+        int delay = 0;
+        //查询用户模型限制
+        var userModelLimit = _context.UsersLimits.AsNoTracking()
+            .Where(l => l.Account == account && l.Enable.Value)
+            .FirstOrDefault();
+        if (userModelLimit != null)
+        {
+            var limitModel = userModelLimit.ModelName.Split(',').ToList();
+            if (limitModel.Contains(model))
+            {
+                delay = userModelLimit.Limit.Value;
+            }
+        }
+
+        return delay;
     }
 }

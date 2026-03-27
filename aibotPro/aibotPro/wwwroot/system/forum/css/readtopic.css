@@ -8,9 +8,9 @@
     border-radius: 5px;
 }
 
-    #replies img {
-        max-width: 100%;
-    }
+#replies img {
+    max-width: 100%;
+}
 
 .avatar {
     width: 50px;
@@ -43,9 +43,9 @@
     line-height: 1.6;
 }
 
-    .post-content img {
-        max-width: 100%;
-    }
+.post-content img {
+    max-width: 100%;
+}
 
 .postscript-title {
     font-size: 1.1rem;
@@ -82,10 +82,10 @@
     font-size: 0.9em;
 }
 
-    .reply-actions a {
-        margin-right: 10px;
-        color: #6c757d;
-    }
+.reply-actions a {
+    margin-right: 10px;
+    color: #6c757d;
+}
 
 .top-level-reply {
     border-bottom: 1px solid #dee2e6;
@@ -93,9 +93,9 @@
     margin-bottom: 15px;
 }
 
-    .top-level-reply:last-child {
-        border-bottom: none;
-    }
+.top-level-reply:last-child {
+    border-bottom: none;
+}
 
 
 /* 表情选择框样式 */
@@ -104,7 +104,7 @@
     background-color: #fff;
     border: 1px solid #ddd;
     border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     padding: 10px;
     z-index: 1000;
 }
@@ -122,9 +122,9 @@
     transition: transform 0.1s;
 }
 
-    .emoji:hover {
-        transform: scale(1.2);
-    }
+.emoji:hover {
+    transform: scale(1.2);
+}
 
 /* 表情容器样式 */
 .emoji-container {
@@ -132,10 +132,10 @@
     margin-left: 10px;
 }
 
-    .emoji-container .badge {
-        margin-right: 5px;
-        font-size: 14px;
-    }
+.emoji-container .badge {
+    margin-right: 5px;
+    font-size: 14px;
+}
 
 /* Laugh按钮样式 */
 .laugh-btn {
@@ -143,9 +143,9 @@
     transition: color 0.3s;
 }
 
-    .laugh-btn:hover {
-        color: #007bff;
-    }
+.laugh-btn:hover {
+    color: #007bff;
+}
 
 
 footer {
@@ -192,9 +192,9 @@ footer {
     color: white;
 }
 
-    .reply-tag a {
-        color: orangered;
-    }
+.reply-tag a {
+    color: orangered;
+}
 
 .reply-container {
     position: relative;
@@ -224,6 +224,7 @@ footer {
     background-color: #f8f8f8;
     text-align: center;
     padding: 10px 0;
+    z-index: 1000;
 }
 
 .user-info {
@@ -232,11 +233,11 @@ footer {
     border-radius: 10px;
 }
 
-    .user-info .userHeadImg {
-        width: 80px;
-        height: 80px;
-        margin-bottom: 15px;
-    }
+.user-info .userHeadImg {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 15px;
+}
 
 pre {
     border-radius: 5px;

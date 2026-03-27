@@ -6,23 +6,28 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Table("EasyPaySetting")]
+public partial class EasyPaySetting
 {
-    [Table("EasyPaySetting")]
-    public partial class EasyPaySetting
-    {
-        [Key]
-        public int Id { get; set; }
-        public int? ShopId { get; set; }
-        [StringLength(50)]
-        public string ApiKey { get; set; }
-        [StringLength(200)]
-        public string SubmitUrl { get; set; }
-        [StringLength(200)]
-        public string CheckPayUrl { get; set; }
-        [StringLength(200)]
-        public string NotifyUrl { get; set; }
-        [StringLength(200)]
-        public string ReturnUrl { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    public int? ShopId { get; set; }
+
+    [StringLength(50)]
+    public string ApiKey { get; set; }
+
+    [StringLength(200)]
+    public string SubmitUrl { get; set; }
+
+    [StringLength(200)]
+    public string CheckPayUrl { get; set; }
+
+    [StringLength(200)]
+    public string NotifyUrl { get; set; }
+
+    [StringLength(200)]
+    public string ReturnUrl { get; set; }
 }

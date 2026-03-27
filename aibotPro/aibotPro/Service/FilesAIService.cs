@@ -1,4 +1,5 @@
-﻿using aibotPro.Dtos;
+﻿using aibotPro.ChatService;
+using aibotPro.Dtos;
 using aibotPro.Interface;
 using aibotPro.Models;
 using iTextSharp.text;
@@ -17,15 +18,17 @@ public class FilesAIService : IFilesAIService
     private readonly IAiServer _aiServer;
     private readonly IHubContext<ChatHub> _hubContext;
     private readonly IFinanceService _financeService;
+    private readonly ICOSService _cosService;
 
     public FilesAIService(ISystemService systemService, AIBotProContext context, IAiServer aiServer,
-        IHubContext<ChatHub> hubContext, IFinanceService financeService)
+        IHubContext<ChatHub> hubContext, IFinanceService financeService, ICOSService cosService)
     {
         _systemService = systemService;
         _context = context;
         _aiServer = aiServer;
         _hubContext = hubContext;
         _financeService = financeService;
+        _cosService = cosService;
     }
 
     public bool SaveFilesLib(FilesLib filesLib)
@@ -48,7 +51,7 @@ public class FilesAIService : IFilesAIService
         total = query.Count();
 
         // 然后添加分页逻辑，此处同样是构建查询，没有执行
-        var listFilesLibs = query.OrderBy(x => x.CreateTime) // 这里可以根据需要替换为合适的排序字段
+        var listFilesLibs = query.OrderByDescending(x => x.CreateTime)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToList(); // 直到调用ToList，查询才真正执行
@@ -63,170 +66,290 @@ public class FilesAIService : IFilesAIService
         if (filesLib != null)
         {
             _context.FilesLibs.Remove(filesLib);
-            //组合文件路径
+            
+            //组合原文件路径
             var filePath = $"wwwroot{filesLib.FilePath}";
-            //根据文件路径删除文件
-            if (_systemService.DeleteFile(filePath)) return _context.SaveChanges() > 0;
+            //删除原文件
+            bool originalFileDeleted = _systemService.DeleteFile(filePath);
+            
+            //如果有ObjectPath，也删除解析后的文件
+            bool objectFileDeleted = true;
+            if (!string.IsNullOrEmpty(filesLib.ObjectPath))
+            {
+                // 检查ObjectPath是否为COS直链
+                if (filesLib.ObjectPath.StartsWith("http"))
+                {
+                    // 从COS直链中提取COS key并删除COS文件
+                    try
+                    {
+                        // 解析COS URL，提取key
+                        var uri = new Uri(filesLib.ObjectPath);
+                        var cosKey = uri.AbsolutePath.TrimStart('/'); // 移除开头的'/'
+                        
+                        // 删除COS文件
+                        objectFileDeleted = _cosService.DeleteObject(cosKey);
+                        
+                        if (!objectFileDeleted)
+                        {
+                            _systemService.WriteLogUnAsync($"删除COS解析文件失败: {cosKey}", Dtos.LogLevel.Warn, account);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _systemService.WriteLogUnAsync($"解析COS URL失败: {filesLib.ObjectPath}, 错误: {ex.Message}", Dtos.LogLevel.Error, account);
+                        objectFileDeleted = false;
+                    }
+                }
+                else
+                {
+                    // 旧格式：本地路径，删除本地文件
+                    var objectPath = filesLib.ObjectPath.Contains("wwwroot") 
+                        ? filesLib.ObjectPath 
+                        : $"wwwroot/{filesLib.ObjectPath}";
+                    objectFileDeleted = _systemService.DeleteFile(objectPath);
+                }
+            }
+            
+            //只有在原文件删除成功（或不存在）的情况下才保存数据库更改
+            //解析文件删除失败不影响主流程，但会记录日志
+            if (originalFileDeleted) 
+            {
+                if (!objectFileDeleted)
+                {
+                    _systemService.WriteLogUnAsync($"解析文件删除失败，但继续删除数据库记录: {fileCode}", Dtos.LogLevel.Warn, account);
+                }
+                return _context.SaveChanges() > 0;
+            }
         }
 
         return false;
     }
-
-    public async Task<string> PromptFromFiles(List<string> path, string account)
+    public List<FoldersLib> GetFoldersLibs(string account)
     {
-        var prompt = string.Empty;
-        //判断路径是否有wwwroot
-        if (path.Count > 0)
-        {
-            for (var i = 0; i < path.Count; i++)
-            {
-                if (!path[i].Contains("wwwroot")) path[i] = $"wwwroot{path[i]}";
-                var fileText = await _systemService.GetFileText(path[i]);
-                if (!string.IsNullOrEmpty(fileText)) prompt += $"## 文件内容{i + 1}：{fileText} \n\n";
-            }
-
-            return prompt;
-        }
-
-        return "";
+        //获取文件夹列表
+        var foldersLibs = _context.FoldersLibs.Where(x => x.Account == account).ToList();
+        return foldersLibs;
     }
 
-    public async Task<List<string>> ReadingFiles(string content, string prompt, string chatId, string account,
-        string senMethod,
-        int cutSize = 2000, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public bool SaveFolderLib(FoldersLib folderLib)
     {
-        List<string> result = new List<string>();
-        ChatRes chatRes = new ChatRes();
-        chatRes.isterminal = true;
-        var systemCfg = _systemService.GetSystemCfgs();
-        var chunkLength = int.Parse(systemCfg.Find(x => x.CfgKey == "ReadingModelChunkLength").CfgValue);
-        var readingModelMaxChunk = int.Parse(systemCfg.Find(x => x.CfgKey == "ReadingModelMaxChunk").CfgValue);
-        var aiCodeCheckBaseUrl = systemCfg.FirstOrDefault(x => x.CfgKey == "AICodeCheckBaseUrl");
-        var aiCodeCheckApiKey = systemCfg.FirstOrDefault(x => x.CfgKey == "AICodeCheckApiKey");
-        var aiCodeCheckModel = systemCfg.FirstOrDefault(x => x.CfgKey == "AICodeCheckModel");
-        var tikToken = TikToken.GetEncoding("cl100k_base");
-        APISetting apiSetting = new APISetting
-        {
-            BaseUrl = aiCodeCheckBaseUrl.CfgValue,
-            ApiKey = aiCodeCheckApiKey.CfgValue
-        };
-        List<string> fileChunks = new List<string>();
-        if (content.Length <= chunkLength)
-        {
-            fileChunks.Add(content);
-        }
-        else
-        {
-            for (int i = 0; i < content.Length; i += chunkLength)
-            {
-                // 如果剩余的长度小于 chunkLength 就取剩余的部分
-                var chunk = content.Substring(i, Math.Min(chunkLength, content.Length - i));
-                fileChunks.Add(chunk);
-            }
-        }
+        //保存文件夹
+        _context.FoldersLibs.Add(folderLib);
+        return _context.SaveChanges() > 0;
+    }
+    public bool SaveFilesLibCloud(FilesLibCloud filesLibCloud)
+    {
+        //保存云存储文件
+        _context.FilesLibClouds.Add(filesLibCloud);
+        return _context.SaveChanges() > 0;
+    }
 
-        chatRes.message = "🟦 准备切片阅读...";
-        await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
-        foreach (var fileStr in fileChunks)
+    public List<FilesLibCloud> GetFilesLibClouds(int page, int pageSize, string name, string folderCode, out int total, string account = "")
+    {
+        // 利用IQueryable延迟执行，直到真正需要数据的时候才去数据库查询
+        IQueryable<FilesLibCloud> query = _context.FilesLibClouds;
+
+        // 添加过滤条件
+        if (!string.IsNullOrEmpty(name)) query = query.Where(x => x.FileName.Contains(name));
+        if (!string.IsNullOrEmpty(account)) query = query.Where(x => x.Account == account);
+        if (!string.IsNullOrEmpty(folderCode)) query = query.Where(x => x.FolderCode == folderCode);
+
+        // 计算总数
+        total = query.Count();
+
+        // 添加分页逻辑
+        var listFilesLibClouds = query.OrderByDescending(x => x.CreateTime)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        return listFilesLibClouds;
+    }
+
+    public bool DeleteFilesLibCloud(string fileCode, string account)
+    {
+        List<string> files = fileCode.Split(',').ToList();
+
+        // Find all matching files
+        var filesLibClouds = _context.FilesLibClouds
+            .Where(x => files.Contains(x.FileCode) && x.Account == account)
+            .ToList();
+
+        if (filesLibClouds != null && filesLibClouds.Count > 0)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var segment = await _aiServer.TokenizeJinaAI(fileStr, cutSize);
-            chatRes.message = $"🟩 切片完成,总切片数：{segment.Chunks.Count}";
-            if (segment.Chunks.Count > readingModelMaxChunk)
+            foreach (var file in filesLibClouds)
             {
-                segment.Chunks = MergeChunks(segment.Chunks, readingModelMaxChunk);
-                chatRes.message += $"🟨 切片数量超过限制，已自动合并为 {segment.Chunks.Count} 个切片";
-            }
-            await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
-            for (int i = 0; i < segment.Chunks.Count; i++)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                //使用AI判断当前分片是否对用户提问有用
-                string jsonschema = @"{
-                                          ""type"": ""object"",
-                                          ""properties"": {
-                                            ""result"": {
-                                              ""type"": ""boolean"",
-                                              ""description"": ""判断结果，文件片段对提问是否有效""
-                                            },
-                                            ""isfinish"": {
-                                              ""type"": ""boolean"",
-                                              ""description"": ""阅读结束""
-                                            }
-                                          },
-                                          ""required"": [
-                                            ""result"",
-                                            ""isfinish""
-                                          ],
-                                          ""additionalProperties"": false
-                                    }";
-                string question = $"# 你是一个文件分析专家，可以根据文件片段以判断该分片对用户的提问是否有效，如果有效`result`返回`true`无效返回`false`，应该使用冗余设计，可能有效的也应该返回`true`\n" +
-                                  $"**注意事项1:** 当用户有文件总结的需求时，大部分片段都应该是有效的\n" +
-                                  $"**注意事项2:** 如果是信息查询的场景，当你找到后，请将`isfinish`设置为`true`，以结束阅读，否则设置为`false`，切记不要轻易结束阅读，应该多阅读一些内容以获得详细信息\n" +
-                                  $"**注意事项3:** 由于分片可能导致信息被截断，所以阅读时请结合已确认**有效**的文本分片来确定当前分片是否与用户提问相关，当前分片有可能可以与当前有效的分片拼接使用\n" +
-                                  $"* 用户提问:{prompt}\n" +
-                                  $"* 当前待分析的文本片段:\n" +
-                                  $"```text\n" +
-                                  $"{segment.Chunks[i]}\n" +
-                                  $"```" +
-                                  $"* 已确认有效的文本分片\n" +
-                                  $"{UseChunkMerge(result)}";
-                AiChat aiChat = _aiServer.CreateAiChat(aiCodeCheckModel.CfgValue, question, false, false, true, jsonschema);
-                string res = await _aiServer.CallingAINotStream(aiChat, apiSetting);
-                await _financeService.CreateUseLogAndUpadteMoney(account, aiCodeCheckModel.CfgValue,
-                    tikToken.Encode(question).Count, tikToken.Encode(res).Count);
-                cancellationToken.ThrowIfCancellationRequested();
-                JObject json = JObject.Parse(res);
-                bool judgmentResult = json["result"].Value<bool>();
-                bool judgmentIsFinish = json["isfinish"].Value<bool>();
-                if (judgmentResult)
+                // 判断是否为COS路径
+                if (file.FilePath.StartsWith("http") || file.FilePath.StartsWith("https") || file.FilePath.Contains("cos."))
                 {
-                    result.Add(segment.Chunks[i]);
-                    chatRes.message = $"✅ 第{i + 1}片：内容有效:\n {segment.Chunks[i]}";
-                    await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                    // 从COS路径中提取key
+                    string key = file.FilePath.Substring(file.FilePath.LastIndexOf("/") + 1);
+                    // 使用COS服务删除文件
+                    _cosService.DeleteObject(file.FilePathKey);
                 }
                 else
                 {
-                    chatRes.message = $"❌ 第{i + 1}片：内容无效";
-                    await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                    // 删除本地物理文件
+                    var filePath = $"wwwroot{file.FilePath}";
+                    _systemService.DeleteFile(filePath);
                 }
-                if (judgmentIsFinish)
+                // Remove each file from the database
+                _context.FilesLibClouds.Remove(file);
+            }
+
+            // Save all changes at once
+            return _context.SaveChanges() > 0;
+        }
+
+        return false;
+    }
+    public bool DeleteFolderLib(string folderCode, string account)
+    {
+        //删除文件夹
+        var folderLib = _context.FoldersLibs.FirstOrDefault(x => x.FolderCode == folderCode && x.Account == account);
+        if (folderLib != null)
+        {
+            _context.FoldersLibs.Remove(folderLib);
+            //删除文件夹下的文件
+            var filesLibs = _context.FilesLibClouds.Where(x => x.FolderCode == folderCode && x.Account == account).ToList();
+            foreach (var item in filesLibs)
+            {
+                _context.FilesLibClouds.Remove(item);
+                // 判断是否为COS路径
+                if (item.FilePath.StartsWith("http") || item.FilePath.StartsWith("https") || item.FilePath.Contains("cos."))
                 {
-                    break;
+                    // 使用COS服务删除文件
+                    _cosService.DeleteObject(item.FilePathKey);
+                }
+                else
+                {
+                    // 删除本地物理文件
+                    _systemService.DeleteFile($"wwwroot{item.FilePath}");
                 }
             }
+            return _context.SaveChanges() > 0;
+        }
+        //删除子文件夹
+        var folderLibs = _context.FoldersLibs.Where(x => x.ParentCode == folderCode && x.Account == account).ToList();
+        if (folderLibs.Count > 0)
+        {
+            foreach (var item in folderLibs)
+            {
+                _context.FoldersLibs.Remove(item);
+                //删除子文件夹下的文件
+                var filesLibs = _context.FilesLibClouds.Where(x => x.FolderCode == item.FolderCode && x.Account == account).ToList();
+                foreach (var item2 in filesLibs)
+                {
+                    _context.FilesLibClouds.Remove(item2);
+                    // 判断是否为COS路径
+                    if (item2.FilePath.StartsWith("http") || item2.FilePath.StartsWith("https") || item2.FilePath.Contains("cos."))
+                    {
+                        // 使用COS服务删除文件
+                        _cosService.DeleteObject(item2.FilePathKey);
+                    }
+                    else
+                    {
+                        // 删除本地物理文件
+                        _systemService.DeleteFile($"wwwroot{item2.FilePath}");
+                    }
+                }
+            }
+            return _context.SaveChanges() > 0;
         }
 
-        return result;
+        return true;
     }
-    private List<string> MergeChunks(List<string> originalChunks, int maxChunkCount)
+    public async Task<bool> UploadFileToCOS(string localFilePath, string cosKey, Action<int> progressCallback = null)
     {
-        if (originalChunks.Count <= maxChunkCount)
+        try
         {
-            return originalChunks;
+            // 文件信息
+            var fileInfo = new FileInfo(localFilePath);
+            if (!fileInfo.Exists)
+            {
+                _systemService.WriteLogUnAsync($"文件不存在: {localFilePath}", Dtos.LogLevel.Error, "system");
+                return false;
+            }
+
+            // 分片大小，5MB
+            const int chunkSize = 5 * 1024 * 1024;
+            int totalChunks = (int)Math.Ceiling(fileInfo.Length / (double)chunkSize);
+
+            // 初始化分片上传
+            string uploadId = _cosService.InitMultipartUpload(cosKey);
+            if (string.IsNullOrEmpty(uploadId))
+            {
+                _systemService.WriteLogUnAsync("初始化COS分片上传失败", Dtos.LogLevel.Error, "system");
+                return false;
+            }
+
+            // 上传分片
+            List<string> eTagList = new List<string>(totalChunks);
+            for (int i = 0; i < totalChunks; i++)
+            {
+                eTagList.Add(string.Empty);
+            }
+
+            using (FileStream fs = new FileStream(localFilePath, FileMode.Open, FileAccess.Read))
+            {
+                byte[] buffer = new byte[chunkSize];
+
+                for (int partNumber = 1; partNumber <= totalChunks; partNumber++)
+                {
+                    // 创建临时分片文件
+                    string tempChunkPath = Path.Combine(Path.GetTempPath(), $"{Path.GetFileName(localFilePath)}_chunk_{partNumber}");
+
+                    using (FileStream tempChunkStream = new FileStream(tempChunkPath, FileMode.Create, FileAccess.Write))
+                    {
+                        int bytesRead = fs.Read(buffer, 0, chunkSize);
+                        tempChunkStream.Write(buffer, 0, bytesRead);
+                    }
+
+                    // 上传分片
+                    string eTag = _cosService.UploadPart(cosKey, uploadId, partNumber, tempChunkPath);
+                    if (string.IsNullOrEmpty(eTag))
+                    {
+                        _systemService.WriteLogUnAsync($"上传分片{partNumber}失败", Dtos.LogLevel.Error, "system");
+                        _cosService.AbortMultipartUpload(cosKey, uploadId);
+                        return false;
+                    }
+
+                    eTagList[partNumber - 1] = eTag;
+
+                    // 计算并回调进度
+                    int progress = (int)((partNumber / (double)totalChunks) * 100);
+                    progressCallback?.Invoke(progress);
+
+                    // 删除临时分片文件
+                    try { File.Delete(tempChunkPath); } catch { }
+                }
+            }
+
+            // 完成分片上传
+            bool completeResult = _cosService.CompleteMultipartUpload(cosKey, uploadId, eTagList);
+            if (!completeResult)
+            {
+                _systemService.WriteLogUnAsync("完成COS分片上传失败", Dtos.LogLevel.Error, "system");
+                return false;
+            }
+
+            // 上传完成，回调100%进度
+            progressCallback?.Invoke(100);
+
+            // 删除本地文件
+            try { _systemService.DeleteFile(localFilePath); } catch { }
+
+            return true;
         }
-
-        List<string> mergedChunks = new List<string>();
-        int chunkSize = (int)Math.Ceiling((double)originalChunks.Count / maxChunkCount);
-
-        for (int i = 0; i < originalChunks.Count; i += chunkSize)
+        catch (Exception ex)
         {
-            string mergedChunk = string.Join(" ", originalChunks.Skip(i).Take(chunkSize));
-            mergedChunks.Add(mergedChunk);
+            _systemService.WriteLogUnAsync($"上传文件到COS失败: {ex.Message}", Dtos.LogLevel.Error, "system");
+            return false;
         }
-
-        return mergedChunks;
     }
-    private string UseChunkMerge(List<string> chunks)
+    public FilesLibCloud GetFileLibCloudByCode(string fileCode, string username)
     {
-        string result = string.Empty;
-        for (int i = 0; i < chunks.Count; i++)
-        {
-            result += $"* 分片{i + 1}:\n" +
-                      $"```text\n" +
-                      $"{chunks[i]}\n" +
-                      $"```\n";
-        }
-        return result;
+        return _context.FilesLibClouds
+            .FirstOrDefault(f => f.FileCode == fileCode && f.Account == username);
     }
 }

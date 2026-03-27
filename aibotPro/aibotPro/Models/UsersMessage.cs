@@ -6,24 +6,30 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Table("UsersMessage")]
+public partial class UsersMessage
 {
-    [Table("UsersMessage")]
-    public partial class UsersMessage
-    {
-        [Key]
-        public long Id { get; set; }
-        [StringLength(50)]
-        public string Account { get; set; }
-        [StringLength(50)]
-        public string MessageCode { get; set; }
-        public string MessageContent { get; set; }
-        [StringLength(3000)]
-        public string MessageAttr { get; set; }
-        [StringLength(50)]
-        public string MessageAttrType { get; set; }
-        public int? MessageStatus { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? CreateTime { get; set; }
-    }
+    [Key]
+    public long Id { get; set; }
+
+    [StringLength(50)]
+    public string Account { get; set; }
+
+    [StringLength(50)]
+    public string MessageCode { get; set; }
+
+    public string MessageContent { get; set; }
+
+    [StringLength(3000)]
+    public string MessageAttr { get; set; }
+
+    [StringLength(50)]
+    public string MessageAttrType { get; set; }
+
+    public int? MessageStatus { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? CreateTime { get; set; }
 }

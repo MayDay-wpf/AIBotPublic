@@ -6,28 +6,36 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+public partial class User
 {
-    public partial class User
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string UserCode { get; set; }
-        [StringLength(50)]
-        public string Account { get; set; }
-        [StringLength(50)]
-        public string Password { get; set; }
-        [StringLength(50)]
-        public string Nick { get; set; }
-        [StringLength(100)]
-        public string HeadImg { get; set; }
-        [StringLength(50)]
-        public string Sex { get; set; }
-        [Column(TypeName = "money")]
-        public decimal? Mcoin { get; set; }
-        public int? IsBan { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? CreateTime { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string UserCode { get; set; }
+
+    [StringLength(50)]
+    public string Account { get; set; }
+
+    [StringLength(50)]
+    public string Password { get; set; }
+
+    [StringLength(50)]
+    public string Nick { get; set; }
+
+    [StringLength(1000)]
+    public string HeadImg { get; set; }
+
+    [StringLength(50)]
+    public string Sex { get; set; }
+
+    [Column(TypeName = "money")]
+    public decimal? Mcoin { get; set; }
+
+    public int? IsBan { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? CreateTime { get; set; }
 }

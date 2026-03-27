@@ -13,6 +13,9 @@ using aibotPro.Dtos;
 using Microsoft.Extensions.Options;
 using Milvus.Client;
 using Microsoft.Extensions.DependencyInjection;
+using aibotPro.Auth;
+using aibotPro.ChatService;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 // 读取 appsettings.json 配置
@@ -44,12 +47,14 @@ foreach (var endpoint in redisSection.GetSection("EndPoints").GetChildren())
     int port = endpoint.GetValue<int>("Port");
     configOptions.EndPoints.Add(host, port);
 }
+
 builder.Services.Configure<MilvusOptions>(builder.Configuration.GetSection("Milvus"));
 // 配置 MilvusClient
 builder.Services.AddSingleton<MilvusClient>(sp =>
 {
     var options = sp.GetRequiredService<IOptions<MilvusOptions>>().Value;
-    var client = new MilvusClient(options.Host, options.UserName, options.Password, options.Port, options.UseSsl, options.Database);
+    var client = new MilvusClient(options.Host, options.UserName, options.Password, options.Port, options.UseSsl,
+        options.Database);
     return client;
 });
 
@@ -60,10 +65,14 @@ builder.Services.AddControllersWithViews();
 
 builder.Services.AddHttpContextAccessor();
 //注册服务
-builder.Services.AddDbContext<AIBotProContext>(options => { options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")); });
+builder.Services.AddDbContext<AIBotProContext>(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
 builder.Services.AddScoped<IRedisService, RedisService>();
 builder.Services.AddScoped<ISystemService, SystemService>();
 builder.Services.AddScoped<IUsersService, UsersService>();
+builder.Services.AddScoped<IMcpService, McpService>();
 builder.Services.AddScoped<IAiServer, AiServer>();
 builder.Services.AddScoped<IBaiduService, BaiduService>();
 builder.Services.AddScoped<IWorkShop, WorkShopService>();
@@ -84,44 +93,75 @@ builder.Services.AddSingleton<ChatCancellationManager>();
 builder.Services.AddScoped<IMessagesService, MessagesService>();
 builder.Services.AddScoped<IForumService, ForumService>();
 builder.Services.AddScoped<IAiBookService, AiBookService>();
+builder.Services.AddScoped<IDeepResearchService, DeepResearchService>();
+builder.Services.AddScoped<IToolsService, ToolsService>();
+builder.Services.AddSingleton<DeepResearchBackgroundService>();
+builder.Services.AddHostedService<DeepResearchBackgroundService>(provider =>
+    provider.GetService<DeepResearchBackgroundService>());
 builder.Services.AddMemoryCache();
 builder.Services.AddSignalR();
 
 builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
-    };
-}); ;
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        };
+
+        // Add these lines for SignalR WebSocket support
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+
+                // If the request is for our hub...
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    (path.StartsWithSegments("/chatHub") || path.StartsWithSegments("/imessageHub") ||
+                     path.StartsWithSegments("/vibeCodingHub") || path.StartsWithSegments("/deepResearchHub")))
+                {
+                    // Read the token from the query string
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
+    });
+
 builder.Services.AddAuthorization(options =>
 {
     // 定义策略
-    options.AddPolicy("AdminOnly", policy =>
-    {
-        policy.Requirements.Add(new AdminRequirement());
-    });
-    options.AddPolicy("APIOnly", policy =>
-    {
-        policy.Requirements.Add(new APIRequirement());
-    });
+    options.AddPolicy("AdminOnly", policy => { policy.Requirements.Add(new AdminRequirement()); });
+    options.AddPolicy("APIOnly", policy => { policy.Requirements.Add(new APIRequirement()); });
 });
 
 
 builder.Services.AddAuthorization();
 builder.Services.AddSingleton<JwtTokenManager>();
+//识别外部 HTTPS 协议
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | 
+                               ForwardedHeaders.XForwardedProto | 
+                               ForwardedHeaders.XForwardedHost;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 var app = builder.Build();
+app.UseForwardedHeaders();
 app.Use((context, next) =>
 {
     var remoteIpAddress = context.Connection.RemoteIpAddress ?? IPAddress.Parse("0.0.0.0");
@@ -152,25 +192,29 @@ if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
 }
+
 // 注册自定义中间件
-app.UseMiddleware<ConfigurationLoaderMiddleware>();//加载系统配置到Redis
+app.UseMiddleware<ConfigurationLoaderMiddleware>(); //加载系统配置到Redis
 // 使用认证中间件
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapHub<ChatHub>("/chatHub");  // 映射Hub
+app.MapHub<ChatHub>("/chatHub"); // 映射Hub
 app.MapHub<MessagesHub>("/imessageHub"); // 映射Hub
+app.MapHub<VibeCodingHub>("/vibeCodingHub");
+app.MapHub<DeepResearchHub>("/deepResearchHub");
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
 }
+
 //配置跨域
 app.UseCors(builder =>
 {
     builder.AllowAnyOrigin()
-           .AllowAnyMethod()
-           .AllowAnyHeader();
+        .AllowAnyMethod()
+        .AllowAnyHeader();
 });
 
 app.UseStaticFiles();

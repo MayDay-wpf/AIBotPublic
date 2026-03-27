@@ -1,7 +1,10 @@
 ﻿let articleId = 0;
 let topicId = 0;
 var md = window.markdownit({
-    breaks: true
+    breaks: true,
+    html: true,
+    linkify: true,
+    typographer: true
 });
 let currentPage = 1;
 let repliesPerPage = 20;

@@ -6,23 +6,30 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Table("ForumTopic")]
+public partial class ForumTopic
 {
-    [Table("ForumTopic")]
-    public partial class ForumTopic
-    {
-        [Key]
-        public int Id { get; set; }
-        public int? AccountId { get; set; }
-        [StringLength(1000)]
-        public string TopicTitle { get; set; }
-        public string TopicContent { get; set; }
-        [StringLength(500)]
-        public string TopicTags { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? CreateTime { get; set; }
-        public long? hit { get; set; }
-        public bool? IsDel { get; set; }
-        public bool? IsTop { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    public int? AccountId { get; set; }
+
+    [StringLength(1000)]
+    public string TopicTitle { get; set; }
+
+    public string TopicContent { get; set; }
+
+    [StringLength(500)]
+    public string TopicTags { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? CreateTime { get; set; }
+
+    public long? hit { get; set; }
+
+    public bool? IsDel { get; set; }
+
+    public bool? IsTop { get; set; }
 }

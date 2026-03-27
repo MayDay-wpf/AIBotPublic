@@ -15,6 +15,9 @@
     });
     getUserInfo();
     isVIPbyUserInfo();
+    
+    // Load model information first, then token packages
+    loadModelInfo();
 });
 let avatar = '';
 let page = 1;
@@ -23,6 +26,33 @@ let total = 0;
 let vipPrice = 0;
 let vipEndDate = '';
 let daysRemaining = 0;
+let modelNicknames = {}; // Store model nicknames
+
+// Load model information to get nicknames
+function loadModelInfo() {
+    $.ajax({
+        url: '/OpenAll/GetChatSetting',
+        type: 'Post',
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                // Store model nicknames in a map for quick lookup
+                for (var i = 0; i < response.data.length; i++) {
+                    modelNicknames[response.data[i].modelName] = response.data[i].modelNick;
+                }
+                // Now load token packages after model info is loaded
+                loadTokenPackages();
+            } else {
+                // If we can't get model info, still load token packages
+                loadTokenPackages();
+            }
+        },
+        error: function() {
+            // If error, still load token packages
+            loadTokenPackages();
+        }
+    });
+}
 
 function loadImage(event) {
     var input = event.target;
@@ -197,7 +227,7 @@ function updateOrderList(orders) {
         var status = ``;
         if (orders[i].orderStatus == 'NO') {
             status = `<span style="color:red">未支付</span>`
-            dosomething = `<button class="btn btn-success" onclick="checkOrder('` + orders[i].orderCode + `')">核验</button>`;
+            dosomething = `<button class="btn btn-success" onclick="checkOrder('` + orders[i].orderCode + `')">点击核验</button>`;
         } else status = `<span style="color:green">已支付</span>`;
         str += `<tr><td>` + orders[i].orderCode + `</td><td>` + orders[i].orderMoney + `</td><td>` + orders[i].createTime + `</td><td>` + status + `</td><td>` + dosomething + `</td></tr>`;
     }
@@ -456,6 +486,7 @@ function editPassword() {
         });
     });
 }
+
 function vipToBalance() {
     let dailyExchangeValue = (vipPrice / 30).toFixed(4);
 
@@ -485,7 +516,7 @@ $('#custom-days').on('input', function () {
         balert('请输入有效的天数！', 'warning', false, 1500, 'center');
         $('#preview-balance').text("0.0000");
     } else {
-        let dailyExchangeValue = (vipPrice / 30).toFixed(4);
+        let dailyExchangeValue = (vipPrice / 2 / 30).toFixed(4);
         $('#preview-balance').text((dailyExchangeValue * days).toFixed(4));
     }
 });
@@ -515,8 +546,7 @@ $('#confirm-exchange').click(() => {
                 $('#vipModal').modal('hide');
                 getUserInfo();
                 isVIPbyUserInfo();
-            }
-            else {
+            } else {
                 balert(response.msg, 'danger', false, 1500, 'center');
             }
             unloadingBtn('#confirm-exchange');
@@ -527,3 +557,136 @@ $('#confirm-exchange').click(() => {
         }
     });
 });
+
+// Load and display token packages
+function loadTokenPackages() {
+    $.ajax({
+        url: '/Users/GetMyTokenPackages',
+        type: 'post',
+        dataType: 'json',
+        success: function(response) {
+            if (response.success && response.data) {
+                if (response.data.length > 0) {
+                    displayTokenPackages(response.data);
+                } else {
+                    $('#token-packages-container').hide();
+                    $('#no-token-packages').show();
+                }
+            } else {
+                $('#token-packages-container').html('<div class="alert alert-danger">加载Token包失败</div>');
+            }
+        },
+        error: function() {
+            $('#token-packages-container').html('<div class="alert alert-danger">网络错误，请稍后再试</div>');
+        }
+    });
+}
+
+// Display token packages with progress bars
+function displayTokenPackages(packages) {
+    var html = '';
+    
+    packages.forEach(function(pkg) {
+        // Create progress bar class based on percentage
+        var progressClass = 'bg-success';
+        if (pkg.percentage > 70) {
+            progressClass = 'bg-danger';
+        } else if (pkg.percentage > 50) {
+            progressClass = 'bg-warning';
+        }
+        
+        // Create models list with nicknames
+        var modelsList = '';
+        if (pkg.models && pkg.models.length > 0) {
+            modelsList = pkg.models.map(function(model) {
+                // If model is an empty string or "所有模型", display "所有模型"
+                if (!model || model === "" || model === "所有模型") {
+                    return '<span class="badge badge-pill badge-info mr-1 mb-1">所有模型</span>';
+                }
+                
+                // Try to get nickname from our map
+                var modelNick = modelNicknames[model] || model;
+                return '<span class="badge badge-pill badge-info mr-1 mb-1">' + modelNick + '</span>';
+            }).join(' ');
+        }
+        
+        html += `
+        <div class="token-package card mb-2 border-light">
+            <div class="card-body py-2 px-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <h6 class="card-title mb-0 small"><i class="fas fa-briefcase"></i> Token包: ${pkg.code}</h6>
+                    <span class="badge badge-pill badge-primary">${pkg.remainingDays}天后过期</span>
+                </div>
+                
+                <div class="progress mb-1" style="height: 15px;">
+                    <div class="progress-bar ${progressClass}" role="progressbar" 
+                         style="width: ${pkg.percentage}%;" 
+                         aria-valuenow="${pkg.percentage}" aria-valuemin="0" aria-valuemax="100">
+                        ${pkg.percentage}%
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between text-muted small mb-1">
+                    <span>已用: ${pkg.usedTokens}</span>
+                    <span>剩余: ${pkg.remainingTokens}</span>
+                    <span>总计: ${pkg.totalTokens}</span>
+                </div>
+                
+                <div class="mt-1 small">
+                    <span class="text-muted">可用模型:</span>
+                    <span class="model-tags">${modelsList}</span>
+                </div>
+                
+                <div class="text-right">
+                    <small class="text-muted">过期时间: ${pkg.expirationDate}</small>
+                </div>
+            </div>
+        </div>
+        `;
+    });
+    
+    $('#token-packages-container').html(html);
+    // Update display status
+    if (packages.length > 0) {
+        $('#token-packages-container').show();
+        $('#no-token-packages').hide();
+    } else {
+        $('#token-packages-container').hide();
+        $('#no-token-packages').show();
+    }
+}
+
+// Add this function for token package redemption
+function exchangeTokenPackage() {
+    var tokenCode = $('#token-code').val().trim();
+    if (tokenCode == "") {
+        balert('兑换码不能为空', 'danger', false, 1500, 'center');
+        return;
+    }
+    
+    loadingBtn('.exchangeTokenBtn');
+    $.ajax({
+        url: "/Users/RedeemTokenPackage",
+        type: "post",
+        dataType: "json",
+        data: {
+            code: tokenCode
+        },
+        success: function (res) {
+            unloadingBtn('.exchangeTokenBtn');
+            if (res.success) {
+                balert('兑换成功', 'success', false, 1500, 'center');
+                $('#token-code').val(''); // Clear the input field
+                // Reload model information first, then token packages to ensure we have latest data
+                loadModelInfo();
+            } else {
+                balert(res.msg, 'danger', false, 1500, 'center');
+            }
+        },
+        error: function(error) {
+            unloadingBtn('.exchangeTokenBtn');
+            console.log(error);
+            balert('兑换失败，请稍后再试', 'danger', false, 1500, 'center');
+        }
+    });
+}

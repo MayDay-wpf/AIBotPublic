@@ -1,23 +1,23 @@
 ﻿using aibotPro.Dtos;
 using aibotPro.Models;
-using OpenAI;
-using OpenAI.Managers;
-using OpenAI.ObjectModels.RequestModels;
-using OpenAI.ObjectModels.ResponseModels;
+using Betalgo.Ranul.OpenAI;
+using Betalgo.Ranul.OpenAI.Managers;
+using Betalgo.Ranul.OpenAI.ObjectModels.RequestModels;
+using Betalgo.Ranul.OpenAI.ObjectModels.ResponseModels;
 
 namespace aibotPro.Interface;
 
 public interface IOpenAPIService
 {
     Task<Dictionary<string, string>> CallERNIEAsStream(HttpResponse httpResponse,
-        ChatCompletionCreateRequest chatCompletionCreate, OpenAiOptions openAiOptions, WorkShopAIModel useModel,
+        ChatCompletionCreateRequest chatCompletionCreate, OpenAIOptions OpenAIOptions, WorkShopAIModel useModel,
         string account);
 
     Task<Dictionary<string, string>> CallOpenAIAsStream(HttpResponse httpResponse,
         ChatCompletionCreateRequest chatCompletionCreate, OpenAIService openAiService, string account);
 
     Task<ChatCompletionResponseUnStream> CallERNIE(ChatCompletionCreateRequest chatCompletionCreate,
-        OpenAiOptions openAiOptions, WorkShopAIModel useModel, string account);
+        OpenAIOptions OpenAIOptions, WorkShopAIModel useModel, string account);
 
     Task<ChatCompletionResponseUnStream> CallOpenAI(ChatCompletionCreateRequest chatCompletionCreate,
         OpenAIService openAiService, string account);

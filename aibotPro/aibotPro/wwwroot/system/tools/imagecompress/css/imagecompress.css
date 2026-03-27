@@ -1,0 +1,319 @@
+/* �G�)��7 */
+.drop-zone {
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 40px 20px;
+    text-align: center;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.drop-zone:hover,
+.drop-zone.drag-over {
+    border-color: #007bff;
+    background-color: rgba(0, 123, 255, 0.08);
+}
+
+.drop-zone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.drop-icon {
+    width: 48px;
+    height: 48px;
+    color: #6c757d;
+}
+
+.drop-zone p {
+    margin: 0;
+    font-size: 16px;
+    color: #495057;
+}
+
+.drop-zone .text-muted {
+    font-size: 14px;
+}
+
+/* �Gh7 */
+.image-list {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.image-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    background-color: #fff;
+    transition: all 0.3s ease;
+}
+
+.image-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.image-preview {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-right: 15px;
+    border: 1px solid #dee2e6;
+}
+
+.image-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.image-name {
+    font-weight: 500;
+    color: #495057;
+    margin: 0;
+}
+
+.image-size {
+    font-size: 12px;
+    color: #6c757d;
+    margin: 0;
+}
+
+.image-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: 15px;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-waiting {
+    background-color: #e9ecef;
+    color: #6c757d;
+}
+
+.status-processing {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-completed {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* ۦa7 */
+.progress {
+    height: 8px;
+    border-radius: 4px;
+    background-color: #e9ecef;
+    margin-top: 5px;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #28a745, #20c997);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.image-progress {
+    width: 100px;
+}
+
+/*  d	� */
+.remove-btn {
+    background: none;
+    border: none;
+    color: #dc3545;
+    cursor: pointer;
+    padding: 5px;
+    margin-left: 10px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.remove-btn:hover {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* (��W7 */
+#qualitySlider {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 8px;
+    border-radius: 4px;
+    background: #dee2e6;
+    outline: none;
+    transition: background 0.3s ease;
+}
+
+#qualitySlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #007bff;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+#qualitySlider::-webkit-slider-thumb:hover {
+    background: #0056b3;
+}
+
+#qualitySlider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #007bff;
+    cursor: pointer;
+    border: none;
+}
+
+/* }ߡ7 */
+#downloadStats {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+/* 下载容器简单高亮效果 */
+#downloadContainer {
+    transition: background-color 0.3s ease;
+}
+
+#downloadContainer.highlight {
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.stat-item {
+    display: inline-block;
+    margin: 0 15px;
+    text-align: center;
+}
+
+.stat-number {
+    display: block;
+    font-size: 24px;
+    font-weight: bold;
+    color: #28a745;
+}
+
+.stat-label {
+    display: block;
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 2px;
+}
+
+/* ͔�� */
+@media (max-width: 768px) {
+    .drop-zone {
+        padding: 30px 15px;
+        min-height: 150px;
+    }
+
+    .image-item {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    .image-preview {
+        margin-right: 0;
+        margin-bottom: 10px;
+        align-self: center;
+    }
+
+    .image-status {
+        margin-left: 0;
+        margin-top: 10px;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .stat-item {
+        display: block;
+        margin: 10px 0;
+    }
+}
+
+/* �}�; */
+.loading-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ��'ԃ */
+.size-comparison {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+}
+
+.original-size {
+    color: #dc3545;
+}
+
+.compressed-size {
+    color: #28a745;
+}
+
+.size-arrow {
+    color: #6c757d;
+}
+
+/* y��\	�� */
+.batch-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 576px) {
+    .batch-actions {
+        flex-direction: column;
+    }
+
+    .batch-actions button {
+        width: 100%;
+    }
+}

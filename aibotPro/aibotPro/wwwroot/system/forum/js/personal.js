@@ -9,7 +9,6 @@ $(function () {
     $("#ai-main-menu").parent().siblings().removeClass('show');
     $("#forum-nav").addClass('active');
     getUserInfo();
-    bindMenu();
     // 点击编辑按钮时显示模态框
     $('#editUserInfoBtn').click(function () {
         // 将当前的简介和网站填入模态框
@@ -310,27 +309,4 @@ function openInNewWindow(postId) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-}
-function bindMenu() {
-    $('.nav-sidebar .with-sub').on('click', function (e) {
-        e.preventDefault();
-
-        var $this = $(this);
-        var $parentLi = $this.parent();
-        var $subMenu = $parentLi.find('.nav-sub');
-        var wasVisible = $subMenu.is(':visible');
-
-        // 处理当前点击的子菜单
-        if (!wasVisible) {
-            // 如果子菜单之前不可见（收起状态），则把它展开
-            $subMenu.stop(true, true).slideDown(300, function () {
-                $parentLi.addClass('show');
-            });
-        } else {
-            // 如果子菜单之前可见（展开状态），则把它收起
-            $subMenu.stop(true, true).slideUp(300, function () {
-                $parentLi.removeClass('show');
-            });
-        }
-    });
 }

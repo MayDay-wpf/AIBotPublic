@@ -16,6 +16,7 @@ using System.Collections.Concurrent;
 using System.IO.Compression;
 using Microsoft.IdentityModel.Tokens;
 using System.Text.RegularExpressions;
+using aibotPro.ChatService;
 
 namespace aibotPro.Controllers
 {
@@ -137,6 +138,11 @@ namespace aibotPro.Controllers
         }
 
         public IActionResult MoldeUsage()
+        {
+            return View();
+        }
+
+        public IActionResult MCP()
         {
             return View();
         }
@@ -320,6 +326,43 @@ namespace aibotPro.Controllers
             {
                 success = true,
                 data = chatHistories
+            });
+        }
+
+        [Authorize]
+        [HttpPost]
+        public IActionResult ShowHistoryDetailPaged(string chatId, int pageIndex = 1, int pageSize = 20)
+        {
+            var username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var chatHistories = _ai.ShowHistoryDetailPaged(username, chatId, pageIndex, pageSize);
+            return Json(new
+            {
+                success = true,
+                data = chatHistories,
+                hasMore = chatHistories.Count == pageSize
+            });
+        }
+
+        [Authorize]
+        [HttpPost]
+        public IActionResult GetFullChatContent(string chatCode)
+        {
+            var username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var chatHistory = _ai.GetFullChatContent(username, chatCode);
+            if (chatHistory != null)
+            {
+                return Json(new
+                {
+                    success = true,
+                    data = chatHistory
+                });
+            }
+            return Json(new
+            {
+                success = false,
+                message = "未找到对话内容"
             });
         }
 
@@ -541,6 +584,37 @@ namespace aibotPro.Controllers
             });
         }
 
+        [Authorize]
+        [HttpPost]
+        public IActionResult ReadAllNotice()
+        {
+            var username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            var notices = _context.Notices.ToList();
+            foreach (var notice in notices)
+            {
+                var read = _context.NoticeReads.Where(r => r.NoticeId == notice.Id && r.Account == username)
+                    .FirstOrDefault();
+                if (read == null)
+                {
+                    var noticeRead = new NoticeRead
+                    {
+                        Account = username,
+                        NoticeId = notice.Id,
+                        CreateTime = DateTime.Now
+                    };
+
+                    _context.NoticeReads.Add(noticeRead);
+                    _context.SaveChanges();
+                }
+            }
+
+            return Json(new
+            {
+                success = true,
+                msg = "已读"
+            });
+        }
         [Authorize]
         [HttpPost]
         public IActionResult GetModelPrice(string modelName)
@@ -781,7 +855,12 @@ namespace aibotPro.Controllers
                         'optimizedPrompt': 'Your optimized prompt text will appear here'
                      }";
             prompt = $"Prompt to optimize: {prompt}";
-            var resultJson = await _ai.GPTJsonModel(systemPrompt, prompt, "gpt-4o-mini", username);
+            var aiModel = "gpt-4.1-nano-openai";
+            var systemCfg = _systemService.GetSystemCfgs();
+            var aICodeCheckModel = systemCfg.FirstOrDefault(x => x.CfgKey == "AICodeCheckModel");
+            if (aICodeCheckModel != null)
+                aiModel = aICodeCheckModel.CfgValue;
+            var resultJson = await _ai.GPTJsonModel(systemPrompt, prompt, aiModel, username);
             if (!string.IsNullOrEmpty(resultJson))
             {
                 var resultData = JsonConvert.DeserializeObject<OptimizeResult>(resultJson);

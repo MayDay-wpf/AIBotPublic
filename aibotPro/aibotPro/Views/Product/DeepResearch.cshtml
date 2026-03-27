@@ -1,0 +1,188 @@
+@{
+    ViewData["Title"] = "深度研究🌐（DeepResearch）[https://aibotpro.cn] 此报告由生成式AI助手制作，仅供参考";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="~/system/deepresearch/css/framework.css?v1.0.1" />
+<!-- Markdown 编辑器相关资源 -->
+<link rel="stylesheet" href="~/system/deepresearch/vditor3.9.9/css/index.css" />
+<script src="~/system/deepresearch/vditor3.9.9/js/index.min.js"></script>
+
+<!-- Markdown 渲染和代码高亮相关资源 -->
+<script src="~/system/js/markdown-it.min.js"></script>
+<script src="~/system/js/tex-chtml.js"></script>
+<link href="~/system/css/atom-one-dark.min.css?v1" rel="stylesheet"/>
+<script src="~/system/js/highlight.min.js"></script>
+
+<!-- 顶部工具栏 -->
+<div class="header header-chat">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+
+        <!-- 模型选择 -->
+        <div class="dropdown" style="text-align:center;width:auto;float:left" data-toggle="tooltip">
+            <a href="#" class="tx-14 tx-color-01 mg-b-0 mg-l-10" id="modelDropdown" data-toggle="dropdown"
+                aria-haspopup="true" aria-expanded="false">
+                <span id="selectedModel">选择模型</span>
+                <i data-feather="chevron-down" style="width:20px;"></i>
+            </a>
+            <div class="dropdown-menu dropdown-menu-left" aria-labelledby="modelDropdown"
+                style="max-height: 505px;overflow-y:scroll;overflow-x:hidden;" id="modelList">
+                <div id="searchIcon" style="cursor:pointer;margin:5px;color:gray;">
+                    <i data-feather="search" style="width: 20px;"></i>
+                    <span>点击搜索模型</span>
+                </div>
+                <input type="text" id="modelSearch" class="form-control searchModel" placeholder="搜索模型..."
+                    style="display:none;">
+                <div id="modelItems"></div>
+            </div>
+        </div>
+
+        <!-- 搜索引擎选择 -->
+        @* <div class="dropdown" style="text-align:center;width:auto;float:left;margin-left:10px;" data-toggle="tooltip">
+            <a href="#" class="tx-14 tx-color-01 mg-b-0" id="searchEngineDropdown" data-toggle="dropdown"
+                aria-haspopup="true" aria-expanded="false">
+                <span id="selectedSearchEngine"><i class="yahooico"></i></span>
+                <i data-feather="chevron-down" style="width:20px;"></i>
+            </a>
+            <div class="dropdown-menu dropdown-menu-left" aria-labelledby="searchEngineDropdown">
+                <a class="dropdown-item search-engine-item" href="#" data-engine="yahoo">
+                    <i class="yahooico"></i> Yahoo
+                </a>
+                <a class="dropdown-item search-engine-item" href="#" data-engine="google">
+                    <i class="googleico"></i> Google
+                </a>
+            </div>
+        </div> *@
+
+        <!-- 新建研究 -->
+        <button id="new-research" class="btn btn-success" style="margin-left:10px;">
+            <i class="fas fa-plus"></i> 新建研究
+        </button>
+
+        <!-- 导出PDF -->
+        <button id="export-pdf" class="btn btn-info" style="margin-left:10px;">
+            <i class="fas fa-file-pdf"></i> 导出PDF
+        </button>
+        <span class="text-info"><i class="fas fa-info-circle"></i> 导出功能可能会出现无响应，重试即可</span>
+    </div>
+    <div class="header-right">
+        @* <button id="settings-btn" class="btn btn-outline-secondary">
+            <i class="fas fa-cog"></i>
+        </button> *@
+        <button id="save-btn" class="btn btn-outline-success" onclick="saveResearch()">
+            <i class="fas fa-save"></i> 保存(Ctrl+S)
+        </button>
+    </div>
+</div>
+
+<!-- 主体内容区域 -->
+<div class="research-container">
+    <!-- 左侧：研究报告列表 -->
+    <div class="research-sidebar" id="researchSidebar">
+        <div class="research-sidebar-header">
+            <div class="sidebar-title-row">
+                <h5><i class="fas fa-clipboard-list"></i> 研究报告</h5>
+                <button class="btn btn-sm btn-outline-secondary sidebar-toggle-btn" id="sidebarToggleBtn" title="收起面板 (Ctrl+B)">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+            </div>
+            <div class="search-box">
+                <input type="text" id="research-search" class="form-control" placeholder="搜索报告...">
+                <i class="fas fa-search search-icon"></i>
+            </div>
+        </div>
+        <div class="research-list" id="researchList">
+            <!-- 更多研究项目会动态添加 -->
+        </div>
+    </div>
+
+    <!-- 展开按钮（当侧边栏收起时显示） -->
+    <div class="sidebar-expand-btn" id="sidebarExpandBtn" style="display: none;">
+        <button class="btn btn-primary" title="展开研究报告列表 (Ctrl+B)">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
+
+    <!-- 中部：报告内容显示区域 -->
+    <div class="research-content">
+        <!-- 研究报告编辑区域 -->
+        <div class="research-edit-container" id="researchEditContainer">
+            <div class="research-edit-body">
+                <div id="vditor" class="vditor-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧：AI对话界面和活动面板 -->
+    <div class="research-chat-panel">
+        <div class="chat-panel-header">
+            <ul class="nav nav-tabs" id="chatTabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link" id="chat-tab" href="javascript:void(0)" data-target="#chatPanel" role="tab">
+                        <i class="fas fa-comments"></i> AI对话
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" id="activity-tab" href="javascript:void(0)" data-target="#activityPanel"
+                        role="tab">
+                        <i class="fas fa-history"></i> AI活动
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="tab-content chat-panel-content">
+            <!-- AI对话面板 -->
+            <div class="tab-pane fade" id="chatPanel" role="tabpanel">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="welcome-message">
+                        <div class="assistant-message">
+                            <div class="message-content">
+                                <p>您好！我是您的研究助手。我可以帮助您分析当前研究主题</p>
+                                <p>当前Chat版本：beta 0.0.1</p>
+                                <p>功能可能并不完善，将持续优化</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input-area">                  
+                    <div class="chat-tools">
+                        <button class="btn btn-sm btn-outline-danger" id="clearChatBtn">
+                            <i class="fas fa-eraser"></i> 清空对话
+                        </button>
+                    </div>
+                    <div class="input-group">
+                        <textarea id="chatInput" class="form-control" rows="2" placeholder="输入您的问题或研究主题..."></textarea>
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" id="sendChatBtn">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI活动面板 -->
+            <div class="tab-pane fade show active" id="activityPanel" role="tabpanel">
+                <div class="activity-list" id="activityList">
+                    <div class="activity-placeholder text-center py-4">
+                        <i class="fas fa-robot text-muted mb-3" style="font-size: 3rem;"></i>
+                        <p class="text-muted">AI助手准备就绪，等待您创建新的研究项目</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/system/js/signalr.min.js"></script>
+<script src="~/system/deepresearch/js/framework.js?v1.0.1"></script>
+<script src="~/system/deepresearch/js/editor.js"></script>
+<script src="~/system/deepresearch/js/deepbefore.js"></script>
+<script src="~/system/deepresearch/js/deepchat.js"></script>

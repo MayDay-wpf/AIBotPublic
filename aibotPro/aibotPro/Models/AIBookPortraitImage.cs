@@ -6,19 +6,24 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+public partial class AIBookPortraitImage
 {
-    public partial class AIBookPortraitImage
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string BookCode { get; set; }
-        public string PortraitImage { get; set; }
-        public string Overview { get; set; }
-        public int? LastChapterId { get; set; }
-        public bool? IsDel { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? CreateTime { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string BookCode { get; set; }
+
+    public string PortraitImage { get; set; }
+
+    public string Overview { get; set; }
+
+    public int? LastChapterId { get; set; }
+
+    public bool? IsDel { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? CreateTime { get; set; }
 }

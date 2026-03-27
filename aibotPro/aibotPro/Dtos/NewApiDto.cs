@@ -8,9 +8,13 @@ public class NewApiUserInfoResult
 {
     public bool success { get; set; }
     public string message { get; set; }
-    public List<NewApiUserInfo> data { get; set; }
+    public UserItems data { get; set; }
 }
 
+public class UserItems
+{
+    public List<NewApiUserInfo> items { get; set; }
+}
 public class NewApiUserInfo
 {
     public int id { get; set; }

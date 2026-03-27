@@ -188,5 +188,18 @@ namespace aibotPro.Service
             public long exp { get; set; }
             public string jti { get; set; }
         }
+
+        public class LinuxDoJWT
+        {
+            public int id { get; set; }
+            public string email { get; set; }
+            public string username { get; set; }
+            public string name { get; set; }
+            public string avatar_template { get; set; }
+            public bool active { get; set; }
+            public int trust_level { get; set; }
+            public bool silenced { get; set; }
+            public string api_key { get; set; }
+        }
     }
 }

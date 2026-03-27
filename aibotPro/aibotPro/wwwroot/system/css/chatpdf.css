@@ -1,4 +1,5 @@
-﻿html, body {
+﻿html,
+body {
     height: 100%;
 }
 
@@ -8,19 +9,11 @@
     height: calc(100vh - 120px);
 }
 
-@media (min-width: 992px) {
-    .content-wrapper {
-        height: calc(100vh - 120px);
-    }
-}
-
 #pdf-viewer {
-    width: 100%;
     height: 100%;
     overflow-y: auto;
-    border: 1px solid #ccc;
     position: relative;
-    border-radius: 10px;
+    flex-grow: 1;
 }
 
 .pdf-placeholder {
@@ -35,16 +28,21 @@
     font-size: 24px;
     color: #ccc;
     text-align: center;
-    user-select: none; /* 防止文本被选中 */
-    -webkit-user-select: none; /* Safari 支持 */
-    -moz-user-select: none; /* Firefox 支持 */
-    -ms-user-select: none; /* IE/Edge 支持 */
+    user-select: none;
+    /* 防止文本被选中 */
+    -webkit-user-select: none;
+    /* Safari 支持 */
+    -moz-user-select: none;
+    /* Firefox 支持 */
+    -ms-user-select: none;
+    /* IE/Edge 支持 */
 }
 
 .pdf-placeholder i {
     font-size: 48px;
     margin-bottom: 10px;
 }
+
 #Q {
     resize: none;
     overflow-y: auto;
@@ -53,13 +51,15 @@
     border-radius: 10px;
 }
 
-#send-button, #clear-chat {
+#send-button,
+#clear-chat {
     height: 38px;
     white-space: nowrap;
 }
 
 .d-flex .flex-column {
-    width: 110px; /* 调整按钮容器的宽度 */
+    width: 110px;
+    /* 调整按钮容器的宽度 */
 }
 
 #chat-container {
@@ -98,21 +98,29 @@
     right: 0;
     bottom: 0;
     overflow: hidden;
-    opacity: 0.2;
+    opacity: 0.5;
     line-height: 1.0;
+    pointer-events: none; /* 允许点击穿透到下层 */
 }
 
-    .text-layer > span {
-        color: transparent;
-        position: absolute;
-        white-space: pre;
-        cursor: text;
-        transform-origin: 0% 0%;
-    }
+.text-layer > span {
+    color: transparent;
+    position: absolute;
+    white-space: pre;
+    cursor: text;
+    transform-origin: 0% 0%;
+    pointer-events: all; /* 恢复文本的可点击性 */
+}
 
-    .text-layer ::selection {
-        background: black
-    }
+.text-layer ::selection {
+    background: rgba(0, 0, 255, 0.3); /* 半透明蓝色背景 */
+    color: transparent; /* 保持文本透明 */
+}
+
+/* 添加一个新的样式用于高亮选中的文本 */
+.text-layer span.highlight {
+    background-color: rgba(0, 0, 255, 0.3);
+}
 
 .selection-tools {
     position: fixed;
@@ -126,7 +134,8 @@
 }
 
 #suggested-questions {
-    display: none; /* 初始隐藏建议问题区域 */
+    display: none;
+    /* 初始隐藏建议问题区域 */
 }
 
 .suggested-question {
@@ -136,24 +145,25 @@
     padding: 10px;
     position: relative;
     cursor: pointer;
-    min-height: 50px; /* 添加最小高度 */
+    min-height: 50px;
+    /* 添加最小高度 */
 }
 
-    .suggested-question:hover {
-        background-color: #e9ecef;
-    }
+.suggested-question:hover {
+    background-color: #e9ecef;
+}
 
-    .suggested-question .close-btn {
-        position: absolute;
-        top: 5px;
-        right: 5px;
-        border: none;
-        background: none;
-        font-size: 1.2rem;
-        line-height: 1;
-        padding: 0;
-        cursor: pointer;
-    }
+.suggested-question .close-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    border: none;
+    background: none;
+    font-size: 1.2rem;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+}
 
 #pageList {
     max-height: 600px;
@@ -161,12 +171,136 @@
     overflow-x: hidden;
 }
 
-    #pageList .dropdown-item {
-        margin-left: 0;
-    }
+#pageList .dropdown-item {
+    margin-left: 0;
+}
 
 .camera-icon {
     width: 24px !important;
     height: 24px !important;
     vertical-align: middle;
+}
+
+/* PDF容器布局 */
+.pdf-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative; 
+}
+
+/* 缩略图侧边栏样式 */
+.pdf-thumbnails {
+    width: 120px;
+    height: 100%;
+    overflow-y: auto;
+    background-color: #f5f5f5;
+    border-right: 1px solid #ddd;
+    padding: 10px 5px;
+    z-index: 10;
+}
+
+/* 缩略图项目样式 */
+.pdf-thumbnail {
+    margin-bottom: 10px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.pdf-thumbnail.active {
+    border-color: #007bff;
+}
+
+.pdf-thumbnail img {
+    width: 100%;
+    height: auto;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.pdf-thumbnail .page-number {
+    text-align: center;
+    font-size: 12px;
+    margin-top: 3px;
+    color: #666;
+}
+.toggle-thumbnails {
+    position: absolute; /* 改为固定定位 */
+    top: 20px; /* 调整顶部位置 */
+    left: 130px; /* 调整左侧位置，与缩略图宽度相关 */
+    z-index: 100;
+    opacity: 0.8;
+    transition: opacity 0.3s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.toggle-thumbnails:hover {
+    opacity: 1;
+}
+.pdf-thumbnails.hidden + #pdf-viewer .toggle-thumbnails {
+    left: 10px;
+}
+.pdf-zoom-controls {
+    position: absolute;
+    top: 20px;
+    right: 10px;
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 4px;
+    padding: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.pdf-zoom-controls button {
+    padding: 2px 5px;
+    font-size: 12px;
+}
+
+#zoom-level {
+    font-size: 12px;
+    min-width: 40px;
+    text-align: center;
+}
+@media (max-width: 992px) {
+    .pdf-thumbnails {
+        width: 80px;
+    }
+    
+    .toggle-thumbnails {
+        left: 90px; /* 调整按钮位置以匹配较窄的缩略图 */
+    }
+}
+
+.pdf-link-annotation {
+    background-color: rgba(0, 0, 255, 0.05);
+    z-index: 5;
+    transition: background-color 0.2s;
+}
+
+.pdf-link-annotation:hover {
+    background-color: rgba(0, 0, 255, 0.1);
+    box-shadow: 0 0 5px rgba(0, 0, 255, 0.3);
+}
+
+
+/* 当屏幕过小时隐藏缩略图 */
+@media (max-width: 768px) {
+    .pdf-thumbnails {
+        display: none;
+    }
+    
+    .toggle-thumbnails {
+        left: 10px; /* 在小屏幕上将按钮移到左侧 */
+    }
+}
+@media (max-width: 992px) {
+    .pdf-zoom-controls {
+        right: 20px;
+    }
 }

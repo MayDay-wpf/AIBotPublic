@@ -2,13 +2,14 @@
     ViewData["Title"] = "对话 （Chat by 知识库）";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-<link href="~/system/css/chat.css?v3.0.2" rel="stylesheet" />
+<link href="~/system/css/chat.css?v4.0.3" rel="stylesheet" />
 <link href="~/system/css/pluginloading.css" rel="stylesheet" />
+<link href="~/system/css/userinfopanel.css?v1.0.0" rel="stylesheet"/>
 <link rel="stylesheet" href="~/system/js/markdownitplugin/katex.min.css">
 <script src="~/system/js/markdownitplugin/katex.min.js"></script>
 <script src="~/system/js/markdownitplugin/texmath.min.js"></script>
 <script src="~/system/js/markdown-it.min.js"></script>
-<script src="~/system/js/mermaid.min.js"></script>
+@* mermaid.min.js 现在按需加载，不需要在这里引入 *@
 <script>
     var md = window.markdownit()
         .use(texmath, {
@@ -219,9 +220,8 @@
                     @*     <i data-feather="mic"> *@
                     @*     </i> *@
                     @* </a> *@
-                    <a href="/Users/UserInfo" data-toggle="tooltip" title="个人中心">
-                        <i data-feather="user">
-                        </i>
+                    <a href="javascript:void(0)" title="个人中心" onclick="toggleUserInfo()">
+                        <i class="fas fa-angle-double-up" id="userInfoIcon"></i>
                     </a>
                 </div>
             </div>
@@ -335,9 +335,10 @@
     </div>
 </div>
 <script src="~/system/js/signalr.min.js"></script>
-<script src="~/system/js/knowledgechat.js?v11.5.2"></script>
+<script src="~/system/js/knowledgechat.js?v12.5.5"></script>
 <script src="~/system/js/marked.min.js"></script>
 <link href="~/system/css/atom-one-dark.min.css" rel="stylesheet" />
 <script src="~/system/js/highlight.min.js"></script>
 <script src="~/system/js/dart.js"></script>
 <script src="~/system/js/vueheightlight.js"></script>
+<script src="~/system/js/chatuserinfo.js?v1.0.0"></script>

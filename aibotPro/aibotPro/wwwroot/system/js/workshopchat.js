@@ -2,7 +2,7 @@
 var textarea = document.getElementById("Q");
 var $Q = $("#Q");
 var chatBody = $(".chat-body-main");
-var thisAiModel = "gpt-4o-mini-CYGF"; //当前AI模型
+var thisAiModel = "gpt-4.1-nano-openai"; //当前AI模型
 var processOver = true; //是否处理完毕
 var image_path = [];
 var file_list = [];
@@ -307,8 +307,9 @@ function mobileChat(show) {
 }
 
 //接收消息
-var sysmsg = "";
-var jishuqi = 0;
+let sysmsg = "";
+let thinkContent = "";
+let jishuqi = 0;
 
 // 添加显示代码语言的 Labels
 function addLanguageLabels(useSpecificId = false, assistansBoxId = '') {
@@ -346,77 +347,63 @@ function addLanguageLabels(useSpecificId = false, assistansBoxId = '') {
         }
     });
 }
+
 connection.on('ReceiveWorkShopMessage', function (message) {
     //console.log(message);
-    if (!message.isfinish) {
+    if (!message.isfinish && !processOver) {
         if (jishuqi == 0) {
             chatid = message.chatid;
             ClearImg();
             //fileTXT = "";
         } else if (message.loading) {
             $("#pluginloading").html(message.message);
-        } else {
-            if (message.message != null) {
-                stopTimer(`#${assistansBoxId}_timer_first`);
-                sysmsg += message.message;
-                let chatContentBox = $(`#${assistansBoxId}`);
-                let thinkContent = '';
-                let normalContent = sysmsg;
-                let thinkingEnded = false;
-                // 提取 <think> 标签及内容
-                const thinkRegex = /<think>([\s\S]*?)<\/think>/g;
-                let match;
-                while ((match = thinkRegex.exec(sysmsg)) !== null) {
-                    thinkContent = match[1]; // 直接取最后一个完整的 think 块内容
-                    normalContent = normalContent.replace(match[0], '');
-                    thinkingEnded = true; // 找到完整的 <think></think> 对
-                }
+        } else if (message.message != null || message.reasoning) {
+            if (message.message) sysmsg += message.message;
+            if (message.reasoning) thinkContent += message.reasoning;
+            stopTimer(`#${assistansBoxId}_timer_first`);
+            let chatContentBox = $(`#${assistansBoxId}`);
+            // 处理思考内容
+            let thinkBox = $(`#${assistansBoxId}-think`);
+            const hasThinkContent = thinkContent;
 
-                // 如果没有找到完整的 <think></think> 对，则继续查找未闭合的 <think> 标签
-                if (!thinkingEnded) {
-                    const unfinishedThinkRegex = /<think>([\s\S]*?)$/g;
-                    if ((match = unfinishedThinkRegex.exec(sysmsg)) !== null) {
-                        thinkContent = match[1];
-                        normalContent = normalContent.replace(match[0], '');
-                    }
-                }
-                // 处理 <think> 内容
-                let thinkBox = $(`#${assistansBoxId}-think`);
-                if (thinkContent) {
-                    if (thinkBox.length === 0) {
-                        thinkBox = $(`<details id="${assistansBoxId}-think"><summary>AI 正在思考中(点击展开)...</summary><div class="think-content"></div></details>`);
-                        chatContentBox.before(thinkBox); // 将 thinkBox 放到 chatContentBox 前面
-                    }
-
-                    thinkBox.find('.think-content').html(md.render(thinkContent));
-                    if (thinkingEnded) {
-                        thinkBox.find('summary').text('AI 思考结束（点击展开）');
-                        if (!thinkBox.data('fixed')) {
-                            chatContentBox.parent().prepend(thinkBox);
-                            thinkBox.data('fixed', true);
-                        }
-                    } else {
-                        thinkBox.find('summary').text('AI 正在思考中(点击展开)...');
-                    }
-                }
-
-                // 渲染普通内容
-                if (normalContent) {
-                    chatContentBox.html(md.render(normalContent));
-                }
-                //$("#" + assistansBoxId).html(md.render(sysmsg));
-                //MathJax.typeset();
-                //hljs.highlightAll();
-                $("#" + assistansBoxId + " pre code").each(function (i, block) {
-                    hljs.highlightElement(block);
-                });
-                addLanguageLabels(true, assistansBoxId);
-                addCopyBtn(assistansBoxId);
-                if (Scrolling == 1)
-                    chatBody.scrollTop(chatBody[0].scrollHeight);
-                applyMagnificPopup('.chat-message-box');
+            // 创建思考框（如果需要且不存在）
+            if (hasThinkContent && !thinkBox.length) {
+                thinkBox = $(`<details id="${assistansBoxId}-think">
+                          <summary>AI 正在思考中(点击展开)...</summary>
+                          <div class="think-content"></div>
+                          </details>`);
+                chatContentBox.before(thinkBox);
             }
 
+            // 更新思考框内容
+            if (thinkBox.length) {
+                thinkBox.find('.think-content').html(md.render(thinkContent));
+
+                // 完成思考时更新状态和位置
+                if (sysmsg) {
+                    thinkBox.find('summary').text('AI 思考结束（点击展开）');
+                    if (!thinkBox.data('fixed')) {
+                        chatContentBox.parent().prepend(thinkBox);
+                        thinkBox.data('fixed', true);
+                    }
+                } else {
+                    thinkBox.find('summary').text('AI 正在思考中(点击展开)...');
+                }
+            }
+
+            // 渲染主要内容
+            if (sysmsg) {
+                chatContentBox.html(md.render(sysmsg));
+            }
+
+            // 代码高亮和辅助功能
+            $(`#${assistansBoxId} pre code`).each((i, block) => hljs.highlightElement(block));
+            addLanguageLabels(true, assistansBoxId);
+            addCopyBtn(assistansBoxId);
+
+            // 自动滚动
+            if (Scrolling === 1) chatBody.scrollTop(chatBody[0].scrollHeight);
+            applyMagnificPopup('.chat-message-box');
         }
         jishuqi++;
     } else {
@@ -440,6 +427,7 @@ connection.on('ReceiveWorkShopMessage', function (message) {
         };
         markdownHis.push(item);
         sysmsg = "";
+        thinkContent = "";
         jishuqi = 0;
         $('.LDI').remove();
         $("#pluginloading").remove();
@@ -706,8 +694,7 @@ function getHistoryList(pageIndex, pageSize, reload, loading, searchKey) {
                         sendExceptionMsg(`【API：/Home/GetCollection】:${err}`);
                     }
                 });
-            }
-            else {
+            } else {
                 $(".chat-list").append(html);
                 // $(".chat-sidebar-body").animate({
                 //     scrollTop: $(".chat-sidebar-body")[0].scrollHeight
@@ -818,12 +805,14 @@ function showCollection(collectionCode) {
         });
     }
 }
+
 // 滚动监听
 $(".chat-sidebar-body").on('scroll', function () {
     if (!isLoading && hasMore && $(this).scrollTop() + $(this).innerHeight() >= $(this)[0].scrollHeight - 20) {
         loadMoreHistory();
     }
 });
+
 function addChatItemListeners() {
     $('.chat-item').off('click').on('click', function () {
         var itemtype = $(this).data('itemtype');
@@ -970,20 +959,35 @@ function deleteCollection(collectionCode) {
     event.stopPropagation();
     showConfirmationModal("提示", "确定删除这个合集吗？注意：合集内的对话记录也会一起删除！", function () {
         $.ajax({
-            type: "Post", url: "/Home/DeleteCollection", dataType: "json", data: {
+            type: "Post",
+            url: "/Home/DeleteCollection",
+            dataType: "json",
+            data: {
                 collectionCode: collectionCode
-            }, success: function (res) {
+            },
+            success: function (res) {
                 if (res.success) {
                     balert("删除成功", "success", false, 1000, "top");
-                    $('[id*="' + collectionCode + '"]').remove();
+
+                    // 获取合集项元素
+                    const collectionItem = $(`li.chat-item[data-chat-id="${collectionCode}"]`);
+
+                    // 找到紧随其后的 collection-content 元素
+                    const contentArea = collectionItem.next('div.collection-content');
+
+                    // 删除两个元素
+                    collectionItem.remove();
+                    contentArea.remove();
                 }
-            }, error: function (err) {
+            },
+            error: function (err) {
                 //window.location.href = "/Users/Login";
                 balert("删除失败，错误请联系管理员：err", "danger", false, 2000, "center");
             }
         });
     });
 }
+
 //删除选中的历史记录
 function deteteChoiceChat(ids) {
     showConfirmationModal("提示", "确定删除这些历史记录吗？", function () {
@@ -1097,6 +1101,7 @@ function batchExport(ids, type) {
     var data = `chatIds=${encodeURIComponent(ids)}&type=${encodeURIComponent(type)}`;
     xhr.send(data);
 }
+
 //删除所有历史记录
 function deleteChatAll() {
     showPromptModal("提示", `请输入<b style="color:red;">“justdoit”</b>以删除全部历史记录<br/>`, function (text) {
@@ -1156,180 +1161,310 @@ function deleteChatGroup(id, type) {
     //});
 }
 
+// 聊天详情分页相关变量
+let chatDetailPageIndex = 1;
+let chatDetailPageSize = 10;
+let chatDetailIsLoading = false;
+let chatDetailHasMore = true;
+let currentChatId = "";
+let isInitialLoad = true;
+
 //显示AI对话详情
 function showHistoryDetail(id) {
     if (!processOver) {
         balert("对话进行中,请结束后再试", "warning", false, 2000);
         return;
     }
+    
+    // 重置分页变量
+    chatDetailPageIndex = 1;
+    chatDetailIsLoading = false;
+    chatDetailHasMore = true;
+    currentChatId = id;
+    isInitialLoad = true;
+    
     chatBody.html(`<li class="divider-text">
                         加载中...
                     </li>`);
     $(".chat-item").removeClass("highlight-chat-item").addClass("reset-chat-item");
     $('[id="' + id + '"]').addClass("highlight-chat-item");
     mobileChat(true);
-    $.ajax({
-        type: "Post",
-        url: "/Home/ShowHistoryDetail",
-        dataType: "json",
-        data: {
-            chatId: id
-        },
-        success: function (res) {
-            //console.log(res);
-            chatid = id;
-            var html = "";
-            var isvip = false;
-            isVIP(function (status) {
-                isvip = status;
-            });
-            var imgBox = [];
-            var vipHead = isvip ?
-                `<div class="avatar" style="border:2px solid #FFD43B">
-                     <img src='${HeadImgPath}'/>
-                     <i class="fas fa-crown vipicon"></i>
-                 </div>
-                 <div class="nicknamevip">${UserNickText}</div>` :
-                `<div class="avatar">
-                     <img src='${HeadImgPath}'/>
-                 </div>
-                 <div class="nickname">${UserNickText}</div>`;
-            for (var i = 0; i < res.data.length; i++) {
-                var content = res.data[i].chat;
-                var msgclass = "chat-message";
-                if (res.data[i].isDel === 2)
-                    msgclass = "chat-message chatgroup-masked";
-                if (res.data[i].role == "user") {
-                    if (content.indexOf('aee887ee6d5a79fdcmay451ai8042botf1443c04') == -1) {
-                        content = content.replace(/&lt;/g, "&amp;lt;").replace(/&gt;/g, "&amp;gt;");
-                        content = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                        html += `<div class="${msgclass}" data-group="` + res.data[i].chatGroupId + `">
-                                     <div style="display: flex; align-items: center;">
-                                        ${vipHead}
-                                     </div>
-                                     <div class="chat-message-box">
-                                       <pre id="` + res.data[i].chatCode + `">` + content + `</pre>
-                                     </div>
-                                     <div>
-                                      <i data-feather="refresh-cw" class="chatbtns" onclick="tryAgain('` + res.data[i].chatCode + `')"></i>
-                                      <i data-feather="edit-3" class="chatbtns" onclick="editChat('` + res.data[i].chatCode + `')"></i>
-                                     </div>
-                                 </div>`;
-                    } else {
-                        var contentarr = content.split("aee887ee6d5a79fdcmay451ai8042botf1443c04");
-                        html += `<div class="${msgclass}" data-group="${res.data[i].chatGroupId}">
-                                   <div style="display: flex; align-items: center;">
-                                    ${vipHead}  
-                                   </div>
-                                   <div class="chat-message-box">
-                                     <pre id="${res.data[i].chatCode}">${contentarr[0].replace(/</g, "&lt;").replace(/>/g, "&gt;")}`;
+    
+    // 绑定滚动事件监听器
+    bindChatDetailScrollListener();
+    
+    // 加载第一页数据
+    loadChatDetailPage(id, chatDetailPageIndex, true);
+}
 
-                        // 循环添加后续内容
-                        contentarr.slice(1).forEach(item => {
-                            if (item.includes('<img ')) {
-                                // 直接把图片HTML添加到<pre>中，假设item是一串完整的<img>标签
-                                html += item;  // 添加图片的 HTML 到 <pre> 中
-                            } else {
-                                // 非图片内容也添加到<pre>，转义以便合理显示
-                                html += item.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                            }
-                        });
-
-                        html += `</pre></div>
-                                   <div>
-                                     <i data-feather="refresh-cw" class="chatbtns" onclick="tryAgain('${res.data[i].chatCode}')"></i>
-                                     <i data-feather="edit-3" class="chatbtns" onclick="editChat('${res.data[i].chatCode}')"></i>
-                                   </div>
-                                 </div>`;
-                        imgBox.push(res.data[i].chatCode);
-                    }
-
-                } else {
-                    var item = {
-                        "id": res.data[i].chatCode,
-                        "markdown": content
-                    }
-                    let thinkMatches = [];
-                    let normalContent = content;
-                    const thinkRegex = /<think>([\s\S]*?)<\/think>/g;
-                    let match;
-                    while ((match = thinkRegex.exec(content)) !== null) {
-                        if (!thinkMatches.includes(match[1])) {
-                            thinkMatches.push(match[1]);
-                        }
-                    }
-                    // 从 normalContent 中移除所有成对的 <think> 标签内容
-                    normalContent = normalContent.replace(thinkRegex, '');
-                    // 处理未闭合的 <think> 标签（例如只有 <think> 而没有 </think> 的情况）
-                    const unfinishedThinkRegex = /<think>([\s\S]*)$/g;
-                    if ((match = unfinishedThinkRegex.exec(normalContent)) !== null) {
-                        if (!thinkMatches.includes(match[1])) {
-                            thinkMatches.push(match[1]);
-                        }
-                        normalContent = normalContent.replace(unfinishedThinkRegex, '');
-                    }
-                    const thinkContent = thinkMatches.join("\n");
-                    markdownHis.push(item);
-                    var markedcontent = md.render(normalContent);
-                    var encoder = new TextEncoder();
-                    var firstTime = '';
-                    var allTime = '';
-                    if (res.data[i].firstTime != "null" && res.data[i].allTime != "null" && res.data[i].firstTime != null && res.data[i].allTime != null) {
-                        firstTime = `<span class="badge badge-pill badge-success">${res.data[i].firstTime}s</span>`
-                        allTime = `<span class="badge badge-pill badge-dark">${res.data[i].allTime}s</span>`
-                        if (res.data[i].firstTime > 10) {
-                            firstTime = `<span class="badge badge-pill badge-danger">${res.data[i].firstTime}s</span>`
-                        } else if (res.data[i].firstTime > 5) {
-                            firstTime = `<span class="badge badge-pill badge-warning">${res.data[i].firstTime}s</span>`
-                        }
-                    }
-                    let thinkBoxHtml = '';
-                    if (thinkContent) {
-                        thinkBoxHtml = `<details><summary>AI 思考结束（点击展开）</summary>
-                                            <div class="think-content">${md.render(thinkContent)}</div>
-                                        </details>`;
-                    }
-                    html += `<div class="${msgclass}" data-group="` + res.data[i].chatGroupId + `">
-                                <div style="display: flex; align-items: center;">
-                                   <div class="avatar gpt-avatar">A</div>
-                                   <div class="nickname" style="font-weight: bold; color: black;">AIBot</div>
-                                   <span class="badge badge-info ${res.data[i].model.replace('.', '')}">${res.data[i].model}</span>
-                                   ${firstTime}${allTime}
-                                </div>
-                                 ${thinkBoxHtml}
-                                <div class="chat-message-box">
-                                   <div id="${res.data[i].chatCode}">${markedcontent}</div>
-                                </div>
-                                <div id="ctrl-${res.data[i].chatCode}">
-                                  <i data-feather="copy" class="chatbtns" data-toggle="tooltip" title="复制" onclick="copyAll('${res.data[i].chatCode}')"></i>
-                                  <i data-feather="anchor" class="chatbtns" data-toggle="tooltip" title="锚" onclick="quote('${res.data[i].chatCode}')"></i>
-                                  <i data-feather="trash-2" class="chatbtns custom-delete-btn-1" data-toggle="tooltip" title="删除" data-chatgroupid="${res.data[i].chatGroupId}"></i>
-                                  <i data-feather="codepen" class="chatbtns" data-toggle="tooltip" title="显示/隐藏Markdown" onclick="toMarkdown('${res.data[i].chatCode}')"></i>
-                                </div>
-                            </div>`;
-                }
-            }
-            chatBody.html(html).hide().fadeIn(300);
-            //MathJax.typeset();
-            $(".chat-message pre code").each(function (i, block) {
-                hljs.highlightElement(block);
-            });
-            addLanguageLabels();
-            addCopyBtn();
-            addExportButtonToTables();
-            feather.replace();
-            applyMagnificPopup('.chat-message-box');
-            imgBox.forEach(item => initImageFolding(`#${item}`));
-            createMaskedOverlays();
-            renderMermaidDiagrams();
-            //滚动到最底部
-            chatBody.scrollTop(chatBody[0].scrollHeight);
-        },
-        error: function (err) {
-            //window.location.href = "/Users/Login";
-            balert("删除失败，错误请联系管理员：err", "danger", false, 2000, "center");
+// 绑定聊天详情滚动监听器
+function bindChatDetailScrollListener() {
+    // 移除之前的监听器
+    chatBody.off('scroll.chatDetail');
+    
+    // 添加新的监听器
+    chatBody.on('scroll.chatDetail', function() {
+        // 检查是否滚动到顶部
+        if (chatBody.scrollTop() <= 50 && !chatDetailIsLoading && chatDetailHasMore) {
+            loadMoreChatDetail();
         }
     });
+}
+
+// 加载更多聊天详情
+function loadMoreChatDetail() {
+    if (chatDetailIsLoading || !chatDetailHasMore) return;
+    
+    chatDetailPageIndex++;
+    loadChatDetailPage(currentChatId, chatDetailPageIndex, false);
+}
+
+// 加载聊天详情页面
+function loadChatDetailPage(id, pageIndex, isInitial) {
+    if (chatDetailIsLoading) return;
+    
+    chatDetailIsLoading = true;
+    
+    // 记录当前滚动位置
+    let currentScrollTop = chatBody.scrollTop();
+    let currentScrollHeight = chatBody[0].scrollHeight;
+    
+    // 添加加载提示
+    if (!isInitial) {
+        chatBody.prepend(`<div class="loading-more-history" style="text-align:center;padding:10px;color:#666;">
+                            <i class="fas fa-spinner fa-spin"></i> 加载更多历史记录...
+                          </div>`);
+    }
+    
+    $.ajax({
+        type: "Post",
+        url: "/Home/ShowHistoryDetailPaged",
+        dataType: "json",
+        data: {
+            chatId: id,
+            pageIndex: pageIndex,
+            pageSize: chatDetailPageSize
+        },
+        success: function (res) {
+            chatDetailIsLoading = false;
+            $('.loading-more-history').remove();
+            
+            if (res.success) {
+                chatid = id;
+                chatDetailHasMore = res.hasMore;
+                
+                if (res.data.length === 0) {
+                    if (isInitial) {
+                        chatBody.html('<div class="text-center text-muted p-4">暂无对话记录</div>');
+                    }
+                    return;
+                }
+                
+                var html = renderChatHistory(res.data);
+                
+                if (isInitial) {
+                    chatBody.html(html).hide().fadeIn(300);
+                    // 初始加载时滚动到底部
+                    setTimeout(() => {
+                        chatBody.scrollTop(chatBody[0].scrollHeight);
+                    }, 100);
+                } else {
+                    // 追加到顶部
+                    chatBody.prepend(html);
+                    
+                    // 计算新的滚动位置，保持用户当前查看的内容不变
+                    let newScrollHeight = chatBody[0].scrollHeight;
+                    let scrollDiff = newScrollHeight - currentScrollHeight;
+                    chatBody.scrollTop(currentScrollTop + scrollDiff);
+                }
+                
+                // 应用样式和功能
+                applyChatHistoryStyles();
+                
+                if (!chatDetailHasMore && !isInitial) {
+                    chatBody.prepend('<div class="text-center text-muted p-2" style="font-size:12px;">已加载全部历史记录</div>');
+                }
+                
+                // 检查是否需要显示加载更多按钮
+                checkAndShowLoadMoreButton();
+            }
+        },
+        error: function (err) {
+            chatDetailIsLoading = false;
+            $('.loading-more-history').remove();
+            if (isInitial) {
+                balert("获取对话详情失败，请联系管理员", "danger", false, 2000, "center");
+            } else {
+                balert("加载更多历史记录失败", "warning", false, 1000, "top");
+            }
+        }
+    });
+}
+
+// 渲染聊天历史
+function renderChatHistory(data) {
+    var html = "";
+    var isvip = false;
+    
+    isVIP(function (status) {
+        isvip = status;
+    });
+    
+    var imgBox = [];
+    var vipHead = isvip ?
+        `<div class="avatar" style="border:2px solid #FFD43B">
+             <img src='${HeadImgPath}'/>
+             <i class="fas fa-crown vipicon"></i>
+         </div>
+         <div class="nicknamevip">${UserNickText}</div>` :
+        `<div class="avatar">
+             <img src='${HeadImgPath}'/>
+         </div>
+         <div class="nickname">${UserNickText}</div>`;
+         
+    for (var i = 0; i < data.length; i++) {
+        var content = data[i].chat;
+        var msgclass = "chat-message";
+        if (data[i].isDel === 2)
+            msgclass = "chat-message chatgroup-masked";
+            
+        if (data[i].role == "user") {
+            // 检查是否有完整内容（被截取的标记）
+            var hasFullContent = data[i].chatTitle === "HAS_FULL_CONTENT_CHAT" || data[i].chatTitle === "HAS_FULL_CONTENT_BOTH";
+                                               
+            if (content.indexOf('aee887ee6d5a79fdcmay451ai8042botf1443c04') == -1) {
+                content = content.replace(/&lt;/g, "&amp;lt;").replace(/&gt;/g, "&amp;gt;");
+                content = content.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                html += `<div class="${msgclass}" data-group="${data[i].chatGroupId}">
+                             <div style="display: flex; align-items: center;">
+                                ${vipHead}
+                             </div>
+                             <div class="chat-message-box">
+                               <pre id="${data[i].chatCode}" data-chat-code="${data[i].chatCode || data[i].chatGroupId}">${content}</pre>
+                               ${hasFullContent ? `<div class="expand-content-btn" onclick="expandUserContent('${data[i].chatCode || data[i].chatGroupId}')">
+                                   <i class="fas fa-chevron-down"></i> 展开全文
+                               </div>` : ''}
+                             </div>
+                             <div>
+                              <i data-feather="refresh-cw" class="chatbtns" onclick="tryAgain('${data[i].chatCode}')"></i>
+                              <i data-feather="edit-3" class="chatbtns" onclick="editChat('${data[i].chatCode}')"></i>
+                             </div>
+                         </div>`;
+            } else {
+                var contentarr = content.split("aee887ee6d5a79fdcmay451ai8042botf1443c04");
+                html += `<div class="${msgclass}" data-group="${data[i].chatGroupId}">
+                           <div style="display: flex; align-items: center;">
+                            ${vipHead}  
+                           </div>
+                           <div class="chat-message-box">
+                             <pre id="${data[i].chatCode}" data-chat-code="${data[i].chatCode}">${contentarr[0].replace(/</g, "&lt;").replace(/>/g, "&gt;")}`;
+
+                // 循环添加后续内容
+                contentarr.slice(1).forEach(item => {
+                    if (item.includes('<img ')) {
+                        html += item;
+                    } else {
+                        html += item.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    }
+                });
+
+                html += `</pre>
+                               ${hasFullContent ? `<div class="expand-content-btn" onclick="expandUserContent('${data[i].chatCode}')">
+                                   <i class="fas fa-chevron-down"></i> 展开全文
+                               </div>` : ''}
+                             </div>
+                           <div>
+                             <i data-feather="refresh-cw" class="chatbtns" onclick="tryAgain('${data[i].chatCode}')"></i>
+                             <i data-feather="edit-3" class="chatbtns" onclick="editChat('${data[i].chatCode}')"></i>
+                           </div>
+                         </div>`;
+                imgBox.push(data[i].chatCode);
+            }
+
+        } else {
+            var item = {
+                "id": data[i].chatCode,
+                "markdown": content
+            }
+            const thinkContent = data[i].reasoning;
+
+            markdownHis.push(item);
+            var markedcontent = md.render(content);
+            var firstTime = '';
+            var allTime = '';
+            if (data[i].firstTime != "null" && data[i].allTime != "null" && data[i].firstTime != null && data[i].allTime != null) {
+                firstTime = `<span class="badge badge-pill badge-success">${data[i].firstTime}s</span>`
+                allTime = `<span class="badge badge-pill badge-dark">${data[i].allTime}s</span>`
+                if (data[i].firstTime > 10) {
+                    firstTime = `<span class="badge badge-pill badge-danger">${data[i].firstTime}s</span>`
+                } else if (data[i].firstTime > 5) {
+                    firstTime = `<span class="badge badge-pill badge-warning">${data[i].firstTime}s</span>`
+                }
+            }
+            
+                        // 检查AI回复是否被截取
+            var hasFullContent = data[i].chatTitle === "HAS_FULL_CONTENT_CHAT" || data[i].chatTitle === "HAS_FULL_CONTENT_BOTH";
+            
+            let thinkBoxHtml = '';
+            if (thinkContent) {
+                // 检查思考内容是否被截取
+                var hasFullThinking = data[i].chatTitle === "HAS_FULL_CONTENT_REASONING" || data[i].chatTitle === "HAS_FULL_CONTENT_BOTH";
+                thinkBoxHtml = `<details><summary>AI 思考结束（点击展开）</summary>
+                                    <div class="think-content" id="think-${data[i].chatCode}">${md.render(thinkContent)}
+                                        ${hasFullThinking ? `<div class="expand-content-btn" onclick="expandThinking('${data[i].chatCode}')">
+                                            <i class="fas fa-brain"></i> 展开完整思考
+                                        </div>` : ''}
+                                    </div>
+                                </details>`;
+            }
+            
+            html += `<div class="${msgclass}" data-group="${data[i].chatGroupId}">
+                        <div style="display: flex; align-items: center;">
+                           <div class="avatar gpt-avatar">A</div>
+                           <div class="nickname" style="font-weight: bold; color: black;">AIBot</div>
+                           <span class="badge badge-info ${data[i].model.replace('.', '')}">${data[i].model}</span>
+                           ${firstTime}${allTime}
+                        </div>
+                         ${thinkBoxHtml}
+                        <div class="chat-message-box">
+                           <div id="${data[i].chatCode}" data-chat-code="${data[i].chatCode}">${markedcontent}</div>
+                           ${hasFullContent ? `<div class="expand-content-btn" onclick="expandAIContent('${data[i].chatCode}')">
+                               <i class="fas fa-chevron-down"></i> 展开全文
+                           </div>` : ''}
+                        </div>
+                        <div id="ctrl-${data[i].chatCode}">
+                          <i data-feather="copy" class="chatbtns" data-toggle="tooltip" title="复制" onclick="copyAll('${data[i].chatCode}')"></i>
+                          <i data-feather="anchor" class="chatbtns" data-toggle="tooltip" title="锚" onclick="quote('${data[i].chatCode}')"></i>
+                          <i data-feather="trash-2" class="chatbtns custom-delete-btn-1" data-toggle="tooltip" title="删除" data-chatgroupid="${data[i].chatGroupId}"></i>
+                          <i data-feather="codepen" class="chatbtns" data-toggle="tooltip" title="显示/隐藏Markdown" onclick="toMarkdown('${data[i].chatCode}')"></i>
+                        </div>
+                    </div>`;
+        }
+    }
+    
+    return html;
+}
+
+// 应用聊天历史样式和功能
+function applyChatHistoryStyles() {
+    $(".chat-message pre code").each(function (i, block) {
+        hljs.highlightElement(block);
+    });
+    addLanguageLabels();
+    addCopyBtn();
+    addExportButtonToTables();
+    feather.replace();
+    applyMagnificPopup('.chat-message-box');
+    
+    // 处理图片折叠
+    $('.chat-message pre[id]').each(function() {
+        const id = $(this).attr('id');
+        if ($(this).find('img').length > 0) {
+            initImageFolding(`#${id}`);
+        }
+    });
+    
+    renderMermaidDiagrams();
 }
 
 //新建会话
@@ -1344,6 +1479,194 @@ function newChat() {
     chatBody.html("");
     $(".chat-item").removeClass("highlight-chat-item");
     $("#Q").focus();
+    
+    // 清理聊天详情分页相关的事件监听器
+    chatBody.off('scroll.chatDetail');
+    currentChatId = "";
+}
+
+// 展开用户消息全文
+function expandUserContent(chatCode) {
+    var $pre = $(`pre[data-chat-code="${chatCode}"]`);
+    var $expandBtn = $pre.siblings('.expand-content-btn');
+    
+    $expandBtn.html('<i class="fas fa-spinner fa-spin"></i> 加载中...');
+    
+    $.ajax({
+        type: "Post",
+        url: "/Home/GetFullChatContent",
+        dataType: "json",
+        data: {
+            chatCode: chatCode
+        },
+        success: function (res) {
+            if (res.success && res.data) {
+                var $pre = $(`pre[data-chat-code="${chatCode}"]`);
+                var fullContent = res.data.chat;
+                
+                // 处理图片内容
+                if (fullContent.indexOf('aee887ee6d5a79fdcmay451ai8042botf1443c04') != -1) {
+                    var contentarr = fullContent.split("aee887ee6d5a79fdcmay451ai8042botf1443c04");
+                    var htmlContent = contentarr[0].replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    contentarr.slice(1).forEach(item => {
+                        if (item.includes('<img ')) {
+                            htmlContent += item;
+                        } else {
+                            htmlContent += item.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                        }
+                    });
+                    $pre.html(htmlContent);
+                } else {
+                    fullContent = fullContent.replace(/&lt;/g, "&amp;lt;").replace(/&gt;/g, "&amp;gt;");
+                    fullContent = fullContent.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    $pre.text(fullContent);
+                }
+                
+                // 移除展开按钮
+                $expandBtn.fadeOut(300, function() {
+                    $(this).remove();
+                });
+                
+                // 重新应用图片折叠功能
+                if ($pre.find('img').length > 0) {
+                    initImageFolding(`#${$pre.attr('id')}`);
+                }
+            } else {
+                $expandBtn.html('<i class="fas fa-chevron-down"></i> 展开全文');
+                balert("加载失败，请重试", "warning", false, 1000, "top");
+            }
+        },
+        error: function (err) {
+            $expandBtn.html('<i class="fas fa-chevron-down"></i> 展开全文');
+            balert("加载失败，请重试", "warning", false, 1000, "top");
+        }
+    });
+}
+
+// 展开AI回复全文
+function expandAIContent(chatCode) {
+    var $div = $(`div[data-chat-code="${chatCode}"]`);
+    var $expandBtn = $div.siblings('.expand-content-btn');
+    
+    $expandBtn.html('<i class="fas fa-spinner fa-spin"></i> 加载中...');
+    
+    $.ajax({
+        type: "Post",
+        url: "/Home/GetFullChatContent",
+        dataType: "json",
+        data: {
+            chatCode: chatCode
+        },
+        success: function (res) {
+            if (res.success && res.data) {
+                var $div = $(`div[data-chat-code="${chatCode}"]`);
+                var fullContent = res.data.chat;
+                var markedcontent = md.render(fullContent);
+                $div.html(markedcontent);
+                
+                // 更新markdownHis中的内容
+                var historyItem = markdownHis.find(item => item.id === chatCode);
+                if (historyItem) {
+                    historyItem.markdown = fullContent;
+                }
+                
+                // 移除展开按钮
+                $expandBtn.fadeOut(300, function() {
+                    $(this).remove();
+                });
+                
+                // 重新应用代码高亮
+                $div.find("pre code").each(function (i, block) {
+                    hljs.highlightElement(block);
+                });
+                addLanguageLabels(true, chatCode);
+                addCopyBtn(chatCode);
+                renderMermaidDiagrams(`#${chatCode}`);
+            } else {
+                $expandBtn.html('<i class="fas fa-chevron-down"></i> 展开全文');
+                balert("加载失败，请重试", "warning", false, 1000, "top");
+            }
+        },
+        error: function (err) {
+            $expandBtn.html('<i class="fas fa-chevron-down"></i> 展开全文');
+            balert("加载失败，请重试", "warning", false, 1000, "top");
+        }
+    });
+}
+
+// 展开AI思考全文
+function expandThinking(chatCode) {
+    var $expandBtn = $(`#think-${chatCode}`).find('.expand-content-btn');
+    var $thinkDiv = $(`#think-${chatCode}`);
+    
+    $expandBtn.html('<i class="fas fa-spinner fa-spin"></i> 加载中...');
+    
+    $.ajax({
+        type: "Post",
+        url: "/Home/GetFullChatContent",
+        dataType: "json",
+        data: {
+            chatCode: chatCode
+        },
+        success: function (res) {
+            if (res.success && res.data) {
+                var fullReasoning = res.data.reasoning;
+                var markedReasoning = md.render(fullReasoning);
+                $thinkDiv.html(markedReasoning);
+                
+                // 移除展开按钮
+                $expandBtn.fadeOut(300, function() {
+                    $(this).remove();
+                });
+                
+                // 重新应用代码高亮
+                $thinkDiv.find("pre code").each(function (i, block) {
+                    hljs.highlightElement(block);
+                });
+            } else {
+                $expandBtn.html('<i class="fas fa-brain"></i> 展开完整思考');
+                balert("加载失败，请重试", "warning", false, 1000, "top");
+            }
+        },
+        error: function (err) {
+            $expandBtn.html('<i class="fas fa-brain"></i> 展开完整思考');
+            balert("加载失败，请重试", "warning", false, 1000, "top");
+        }
+    });
+}
+
+// 检查是否需要显示加载更多按钮
+function checkAndShowLoadMoreButton() {
+    // 移除现有的加载更多按钮
+    $('.load-more-history-btn').remove();
+    
+    // 如果没有更多数据或正在加载，不显示按钮
+    if (!chatDetailHasMore || chatDetailIsLoading) {
+        return;
+    }
+    
+    // 检查是否有滚动条
+    setTimeout(() => {
+        const hasScrollbar = chatBody[0].scrollHeight > chatBody[0].clientHeight;
+        
+        if (!hasScrollbar) {
+            // 没有滚动条，显示加载更多按钮
+            const loadMoreBtn = $(`
+                <div class="load-more-history-btn" style="text-align:center;padding:15px;border-bottom:1px solid #eee;">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="loadMoreChatDetailByButton()">
+                        <i class="fas fa-chevron-up"></i> 加载更多历史记录
+                    </button>
+                </div>
+            `);
+            chatBody.prepend(loadMoreBtn);
+        }
+    }, 100);
+}
+
+// 通过按钮加载更多聊天详情
+function loadMoreChatDetailByButton() {
+    $('.load-more-history-btn').remove();
+    loadMoreChatDetail();
 }
 
 //加载更多历史记录
@@ -1370,6 +1693,8 @@ function stopGenerate() {
     });
     addLanguageLabels(true, assistansBoxId);
     addCopyBtn(assistansBoxId);
+    sysmsg = '';
+    thinkContent = '';
     $.ajax({
         type: "Post",
         url: "/Home/StopGenerate",
@@ -1997,7 +2322,8 @@ function toMarkdown(id) {
                     return '<pre class="hljs"><code>' +
                         hljs.highlight(lang, str, true).value +
                         '</code></pre>';
-                } catch (__) { }
+                } catch (__) {
+                }
             }
             return '<pre class="hljs"><code>' + md.utils.escapeHtml(str) + '</code></pre>';
         }

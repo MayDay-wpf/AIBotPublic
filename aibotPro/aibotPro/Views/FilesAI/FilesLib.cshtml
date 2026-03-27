@@ -2,6 +2,7 @@
     ViewData["Title"] = "素材库（Material Library）";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+<link href="~/system/js/filesystem/style.min.css" rel="stylesheet" />
 <script src="/system/js/masonry.pkgd.min.js"></script>
 <div class="header">
     <div class="header-left">
@@ -13,7 +14,10 @@
             <i data-feather="arrow-left">
             </i>
         </a>
-        <button type="button" class="btn btn-info clearRole" style="margin-left:10px;color:white" onclick="uploadFiles()"><i data-feather="file"></i> 文件上传</button>
+        <button type="button" class="btn btn-info clearRole" style="margin-left:10px;color:white"
+                onclick="uploadFiles()">
+            <i data-feather="file"></i> 文件上传
+        </button>
         @* <a href="#" class="header-help-link" onclick="DALLinfo()">
         <i data-feather="help-circle">
         </i>
@@ -35,33 +39,16 @@
     <div class="content-main text-center">
         <div class="header-search mb-4">
             <i data-feather="search"></i>
-            <input type="search" class="form-control" placeholder="输入文件名搜索文件，回车搜索" id="searchKey" style="width: 100%;">
+            <input type="search" class="form-control" placeholder="输入文件名搜索文件，回车搜索" id="searchKey"
+                   style="width: 100%;">
         </div>
-        <div class="row" id="masonry-layout">
-            <li class="divider-text">
-                加载中...
-            </li>
-            <!-- 第一个卡片 -->
-            @* <div class="col-lg-3 col-md-6 col-sm-12 mb-4 grid-item">
-            <div class="card h-100">
-            <img class="card-img-top" style="width: 50px;margin:10px auto;"
-            src="/files/pluginavatar/20240206/02f59659b3064b90bf3e4166716878c0.png" alt="插件名称1">
-            <div class="card-body">
-            <h5 class="card-title">插件名称1</h5>
-            <p class="card-text">这里是插件1的简介，简要介绍插件的主要功能和特点。这里是插件1的简介，简要介绍插件的主要功能和特点。</p>
-            <div class="d-flex justify-content-between flex-wrap">
-            <a href="#" class="btn btn-primary">安装</a>
-            <a href="#" class="btn btn-secondary">查看</a>
-            </div>
-            </div>
-            </div>
-            </div> *@
+        <div id="file-table-container">
+            <!-- Table will be rendered here -->
         </div>
-        <div class="row">
-            <div class="col-12">
-                <button class="btn btn-primary loadMore" onclick="getFiles('loadmore')">加载更多</button>
-            </div>
+        <div id="pagination-container" class="d-flex justify-content-center mt-3">
+            <!-- Pagination will be rendered here -->
         </div>
     </div>
 </div>
-<script src="~/system/js/fileslib.js?v1.0.1"></script>
+<script src="~/system/js/filesystem/jstree.min.js"></script>
+<script src="~/system/js/filesystem/fileslib.js?v1.0.2"></script>

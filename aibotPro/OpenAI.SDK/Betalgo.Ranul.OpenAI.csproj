@@ -1,0 +1,81 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>net8.0;net7.0;net6.0;netstandard2.0</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>Latest</LangVersion>
+		<Copyright>Betalgo Up Ltd.</Copyright>
+		<PackageProjectUrl>https://openai.com/</PackageProjectUrl>
+		<PackageIcon>Betalgo-Ranul-OpenAI-icon.png</PackageIcon>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<Title>OpenAI SDK by Betalgo</Title>
+		<Version>8.10.1</Version>
+		<Authors>Tolga Kayhan, Betalgo</Authors>
+		<Company>Betalgo Up Ltd.</Company>
+		<Product>OpenAI .NET library by Betalgo Ranul</Product>
+		<Description>.NET library for the OpenAI services by Betalgo Ranul</Description>
+		<RepositoryUrl>https://github.com/betalgo/openai/</RepositoryUrl>
+		<PackageTags>openAI,realtime,chatGPT,gpt-4, gpt-3,DALL·E,whisper,azureOpenAI,ai,betalgo,NLP,dalle,dall-e,OpenAI,OpenAi,openAi,azure</PackageTags>
+		<PackageId>Betalgo.Ranul.OpenAI</PackageId>
+		<PackageReadmeFile>Readme.md</PackageReadmeFile>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<RepositoryUrl>https://github.com/betalgo/openai.git</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<NoWarn>1701;1702;1529;1591</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Remove="Tokenizer\encoder.json" />
+		<None Remove="Tokenizer\vocab.bpe" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="Tokenizer\GPT3\encoder.json" />
+		<EmbeddedResource Include="Tokenizer\GPT3\vocab.bpe" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Include="..\Readme.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="Betalgo-Ranul-OpenAI-icon.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+				<PackageReference Include="System.Text.Json" Version="8.0.5" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'net7.0'">
+		<PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="7.0.0" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+		<PackageReference Include="System.Text.Json" Version="8.0.5" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' != 'net8.0' And '$(TargetFramework)' != 'net7.0'">
+		<PackageReference Include="Microsoft.Extensions.Http" Version="6.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="6.0.0" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+		<PackageReference Include="System.Text.Json" Version="8.0.5" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+		<PackageReference Include="System.Net.Http.Json" Version="8.0.1" />
+		<PackageReference Include="System.Text.Json" Version="8.0.5" />
+	</ItemGroup>
+  <ItemGroup>
+    <!-- 移除 Microsoft.Extensions.AI.Abstractions 依赖，避免版本冲突 -->
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />
+  </ItemGroup>
+</Project>

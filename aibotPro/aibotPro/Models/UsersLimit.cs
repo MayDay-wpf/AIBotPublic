@@ -6,20 +6,24 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Table("UsersLimit")]
+public partial class UsersLimit
 {
-    [Table("UsersLimit")]
-    public partial class UsersLimit
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string Account { get; set; }
-        [StringLength(50)]
-        public string ModelName { get; set; }
-        public int? Limit { get; set; }
-        public bool? Enable { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? CreateTime { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string Account { get; set; }
+
+    [StringLength(3000)]
+    public string ModelName { get; set; }
+
+    public int? Limit { get; set; }
+
+    public bool? Enable { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? CreateTime { get; set; }
 }

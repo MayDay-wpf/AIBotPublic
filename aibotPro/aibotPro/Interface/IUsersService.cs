@@ -30,6 +30,7 @@ namespace aibotPro.Interface
         Task<bool> ChatHubBeforeCheck(ChatDto chatDto, string account, string senMethod, string chatId);//对话前的检查
         List<ErrorBilling> GetErrorBilling(string username, int page, int page_size, out int total);//获取错误计费撤回申请列表
         bool IsSupperVIP(string account);//检查是否为高级会员
+        bool IsVip(string account);//检查是否为会员
         List<DateTime> GetThisMonthSignInList(string account);//获取本月的签到记录
         bool AddUserPrompt(string prompt, string account);//添加用户常用提示词
         List<UserPrompt> GetUserPromptList(string account, int page, int size, out int total, string prompt = "");//获取用户常用提示词

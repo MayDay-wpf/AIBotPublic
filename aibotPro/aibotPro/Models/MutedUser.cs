@@ -6,17 +6,19 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+public partial class MutedUser
 {
-    public partial class MutedUser
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string Account { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? StartTime { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? EndTime { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string Account { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? StartTime { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? EndTime { get; set; }
 }

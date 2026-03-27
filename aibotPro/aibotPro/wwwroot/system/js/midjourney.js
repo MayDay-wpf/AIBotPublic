@@ -2,7 +2,7 @@
 var referenceImgPath = '';
 var showlog = false;
 var intervalId;
-let thisAiModel = 'gpt-4o-mini';
+let thisAiModel = 'gpt-4.1-nano-openai';
 let drawmodel = 'fast';
 let blendImages = [];
 let FS = 'imagine';

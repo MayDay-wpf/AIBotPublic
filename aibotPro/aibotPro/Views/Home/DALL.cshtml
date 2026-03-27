@@ -2,7 +2,7 @@
     ViewData["Title"] = "DALL";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-<link href="~/system/css/dall.css" rel="stylesheet" />
+<link href="~/system/css/dall.css?v1.0.0" rel="stylesheet"/>
 <div class="header">
     <div class="header-left">
         <a id="menuMain" href="" class="burger-menu">
@@ -36,7 +36,7 @@
             <h4 class="content-title content-title-sm">
                 <b style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105));
     -webkit-background-clip: text;
-    color: transparent;">DALL·E3</b>
+    color: transparent;">DALL·E3 & GPT-Image-1</b>
             </h4>
         </div>
     </div>
@@ -44,13 +44,124 @@
         <div class="card">
             <div class="card-header">
                 <h5>第一步：输入提示词</h5>
-                <button class="btn btn-outline-success greatePrompt" onclick="sendMsg()"><img src="~/system/images/magic_stick.png" style="width:20px;" />优化提示词</button>
-                <button class="btn btn-outline-info englishPrompt" onclick="englishPrompt()"><img src="~/system/images/translated.png" style="width:20px;" />转英语提示词</button>
+                <button class="btn btn-outline-success greatePrompt" onclick="sendMsg()"><img
+                        src="~/system/images/magic_stick.png" style="width:20px;"/>优化提示词
+                </button>
+                <button class="btn btn-outline-info englishPrompt" onclick="englishPrompt()"><img
+                        src="~/system/images/translated.png" style="width:20px;"/>转英语提示词
+                </button>
             </div>
             <div class="card-body">
+                <div class="mb-3">
+                    <label for="modelSelect" class="form-label">选择模型：</label>
+                    <select class="form-control w-25 mb-3" id="modelSelect">
+                        <option value="dall-e-3">DALL·E3</option>
+                        <option value="gpt-image-1">GPT-Image-1</option>
+                    </select>
+                    <select class="form-control w-25" id="modelAction">
+                        <option value="generations">绘制图片</option>
+                        <option value="edit">编辑图片</option>
+                        <option value="variation">改变图片</option>
+                    </select>
+                </div>
+                <div class="image-editor-container">
+                    <div class="row g-3">
+                        <!-- 左侧：原图 -->
+                        <div class="col-md-6">
+                            <div class="content-card">
+                                <div class="card-header">原图</div>
+                                <div class="card-content">
+                                    <!-- 上传占位符 -->
+                                    <div id="upload-placeholder" class="upload-area">
+                                        <div class="upload-icon">
+                                            <i class="fa fa-upload"></i>
+                                        </div>
+                                        <div class="upload-text">点击上传图片或拖拽图片到此处</div>
+                                    </div>
+
+                                    <!-- 图片编辑区 -->
+                                    <div id="image-editor" class="image-edit-area" style="display: none;">
+                                        <canvas id="original-canvas"></canvas>
+                                        <canvas id="draw-canvas"></canvas>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <div id="brush-controls" style="display: none;">
+                                        <div class="brush-size-controls">
+                                            <button id="brush-decrease" class="btn-control">-</button>
+                                            <span id="brush-size">画笔: 10px</span>
+                                            <button id="brush-increase" class="btn-control">+</button>
+                                        </div>
+                                        <div class="action-buttons">
+                                            <button id="reupload" class="btn btn-primary btn-primary-sm">重新上传
+                                            </button>
+                                            <button id="clear-mask" class="btn btn-danger btn-danger-sm">清除涂抹
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <input type="file" id="image-upload" accept="image/*" style="display: none;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 右侧：Mask图片 -->
+                        <div class="col-md-6">
+                            <div class="content-card">
+                                <div class="card-header">Mask 图片</div>
+                                <div class="card-content">
+                                    <!-- Mask 占位符 -->
+                                    <div id="mask-placeholder" class="mask-placeholder">
+                                        在左侧原图上涂抹后，此处将显示mask图片
+                                    </div>
+
+                                    <!-- Mask 显示区 -->
+                                    <div id="mask-display" class="mask-display" style="display: none;">
+                                        <canvas id="mask-canvas"></canvas>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <button id="download-mask" class="btn btn-primary btn-primary-sm"
+                                            style="display: none;">
+                                        下载Mask图片
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="image-variations-container">
+                    <h5 class="section-title">图片变体生成</h5>
+
+                    <div class="variations-upload-area" id="variations-upload-area">
+                        <div class="upload-placeholder" id="variations-upload">
+                            <div class="upload-icon">
+                                <i class="fa fa-images"></i>
+                            </div>
+                            <div class="upload-text">
+                                点击上传参考图片或拖拽图片到此处<br>
+                                <span class="upload-subtext">仅支持上传单张图片</span>
+                            </div>
+                        </div>
+
+                        <input type="file" id="variations-file-input" accept="image/*" style="display: none;">
+                    </div>
+
+                    <div class="uploaded-images" id="uploaded-images-container" style="display: none;">
+                        <h6 class="uploaded-title">已上传图片</h6>
+                        <div class="image-grid" id="image-grid">
+                            <!-- 上传的图片将显示在这里 -->
+                        </div>
+
+                        <div class="variations-actions">
+                            <button id="clear-variations" class="btn btn-secondary btn-secondary-sm">清除图片</button>
+                            <button id="change-image" class="btn btn-primary btn-primary-sm">更换图片</button>
+                        </div>
+                    </div>
+                </div>
                 <div class="textarea-container">
                     <textarea class="form-control" rows="10" maxlength="3000"
-                              placeholder="请描述画面中的内容，描述的方式，顺序，措辞等都会对画面产生不同的影响效果" id="inputText"></textarea>
+                              placeholder="请描述画面中的内容，描述的方式，顺序，措辞等都会对画面产生不同的影响效果"
+                              id="inputText"></textarea>
                     <div class="char-count">
                         <span id="charCount">0</span>/<span class="char-limit">3000</span>
                     </div>
@@ -62,7 +173,7 @@
             <div class="card-header">
                 <h5>
                     第二步：选择绘制尺寸
-                </h5><br />
+                </h5><br/>
                 <div class="form-check mt-3">
                     <input class="form-check-input" type="checkbox" id="qualityCheckbox" onchange="toggleQuality()">
                     <label class="form-check-label" for="qualityCheckbox">高清生成</label>
@@ -97,7 +208,8 @@
                     <h4 id="nt"></h4>
                     <div class="text-center mb-3">
                         <a href="" id="resimgurl-a" class="image-popup">
-                            <img src="/system/images/loading.gif" id="resimgurl" class="img-fluid" style="width:30%;min-width:300px;"
+                            <img src="/system/images/loading.gif" id="resimgurl" class="img-fluid"
+                                 style="width:30%;min-width:300px;"
                                  alt="任务结果显示区，请稍候...">
                         </a>
                     </div>
@@ -110,4 +222,4 @@
 <script src="~/system/js/signalr.min.js"></script>
 <link rel="stylesheet" href="~/system/css/magnific-popup.min.css">
 <script src="~/system/js/jquery.magnific-popup.min.js"></script>
-<script src="~/system/js/dall.js?v1.0.1"></script>
+<script src="~/system/js/dall.js?v1.0.2"></script>

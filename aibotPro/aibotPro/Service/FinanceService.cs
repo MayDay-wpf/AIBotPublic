@@ -72,7 +72,7 @@ namespace aibotPro.Service
         }
 
         public async Task<bool> CreateUseLogAndUpadteMoney(string account, string modelName, int inputCount,
-    int outputCount, bool isdraw = false)
+            int outputCount, bool isdraw = false)
         {
             var lockKey = $"lock-balance-{account}";
             try
@@ -92,13 +92,37 @@ namespace aibotPro.Service
                             return false;
                         }
 
+                        // 检查是否为免费模型
+                        var freePlan = await CheckFree(account, modelName);
+                        bool isFreeModel = freePlan.TotalCount > 0; // 如果有免费额度，说明是免费模型
+                        bool isVip = await IsVip(account);
+
+                        // 如果是免费模型且用户是VIP，直接记录日志不扣费
+                        if (isFreeModel && isVip)
+                        {
+                            var freeLog = new UseUpLog
+                            {
+                                Account = account,
+                                InputCount = inputCount,
+                                OutputCount = outputCount,
+                                UseMoney = 0, // 免费模型不扣费
+                                CreateTime = DateTime.Now,
+                                ModelName = modelName
+                            };
+                            _context.UseUpLogs.Add(freeLog);
+                            await _context.SaveChangesAsync();
+                            await UpdateForumpoint(inputCount + outputCount, account);
+                            transaction.Commit();
+                            return true;
+                        }
+
                         decimal? realOutputMoney = 0m;
+                        bool tokenPackageUsed = false; // 标记是否使用了Token包
                         List<ModelPrice> modelPriceList = await GetModelPriceList();
                         var modelPrice = modelPriceList.SingleOrDefault(x => x.ModelName == modelName);
 
                         if (modelPrice != null)
                         {
-                            bool vip = await IsVip(account);
                             bool svip = await IsSVip(account);
                             decimal? onceFee;
                             decimal? inputMoney = 0;
@@ -111,7 +135,7 @@ namespace aibotPro.Service
                                 modelPrice.ModelPriceOutput = modelPrice.SvipModelPriceOutput;
                                 modelPrice.Rebate = modelPrice.SvipRebate;
                             }
-                            else if (vip)
+                            else if (isVip)
                             {
                                 onceFee = modelPrice.VipOnceFee;
                                 modelPrice.ModelPriceInput = modelPrice.VipModelPriceInput;
@@ -146,34 +170,133 @@ namespace aibotPro.Service
                                 }
                             }
 
-                            user.Mcoin -= realOutputMoney ?? 0;
-                            if (user.Mcoin < 0)
+                            // 计算需要扣除的token总量
+                            int totalTokensToUse = inputCount + outputCount;
+                            int remainingTokensToUse = totalTokensToUse;
+                            decimal? remainingMoneyToDeduct = realOutputMoney;
+
+                            // 查找用户可用的Token包
+                            var tokenPackages = await GetUserTokenPackagesAsync(account);
+
+                            // 创建一个列表来跟踪需要更新的包
+                            List<TokenPackage> packagesToUpdate = new List<TokenPackage>();
+
+                            var log = new UseUpLog
                             {
-                                user.Mcoin = 0;
+                                Account = account,
+                                InputCount = inputCount,
+                                OutputCount = outputCount,
+                                UseMoney = 0, // 先初始化为0
+                                CreateTime = DateTime.Now,
+                                ModelName = modelName
+                            };
+
+                            // 检查是否有可用的Token包
+                            if (tokenPackages.Any())
+                            {
+                                foreach (var package in tokenPackages)
+                                {
+                                    // 检查该Token包是否可用于该模型
+                                    bool canUseForModel = string.IsNullOrEmpty(package.ModelList) || // 空表示所有模型可用
+                                                          package.ModelList.Split(',').Contains(modelName);
+
+                                    if (!canUseForModel)
+                                        continue;
+
+                                    // 计算包中剩余可用token数量
+                                    int availableTokens = (package.TokenTotal ?? 0) - (package.TokenUsage ?? 0);
+
+                                    if (availableTokens <= 0)
+                                        continue;
+
+                                    // 计算此包要使用的token数量
+                                    int tokensToUseFromPackage = Math.Min(availableTokens, remainingTokensToUse);
+
+                                    if (tokensToUseFromPackage > 0)
+                                    {
+                                        // 更新Token包使用量
+                                        package.TokenUsage = (package.TokenUsage ?? 0) + tokensToUseFromPackage;
+
+                                        // 从数据库获取最新的包信息，以便更新
+                                        var dbPackage = await _context.TokenPackages.FindAsync(package.Id);
+                                        if (dbPackage != null)
+                                        {
+                                            dbPackage.TokenUsage = package.TokenUsage;
+                                            _context.TokenPackages.Update(dbPackage);
+
+                                            // 添加到要更新的包列表中
+                                            packagesToUpdate.Add(package);
+                                            tokenPackageUsed = true; // 标记使用了Token包
+                                        }
+
+                                        // 更新剩余需要扣除的token数量
+                                        remainingTokensToUse -= tokensToUseFromPackage;
+
+                                        // 计算对应的金额比例并减少需要扣除的金额
+                                        if (totalTokensToUse > 0) // 防止除零错误
+                                        {
+                                            decimal usedRatio = (decimal)tokensToUseFromPackage / totalTokensToUse;
+                                            decimal deductedAmount = (decimal)(realOutputMoney ?? 0) * usedRatio;
+                                            remainingMoneyToDeduct -= deductedAmount;
+                                        }
+
+                                        if (remainingTokensToUse <= 0)
+                                            break;
+                                    }
+                                }
+                            }
+
+                            // 如果还有剩余需要扣除的金额，从余额中扣除
+                            if (remainingMoneyToDeduct > 0)
+                            {
+                                user.Mcoin -= remainingMoneyToDeduct ?? 0;
+                                // if (user.Mcoin < 0)
+                                // {
+                                //     user.Mcoin = 0;
+                                // }
+
+                                // 更新最终扣除的金额
+                                log.UseMoney = remainingMoneyToDeduct;
+                            }
+                            else
+                            {
+                                log.UseMoney = 0; // 全部由Token包支付
                             }
 
                             _context.Entry(user).State = EntityState.Modified;
+                            _context.UseUpLogs.Add(log);
+                        }
+                        else
+                        {
+                            // 如果没有找到模型价格，仍然记录使用日志但不扣费
+                            var log = new UseUpLog
+                            {
+                                Account = account,
+                                InputCount = inputCount,
+                                OutputCount = outputCount,
+                                UseMoney = 0,
+                                CreateTime = DateTime.Now,
+                                ModelName = modelName
+                            };
+                            _context.UseUpLogs.Add(log);
                         }
 
-                        var log = new UseUpLog
-                        {
-                            Account = account,
-                            InputCount = inputCount,
-                            OutputCount = outputCount,
-                            UseMoney = realOutputMoney,
-                            CreateTime = DateTime.Now,
-                            ModelName = modelName
-                        };
-                        _context.UseUpLogs.Add(log);
-
                         await _context.SaveChangesAsync();
+
+                        // 只有在实际使用了Token包时才清除缓存
+                        if (tokenPackageUsed)
+                        {
+                            await ClearTokenPackageCacheAsync(account);
+                        }
+
                         await UpdateForumpoint(inputCount + outputCount, account);
                         transaction.Commit();
                         return true;
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
                         transaction.Rollback();
+                        await _systemService.WriteLog($"扣费失败：{ex.Message}", Dtos.LogLevel.Error, account);
                         return false;
                     }
                 }
@@ -192,10 +315,10 @@ namespace aibotPro.Service
             if (userForumSetting != null)
             {
                 userForumSetting.Points += ((decimal)tokens) / 10000m;
-                _context.Entry(userForumSetting).State = EntityState.Modified;
                 await _context.SaveChangesAsync();
             }
         }
+
         private async Task<bool> AcquireLockAsync(string key)
         {
             var lockValue = Guid.NewGuid().ToString();
@@ -220,6 +343,83 @@ namespace aibotPro.Service
         {
             await _redisService.DeleteAsync(key);
         }
+
+        // 缓存Token包的相关方法
+        private async Task<List<TokenPackage>> GetUserTokenPackagesAsync(string account)
+        {
+            // 首先尝试从缓存获取
+            string cacheKey = $"user_token_packages:{account}";
+            var cachedData = await _redisService.GetAsync(cacheKey);
+
+            if (!string.IsNullOrEmpty(cachedData))
+            {
+                try
+                {
+                    return JsonConvert.DeserializeObject<List<TokenPackage>>(cachedData);
+                }
+                catch
+                {
+                    // 如果反序列化失败，忽略缓存并从数据库获取
+                    await _redisService.DeleteAsync(cacheKey);
+                }
+            }
+
+            // 从数据库获取
+            var tokenPackages = await _context.TokenPackages
+                .Where(tp => tp.UseAccount == account &&
+                             tp.ExpirationTime > DateTime.Now &&
+                             (tp.TokenTotal - tp.TokenUsage) > 0)
+                .OrderBy(tp => tp.ExpirationTime) // 首先按过期时间排序，优先使用快过期的
+                .ThenBy(tp => string.IsNullOrEmpty(tp.ModelList) ? 1 : 0) // 然后专用包优先于通用包
+                .ToListAsync();
+
+            // 将结果存入缓存，设置适当的过期时间
+            await _redisService.SetAsync(cacheKey, JsonConvert.SerializeObject(tokenPackages), TimeSpan.FromMinutes(5));
+
+            return tokenPackages;
+        }
+
+        // 根据兑换码获取Token包
+        public async Task<TokenPackage> GetTokenPackageByCodeAsync(string code)
+        {
+            // 首先尝试从缓存获取
+            string cacheKey = $"token_package_code:{code}";
+            var cachedData = await _redisService.GetAsync(cacheKey);
+
+            if (!string.IsNullOrEmpty(cachedData))
+            {
+                try
+                {
+                    return JsonConvert.DeserializeObject<TokenPackage>(cachedData);
+                }
+                catch
+                {
+                    // 如果反序列化失败，忽略缓存并从数据库获取
+                    await _redisService.DeleteAsync(cacheKey);
+                }
+            }
+
+            // 从数据库获取
+            var tokenPackage = await _context.TokenPackages
+                .FirstOrDefaultAsync(tp => tp.Code == code);
+
+            if (tokenPackage != null)
+            {
+                // 将结果存入缓存，设置适当的过期时间（例如1小时）
+                await _redisService.SetAsync(cacheKey, JsonConvert.SerializeObject(tokenPackage),
+                    TimeSpan.FromHours(1));
+            }
+
+            return tokenPackage;
+        }
+
+        // 清除用户的Token包缓存
+        private async Task ClearTokenPackageCacheAsync(string account)
+        {
+            string cacheKey = $"user_token_packages:{account}";
+            await _redisService.DeleteAsync(cacheKey);
+        }
+
         public async Task<bool> CreateUseLog(string account, string modelName, int inputCount, int outputCount,
             decimal realOutputMoney)
         {
@@ -391,14 +591,17 @@ namespace aibotPro.Service
 
             return false;
         }
+
         public async Task<bool> IsSVip(string account)
         {
             //查询用户是否是SVIP
-            var vip = await _context.VIPs.Where(x => x.Account == account && (x.VipType == "VIP|50" || x.VipType == "VIP|90")).ToListAsync();
+            var vip = await _context.VIPs
+                .Where(x => x.Account == account && (x.VipType == "VIP|50" || x.VipType == "VIP|90")).ToListAsync();
             if (vip.Count == 0)
             {
                 return false;
             }
+
             foreach (var item in vip)
             {
                 if (item.EndTime > DateTime.Now)
@@ -750,8 +953,9 @@ namespace aibotPro.Service
                 JsonConvert.DeserializeObject<PayResultDto>(GetResult(easyPaySetting.CheckPayUrl, pr));
             return payResultDto;
         }
+
         private string GetResult(string url, Dictionary<string, object> dic, Dictionary<string, string> headers = null,
-    Dictionary<string, string> cookies = null)
+            Dictionary<string, string> cookies = null)
         {
             var result = "";
             var builder = new StringBuilder();
@@ -1063,6 +1267,7 @@ namespace aibotPro.Service
             string key = $"{chatId}_{role}";
             return await _redisService.DeleteAsync(key);
         }
+
         private static string GenerateSign(IDictionary<string, string> parameters, string key)
         {
             // 第一步：按照参数名ASCII码从小到大排序

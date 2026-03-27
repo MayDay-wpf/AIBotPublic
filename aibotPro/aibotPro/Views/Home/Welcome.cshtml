@@ -24,10 +24,55 @@
             color: #ffffff;
         }
 
-        .navbar {
-            background-color: rgba(18, 18, 18, 0.8);
-            backdrop-filter: blur(10px);
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: linear-gradient(135deg, #0f0f1f 0%, #1a1a2e 100%);
         }
+
+        /* 新增光效动画 */
+        @@keyframes glow {
+            0% {
+                filter: drop-shadow(0 0 5px rgba(0, 123, 255, 0.5));
+            }
+
+            50% {
+                filter: drop-shadow(0 0 20px rgba(0, 123, 255, 0.9));
+            }
+
+            100% {
+                filter: drop-shadow(0 0 5px rgba(0, 123, 255, 0.5));
+            }
+        }
+
+
+        .navbar {
+            border-bottom: 1px solid rgba(0, 123, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .nav-link {
+            position: relative;
+            padding: 0.5rem 1rem !important;
+            transition: all 0.3s ease;
+        }
+
+            .nav-link::after {
+                content: '';
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 0;
+                height: 2px;
+                background: #00ffff;
+                transition: width 0.3s ease;
+            }
+
+            .nav-link:hover::after {
+                width: 100%;
+            }
 
         .full-page {
             min-height: 100vh;
@@ -62,10 +107,27 @@
                 box-shadow: 0 0 30px rgba(0, 123, 255, 0.3);
             }
 
+        .content {
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 123, 255, 0.3);
+            animation: glow 3s infinite;
+        }
+
+        /* 新增悬浮特效 */
+        .hover-3d {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+            .hover-3d:hover {
+                transform: perspective(1000px) rotateX(5deg) rotateY(5deg) translateZ(20px);
+                box-shadow: 0 20px 40px rgba(0, 123, 255, 0.2);
+            }
+
+
         h2 {
             font-size: 3rem;
             margin-bottom: 1rem;
-            text-shadow: 0 0 10px rgba(0,123,255,0.5);
+            text-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
         }
 
         p {
@@ -79,7 +141,7 @@
         .btn-custom {
             background-color: #007bff;
             border-color: #007bff;
-            box-shadow: 0 0 15px rgba(0,123,255,0.5);
+            box-shadow: 0 0 15px rgba(0, 123, 255, 0.5);
             transition: all 0.3s ease;
             font-size: 1.2rem;
             padding: 10px 30px;
@@ -88,7 +150,7 @@
             .btn-custom:hover {
                 background-color: #0056b3;
                 border-color: #0056b3;
-                box-shadow: 0 0 20px rgba(0,123,255,0.7);
+                box-shadow: 0 0 20px rgba(0, 123, 255, 0.7);
                 transform: translateY(-2px);
             }
 
@@ -111,7 +173,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: url('https://i.imgur.com/JnZcDtF.png') repeat;
+            /*background: url('https://i.imgur.com/JnZcDtF.png') repeat;*/
             opacity: 0.1;
             animation: move-background 20s linear infinite;
         }
@@ -158,37 +220,60 @@
             padding: 30px;
             margin: 20px;
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
 
-            .pricing-card:hover {
-                transform: translateY(-10px);
-                box-shadow: 0 10px 20px rgba(0, 123, 255, 0.3);
+            .pricing-card::before {
+                content: '';
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: linear-gradient(45deg, transparent 40%, rgba(0, 123, 255, 0.1) 50%, transparent 60%);
+                animation: flowing-light 4s infinite linear;
             }
 
-            .pricing-card h3 {
-                font-size: 2.5rem;
-                margin-bottom: 20px;
+        @@keyframes flowing-light {
+            0% {
+                transform: rotate(45deg) translateX(-100%);
             }
 
-            .pricing-card .price {
-                font-size: 2rem;
-                font-weight: bold;
-                margin-bottom: 20px;
+            100% {
+                transform: rotate(45deg) translateX(100%);
+            }
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 20px rgba(0, 123, 255, 0.3);
+        }
+
+        .pricing-card h3 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        .pricing-card .price {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .pricing-card ul {
+            list-style-type: none;
+            padding: 0;
+            text-align: left;
+        }
+
+            .pricing-card ul li {
+                margin-bottom: 10px;
             }
 
-            .pricing-card ul {
-                list-style-type: none;
-                padding: 0;
-                text-align: left;
-            }
-
-                .pricing-card ul li {
-                    margin-bottom: 10px;
+                .pricing-card ul li i {
+                    margin-right: 10px;
                 }
-
-                    .pricing-card ul li i {
-                        margin-right: 10px;
-                    }
 
         .vip-card {
             border: 2px solid #ffd700;
@@ -200,6 +285,7 @@
     </style>
 </head>
 <body>
+    <div id="particles-js"></div>
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
         <div class="container">
             <a class="navbar-brand" href="#">
@@ -233,7 +319,7 @@
             <h2 class="gradient-text mb-4">AIBotPRO-生成式大语言模型集成服务</h2>
             <p class="mb-5">探索AI的无限可能，体验前沿科技带来的革命性变革</p>
             <a href="/Users/Login" class="btn btn-custom btn-lg text-light">立即开始</a>
-            <a href="/Forum/Index" class="btn btn-custom btn-lg text-light">前往社区</a>
+            @* <a href="/Forum/Index" class="btn btn-custom btn-lg text-light">前往社区</a> *@
         </div>
         <div class="scroll-down">
             <i class="fas fa-chevron-down"></i>
@@ -304,7 +390,44 @@
             </div>
         </div>
     </section>
+    <script src="~/system/js/particles.min.js"></script>
     <script>
+
+        particlesJS('particles-js', {
+            particles: {
+                number: {value: 80},
+                color: {value: "#00ffff"},
+                shape: {type: "circle"},
+                opacity: {value: 0.5},
+                size: {value: 3},
+                move: {
+                    enable: true,
+                    speed: 1,
+                    direction: "none",
+                    random: false,
+                    straight: false,
+                    out_mode: "out",
+                    bounce: false,
+                }
+            },
+            interactivity: {
+                detect_on: "canvas",
+                events: {
+                    onhover: {enable: true, mode: "repulse"},
+                    onclick: {enable: true, mode: "push"},
+                    resize: true
+                }
+            }
+        });
+
+        // 添加视差滚动效果
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            document.querySelectorAll('.hover-3d').forEach(element => {
+                const speed = element.dataset.speed || 0.3;
+                element.style.transform = `translateY(${scrolled * speed}px)`;
+            });
+        });
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
@@ -347,7 +470,7 @@
                 var currentPage = this.closest('.full-page');
                 var nextPage = currentPage.nextElementSibling;
                 if (nextPage) {
-                    nextPage.scrollIntoView({ behavior: 'smooth' });
+                    nextPage.scrollIntoView({behavior: 'smooth'});
                 }
             });
         });

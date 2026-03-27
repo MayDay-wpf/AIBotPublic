@@ -1,7 +1,7 @@
 ﻿var workflowcode = '';
 var plugincode = '';
-var jsonmodelAI = ['gpt-3.5-turbo', 'gpt-3.5-turbo-0125', 'gpt-4o', 'gpt-4o-openai', 'gpt-4o-mini', 'gpt-4o-mini-openai', 'gpt-4-0125-preview', 'gpt-4-0125-preview-openai', 'deepseek-chat', 'chatgpt-4o-latest', 'chatgpt-4o-latest-openai'];
-var jsonschemaAI = ['gpt-4o-mini', 'gpt-4o-mini-openai', 'gpt-4o', 'gpt-4o-openai', 'chatgpt-4o-latest', 'chatgpt-4o-latest-openai'];
+var jsonmodelAI = ['gpt-3.5-turbo', 'gpt-3.5-turbo-0125', 'gpt-4o', 'gpt-4o-openai', 'gpt-4o-mini', 'gpt-4o-mini-openai', 'gpt-4-0125-preview', 'gpt-4-0125-preview-openai', 'deepseek-chat', 'chatgpt-4o-latest', 'chatgpt-4o-latest-openai', 'gpt-4.1-nano-openai'];
+var jsonschemaAI = ['gpt-4o-mini', 'gpt-4o-mini-openai', 'gpt-4o', 'gpt-4o-openai', 'chatgpt-4o-latest', 'chatgpt-4o-latest-openai', 'gpt-4.1-nano-openai'];
 let pageIndex_k = 1;
 let pageSize_k = 20;
 $(function () {
@@ -666,6 +666,22 @@ public static class Script
                 initHttpCodeEditor(code);
             }
             break;
+        case 'webspider':
+            html = `<p>爬取链接（模板示例{{参数}}，必填）
+                    <input type="text" placeholder="请输入待爬取的链接" class="spiderUrl"  />
+                    <div class="nodeinfo">
+                    <p><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></p>
+                      <p>1、 此节点会将目标网页转换成适合LLM理解的Markdown文本</p>
+                      <p>2、 此节点可使用{{webspider+节点Id.data}}获取返回值，例如{{webspider1.data}}</p>
+                    </div>`;
+            $('.configure').html(html);
+            if (node && node.data && Object.entries(node.data).length > 0) {
+                var data = node.data;
+                if (data.output.spiderurl) {
+                    $(".spiderUrl").val(data.output.spiderurl);
+                }
+            }
+            break;
         case 'LLM':
             html = `<div class="custom-select">
                        <p>选择模型：</p>
@@ -866,6 +882,14 @@ public static class Script
                          <option value="true">true</option>
                        </select>
                     <div>
+                    <div class="custom-select">
+                       <p>搜索引擎：</p>
+                       <select class="searchengine">
+                         <option value="google" selected>Google</option>
+                         <option value="yahoo">Yahoo</option>
+                         <option value="serper">Serper</option>
+                       </select>
+                    <div>
                     <br>
                     <div class="nodeinfo">
                     <p><i class="fas fa-question-circle" style="color:#689e38"></i> <b>节点说明</b></p>
@@ -878,12 +902,12 @@ public static class Script
        data:[
                {
                    Title:标题1,
-                   Link:链接1,
+                   Url:链接1,
                    Snippet:摘要1
                },
                {
                    Title:标题2,
-                   Link:链接2,
+                   Url:链接2,
                    Snippet:摘要2
                }
        ]
@@ -900,6 +924,9 @@ public static class Script
                 }
                 if (data.output.webjson) {
                     $(".webjson").val(data.output.webjson);
+                }
+                if (data.output.searchengine) {
+                    $(".searchengine").val(data.output.searchengine);
                 }
             }
             break;
@@ -1312,6 +1339,18 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
                 }
             }, http);
             break;
+        case 'webspider':
+            var webspider = `
+                <div>
+                  <div class="title-box"><i class="fas fa-spider"></i> <span class="nodeText">网页爬虫(webspider)</span></div>
+                </div>
+                `;
+            editor.addNode('webspider', 1, 1, pos_x, pos_y, 'webspider', {
+                output: {
+                    spiderUrl: ""
+                }
+            }, webspider);
+            break;
         case 'LLM':
             var LLM = `
             <div>
@@ -1377,7 +1416,8 @@ function addNodeToDrawFlow(name, pos_x, pos_y) {
             editor.addNode('web', 1, 1, pos_x, pos_y, 'web', {
                 output: {
                     prompt: "",
-                    webjson: false
+                    webjson: false,
+                    searchengine: "google"
                 }
             }, web);
             break;
@@ -1655,7 +1695,7 @@ connection.onreconnected((connectionId) => {
 var chatid = "";
 var chatgroupid = "";
 var assistansBoxId = "";
-var thisAiModel = "gpt-4o-mini-CYGF"; //当前AI模型
+var thisAiModel = "gpt-4.1-nano-openai"; //当前AI模型
 var processOver = true;
 var bottomPanel = document.getElementById('bottomPanel');
 var closePanelBtn = document.getElementById('debugerclosePanelBtn');

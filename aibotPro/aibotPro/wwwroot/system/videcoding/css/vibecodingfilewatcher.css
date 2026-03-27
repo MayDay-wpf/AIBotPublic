@@ -1,0 +1,147 @@
+/**
+ * VibeCoding File Watcher Styles
+ * 文件监听器相关的样式
+ */
+
+/* External modification indicator styles */
+.editor-tab.externally-modified {
+    background-color: rgba(255, 193, 7, 0.2);
+    border-left: 3px solid #ffc107;
+    position: relative;
+}
+
+body.light-theme .editor-tab.externally-modified {
+    background-color: rgba(255, 193, 7, 0.15);
+    border-left: 3px solid #e0a800;
+}
+
+.external-modification-indicator {
+    color: #ffc107;
+    font-weight: bold;
+    margin-left: 5px;
+    font-size: 12px;
+    animation: pulse 2s infinite;
+    cursor: pointer;
+}
+
+body.light-theme .external-modification-indicator {
+    color: #e0a800;
+}
+
+/* Pulse animation for external modification indicator */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Tooltip for external modification indicator */
+.external-modification-indicator:hover::after {
+    content: "文件已被外部修改，点击标签页重新加载";
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+body.light-theme .external-modification-indicator:hover::after {
+    background-color: rgba(0, 0, 0, 0.9);
+}
+
+/* File watcher status indicator (optional, for debugging) */
+.file-watcher-status {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    z-index: 9999;
+    display: none;
+}
+
+body.light-theme .file-watcher-status {
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.file-watcher-status.active {
+    background-color: rgba(40, 167, 69, 0.8);
+}
+
+.file-watcher-status.error {
+    background-color: rgba(220, 53, 69, 0.8);
+}
+
+/* Smooth transitions for external modification states */
+.editor-tab {
+    transition: background-color 0.3s ease, border-left 0.3s ease;
+}
+
+.external-modification-indicator {
+    transition: opacity 0.3s ease;
+}
+
+/* External modification dialog styles */
+#external-modification-dialog .custom-dialog-content {
+    min-width: 400px;
+    max-width: 500px;
+}
+
+#external-modification-dialog .custom-dialog-body p {
+    margin-bottom: 10px;
+}
+
+#external-modification-dialog .custom-dialog-body p:last-child {
+    margin-bottom: 0;
+    font-weight: 500;
+}
+
+#external-modification-dialog .custom-dialog-footer {
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+#external-modification-dialog .vibe-btn {
+    min-width: 120px;
+}
+
+/* Button specific styles for the dialog */
+#external-modification-dialog .vibe-btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+#external-modification-dialog .vibe-btn-warning {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #212529;
+}
+
+#external-modification-dialog .vibe-btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+/* Dark theme compatibility for dialog */
+body:not(.light-theme) #external-modification-dialog .custom-dialog-content {
+    background-color: #2d2d30;
+    color: #d4d4d4;
+}
+
+body:not(.light-theme) #external-modification-dialog .custom-dialog-header {
+    border-bottom-color: #3e3e42;
+}
+
+body:not(.light-theme) #external-modification-dialog .custom-dialog-footer {
+    border-top-color: #3e3e42;
+} 

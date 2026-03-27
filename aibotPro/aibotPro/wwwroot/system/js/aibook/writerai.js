@@ -1,7 +1,7 @@
 ﻿const $chatInput = $("#chatInput");
 const $sendButton = $("#sendButton");
-var thisAiModel = "gpt-4o-mini"; //当前AI模型
-var thisAiModelNick = `<i class='icon icon-gpt'></i> ChatGPT-4O-Mini✨🖼️`;
+var thisAiModel = "gpt-4.1-nano-openai"; //当前AI模型
+var thisAiModelNick = `<i class='icon icon-gpt'></i> ChatGPT-4.1-Nano🚀✨🖼️`;
 var processOver = true; //是否处理完毕
 var image_path = [];
 var file_list = [];

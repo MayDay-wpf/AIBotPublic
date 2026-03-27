@@ -1,0 +1,137 @@
+@{
+    ViewData["Title"] = "格式转换（Image Convert）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/system/tools/imageconvert/css/imageconvert.css" rel="stylesheet"/>
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+    </div>
+</div>
+<div class="content-body" style="margin-top:10px">
+    <div class="content-header">
+        <div>
+            <h4 class="content-title content-title-sm">
+                <b style="background-image: linear-gradient(to right, rgb(255,103,43), rgb(223,15,105));
+    -webkit-background-clip: text;
+    color: transparent;">格式转换（Image Convert）</b>
+            </h4>
+            <span>批量转换图片格式，支持背景移除，最多支持50张图片同时转换</span>
+        </div>
+    </div>
+
+    <!-- 转换设置面板 -->
+    <div class="row mg-t-20">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title"><i data-feather="settings"></i> 转换设置</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="targetFormat">目标格式:</label>
+                            <select class="form-control" id="targetFormat">
+                                <option value="jpeg">JPEG (.jpg)</option>
+                                <option value="png">PNG (.png)</option>
+                                <option value="webp">WebP (.webp)</option>
+                                <option value="gif">GIF (.gif)</option>
+                                <option value="bmp">BMP (.bmp)</option>
+                                <option value="tiff">TIFF (.tiff)</option>
+                                <option value="ico">ICO (.ico)</option>
+                                <option value="icns">ICNS (.icns)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="qualitySlider">输出质量: <span id="qualityValue">85</span>%</label>
+                            <input type="range" class="form-control-range" id="qualitySlider" min="50" max="100" value="85">
+                            <small class="form-text text-muted">仅对JPEG和WebP格式有效</small>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 文件上传区域 -->
+    <div class="row mg-t-20">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title"><i data-feather="upload"></i> 图片上传</h6>
+                </div>
+                <div class="card-body">
+                    <div id="dropZone" class="drop-zone">
+                        <div class="drop-zone-content">
+                            <i data-feather="image" class="drop-icon"></i>
+                            <p>拖拽图片到此处或点击选择文件</p>
+                            <p class="text-muted">支持 JPG、PNG、GIF、WebP 格式，最多50张图片</p>
+                            <button type="button" class="btn btn-primary btn-lg" id="selectImagesBtn">
+                                <i data-feather="folder"></i> 选择图片
+                            </button>
+                        </div>
+                        <input type="file" id="imageInput" accept="image/*" multiple style="display: none;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 图片列表和进度 -->
+    <div class="row mg-t-20" id="imageListContainer" style="display: none;">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="card-title"><i data-feather="list"></i> 图片列表</h6>
+                    <div>
+                        <button type="button" class="btn btn-success btn-sm" id="convertAllBtn" onclick="convertAll()">
+                            <i data-feather="refresh-cw"></i> 开始转换
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="clearAll()">
+                            <i data-feather="trash-2"></i> 清空列表
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="overallProgress" class="mg-b-20" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center mg-b-5">
+                            <small>转换进度</small>
+                            <small><span id="currentProgress">0</span> / <span id="totalImages">0</span></small>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" id="overallProgressBar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div id="imageList" class="image-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 下载区域 -->
+    <div class="row mg-t-20" id="downloadContainer" style="display: none;">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title"><i data-feather="download"></i> 下载转换结果</h6>
+                </div>
+                <div class="card-body text-center">
+                    <button type="button" class="btn btn-success btn-lg" id="downloadAllBtn" onclick="downloadAll()">
+                        <i data-feather="download"></i> 下载所有转换图片
+                    </button>
+                    <div id="downloadStats" class="mg-t-15"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/system/tools/imageconvert/js/imageconvert.js"></script>

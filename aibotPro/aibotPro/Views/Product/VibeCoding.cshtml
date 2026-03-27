@@ -1,0 +1,616 @@
+@{
+    ViewData["Title"] = "AI编程💡（Coding）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="~/system/videcoding/css/vibecoding.css?v1.0.1" type="text/css"/>
+<link rel="stylesheet" href="~/system/videcoding/css/vibefileselector.css?v1.0.1" type="text/css"/>
+<link href="~/system/videcoding/css/vibecodingeditor.css?v1.0.1" rel="stylesheet"/>
+<link href="~/system/videcoding/css/vibecodingindexer.css?v1.0.1" rel="stylesheet"/>
+<link href="~/system/videcoding/css/vibecodingfilewatcher.css?v1.0.1" rel="stylesheet"/>
+<link rel="stylesheet" href="~/system/js/markdownitplugin/katex.min.css">
+<script src="~/system/js/markdownitplugin/katex.min.js"></script>
+<script src="~/system/js/markdownitplugin/texmath.min.js"></script>
+<script src="https://unpkg.com/markdown-it-link-attributes@3.0.0/dist/markdown-it-link-attributes.min.js"></script>
+<script src="~/system/js/markdown-it.min.js"></script>
+<style>
+    /* Custom styles for AI model selector dropdown */
+    .ai-qa-panel .model-selector .dropdown-menu {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .ai-qa-panel .model-selector .btn-outline-secondary {
+        border-color: #ccc;
+        color: #333;
+        background-color: #f8f9fa;
+    }
+
+    .ai-qa-panel .model-selector .btn-outline-secondary:hover {
+        background-color: #e9ecef;
+    }
+
+    /* Dark theme compatibility */
+    body:not(.light-theme) .ai-qa-panel .model-selector .btn-outline-secondary {
+        background-color: #343a40;
+        border-color: #495057;
+        color: #f8f9fa;
+    }
+
+    body:not(.light-theme) .ai-qa-panel .model-selector .btn-outline-secondary:hover {
+        background-color: #495057;
+    }
+
+    body:not(.light-theme) .ai-qa-panel .model-selector .dropdown-menu {
+        background-color: #343a40;
+        border-color: #495057;
+    }
+
+    body:not(.light-theme) .ai-qa-panel .model-selector .dropdown-item {
+        color: #f8f9fa;
+    }
+
+    body:not(.light-theme) .ai-qa-panel .model-selector .dropdown-item:hover {
+        background-color: #495057;
+    }
+
+    /* Custom styles for AI mode selector dropdown */
+    .ai-qa-panel .mode-selector .dropdown-menu {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .ai-qa-panel .mode-selector .btn-outline-secondary {
+        border-color: #ccc;
+        color: #333;
+        background-color: #f8f9fa;
+    }
+
+    .ai-qa-panel .mode-selector .btn-outline-secondary:hover {
+        background-color: #e9ecef;
+    }
+
+    /* Dark theme compatibility */
+    body:not(.light-theme) .ai-qa-panel .mode-selector .btn-outline-secondary {
+        background-color: #343a40;
+        border-color: #495057;
+        color: #f8f9fa;
+    }
+
+    body:not(.light-theme) .ai-qa-panel .mode-selector .btn-outline-secondary:hover {
+        background-color: #495057;
+    }
+
+    body:not(.light-theme) .ai-qa-panel .mode-selector .dropdown-menu {
+        background-color: #343a40;
+        border-color: #495057;
+    }
+
+    body:not(.light-theme) .ai-qa-panel .mode-selector .dropdown-item {
+        color: #f8f9fa;
+    }
+
+    body:not(.light-theme) .ai-qa-panel .mode-selector .dropdown-item:hover {
+        background-color: #495057;
+    }
+</style>
+<script>
+    var md = window.markdownit()
+        .use(texmath, {
+            engine: katex,
+            delimiters: ['dollars', 'brackets'],
+            katexOptions: {
+                macros: {// 基本运算符
+                    '\\defeq': ':=',
+                    '\\bm': '\\boldsymbol',
+
+                    // 集合论
+                    '\\set': '\\left\\{ #1 \\right\\}', // \set{x}
+                    '\\N': '\\mathbb{N}',
+                    '\\Z': '\\mathbb{Z}',
+                    '\\Q': '\\mathbb{Q}',
+                    '\\R': '\\mathbb{R}',
+                    '\\C': '\\mathbb{C}',
+
+                    // 线性代数
+                    '\\mat': '\\begin{matrix} #1 \\end{matrix}', // \mat{...}
+                    '\\vec': '\\mathbf{#1}', // \vec{v}
+                    '\\det': '\\operatorname{det}',
+                    '\\tr': '\\operatorname{tr}',
+
+                    // 微积分
+                    '\\d': '\\mathrm{d}',
+                    '\\diff': '\\frac{\\d}{\\d #1}', // \diff{x}
+                    '\\pd': '\\frac{\\partial}{\\partial #1}', // \pd{x}
+
+                    // 概率论
+                    '\\P': '\\operatorname{P}',
+                    '\\E': '\\operatorname{E}',
+                    '\\Var': '\\operatorname{Var}',
+                    '\\Cov': '\\operatorname{Cov}',
+
+                    // 函数和极限
+                    '\\lim': '\\operatorname{lim}',
+                    '\\sup': '\\operatorname{sup}',
+                    '\\inf': '\\operatorname{inf}',
+                    '\\max': '\\operatorname{max}',
+                    '\\min': '\\operatorname{min}',
+
+                    // 三角函数
+                    '\\sin': '\\operatorname{sin}',
+                    '\\cos': '\\operatorname{cos}',
+                    '\\tan': '\\operatorname{tan}',
+                    '\\csc': '\\operatorname{csc}',
+                    '\\sec': '\\operatorname{sec}',
+                    '\\cot': '\\operatorname{cot}',
+
+                    // 双曲函数
+                    '\\sinh': '\\operatorname{sinh}',
+                    '\\cosh': '\\operatorname{cosh}',
+                    '\\tanh': '\\operatorname{tanh}',
+
+                    // 对数函数
+                    '\\log': '\\operatorname{log}',
+                    '\\ln': '\\operatorname{ln}',
+                    '\\lg': '\\operatorname{lg}',
+
+                    // 特殊函数
+                    '\\exp': '\\operatorname{exp}',
+                    '\\sgn': '\\operatorname{sgn}',
+
+                    // 复分析
+                    '\\Re': '\\operatorname{Re}',
+                    '\\Im': '\\operatorname{Im}',
+                    '\\arg': '\\operatorname{arg}',
+
+                    // 向量分析
+                    '\\grad': '\\operatorname{grad}',
+                    '\\div': '\\operatorname{div}',
+                    '\\rot': '\\operatorname{rot}',
+                    '\\curl': '\\operatorname{curl}',
+
+                    // 常用箭头
+                    '\\ra': '\\rightarrow',
+                    '\\Ra': '\\Rightarrow',
+                    '\\la': '\\leftarrow',
+                    '\\La': '\\Leftarrow',
+                    '\\lra': '\\leftrightarrow',
+                    '\\Lra': '\\Leftrightarrow',
+
+                    // 其他常用符号
+                    '\\eps': '\\varepsilon',
+                    '\\phi': '\\varphi',
+                    '\\ell': '\\ell',
+
+                    // 矩阵简写
+                    '\\pmatrix': '\\begin{pmatrix} #1 \\end{pmatrix}',
+                    '\\bmatrix': '\\begin{bmatrix} #1 \\end{bmatrix}',
+                    '\\vmatrix': '\\begin{vmatrix} #1 \\end{vmatrix}',
+
+                    // 定界符
+                    '\\abs': '\\left|#1\\right|',
+                    '\\norm': '\\left\\|#1\\right\\|',
+                    '\\ceil': '\\left\\lceil#1\\right\\rceil',
+                    '\\floor': '\\left\\lfloor#1\\right\\rfloor',
+
+                    // 求和、积分等
+                    '\\sum': '\\sum\\limits',
+                    '\\prod': '\\prod\\limits',
+                    '\\lim': '\\lim\\limits',
+
+                    // 自定义环境
+                    '\\cases': '\\begin{cases} #1 \\end{cases}',
+                    '\\align': '\\begin{align} #1 \\end{align}',
+                },
+                throwOnError: false, // 防止渲染错误导致整个公式失败
+                errorColor: '#cc0000', // 错误时显示红色
+                strict: false // 不要太严格的语法检查
+            }
+        }).use(markdownitLinkAttributes, {
+            attrs: {
+                target: '_blank',
+                rel: 'noopener'
+            }
+        });
+</script>
+<!-- Monaco Editor 加载指示器 -->
+<div id="monaco-loading"
+     style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(30, 30, 30, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999;">
+    <div
+        style="width: 60px; height: 60px; border: 4px solid rgba(255, 255, 255, 0.2); border-radius: 50%; border-top-color: #007acc; animation: spin 1s linear infinite;">
+    </div>
+    <div style="margin-top: 20px; color: #ccc; font-size: 16px;">正在加载编辑器...</div>
+</div>
+
+<div class="vibe-coding-container">
+    <!-- File Explorer -->
+    <div class="file-explorer">
+        <div class="file-explorer-header">
+            <a id="menuMain" href="" class="burger-menu">
+                <i data-feather="menu">
+                </i>
+            </a>
+            <span><i class="fas fa-server text-info"></i> 文件资源管理器</span>
+            @* <span class="panel-toggle" id="toggle-file-explorer"><i class="fas fa-angle-double-left"></i></span> *@
+        </div>
+        <div class="file-explorer-actions">
+            <button id="open-folder-btn"><i class="fas fa-folder-open"></i> 点击打开文件夹</button>
+            <button id="new-file-btn" style="display: none;"><i class="fas fa-file"></i> 新建文件</button>
+            <button id="refresh-folder-btn" title="刷新文件树" style="display: none;"><i class="fas fa-sync"></i>
+            </button>
+        </div>
+        <div class="file-explorer-content">
+            <ul class="tree-view" id="file-tree">
+                <li class="tree-item">
+                    <i class="fas fa-folder-open text-warning"></i> 或拖拽文件夹到此处
+                </li>
+            </ul>
+
+            <!-- 加载指示器 -->
+            <div class="loading-overlay" id="loading-indicator" style="display: none;">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">正在加载文件树...</div>
+                <div class="loading-text" id="loading-progress">请耐心等待</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Editor Container -->
+    <div class="editor-container">
+        <!-- Resize handle for file explorer -->
+        <div class="resize-handle file-explorer-handle" id="file-explorer-resizer"></div>
+        <div style="display: flex; position: relative;">
+            <div class="editor-tabs" id="editor-tabs">
+                <!-- Tabs will be dynamically added here -->
+            </div>
+            <div class="editor-tabs-menu" id="editor-tabs-menu">
+                <i class="fas fa-ellipsis-v"></i>
+            </div>
+        </div>
+        <div class="editor-tabs-dropdown" id="editor-tabs-dropdown">
+            <div class="dropdown-item" id="close-all-tabs">
+                <i class="fas fa-times-circle"></i> 关闭所有标签
+            </div>
+            <div class="dropdown-item" id="close-saved-tabs">
+                <i class="fas fa-check-circle"></i> 关闭已保存标签
+            </div>
+            <div class="dropdown-item" id="current_filemodification_record">
+                <i class="fas fa-history"></i> 当前文件修改记录
+            </div>
+        </div>
+        <div class="editor-content">
+            <div id="editor-placeholder" class="placeholder-msg">
+                <i class="fas fa-code"></i>
+                <h3>
+                    欢迎使用 Vibe Coding <span
+                        style="font-size:20px;background-color:#838383;color:white;padding:1px 5px 1px 5px;border-radius:5px;">Beta</span>
+                </h3>
+                <p>从资源管理器打开文件或创建新文件以开始编码</p>
+                <div class="text-info mt-3">
+                    <h4><i class="fas fa-info-circle"></i> 发行说明</h4>
+                    <ul class="changelog-list" style="text-align: left; padding-left: 20px;">
+                        <li><strong>Beta v0.1.3</strong></li>
+                        <li>
+                            <strong>注意事项：</strong>
+                            <ul style="padding-left: 20px;">
+                                <li>功能可能不稳定，建议本地做好文件备份</li>
+                                <li>系统会自动创建文件备份</li>
+                                <li>推荐使用Chrome浏览器</li>
+                                <li>需要允许浏览器读取系统文件</li>
+                                <li>遇到任何异常或卡死，只需刷新页面即可复位</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <strong>v0.1.3更新说明：</strong>
+                            <ul style="padding-left: 20px;">
+                                <li>加入了 联网搜索 工具以优化 AI知识库延迟问题</li>
+                                <li>默认改为Agent模式</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div id="editor" style="display: none;"></div>
+        </div>
+        <div class="status-bar">
+            @* <div class="status-bar-item">
+                <i class="fas fa-code-branch"></i> main
+            </div> *@
+            <div class="status-bar-item file-type-indicator" data-short-type="--">
+                <i class="fas fa-file-code"></i> <span id="current-file-type">未选择文件</span>
+            </div>
+            <div class="status-bar-item cursor-position">
+                <i class="fas fa-align-left"></i> 行 <span id="cursor-line">0</span>, 列 <span
+                    id="cursor-column">0</span>
+            </div>
+            <div class="status-bar-item word-count-indicator">
+                <i class="fas fa-text-width"></i> <span id="word-count">0</span> 字, <span id="char-count">0</span> 字符,
+                <span id="line-count">0</span> 行
+            </div>
+            <div class="status-right">
+                <div class="status-bar-item">
+                    <button id="theme-toggle" class="theme-toggle-btn" title="切换主题">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+                <div class="status-bar-item">
+                    <i class="fas fa-check-circle"></i> 就绪
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Q&A Panel -->
+    <div class="ai-qa-panel">
+        <!-- Resize handle for AI panel -->
+        <div class="resize-handle ai-qa-handle" id="ai-qa-resizer"></div>
+        <div class="ai-qa-header">
+            <span>AI 助手</span>
+            <div>
+                <span class="hander-icon" title="新建会话" onclick="newChat()"><i class="fas fa-plus"></i></span>
+                <span class="hander-icon" id="chat-history" title="历史记录"><i class="fas fa-history"></i></span>
+            </div>
+        </div>
+        <div class="ai-qa-content" id="ai-qa-content">
+            <div class="ai-message ai-response">
+                Hello! I'm your AI coding assistant. How can I help you with your code today?
+            </div>
+        </div>
+        <div class="ai-qa-input">
+            <textarea id="ai-question" rows="3" placeholder="输入@@选择文件,并输入关于你的代码的问题..."></textarea>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+                <div class="d-flex align-items-center">
+                    <div class="model-selector dropdown dropup me-2">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
+                                id="ai-model-selector-btn" data-toggle="dropdown" aria-haspopup="true"
+                                aria-expanded="false">
+                            <span id="selected-model-text">选择模型...</span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="ai-model-selector-btn"
+                             id="ai-model-dropdown-menu">
+                            <!-- Options will be populated from API -->
+                        </div>
+                        <select id="ai-model-selector" style="display: none;">
+                            <option value="" disabled selected>选择模型...</option>
+                        </select>
+                    </div>
+                    <div class="mode-selector dropdown dropup me-2">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
+                                id="ai-mode-selector-btn" data-toggle="dropdown" aria-haspopup="true"
+                                aria-expanded="false">
+                            <span id="selected-mode-text">Agent模式</span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="ai-mode-selector-btn"
+                             id="ai-mode-dropdown-menu">
+                            <a class="dropdown-item" data-mode="chat">Chat模式</a>
+                            <a class="dropdown-item" data-mode="agent">Agent模式</a>
+                        </div>
+                        <select id="ai-mode-selector" style="display: none;">
+                            <option value="chat">Chat模式</option>
+                            <option value="agent" selected>Agent模式</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="vibe-btn btn-primary" id="ask-ai-btn">
+                    <i class="fas fa-paper-plane"></i> 发送
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New File Modal -->
+<div class="vibe-modal" id="new-file-modal">
+    <div class="vibe-modal-content">
+        <div class="vibe-modal-header">
+            <h4>创建新文件</h4>
+            <span class="vibe-modal-close">&times;</span>
+        </div>
+        <div class="vibe-modal-body">
+            <div class="form-group">
+                <label for="new-file-name">文件名</label>
+                <input type="text" class="form-control" id="new-file-name" placeholder="例如: main.js">
+                <small class="form-text text-muted" id="target-folder-path"></small>
+            </div>
+        </div>
+        <div class="vibe-modal-footer">
+            <button class="vibe-btn vibe-btn-secondary" id="cancel-new-file">取消</button>
+            <button class="vibe-btn vibe-btn-primary" id="create-new-file">创建</button>
+        </div>
+    </div>
+</div>
+
+<!-- Custom dialogs -->
+<!-- Unsaved changes dialog -->
+<div class="custom-dialog" id="unsaved-changes-dialog">
+    <div class="custom-dialog-content dialog-warning">
+        <div class="custom-dialog-header">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h4>未保存的更改</h4>
+        </div>
+        <div class="custom-dialog-body">
+            <p>文件有未保存的更改。是否在关闭前保存？</p>
+        </div>
+        <div class="custom-dialog-footer">
+            <button class="vibe-btn vibe-btn-secondary" id="unsaved-discard">不保存</button>
+            <button class="vibe-btn vibe-btn-primary" id="unsaved-save">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- Error dialog -->
+<div class="custom-dialog" id="error-dialog">
+    <div class="custom-dialog-content dialog-error">
+        <div class="custom-dialog-header">
+            <i class="fas fa-times-circle"></i>
+            <h4>错误</h4>
+        </div>
+        <div class="custom-dialog-body">
+            <p id="error-message"></p>
+        </div>
+        <div class="custom-dialog-footer">
+            <button class="vibe-btn vibe-btn-primary" id="error-ok">确定</button>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm dialog -->
+<div class="custom-dialog" id="confirm-dialog">
+    <div class="custom-dialog-content dialog-info">
+        <div class="custom-dialog-header">
+            <i class="fas fa-question-circle"></i>
+            <h4>确认</h4>
+        </div>
+        <div class="custom-dialog-body">
+            <p id="confirm-message"></p>
+        </div>
+        <div class="custom-dialog-footer">
+            <button class="vibe-btn vibe-btn-secondary" id="confirm-cancel">取消</button>
+            <button class="vibe-btn vibe-btn-primary" id="confirm-ok">确定</button>
+        </div>
+    </div>
+</div>
+
+<!-- Rename file dialog -->
+<div class="custom-dialog" id="rename-dialog">
+    <div class="custom-dialog-content">
+        <div class="custom-dialog-header">
+            <i class="fas fa-pencil-alt"></i>
+            <h4>重命名</h4>
+        </div>
+        <div class="custom-dialog-body">
+            <div class="form-group">
+                <label for="rename-input">新名称</label>
+                <input type="text" class="form-control" id="rename-input">
+                <small class="form-text text-muted" id="rename-path"></small>
+            </div>
+        </div>
+        <div class="custom-dialog-footer">
+            <button class="vibe-btn vibe-btn-secondary" id="rename-cancel">取消</button>
+            <button class="vibe-btn vibe-btn-primary" id="rename-ok">确定</button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete confirmation dialog -->
+<div class="custom-dialog" id="delete-confirm-dialog">
+    <div class="custom-dialog-content dialog-error">
+        <div class="custom-dialog-header">
+            <i class="fas fa-trash-alt"></i>
+            <h4>删除确认</h4>
+        </div>
+        <div class="custom-dialog-body">
+            <p>确定要删除 <span id="delete-filename" class="font-weight-bold"></span> 吗？</p>
+            <p class="text-danger">此操作不可撤销。</p>
+        </div>
+        <div class="custom-dialog-footer">
+            <button class="vibe-btn vibe-btn-secondary" id="delete-cancel">取消</button>
+            <button class="vibe-btn vibe-btn-primary" id="delete-confirm">删除</button>
+        </div>
+    </div>
+</div>
+
+<!-- New folder dialog -->
+<div class="custom-dialog" id="new-folder-dialog">
+    <div class="custom-dialog-content">
+        <div class="custom-dialog-header">
+            <i class="fas fa-folder-plus"></i>
+            <h4>新建文件夹</h4>
+        </div>
+        <div class="custom-dialog-body">
+            <div class="form-group">
+                <label for="new-folder-name">文件夹名称</label>
+                <input type="text" class="form-control" id="new-folder-name" placeholder="例如: my-project">
+                <small class="form-text text-muted" id="new-folder-path"></small>
+            </div>
+        </div>
+        <div class="custom-dialog-footer">
+            <button class="vibe-btn vibe-btn-secondary" id="new-folder-cancel">取消</button>
+            <button class="vibe-btn vibe-btn-primary" id="new-folder-create">创建</button>
+        </div>
+    </div>
+</div>
+
+<!-- Folder deletion security confirmation dialog -->
+<div class="custom-dialog" id="folder-delete-confirm-dialog">
+    <div class="custom-dialog-content dialog-error">
+        <div class="custom-dialog-header">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h4>文件夹删除安全确认</h4>
+        </div>
+        <div class="custom-dialog-body">
+            <p>您正在删除文件夹 <span id="delete-foldername" class="font-weight-bold"></span>。</p>
+            <p class="text-danger">此操作将删除文件夹及其所有内容，且不可撤销！</p>
+            <div class="security-code-container">
+                <p>为确保安全，请输入下方显示的安全码：</p>
+                <div class="security-code-display" id="security-code-display"></div>
+                <div class="form-group mt-3">
+                    <label for="security-code-input">安全码</label>
+                    <input type="text" class="form-control" id="security-code-input"
+                           placeholder="请输入上方显示的安全码">
+                </div>
+            </div>
+        </div>
+        <div class="custom-dialog-footer">
+            <button class="vibe-btn vibe-btn-secondary" id="folder-delete-cancel">取消</button>
+            <button class="vibe-btn vibe-btn-primary" id="folder-delete-confirm">删除文件夹</button>
+        </div>
+    </div>
+</div>
+
+<!-- Chat History Panel -->
+<div class="vibechat-history-overlay" id="chat-history-overlay"></div>
+<div class="vibechat-history-panel" id="chat-history-panel">
+    <div class="vibechat-history-header">
+        <h3><i class="fas fa-history"></i> 聊天历史记录</h3>
+        <button class="vibechat-history-close" id="chat-history-close"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="vibechat-history-search">
+        <input type="text" id="chat-history-search" placeholder="搜索历史记录..."/>
+    </div>
+    <div class="vibechat-history-list" id="chat-history-list">
+        <!-- History items will be loaded here -->
+        <div class="vibechat-history-loading" id="chat-history-initial-loading">
+            <div class="vibechat-history-loading-spinner"></div>
+            <span>加载历史记录...</span>
+        </div>
+    </div>
+</div>
+
+<script src="~/system/js/signalr.min.js"></script>
+<link href="~/system/css/atom-one-dark.min.css?v1.0.0" rel="stylesheet"/>
+<script src="~/system/js/highlight.min.js"></script>
+<script src="~/system/js/dart.js"></script>
+<script src="~/system/js/vueheightlight.js"></script>
+<script src="~/system/videcoding/js/vibecodingfileread.js?v1.0.1"></script>
+<script src="~/system/videcoding/js/vibecodecreatefile.js?v1.0.1"></script>
+<script src="~/system/videcoding/js/vibecodingeditfile.js?v1.0.1"></script>
+<script src="~/system/videcoding/js/vibecodingseachcode.js?v1.0.1"></script>
+<script src="~/system/videcoding/js/vibecodingwebsearch.js?v1.0.0"></script>
+<script src="~/system/videcoding/js/vibeaichat.js?v1.0.3"></script>
+<script src="~/system/videcoding/js/vibefileselector.js?v1.0.0"></script>
+<!-- 配置 Monaco Editor 加载 -->
+<script>
+    // 保护全局AMD环境，确保Monaco Editor能正常工作
+    (function () {
+        // 配置Monaco Editor的require
+        window.require = {
+            paths: {'vs': '/system/monaco-editor-0.45.0/package/min/vs'},
+            'vs/nls': {availableLanguages: {'*': 'zh-cn'}}
+        };
+
+        // 确保define函数在Monaco Editor加载期间可用
+        if (!window.define) {
+            window.define = function () {
+                console.warn('define() called before AMD loader is ready');
+            };
+        }
+    })();
+</script>
+<script src="~/system/monaco-editor-0.45.0/package/min/vs/loader.js"></script>
+<script src="~/system/monaco-editor-0.45.0/package/min/vs/editor/editor.main.nls.zh-cn.js"></script>
+<script src="~/system/monaco-editor-0.45.0/package/min/vs/editor/editor.main.nls.js"></script>
+<script src="~/system/monaco-editor-0.45.0/diff_match_patch.js"></script>
+<script src="~/system/videcoding/js/vibecoding.js?v1.0.3"></script>
+<script src="~/system/videcoding/js/vibecodingindexer.js?v1.0.1"></script>
+<script src="~/system/videcoding/js/vibecodingeditor.js?v1.0.1"></script>
+<script src="~/system/videcoding/js/vibecodingfilewatcher.js?v1.0.1"></script>

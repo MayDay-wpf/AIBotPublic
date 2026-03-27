@@ -1,4 +1,5 @@
-﻿using aibotPro.Dtos;
+﻿using aibotPro.ChatService;
+using aibotPro.Dtos;
 using aibotPro.Interface;
 using aibotPro.Models;
 using Microsoft.AspNetCore.SignalR;
@@ -513,6 +514,12 @@ namespace aibotPro.Service
             bool result = true;
             ChatRes chatRes = new ChatRes();
             var user = GetUserData(account);
+            var aiModel = _context.AImodels.Where(x => x.ModelName == chatDto.aiModel).FirstOrDefault();
+            var workShopaiModel = new WorkShopAIModel();
+            if (aiModel == null)
+            {
+                workShopaiModel = _context.WorkShopAIModels.Where(x => x.ModelName == chatDto.aiModel).FirstOrDefault();
+            }
             var modelPrice = await _financeService.ModelPrice(chatDto.aiModel);
             bool isVip = await _financeService.IsVip(account);
             bool isSVip = await _financeService.IsSVip(account);
@@ -524,7 +531,7 @@ namespace aibotPro.Service
             // 不是会员且余额为0时不提供服务
             if (!isVip && !isSVip && user.Mcoin <= 0)
             {
-                chatRes.message = "本站已停止向【非会员且余额为0】的用户提供服务，您可以<a href='/Pay/Balance'>点击这里</a>前往充值1元及以上，长期使用本站的免费服务";
+                chatRes.message = "本站已停止向【非会员且余额为0】的用户提供服务，您可以[点击这里]('/Pay/Balance')前往充值1元及以上，长期使用本站的免费服务";
                 await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
                 chatRes.message = "";
                 chatRes.isfinish = true;
@@ -534,14 +541,26 @@ namespace aibotPro.Service
             // 检查用户余额是否不足，只有在需要收费时检查
             if (shouldCharge && user.Mcoin <= 0)
             {
-                chatRes.message = $"余额不足。请充值后再使用，您可以<a href='/Pay/Balance'>点击这里</a>前往充值";
+                chatRes.message = $"余额不足。请充值后再使用，您可以[点击这里]('/Pay/Balance')前往充值";
                 await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
                 chatRes.message = "";
                 chatRes.isfinish = true;
                 await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
                 return false;
             }
-            if (chatDto.isbot && !chatDto.aiModel.Contains("gpt-3.5") && !chatDto.aiModel.Contains("gpt-4o-mini"))
+            if (aiModel != null || workShopaiModel != null)
+            {
+                if ((aiModel != null && user.Mcoin < aiModel.MinimumBalance) || (workShopaiModel != null && user.Mcoin < workShopaiModel.MinimumBalance))
+                {
+                    chatRes.message = $"该模型需要您的余额≥{(aiModel != null ? aiModel.MinimumBalance : workShopaiModel.MinimumBalance)}。请充值后再使用，您可以[点击这里](/Pay/Balance)前往充值";
+                    await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                    chatRes.message = "";
+                    chatRes.isfinish = true;
+                    await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
+                    return false;
+                }
+            }
+            if (chatDto.isbot && !chatDto.aiModel.Contains("gpt-3.5") && !chatDto.aiModel.Contains("gpt-4.1-nano-openai"))
             {
                 chatRes.message = "您正在使用非正当手段修改我的基底模型，我们允许且欢迎您寻找本站的BUG，但很明显，这个漏洞已经被开发团队修复，请您不要再继续尝试，本站不会记录任何用户的正常行为，但是对于异常行为有着详细的日志信息和风控手段，感谢您的合作与支持，如果您还有其他问题，请询问我。";
                 await _hubContext.Clients.Group(chatId).SendAsync(senMethod, chatRes);
@@ -585,6 +604,26 @@ namespace aibotPro.Service
             {
                 return false;
             }
+        }
+        public bool IsVip(string account)
+        {
+            //查询用户是否是VIP
+            var vip = _context.VIPs.Where(x => x.Account == account).ToList();
+            //遍历VIP列表，如果有一个VIP未过期，则返回true
+            if (vip.Count == 0)
+            {
+                return false;
+            }
+
+            foreach (var item in vip)
+            {
+                if (item.EndTime > DateTime.Now)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
         public List<DateTime> GetThisMonthSignInList(string account)
         {

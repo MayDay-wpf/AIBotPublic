@@ -12,7 +12,7 @@ namespace aibotPro.Dtos
             [JsonProperty("object")]
             public string Object { get; set; }
             [JsonProperty("created")]
-            public int Created { get; set; }
+            public DateTimeOffset Created { get; set; }
             public int SentenceId { get; set; }
             public bool IsEnd { get; set; }
             [JsonProperty("is_truncated")]

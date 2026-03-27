@@ -180,6 +180,88 @@ $(document).ready(function () {
     }, cb);
     cb(start, end, 0);
 });
+
+$(document).ready(function () {
+    const weekDays = ['Mon', '', 'Wed', '', 'Fri', '', ''];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    function getColor(count) {
+        if (count === 0) return '#ebedf0';
+        if (count <= 10000) return '#9be9a8';
+        if (count <= 30000) return '#40c463';
+        if (count <= 100000) return '#30a14e';
+        return '#216e39';
+    }
+
+    function createHeatmap() {
+        const token = localStorage.getItem('token');
+
+        $.ajax({
+            url: '/Users/GetHeatmapData',
+            type: 'POST',
+            dataType: 'json',
+            success: function (data) {
+                const $heatmap = $('#heatmap');
+                $heatmap.empty();
+
+                const $grid = $('<div>').css({
+                    display: 'grid',
+                    'grid-template-columns': 'auto repeat(53, min-content)',
+                    gap: '0px',
+                    'min-width': window.innerWidth <= 375 ? '350px' :
+                        window.innerWidth <= 768 ? '350px' : 'auto',
+                    'width': 'fit-content',
+                    'margin': '0 auto'
+                });
+
+                // 添加月份标签
+                $grid.append($('<div>'));
+                for (let week = 0; week < 53; week++) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - (52 - week) * 7);
+                    if (week % 4 === 0) {
+                        $grid.append($('<div>').addClass('month-label').text(months[date.getMonth()]));
+                    } else {
+                        $grid.append($('<div>'));
+                    }
+                }
+
+                // 创建日期单元格
+                for (let day = 0; day < 7; day++) {
+                    $grid.append($('<div>').addClass('day-label').text(weekDays[day]));
+
+                    for (let week = 0; week < 53; week++) {
+                        const date = new Date();
+                        date.setDate(date.getDate() - (52 - week) * 7 + day);
+                        const dateStr = date.toISOString().split('T')[0];
+
+                        // 修改这里，使用小写的date
+                        const dayData = data.find(d => d.date === dateStr);
+                        const count = dayData ? dayData.usage : 0;
+
+                        const $box = $('<div>')
+                            .addClass('contribution-box')
+                            .css('background-color', getColor(count))
+                            .attr('data-toggle', 'tooltip')
+                            .attr('data-placement', 'top')
+                            .attr('title', `${dateStr}: ${count.toLocaleString()} tokens`);
+
+                        $grid.append($box);
+                    }
+                }
+
+                $heatmap.append($grid);
+                $('[data-toggle="tooltip"]').tooltip();
+            },
+            error: function (xhr, status, error) {
+                console.error('Error fetching data:', error);
+                $('#heatmap').html('<div class="alert alert-danger">Failed to load heatmap data.</div>');
+            }
+        });
+    }
+
+    createHeatmap();
+});
 function processData(data, key) {
     let modelData = {};
     data.forEach(d => {

@@ -46,5 +46,6 @@ namespace aibotPro.Interface
 
         Task<string> UsageGetRedis(string chatId, string role); //从redis获取使用
         Task<bool> DeleteUsageRedis(string chatId, string role); //删除redis使用记录
+        Task<TokenPackage> GetTokenPackageByCodeAsync(string code); //根据兑换码获取Token包
     }
 }

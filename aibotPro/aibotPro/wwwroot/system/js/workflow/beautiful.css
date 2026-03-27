@@ -891,6 +891,9 @@ table {
     .drawflow_content_node .fa-bug, .drag-drawflow .fa-bug {
         color: #1aaba8;
     }
+    .drawflow_content_node .fa-spider, .drag-drawflow .fa-spider {
+        color: #7d1aab;
+    }
 
 .menu .fa-bars {
     color: #764476;
@@ -948,7 +951,7 @@ table {
     }
 }
 
-.imageUrl, .chatlog, .imgurl, .downloadImgPrompt {
+.imageUrl, .chatlog, .imgurl, .downloadImgPrompt, .spiderUrl {
     width: 100%;
 }
 

@@ -2,10 +2,98 @@
     ViewData["Title"] = "我的（My Profile）";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-<link href="~/system/css/usersinfo.css?v1" rel="stylesheet" />
+<link href="~/system/css/usersinfo.css?v1.0.1" rel="stylesheet" />
 <link href="~/static/css/animate-4.1.1-mini.css" rel="stylesheet" />
 <script src="~/static/js/popper.min.js"></script>
 <script src="~/static/js/moment.min.js"></script>
+<style>
+    #token-packages-container {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    /* PC端优化布局 */
+    @@media (min-width: 992px) {
+        .user-profile-container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        
+        .user-info-section {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .user-actions-section {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .user-basic-info {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 15px 20px;
+            align-items: center;
+        }
+        
+        .user-basic-info .form-group {
+            display: contents;
+            margin-bottom: 0;
+        }
+        
+        .user-basic-info label {
+            font-weight: 600;
+            margin-bottom: 0;
+            white-space: nowrap;
+        }
+        
+        .user-basic-info .form-control,
+        .user-basic-info .info-value {
+            margin-bottom: 0;
+        }
+        
+        .avatar-section {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .calendar-container {
+            margin-top: 20px;
+        }
+        
+        .action-buttons {
+            grid-column: 1 / -1;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e9ecef;
+        }
+    }
+    
+    @@media (max-width: 991px) {
+        #token-packages-container {
+            max-height: 350px;
+        }
+    }
+    
+    .info-value {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .balance-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+</style>
 <div class="modal fade" id="vipModal" tabindex="-1" role="dialog" aria-labelledby="vipModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -42,76 +130,158 @@
     </div>
 </div>
 <div class="content-body" style="margin-top:10px;">
-    <div class="card">
-        <div class="card-header">
-        </div>
-        <div class="card-body">
-            <div class="marker marker-ribbon marker-warning pos-absolute t-10 l-0" style="display:none" id="isvip">VIP</div>
-            <form>
-                <div class="form-group">
-                    <label for="avatar">头像（点击更换）：</label>
-                    <div class="avatar-upload" onclick="document.getElementById('avatar').click()">
-                        <input type="file" id="avatar" style="display: none;" accept="image/*" onchange="loadImage(event)">
-                        <img id="avatar-image" src="/system/images/addavatar.png" alt="+">
+    <div class="user-profile-container">
+        <div class="user-info-section">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">个人信息</h5>
+                </div>
+                <div class="card-body">
+                    <div class="marker marker-ribbon marker-warning pos-absolute t-10 l-0" style="display:none" id="isvip">VIP
                     </div>
+                    <form>
+                        <div class="user-basic-info">
+                            <div class="avatar-section">
+                                <div class="avatar-upload" onclick="document.getElementById('avatar').click()">
+                                    <input type="file" id="avatar" style="display: none;" accept="image/*"
+                                        onchange="loadImage(event)">
+                                    <img id="avatar-image" src="/system/images/addavatar.png" alt="+">
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">头像</h6>
+                                    <small class="text-muted">点击更换头像</small>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="nickname">昵称：</label>
+                                <input type="text" class="form-control" maxlength="20" id="nickname">
+                            </div>
+                            <div class="form-group">
+                                <label>账号：</label>
+                                <div class="info-value">
+                                    <label id="account">--</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>性别：</label>
+                                <div class="info-value">
+                                    <label id="sex">--</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>余额：</label>
+                                <div class="balance-info">
+                                    <span><label id="mcoin">--</label> <label>￥</label></span>
+                                    <span class="badge badge-pill badge-success" style="cursor:pointer"
+                                        onclick="window.location.href='/Pay/Balance'">点击前往充值</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>会员到期：</label>
+                                <div class="info-value">
+                                    <b id="vipendtime" style="color:darkgoldenrod">--</b>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>注册时间：</label>
+                                <div class="info-value">
+                                    <label id="createtime">--</label>
+                                </div>
+                            </div>
+                            <div class="action-buttons">
+                                <button type="button" class="btn btn-primary saveUserInfoBtn me-2" onclick="saveUserInfo()">
+                                    <i data-feather="save"></i> 保存</button>
+                                <button type="button" class="btn btn-warning" onclick="editPassword()"><i
+                                        data-feather="edit-3"></i> 修改密码</button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
-                <div class="form-group">
-                    <label for="nickname">昵称：</label>
-                    <input type="text" class="form-control" maxlength="20" id="nickname">
+            </div>
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">会员签到</h5>
                 </div>
-                <div class="form-group">
-                    <label for="nickname">账号：</label>
-                    <label id="account">--</label>
-                </div>
-                <div class="form-group">
-                    <label for="sex">性别：</label>
-                    <label id="sex">--</label>
-                </div>
-                <div class="form-group">
-                    <label for="mcoin">余额：</label>
-                    <label id="mcoin">--</label> <label>￥</label>
-                    <span class="badge badge-pill badge-success" style="cursor:pointer" onclick="window.location.href='/Pay/Balance'">点击前往充值</span>
-                </div>
-                <div class="form-group">
-                    <label for="vipendtime">会员到期时间：</label>
-                    <b id="vipendtime" style="color:darkgoldenrod">--</b>
-                </div>
-                <div class="form-group">
-                    <label for="createtime">注册时间：</label>
-                    <label id="createtime">--</label>
-                </div>
-                <div class="form-group">
-                    <button type="button" class="btn btn-primary saveUserInfoBtn" onclick="saveUserInfo()"><i data-feather="save"></i> 保存</button>
-                    <button type="button" class="btn btn-warning" onclick="editPassword()"><i data-feather="edit-3"></i> 修改密码</button>
-                </div>
-                <div class="form-group">
-                    @* <button type="button" class="btn btn-success signInBtn" onclick="signIn()"><i data-feather="check-circle"></i> 专属每日签到</button>
-                    <br />
-                    <span id="signInTip" style="color:deepskyblue">随机获得0.5~1余额</span>
-                    <br />
-                    <br />
-                    <br /> *@
-                    <div>
+                <div class="card-body">
+                    <div class="calendar-container">
                         <span class="text-warning">
                             <b>会员专属签到：随机获得0.5~1余额</b>
                         </span>
-                        <div class="calendar">
+                        <div class="calendar mt-3">
                             <div class="calendar-header"></div>
                             <div class="calendar-body" id="calendarBody"></div>
-                            <button class="btn btn-success btn-sm btn-block signInBtn" onclick="signIn()"><i data-feather="check-circle"></i> 专属签到</button>
+                            <button class="btn btn-success btn-sm btn-block signInBtn" onclick="signIn()">
+                                <i data-feather="check-circle"></i> 专属签到</button>
                             <div class="calendar-overlay">
                                 <a class="btn btn-warning upgrade-btn" href="/Pay/VIP">充值会员开启签到</a>
                             </div>
                         </div>
                     </div>
                 </div>
-            </form>
+            </div>
+        </div>
+        <div class="user-actions-section">
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">兑换卡</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="cardno">兑换卡：</label>
+                                <input type="text" class="form-control" maxlength="20" id="cardno">
+                            </div>
+                            <div class="form-group mb-0">
+                                <button type="button" class="btn btn-primary exchangeCardBtn"
+                                    onclick="exchangeCard()"><i data-feather="credit-card"></i> 兑换</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 mb-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Token包兑换</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="token-code">Token包兑换码：</label>
+                                <input type="text" class="form-control" maxlength="20" id="token-code">
+                            </div>
+                            <div class="form-group mb-0">
+                                <button type="button" class="btn btn-primary exchangeTokenBtn"
+                                    onclick="exchangeTokenPackage()"><i data-feather="key"></i> 兑换</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 mb-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">我的Token包</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="token-packages-container">
+                                <div class="text-center py-3">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="sr-only">Loading...</span>
+                                    </div>
+                                    <p class="mt-2">加载中...</p>
+                                </div>
+                            </div>
+                            <div id="no-token-packages" class="text-center py-3" style="display: none;">
+                                <p>您还没有Token包，可以通过兑换卡获取。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    <p></p>
-    <div class="card">
+    <div class="card mt-4">
         <div class="card-header">
-            <h5>订单记录</h5>
+            <h5 class="mb-0">订单记录</h5>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -155,21 +325,6 @@
             </div>
         </div>
     </div>
-    <p></p>
-    <div class="card">
-        <div class="card-header">
-            <h5>兑换卡</h5>
-        </div>
-        <div class="card-body">
-            <div class="form-group">
-                <label for="cardno">兑换卡：</label>
-                <input type="text" class="form-control" maxlength="20" id="cardno">
-            </div>
-            <div class="form-group">
-                <button type="button" class="btn btn-primary exchangeCardBtn" onclick="exchangeCard()"><i data-feather="credit-card"></i> 兑换</button>
-            </div>
-        </div>
-    </div>
 </div>
 <div class="modal fade" id="passwordModal">
     <div class="modal-dialog modal-dialog-centered">
@@ -201,4 +356,4 @@
         </div>
     </div>
 </div>
-<script src="~/system/js/userinfo.js?v1.0.4"></script>
+<script src="~/system/js/userinfo.js?v1.0.7"></script>

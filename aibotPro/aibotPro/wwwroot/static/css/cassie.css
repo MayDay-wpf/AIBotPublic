@@ -5316,7 +5316,7 @@ input[type="button"].btn-block {
     padding: .25em .4em;
     font-size: 75%;
     font-weight: 700;
-    line-height: 1;
+    line-height: normal;
     text-align: center;
     white-space: nowrap;
     vertical-align: baseline;
@@ -19227,7 +19227,7 @@ body {
 
             .msg-item.reverse .msg-body p span,
             pre {
-                background-color: rgb(28, 144, 237);
+                /*                background-color: rgb(28, 144, 237);*/
                 color: #fff
             }
 
@@ -19248,17 +19248,10 @@ body {
             padding: 7px 10px
         }
 
-@media (min-width: 1200px) {
 
-    .msg-body p span,
-    pre {
-        max-width: 80%
-    }
-}
-
-.msg-body p:last-child {
-    margin-bottom: 0
-}
+        .msg-body p:last-child {
+            margin-bottom: 0
+        }
 
 .msg-user {
     font-size: .8125rem;

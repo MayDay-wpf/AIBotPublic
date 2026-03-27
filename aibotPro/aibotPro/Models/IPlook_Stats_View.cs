@@ -6,15 +6,17 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Keyless]
+public partial class IPlook_Stats_View
 {
-    [Keyless]
-    public partial class IPlook_Stats_View
-    {
-        public int? TotalClicks { get; set; }
-        public int? TodayClicks { get; set; }
-        [Column(TypeName = "date")]
-        public DateTime? Date { get; set; }
-        public int? Clicks { get; set; }
-    }
+    public int? TotalClicks { get; set; }
+
+    public int? TodayClicks { get; set; }
+
+    [Column(TypeName = "date")]
+    public DateTime? Date { get; set; }
+
+    public int? Clicks { get; set; }
 }

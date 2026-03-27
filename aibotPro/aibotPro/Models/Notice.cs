@@ -6,17 +6,19 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Table("Notice")]
+public partial class Notice
 {
-    [Table("Notice")]
-    public partial class Notice
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(3000)]
-        public string NoticeTitle { get; set; }
-        public string NoticeContent { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? CreateTime { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(3000)]
+    public string NoticeTitle { get; set; }
+
+    public string NoticeContent { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? CreateTime { get; set; }
 }

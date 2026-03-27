@@ -6,19 +6,22 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Table("SystemLog")]
+public partial class SystemLog
 {
-    [Table("SystemLog")]
-    public partial class SystemLog
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string LogLevel { get; set; }
-        public string LogTxt { get; set; }
-        [StringLength(50)]
-        public string CreateAccount { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? CreateTime { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string LogLevel { get; set; }
+
+    public string LogTxt { get; set; }
+
+    [StringLength(50)]
+    public string CreateAccount { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? CreateTime { get; set; }
 }

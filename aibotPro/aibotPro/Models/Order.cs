@@ -6,23 +6,28 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+public partial class Order
 {
-    public partial class Order
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string Account { get; set; }
-        [StringLength(50)]
-        public string OrderCode { get; set; }
-        [Column(TypeName = "money")]
-        public decimal? OrderMoney { get; set; }
-        [StringLength(500)]
-        public string OrderType { get; set; }
-        [StringLength(50)]
-        public string OrderStatus { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? CreateTime { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string Account { get; set; }
+
+    [StringLength(50)]
+    public string OrderCode { get; set; }
+
+    [Column(TypeName = "money")]
+    public decimal? OrderMoney { get; set; }
+
+    [StringLength(500)]
+    public string OrderType { get; set; }
+
+    [StringLength(50)]
+    public string OrderStatus { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? CreateTime { get; set; }
 }

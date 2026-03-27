@@ -214,14 +214,47 @@ $(document).ready(function () {
 --header 'Host: aibotpro.cn' \
 --header 'Connection: keep-alive' \
 --data-raw '{
-  "model": "gpt-4o-mini",
+  "model": "gpt-4.1-nano-openai",
   "messages": [
-    {
-      "role": "user",
-      "content": "你好"
-    }
-  ],
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Hi"
+                }
+            ]
+        }
+    ],
   "stream": false
+}'`;
+    var curlCodeVision = `curl --location --request POST 'https://aibotpro.cn/v1/chat/completions' \
+--header 'Authorization: Bearer sk-3ce2284b*************' \
+--header 'User-Agent: Apifox/1.0.0 (https://apifox.com)' \
+--header 'Content-Type: application/json' \
+--header 'Accept: */*' \
+--header 'Host: aibotpro.cn' \
+--header 'Connection: keep-alive' \
+--data-raw '{
+    "model": "gpt-4.1-nano-openai",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "What's in this image?"
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "https://example.com/image.jpg"
+                    }
+                }
+            ]
+        }
+    ],
+    "stream": false
 }'`;
 
     var pythonCode = `import requests
@@ -229,11 +262,16 @@ $(document).ready(function () {
 url = "https://aibotpro.cn/v1/chat/completions"
 
 payload = {
-    "model": "gpt-4o-mini",
+    "model": "gpt-4.1-nano-openai",
     "messages": [
         {
             "role": "user",
-            "content": "你好"
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Hi"
+                }
+            ]
         }
     ],
     "stream": False
@@ -251,6 +289,46 @@ headers = {
 response = requests.post(url, json=payload, headers=headers)
 
 print(response.text)`;
+    var pythonCodeVision = `import requests
+import json
+
+url = "https://aibotpro.cn/v1/chat/completions"
+
+payload = {
+    "model": "gpt-4.1-nano-openai",
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "What's in this image?"
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "https://example.com/image.jpg"
+                    }
+                }
+            ]
+        }
+    ],
+    "stream": False
+}
+
+headers = {
+    "Authorization": "Bearer sk-3ce2284b*************",
+    "User-Agent": "Apifox/1.0.0 (https://apifox.com)",
+    "Content-Type": "application/json",
+    "Accept": "*/*",
+    "Host": "aibotpro.cn",
+    "Connection": "keep-alive"
+}
+
+response = requests.post(url, json=payload, headers=headers)
+
+print(response.text)`;
+
     var csharpCode = `using System;
 using System.Net.Http;
 using System.Text;
@@ -269,11 +347,16 @@ class Program
         client.DefaultRequestHeaders.Add("Connection", "keep-alive");
 
         var content = new StringContent(@"{
-            ""model"": ""gpt-4o-mini"",
+            ""model"": ""gpt-4.1-nano-openai"",
             ""messages"": [
                 {
                     ""role"": ""user"",
-                    ""content"": ""你好""
+                    ""content"": [
+                        {
+                            ""type"": ""text"",
+                            ""text"": ""Hi""
+                        }
+                    ]
                 }
             ],
             ""stream"": false
@@ -284,6 +367,51 @@ class Program
         Console.WriteLine(responseContent);
     }
 }`;
+    var csharpCodeVision = `using System;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
+
+class Program
+{
+    static async Task Main(string[] args)
+    {
+        using var client = new HttpClient();
+
+        client.DefaultRequestHeaders.Add("Authorization", "Bearer sk-3ce2284b*************");
+        client.DefaultRequestHeaders.Add("User-Agent", "Apifox/1.0.0 (https://apifox.com)");
+        client.DefaultRequestHeaders.Add("Accept", "*/*");
+        client.DefaultRequestHeaders.Add("Host", "aibotpro.cn");
+        client.DefaultRequestHeaders.Add("Connection", "keep-alive");
+
+        var content = new StringContent(@"{
+            ""model"": ""gpt-4.1-nano-openai"",
+            ""messages"": [
+                {
+                    ""role"": ""user"",
+                    ""content"": [
+                        {
+                            ""type"": ""text"",
+                            ""text"": ""What's in this image?""
+                        },
+                        {
+                            ""type"": ""image_url"",
+                            ""image_url"": {
+                                ""url"": ""https://example.com/image.jpg""
+                            }
+                        }
+                    ]
+                }
+            ],
+            ""stream"": false
+        }", Encoding.UTF8, "application/json");
+
+        var response = await client.PostAsync("https://aibotpro.cn/v1/chat/completions", content);
+        var responseContent = await response.Content.ReadAsStringAsync();
+        Console.WriteLine(responseContent);
+    }
+}
+`;
 
     var javaCode = `import java.net.URI;
 import java.net.http.HttpClient;
@@ -295,11 +423,16 @@ public class Main {
         HttpClient client = HttpClient.newHttpClient();
         
         String requestBody = "{" +
-            "\"model\": \"gpt-4o-mini\"," +
+            "\"model\": \"gpt-4.1-nano-openai\"," +
             "\"messages\": [" +
                 "{" +
                     "\"role\": \"user\"," +
-                    "\"content\": \"你好\"" +
+                    "\"content\": [" +
+                        "{" +
+                            "\"type\": \"text\"," +
+                            "\"text\": \"Hi\"" +
+                        "}" 
+                    "]" +
                 "}" +
             "]," +
             "\"stream\": false" +
@@ -320,10 +453,61 @@ public class Main {
         System.out.println(response.body());
     }
 }`;
+    var javaCodeVision = `import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        HttpClient client = HttpClient.newHttpClient();
+
+        String requestBody = "{" +
+            "\"model\": \"gpt-4.1-nano-openai\"," +
+            "\"messages\": [" +
+                "{" +
+                    "\"role\": \"user\"," +
+                    "\"content\": [" +
+                        "{" +
+                            "\"type\": \"text\"," +
+                            "\"text\": \"What's in this image?\"" +
+                        "}," +
+                        "{" +
+                            "\"type\": \"image_url\"," +
+                            "\"image_url\": {" +
+                                "\"url\": \"https://example.com/image.jpg\"" +
+                            "}" +
+                        "}" +
+                    "]" +
+                "}" +
+            "]," +
+            "\"stream\": false" +
+        "}";
+
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create("https://aibotpro.cn/v1/chat/completions"))
+            .header("Authorization", "Bearer sk-3ce2284b*************")
+            .header("User-Agent", "Apifox/1.0.0 (https://apifox.com)")
+            .header("Content-Type", "application/json")
+            .header("Accept", "*/*")
+            .header("Host", "aibotpro.cn")
+            .header("Connection", "keep-alive")
+            .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+            .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        System.out.println(response.body());
+    }
+}
+`;
     $('#curlCode').text(curlCode);
+    $('#curlCodeVision').text(curlCodeVision);
     $('#pythonCode').text(pythonCode);
+    $('#pythonCodeVision').text(pythonCodeVision);
     $('#csharpCode').text(csharpCode);
+    $('#csharpCodeVision').text(csharpCodeVision);
     $('#javaCode').text(javaCode);
+    $('#javaCodeVision').text(javaCodeVision);
     $('#curl-tab').addClass('active');
     hljs.highlightAll();
 });

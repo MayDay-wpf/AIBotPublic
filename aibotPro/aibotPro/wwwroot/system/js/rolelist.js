@@ -9,7 +9,7 @@
     window.addEventListener('scroll', handleScroll); // 添加滚动监听
 });
 let page = 1;
-let pageSize = 12;
+let pageSize = 20;
 let noMoreData = false;
 let isLoading = false;
 const scrollThreshold = 50;
@@ -32,7 +32,7 @@ function getRoleList(type) {
     var name = $('#searchKey').val();
     if (type == 'init') {
         page = 1;
-        pageSize = 12;
+        pageSize = 20;
         noMoreData = false;
     }
     if (type == 'loadmore' && noMoreData) {

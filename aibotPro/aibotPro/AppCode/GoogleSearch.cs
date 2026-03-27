@@ -1,4 +1,5 @@
-﻿using Google.Apis.CustomSearchAPI.v1;
+﻿using aibotPro.Dtos;
+using Google.Apis.CustomSearchAPI.v1;
 using Google.Apis.Services;
 
 namespace aibotPro.AppCode
@@ -14,7 +15,7 @@ namespace aibotPro.AppCode
             this.searchEngineId = searchEngineId;
         }
 
-        public List<SearchResult> Search(string query, bool onlyImg = false)
+        public List<SearchEngineResult> Search(string query, bool onlyImg = false)
         {
             // 创建一个CustomsearchService实例
             var customsearchService = new CustomSearchAPIService(new BaseClientService.Initializer
@@ -35,13 +36,13 @@ namespace aibotPro.AppCode
             var searchResult = listRequest.Execute();
 
             // 处理搜索结果
-            var results = new List<SearchResult>();
+            var results = new List<SearchEngineResult>();
             foreach (var item in searchResult.Items)
             {
-                results.Add(new SearchResult
+                results.Add(new SearchEngineResult
                 {
                     Title = item.Title,
-                    Link = item.Link,
+                    Url = item.Link,
                     Snippet = item.Snippet
                 });
             }

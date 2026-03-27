@@ -1,5 +1,4 @@
-﻿
-.avatar-upload {
+﻿.avatar-upload {
     width: 50px;
     height: 50px;
     border-radius: 50%;
@@ -104,4 +103,127 @@
 
 .upgrade-btn {
     z-index: 10;
+}
+
+/* 新增的布局优化样式 */
+@media (min-width: 992px) {
+    .user-profile-container {
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+    }
+    
+    .user-info-section {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .user-actions-section {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .user-basic-info {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 15px 20px;
+        align-items: center;
+    }
+    
+    .user-basic-info .form-group {
+        display: contents;
+        margin-bottom: 0;
+    }
+    
+    .user-basic-info label {
+        font-weight: 600;
+        margin-bottom: 0;
+        white-space: nowrap;
+    }
+    
+    .user-basic-info .form-control,
+    .user-basic-info .info-value {
+        margin-bottom: 0;
+    }
+    
+    .avatar-section {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .calendar-container {
+        margin-top: 20px;
+    }
+    
+    .action-buttons {
+        grid-column: 1 / -1;
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    .calendar {
+        width: 100%;
+        max-width: 350px;
+    }
+}
+
+.info-value {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.balance-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* 移动端优化 */
+@media (max-width: 991px) {
+    .user-profile-container {
+        display: block;
+    }
+    
+    .user-info-section,
+    .user-actions-section {
+        width: 100%;
+    }
+    
+    .user-actions-section {
+        margin-top: 20px;
+    }
+    
+    .calendar {
+        width: 100%;
+        max-width: none;
+    }
+}
+
+/* 按钮间距优化 */
+.action-buttons .btn {
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+
+.action-buttons .btn:last-child {
+    margin-right: 0;
+}
+
+/* 卡片标题样式统一 */
+.card-header h5 {
+    color: #495057;
+    font-weight: 600;
+}
+
+/* 表单组间距优化 */
+.form-group:last-child {
+    margin-bottom: 0;
 }

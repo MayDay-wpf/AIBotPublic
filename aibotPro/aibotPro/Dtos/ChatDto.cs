@@ -37,15 +37,20 @@ public class ChatDto
     public string coderMsg { get; set; } = "";
     public bool coderModel { get; set; } = false;
     public bool globe { get; set; } = false;
+    public bool multimodal { get; set; } = false;
     public bool writerModel { get; set; } = false;
     public string bookCode { get; set; } = "";
     public int chapterId { get; set; } = 0;
     public List<int> selectChapters { get; set; } = new List<int>();
+    public bool beforeThink { get; set; } = false;
+    public string beforeThinkModel { get; set; } = "";
 }
 
 public class ChatRes
 {
     public string message { get; set; }
+    public string reasoning { get; set; }
+    public string speed { get; set; }
     public string chatid { get; set; }
     public string jscode { get; set; }
     public bool isfinish { get; set; } = false;
@@ -53,6 +58,13 @@ public class ChatRes
     public string file_id { get; set; }
     public bool loading { get; set; } = false;
     public bool isterminal { get; set; } = false;
+    
+    // MCP工具调用相关字段
+    public string tool_call_name { get; set; }
+    public string tool_call_arguments { get; set; }
+    public string tool_call_result { get; set; }
+    public string tool_call_status { get; set; } // "calling", "success", "error"
+    public string tool_call_id { get; set; }
 }
 
 public class AiChat
@@ -81,6 +93,7 @@ public class AiChat
     [JsonProperty("stream")] public bool Stream { get; set; }
 
     [JsonProperty("stream_options")] public SOptions StreamOptions { get; set; } = new SOptions();
+    
 }
 
 public class SOptions
@@ -155,14 +168,14 @@ public class PromptTokensDetails
 
 public class CompletionTokensDetails
 {
-    [JsonProperty("reasoning_tokens")] public int ReasoningTokens { get; set; }
+    [JsonProperty("reasoning_tokens")] public int? ReasoningTokens { get; set; }
     [JsonProperty("audio_tokens")] public int AudioTokens { get; set; }
 
     [JsonProperty("accepted_prediction_tokens")]
-    public int AcceptedPredictionTokens { get; set; }
+    public int? AcceptedPredictionTokens { get; set; }
 
     [JsonProperty("rejected_prediction_tokens")]
-    public int RejectedPredictionTokens { get; set; }
+    public int? RejectedPredictionTokens { get; set; }
 }
 
 public class StreamUsage
@@ -181,7 +194,7 @@ public class StreamUsage
 public class DeltaContent
 {
     [JsonProperty("content")] public string Content { get; set; }
-    [JsonProperty("reasoning_content")] public string ReasoningContent { get; set; }
+    [JsonProperty("reasoning_content")] public string reasoning_content { get; set; }
     [JsonProperty("role")] public string Role { get; set; }
 }
 
@@ -255,8 +268,30 @@ public class ContentWrapperConverter : JsonConverter
 
     public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
     {
-        // Implement if necessary: deserialize JSON back to ContentWrapper
-        throw new NotImplementedException();
+        var wrapper = new ContentWrapper();
+
+        if (reader.TokenType == JsonToken.StartArray)
+        {
+            // 反序列化为 VisionContent 列表
+            wrapper.visionContentList = serializer.Deserialize<List<VisionContent>>(reader);
+        }
+        else if (reader.TokenType == JsonToken.String)
+        {
+            // 反序列化为字符串
+            wrapper.stringContent = (string)reader.Value;
+        }
+        // 可以添加对 JsonToken.Null 的处理，例如：
+        else if (reader.TokenType == JsonToken.Null)
+        {
+            return null; // 或者返回一个空的 ContentWrapper
+        }
+        else
+        {
+            // 如果不是数组也不是字符串，抛出异常或记录错误
+            throw new JsonSerializationException($"Unexpected token type: {reader.TokenType}");
+        }
+
+        return wrapper;
     }
 
     public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)

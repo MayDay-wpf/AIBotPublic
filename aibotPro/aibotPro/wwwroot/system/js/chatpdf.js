@@ -3,8 +3,8 @@
 var textarea = document.getElementById("Q");
 var $Q = $("#Q");
 var chatBody = $(".chat-body-main");
-var thisAiModel = "gpt-4o-mini"; //当前AI模型
-var thisAiModelNick = `<i class='icon icon-gpt'></i> ChatGPT-4O-Mini✨🖼️`;
+var thisAiModel = "gpt-4.1-nano-openai"; //当前AI模型
+var thisAiModelNick = `<i class='icon icon-gpt'></i> ChatGPT-4.1-Nano🚀✨🖼️`;
 var processOver = true; //是否处理完毕
 var image_path = [];
 var file_list = [];
@@ -27,6 +27,7 @@ let roleAvatar = 'A';
 var systemPrompt = "";
 let roleName = "AIBot";
 let modelList = [];
+let currentZoomLevel = 1.0;
 $(function () {
     $('.nav-sub-link').removeClass('active');
     $('.nav-link').removeClass('active');
@@ -36,6 +37,70 @@ $(function () {
     $("#chatpdf-product-nav").addClass('active');
     getAIModelList();
     $('#pdf-upload').val('');
+    $('<style>')
+        .prop('type', 'text/css')
+        .html(`
+        .ocr-text {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            color: transparent;
+            pointer-events: auto;
+            z-index: 2;
+            user-select: text;
+            overflow: hidden;
+        }
+        .ocr-text.active {
+            color: rgba(0, 0, 0, 0.7);
+            background: rgba(255, 255, 255, 0.8);
+        }
+        .ocr-text .highlight {
+            background-color: rgba(255, 255, 0, 0.4);
+            color: black;
+        }
+        .ocr-text-word {
+            position: absolute;
+            white-space: pre;
+            cursor: text;
+            transform-origin: 0% 0%;
+        }
+        #pdf-viewer .page-container:hover .ocr-text {
+            color: rgba(0, 0, 0, 0.3);
+        }
+        #ocr-toggle {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            padding: 5px 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #ocr-processing-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            z-index: 9999;
+        }
+    `)
+        .appendTo('head');
+
+    // 添加OCR切换按钮
+    $('body').append('<button id="ocr-toggle">显示/隐藏OCR文本</button>');
+
+    // OCR文本显示切换
+    $('#ocr-toggle').on('click', function () {
+        $('.ocr-text').toggleClass('active');
+    });
 });
 function getAIModelList() {
     $.ajax({
@@ -316,9 +381,38 @@ let selectedText = '';
 let visibleText = ''; // 全局变量，存储当前可视区域的PDF文本
 let scrollTimeout = null;
 let suggestedQuestionsVisible = false;
-
+let isPdfScanned = false;
+let ocrProcessing = false;
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/system/js/pdfjs/pdf.worker.min.js';
+// 加载Tesseract.js库
+function loadTesseractScript() {
+    return new Promise((resolve, reject) => {
+        if (window.Tesseract) {
+            resolve(window.Tesseract);
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js';
+        script.onload = () => {
+            // 预加载中文和英文语言包
+            window.Tesseract.createWorker()
+                .then(worker => {
+                    return worker.loadLanguage('chi_sim+eng')
+                        .then(() => worker.initialize('chi_sim+eng'))
+                        .then(() => worker.terminate());
+                })
+                .then(() => {
+                    console.log('Tesseract.js已加载，语言包已准备好');
+                    resolve(window.Tesseract);
+                });
+        };
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
+
 $('#upload-button').on('click', function () {
     $('#pdf-upload').click();
 });
@@ -447,27 +541,101 @@ $('#pdf-upload').on('change', function (e) {
     reader.readAsArrayBuffer(file);
 });
 
+$('#toggle-thumbnails').on('click', function () {
+    const thumbnails = $('#pdf-thumbnails');
+    const icon = $(this).find('i');
+
+    if (thumbnails.is(':visible')) {
+        thumbnails.hide();
+        icon.removeClass('fa-chevron-left').addClass('fa-chevron-right');
+    } else {
+        thumbnails.show();
+        icon.removeClass('fa-chevron-right').addClass('fa-chevron-left');
+    }
+});
+
 function loadPdf(data) {
     pdfjsLib.getDocument(data).promise.then(function (pdf) {
         currentPdf = pdf;
         const viewer = document.getElementById('pdf-viewer');
+        const thumbnailsContainer = document.getElementById('pdf-thumbnails');
+
+        // 清空现有内容
         viewer.innerHTML = '';
+        thumbnailsContainer.innerHTML = '';
+        // 检测PDF是否为扫描件
+        checkIfScannedPdf(pdf).then(isScanned => {
+            isPdfScanned = isScanned;
+            if (isScanned) {
+                balert('检测到PDF可能是扫描件，正在加载OCR功能...', "info", false, 2000, "center");
+                loadTesseractScript().then(tesseract => {
+                    console.log('Tesseract.js已加载，可以进行OCR识别');
+                }).catch(err => {
+                    console.error('加载Tesseract.js失败:', err);
+                });
+            }
+        });
+        // 重新添加切换按钮
+        const toggleButton = document.createElement('button');
+        toggleButton.id = 'toggle-thumbnails';
+        toggleButton.className = 'btn btn-sm btn-light toggle-thumbnails';
+        toggleButton.innerHTML = '<i class="fas fa-chevron-left"></i>';
+
+        // 将按钮添加到PDF容器而不是viewer中
+        document.querySelector('.pdf-container').appendChild(toggleButton);
+
+        // 重新绑定切换按钮事件
+        $('#toggle-thumbnails').on('click', function () {
+            const thumbnails = $('#pdf-thumbnails');
+            const icon = $(this).find('i');
+
+            if (thumbnails.is(':visible')) {
+                thumbnails.hide().addClass('hidden');
+                icon.removeClass('fa-chevron-left').addClass('fa-chevron-right');
+                $(this).css('left', '10px');
+            } else {
+                thumbnails.show().removeClass('hidden');
+                icon.removeClass('fa-chevron-right').addClass('fa-chevron-left');
+
+                // 根据屏幕大小调整按钮位置
+                if ($(window).width() > 992) {
+                    $(this).css('left', '130px');
+                } else if ($(window).width() > 768) {
+                    $(this).css('left', '120px');
+                }
+            }
+        });
 
         let renderedPages = 0;
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            // 创建主视图页面容器
             const pageContainer = document.createElement('div');
             pageContainer.className = 'page-container';
             pageContainer.id = `page-${pageNum}`;
             viewer.appendChild(pageContainer);
 
+            // 创建缩略图容器
+            const thumbnailContainer = document.createElement('div');
+            thumbnailContainer.className = 'pdf-thumbnail';
+            thumbnailContainer.setAttribute('data-page', pageNum);
+            thumbnailContainer.innerHTML = `
+                <div class="page-number">第 ${pageNum} 页</div>
+            `;
+            thumbnailsContainer.appendChild(thumbnailContainer);
+
+            // 渲染主视图页面
             renderPage(pdf, pageNum, pageContainer).then(() => {
                 renderedPages++;
                 if (renderedPages === pdf.numPages) {
-                    updateVisibleText();//更新可视文本
-                    generateSuggestedQuestions();//生成可能提出的问题
-                    generateTableOfContents(pdf);//加载目录
+                    updateVisibleText(); // 更新可视文本
+                    generateSuggestedQuestions(); // 生成可能提出的问题
+                    generateTableOfContents(pdf); // 加载目录
+                    highlightVisibleThumbnails(); // 高亮当前可见页面的缩略图
                 }
             });
+
+            // 渲染缩略图
+            renderThumbnail(pdf, pageNum, thumbnailContainer);
         }
 
         // 添加滚动事件监听器
@@ -475,13 +643,43 @@ function loadPdf(data) {
             if (scrollTimeout) {
                 clearTimeout(scrollTimeout);
             }
-            scrollTimeout = setTimeout(updateVisibleText, 200);
+            scrollTimeout = setTimeout(function () {
+                updateVisibleText();
+                highlightVisibleThumbnails();
+            }, 200);
+        });
+
+        // 添加缩略图点击事件
+        $(thumbnailsContainer).on('click', '.pdf-thumbnail', function () {
+            const pageNum = $(this).data('page');
+            document.getElementById(`page-${pageNum}`).scrollIntoView();
         });
     });
 }
-function renderPage(pdf, pageNum, container) {
+async function checkIfScannedPdf(pdf) {
+    try {
+        // 获取第一页进行检测
+        const page = await pdf.getPage(1);
+        const textContent = await page.getTextContent();
+        
+        // 如果文本内容很少或没有，可能是扫描件
+        const isScanned = textContent.items.length < 10;
+        
+        if (isScanned) {
+            // 添加OCR控制面板
+            addOcrControls();
+        }
+        
+        return isScanned;
+    } catch (error) {
+        console.error('检测PDF类型时出错:', error);
+        return false;
+    }
+}
+// 渲染缩略图
+function renderThumbnail(pdf, pageNum, container) {
     return pdf.getPage(pageNum).then(function (page) {
-        const scale = 1.5;
+        const scale = 0.2; // 缩略图比例
         const viewport = page.getViewport({ scale: scale });
 
         const canvas = document.createElement('canvas');
@@ -492,6 +690,170 @@ function renderPage(pdf, pageNum, container) {
         const renderContext = {
             canvasContext: context,
             viewport: viewport
+        };
+
+        return page.render(renderContext).promise.then(function () {
+            // 将渲染好的canvas转换为图片
+            const img = document.createElement('img');
+            img.src = canvas.toDataURL();
+
+            // 将图片插入到缩略图容器的开头
+            container.insertBefore(img, container.firstChild);
+        });
+    });
+}
+
+// 高亮当前可见页面的缩略图
+function highlightVisibleThumbnails() {
+    const viewer = document.getElementById('pdf-viewer');
+    const viewerRect = viewer.getBoundingClientRect();
+
+    // 移除所有高亮
+    $('.pdf-thumbnail').removeClass('active');
+
+    // 找到当前可见的页面
+    $('.page-container').each(function () {
+        const pageRect = this.getBoundingClientRect();
+        // 如果页面在可视区域内
+        if (pageRect.top < viewerRect.bottom && pageRect.bottom > viewerRect.top) {
+            const pageId = $(this).attr('id');
+            const pageNum = pageId.replace('page-', '');
+            // 高亮对应的缩略图
+            $(`.pdf-thumbnail[data-page="${pageNum}"]`).addClass('active');
+
+            // 确保缩略图在缩略图容器的可视区域内
+            const thumbnail = document.querySelector(`.pdf-thumbnail[data-page="${pageNum}"]`);
+            if (thumbnail) {
+                const thumbnailsContainer = document.getElementById('pdf-thumbnails');
+                thumbnailsContainer.scrollTop = thumbnail.offsetTop - thumbnailsContainer.offsetHeight / 2 + thumbnail.offsetHeight / 2;
+            }
+        }
+    });
+}
+function getCurrentVisiblePage() {
+    const viewer = document.getElementById('pdf-viewer');
+    const viewerRect = viewer.getBoundingClientRect();
+    let currentPage = null;
+    let maxVisibleArea = 0;
+
+    $('.page-container').each(function () {
+        const pageRect = this.getBoundingClientRect();
+        // 计算页面在可视区域内的面积
+        const visibleTop = Math.max(pageRect.top, viewerRect.top);
+        const visibleBottom = Math.min(pageRect.bottom, viewerRect.bottom);
+        const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+        const visibleArea = visibleHeight * pageRect.width;
+
+        if (visibleArea > maxVisibleArea) {
+            maxVisibleArea = visibleArea;
+            const pageId = $(this).attr('id');
+            currentPage = pageId ? parseInt(pageId.replace('page-', '')) : null;
+        }
+    });
+
+    return currentPage;
+}
+function renderPage(pdf, pageNum, container) {
+    return renderPageWithZoom(pdf, pageNum, container, currentZoomLevel);
+}
+// 放大PDF
+$('#zoom-in').on('click', function () {
+    if (currentZoomLevel < 3.0) {  // 设置最大缩放级别为300%
+        currentZoomLevel += 0.1;
+        updateZoomLevel();
+        reRenderPdfWithZoom();
+    }
+});
+
+// 缩小PDF
+$('#zoom-out').on('click', function () {
+    if (currentZoomLevel > 0.5) {  // 设置最小缩放级别为50%
+        currentZoomLevel -= 0.1;
+        updateZoomLevel();
+        reRenderPdfWithZoom();
+    }
+});
+
+// 重置缩放
+$('#zoom-reset').on('click', function () {
+    currentZoomLevel = 1.0;
+    updateZoomLevel();
+    reRenderPdfWithZoom();
+});
+
+// 更新缩放级别显示
+function updateZoomLevel() {
+    $('#zoom-level').text(Math.round(currentZoomLevel * 100) + '%');
+}
+
+// 根据缩放级别重新渲染PDF
+function reRenderPdfWithZoom() {
+    if (!currentPdf) return;
+
+    // 获取当前滚动位置和可见页面
+    const currentScrollPosition = $('#pdf-viewer').scrollTop();
+    const currentPage = getCurrentVisiblePage();
+
+    // 清空PDF查看器
+    const viewer = document.getElementById('pdf-viewer');
+    viewer.innerHTML = '';
+
+    // 重新渲染所有页面
+    let renderedPages = 0;
+    for (let pageNum = 1; pageNum <= currentPdf.numPages; pageNum++) {
+        const pageContainer = document.createElement('div');
+        pageContainer.className = 'page-container';
+        pageContainer.id = `page-${pageNum}`;
+        viewer.appendChild(pageContainer);
+
+        renderPageWithZoom(currentPdf, pageNum, pageContainer, currentZoomLevel).then(() => {
+            renderedPages++;
+            if (renderedPages === currentPdf.numPages) {
+                // 恢复滚动位置
+                if (currentPage) {
+                    document.getElementById(`page-${currentPage}`).scrollIntoView();
+                } else {
+                    $('#pdf-viewer').scrollTop(currentScrollPosition);
+                }
+
+                updateVisibleText();
+                highlightVisibleThumbnails();
+            }
+        });
+    }
+}
+
+// 使用指定缩放级别渲染页面
+function renderPageWithZoom(pdf, pageNum, container, zoomLevel) {
+    return pdf.getPage(pageNum).then(function (page) {
+        // 获取容器宽度
+        const containerWidth = container.clientWidth || document.getElementById('pdf-viewer').clientWidth;
+
+        // 获取页面原始尺寸
+        const originalViewport = page.getViewport({ scale: 1.0 });
+
+        // 计算适合容器宽度的基础缩放比例
+        const baseScaleFactor = (containerWidth - 20) / originalViewport.width;
+
+        // 应用用户设置的缩放级别
+        const scaleFactor = baseScaleFactor * zoomLevel;
+
+        // 使用计算出的缩放比例创建新的视口
+        const viewport = page.getViewport({ scale: scaleFactor });
+
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        // 提高渲染质量
+        const pixelRatio = window.devicePixelRatio || 1;
+        canvas.height = viewport.height * pixelRatio;
+        canvas.width = viewport.width * pixelRatio;
+        canvas.style.height = viewport.height + 'px';
+        canvas.style.width = viewport.width + 'px';
+
+        const renderContext = {
+            canvasContext: context,
+            viewport: viewport,
+            transform: [pixelRatio, 0, 0, pixelRatio, 0, 0]
         };
 
         const renderTask = page.render(renderContext);
@@ -509,7 +871,33 @@ function renderPage(pdf, pageNum, container) {
                     container: textLayer,
                     viewport: viewport,
                     textDivs: []
-                }).promise;
+                }).promise.then(() => {
+                    // 处理页面中的链接注释
+                    return page.getAnnotations().then(function (annotations) {
+                        annotations.forEach(function (annotation) {
+                            if (annotation.subtype === 'Link' && annotation.url) {
+                                // 创建链接元素
+                                const linkRect = viewport.convertToViewportRectangle(annotation.rect);
+                                const [x1, y1, x2, y2] = pdfjsLib.Util.normalizeRect(linkRect);
+
+                                const linkElement = document.createElement('a');
+                                linkElement.href = annotation.url;
+                                linkElement.className = 'pdf-link-annotation';
+                                linkElement.style.position = 'absolute';
+                                linkElement.style.left = `${Math.min(x1, x2)}px`;
+                                linkElement.style.top = `${Math.min(y1, y2)}px`;
+                                linkElement.style.width = `${Math.abs(x2 - x1)}px`;
+                                linkElement.style.height = `${Math.abs(y2 - y1)}px`;
+                                linkElement.style.cursor = 'pointer';
+                                linkElement.target = '_blank'; // 在新窗口打开
+                                linkElement.title = annotation.url;
+
+                                // 添加到容器
+                                container.appendChild(linkElement);
+                            }
+                        });
+                    });
+                });
             })
         ]);
     });
@@ -569,16 +957,194 @@ function updateVisibleText() {
     const viewerRect = viewer.getBoundingClientRect();
     let text = '';
 
-    $('.page-container').each(function () {
-        const pageRect = this.getBoundingClientRect();
-        if (pageRect.top < viewerRect.bottom && pageRect.bottom > viewerRect.top) {
-            const pageText = $(this).find('.text-layer').text();
-            text += pageText + '\n\n';
-        }
-    });
+    // 如果是扫描件且OCR未处理，则进行OCR处理
+    if (isPdfScanned && !ocrProcessing) {
+        ocrProcessing = true;
 
-    visibleText = text.trim();
+        // 获取可见页面的canvas元素
+        const visibleCanvases = [];
+        const visiblePages = [];
+
+        $('.page-container').each(function () {
+            const pageRect = this.getBoundingClientRect();
+            if (pageRect.top < viewerRect.bottom && pageRect.bottom > viewerRect.top) {
+                const canvas = $(this).find('canvas')[0];
+                if (canvas) {
+                    visibleCanvases.push(canvas);
+                    visiblePages.push(this);
+                }
+            }
+        });
+
+        if (visibleCanvases.length > 0) {
+            // 显示OCR处理中提示
+            if (!$('#ocr-processing-indicator').length) {
+                $('body').append('<div id="ocr-processing-indicator">OCR处理中...</div>');
+            }
+
+            // 使用Tesseract.js进行OCR识别，启用单词级别的边界框
+            Promise.all(visibleCanvases.map((canvas, idx) => {
+                return window.Tesseract.recognize(canvas, 'chi_sim+eng', {
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            $('#ocr-processing-indicator').text(`OCR处理中... ${Math.round(m.progress * 100)}%`);
+                        }
+                    }
+                }).then(result => {
+                    return {
+                        text: result.data.text,
+                        words: result.data.words,
+                        pageElement: visiblePages[idx],
+                        canvas: canvas
+                    };
+                });
+            })).then(results => {
+                visibleText = results.map(r => r.text).join('\n\n');
+                ocrProcessing = false;
+                $('#ocr-processing-indicator').remove();
+
+                // 更新OCR结果到页面，使用精确定位
+                results.forEach(result => {
+                    const pageContainer = $(result.pageElement);
+                    let textLayer = pageContainer.find('.text-layer');
+
+                    if (textLayer.length === 0) {
+                        textLayer = $('<div class="text-layer"></div>');
+                        pageContainer.append(textLayer);
+                    }
+
+                    // 清空现有OCR文本
+                    textLayer.empty();
+
+                    // 创建OCR文本容器
+                    const ocrTextContainer = $('<div class="ocr-text"></div>');
+                    textLayer.append(ocrTextContainer);
+
+                    // 获取canvas尺寸
+                    const canvasWidth = result.canvas.width;
+                    const canvasHeight = result.canvas.height;
+                    const displayWidth = $(result.canvas).width();
+                    const displayHeight = $(result.canvas).height();
+
+                    // 计算缩放比例
+                    const scaleX = displayWidth / canvasWidth;
+                    const scaleY = displayHeight / canvasHeight;
+
+                    // 添加每个单词，精确定位
+                    if (result.words && result.words.length > 0) {
+                        result.words.forEach(word => {
+                            if (word.text.trim()) {
+                                const wordElement = $('<span class="ocr-text-word"></span>');
+                                wordElement.text(word.text);
+
+                                // 计算位置和尺寸
+                                const left = word.bbox.x0 * scaleX;
+                                const top = word.bbox.y0 * scaleY;
+                                const width = (word.bbox.x1 - word.bbox.x0) * scaleX;
+                                const height = (word.bbox.y1 - word.bbox.y0) * scaleY;
+
+                                // 设置样式
+                                wordElement.css({
+                                    left: `${left}px`,
+                                    top: `${top}px`,
+                                    width: `${width}px`,
+                                    height: `${height}px`,
+                                    fontSize: `${height * 0.9}px`,
+                                    lineHeight: `${height}px`
+                                });
+
+                                ocrTextContainer.append(wordElement);
+                            }
+                        });
+                    }
+                });
+
+                // 生成建议问题
+                generateSuggestedQuestions();
+            }).catch(err => {
+                console.error('OCR处理出错:', err);
+                ocrProcessing = false;
+                $('#ocr-processing-indicator').remove();
+            });
+        } else {
+            ocrProcessing = false;
+        }
+    } else {
+        // 非扫描件，使用原有逻辑
+        $('.page-container').each(function () {
+            const pageRect = this.getBoundingClientRect();
+            if (pageRect.top < viewerRect.bottom && pageRect.bottom > viewerRect.top) {
+                // 获取页面文本内容
+                const pageText = $(this).find('.text-layer').text();
+
+                // 获取页面中的链接注释
+                const links = $(this).find('.pdf-link-annotation');
+                let linksText = '';
+
+                if (links.length > 0) {
+                    linksText = '\n\n链接：\n';
+                    links.each(function () {
+                        const linkUrl = $(this).attr('href');
+                        const linkTitle = $(this).attr('title') || linkUrl;
+                        linksText += `- [${linkTitle}](${linkUrl})\n`;
+                    });
+                }
+
+                text += pageText + linksText + '\n\n';
+            }
+        });
+
+        visibleText = text.trim();
+    }
 }
+
+// 添加OCR控制面板
+function addOcrControls() {
+    if ($('#ocr-controls').length === 0) {
+        const controlsHtml = `
+            <div id="ocr-controls" style="position: fixed; bottom: 60px; left: 20px; z-index: 1000; background: white; padding: 10px; border-radius: 4px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); display: none;">
+                <div style="margin-bottom: 10px;">
+                    <label for="ocr-lang">OCR语言:</label>
+                    <select id="ocr-lang" class="form-control form-control-sm">
+                        <option value="chi_sim+eng" selected>中文+英文</option>
+                        <option value="chi_sim">仅中文</option>
+                        <option value="eng">仅英文</option>
+                        <option value="jpn">日文</option>
+                        <option value="kor">韩文</option>
+                    </select>
+                </div>
+                <button id="rerun-ocr" class="btn btn-sm btn-primary">重新运行OCR</button>
+            </div>
+        `;
+        $('body').append(controlsHtml);
+        
+        // 修改OCR切换按钮行为
+        $('#ocr-toggle').off('click').on('click', function() {
+            $('.ocr-text').toggleClass('active');
+            $('#ocr-controls').toggle();
+        });
+        
+        // 重新运行OCR按钮
+        $('#rerun-ocr').on('click', function() {
+            const lang = $('#ocr-lang').val();
+            ocrProcessing = false; // 重置OCR处理状态
+            runOcrWithLanguage(lang);
+        });
+    }
+}
+
+// 使用指定语言运行OCR
+function runOcrWithLanguage(lang) {
+    // 清除现有OCR文本
+    $('.text-layer').empty();
+    
+    // 重置处理状态
+    ocrProcessing = false;
+    
+    // 更新可视文本，这将触发OCR处理
+    updateVisibleText();
+}
+
 
 // Text selection and tools functionality
 let selectionTimeout;
@@ -589,20 +1155,61 @@ $(document).on('mouseup', '#pdf-viewer', function (e) {
         const selection = window.getSelection();
         selectedText = selection.toString().trim();
 
+        // 清除之前的高亮
+        $('.text-layer span.highlight, .ocr-text-word.highlight').removeClass('highlight');
+
         if (selectedText) {
+            // 获取选中范围的位置
             const range = selection.getRangeAt(0);
             const rect = range.getBoundingClientRect();
 
+            // 显示工具栏
             $('.selection-tools').css({
                 left: rect.left + window.pageXOffset + 'px',
-                top: rect.bottom + window.pageYOffset + 'px'
+                top: rect.bottom + window.pageYOffset + 5 + 'px' // 稍微下移，避免遮挡文本
             }).show();
+
+            // 高亮选中的OCR文本
+            if (isPdfScanned) {
+                // 找出选中范围内的所有OCR文本元素
+                $('.ocr-text-word').each(function () {
+                    if (selection.containsNode(this, true)) {
+                        $(this).addClass('highlight');
+                    }
+                });
+            } else {
+                // 普通PDF的文本高亮处理
+                if (range.commonAncestorContainer.nodeType === 3) {
+                    // 文本节点
+                    $(range.commonAncestorContainer.parentNode).addClass('highlight');
+                } else {
+                    // 元素节点
+                    $(range.commonAncestorContainer).find('span').each(function () {
+                        if (selection.containsNode(this, true)) {
+                            $(this).addClass('highlight');
+                        }
+                    });
+                }
+            }
         } else {
             $('.selection-tools').hide();
         }
     }, 200);
 });
+$('#pdf-viewer').on('scroll', function () {
+    if (selectedText) {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
 
+            $('.selection-tools').css({
+                left: rect.left + window.pageXOffset + 'px',
+                top: rect.bottom + window.pageYOffset + 5 + 'px'
+            });
+        }
+    }
+});
 $('#quote-btn').on('click', function () {
     if (selectedText) {
         $Q.val("# 引用内容： " + selectedText + "\n\n ---------------------------------------------------------------------- \n\n");
@@ -867,6 +1474,10 @@ connection.on('ReceiveMessage', function (message) {
 });
 //发送消息
 function sendMsg(retryCount = 3) {
+    if (!currentPdf) {
+        balert("请先上传PDF文件", "warning", false, 2000, "center");
+        return;
+    }
     var msg = $("#Q").val().trim();
     if (msg == "") {
         balert("请输入问题", "warning", false, 2000);

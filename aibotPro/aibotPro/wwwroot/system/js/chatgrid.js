@@ -51,7 +51,7 @@ connection.onreconnected((connectionId) => {
 });
 var sysmsg = "";
 var jishuqi = 0;
-var thisAiModel = 'gpt-4o-mini';
+var thisAiModel = 'gpt-4.1-nano-openai';
 connection.on('ReceiveMessage', function (message) {
     //console.log(message);
     if (!message.isfinish) {

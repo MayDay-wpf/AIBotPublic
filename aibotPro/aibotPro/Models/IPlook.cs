@@ -6,18 +6,20 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Table("IPlook")]
+public partial class IPlook
 {
-    [Table("IPlook")]
-    public partial class IPlook
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string IPv4 { get; set; }
-        [StringLength(50)]
-        public string Address { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? LookTime { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string IPv4 { get; set; }
+
+    [StringLength(50)]
+    public string Address { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? LookTime { get; set; }
 }

@@ -5,7 +5,7 @@ using aibotPro.Models;
 using JavaScriptEngineSwitcher.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using OpenAI.ObjectModels.RequestModels;
+using Betalgo.Ranul.OpenAI.ObjectModels.RequestModels;
 using System.Data;
 using JavaScriptEngineSwitcher.Extensions.MsDependencyInjection;
 using JavaScriptEngineSwitcher.ChakraCore;
@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.SignalR;
 using System.Collections.Generic;
 using NuGet.Protocol.Plugins;
 using System.Runtime.CompilerServices;
+using aibotPro.ChatService;
 
 namespace aibotPro.Service
 {
@@ -520,7 +521,7 @@ namespace aibotPro.Service
                 for (int i = 0; i < googleSearch.Count; i++)
                 {
                     searchResult +=
-                        $"# {i + 1}:标题：{googleSearch[i].Title}\n # 链接地址：{googleSearch[i].Link}\n # 摘要：{googleSearch[i].Snippet}；\n\n";
+                        $"# {i + 1}:标题：{googleSearch[i].Title}\n # 链接地址：{googleSearch[i].Url}\n # 摘要：{googleSearch[i].Snippet}；\n\n";
                 }
 
                 pluginResDto.result =

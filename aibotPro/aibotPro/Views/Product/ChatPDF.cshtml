@@ -2,8 +2,8 @@
     ViewData["Title"] = "沉浸式PDF（ChatPDF）";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-<link href="~/system/css/chatpdf.css?v1.0.1" rel="stylesheet" />
-<link href="~/system/css/chat.css?v3.5" rel="stylesheet" />
+<link href="~/system/css/chatpdf.css?v1.0.3" rel="stylesheet"/>
+<link href="~/system/css/chat.css?v3.5" rel="stylesheet"/>
 <script src="~/system/js/markdown-it.min.js"></script>
 <script src="~/system/js/tex-chtml.js"></script>
 <div class="header">
@@ -15,16 +15,19 @@
             <i class="fas fa-arrow-left"></i>
         </a>
         <div class="dropdown" style="text-align:center;width:auto;float:left" data-toggle="tooltip">
-            <a href="#" class="tx-14 tx-color-01 mg-b-0 mg-l-10" id="chatDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <a href="#" class="tx-14 tx-color-01 mg-b-0 mg-l-10" id="chatDropdown" data-toggle="dropdown"
+               aria-haspopup="true" aria-expanded="false">
                 <span id="firstModel">---</span>
                 <i data-feather="chevron-down" style="width:20px;"></i>
             </a>
-            <div class="dropdown-menu dropdown-menu-left" aria-labelledby="chatDropdown" style="max-height: 505px;overflow-y:scroll;overflow-x:hidden;" id="AIModel">
+            <div class="dropdown-menu dropdown-menu-left" aria-labelledby="chatDropdown"
+                 style="max-height: 505px;overflow-y:scroll;overflow-x:hidden;" id="AIModel">
                 <div id="searchIcon" style="cursor:pointer;margin:5px;color:gray;">
                     <i data-feather="search" style="width: 20px;"></i>
                     <span>点击搜索,下方拖动排序</span>
                 </div>
-                <input type="text" id="modelSearch" class="form-control searchModel" placeholder="搜索模型..." onkeyup="filterModels()" style="display:none;">
+                <input type="text" id="modelSearch" class="form-control searchModel" placeholder="搜索模型..."
+                       onkeyup="filterModels()" style="display:none;">
                 <div id="modelList"></div>
             </div>
         </div>
@@ -60,18 +63,40 @@
         </div>
         <div class="row h-100">
             <div class="col-md-6 h-100">
-                <div id="pdf-viewer">
-                    <div class="pdf-placeholder">
-                        <div>
-                            <i class="fas fa-file-pdf"></i>
-                            <br>
-                            PDF显示区域
+                <div class="pdf-container d-flex">
+                    <div id="pdf-thumbnails" class="pdf-thumbnails">
+                        <!-- 缩略图将在这里动态生成 -->
+                    </div>
+                    <div id="pdf-viewer" class="flex-grow-1">
+                        @* <button id="toggle-thumbnails" class="btn btn-sm btn-light toggle-thumbnails">
+                            <i class="fas fa-chevron-left"></i>
+                        </button> *@
+                        <div class="pdf-placeholder">
+                            <div>
+                                <i class="fas fa-file-pdf"></i>
+                                <br>
+                                PDF显示区域
+                            </div>
                         </div>
+                    </div>
+                    <div class="pdf-zoom-controls">
+                        <button id="zoom-in" class="btn btn-sm btn-light" title="放大">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                        <span id="zoom-level">100%</span>
+                        <button id="zoom-out" class="btn btn-sm btn-light" title="缩小">
+                            <i class="fas fa-search-minus"></i>
+                        </button>
+                        <button id="zoom-reset" class="btn btn-sm btn-light" title="重置缩放">
+                            <i class="fas fa-undo"></i>
+                        </button>
                     </div>
                 </div>
                 <div class="selection-tools">
-                    <button class="btn btn-sm btn-primary" id="quote-btn"><i class="fas fa-quote-right"></i> 引用</button>
-                    <button class="btn btn-sm btn-secondary" id="translate-btn"><i class="fas fa-language"></i> 翻译</button>
+                    <button class="btn btn-sm btn-primary" id="quote-btn"><i class="fas fa-quote-right"></i> 引用
+                    </button>
+                    <button class="btn btn-sm btn-secondary" id="translate-btn"><i class="fas fa-language"></i> 翻译
+                    </button>
                     <div id="translate-options" class="mt-2" style="display: none;">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1 mr-2">
@@ -125,8 +150,10 @@
             <div class="col-md-6 h-100 d-flex flex-column">
                 <div id="suggested-questions" class="mb-3">
                     <div class="mg-b-10">
-                        <a href="javascript:void(0)" onclick="changeQuestion()"><i class="fas fa-sync-alt"></i> 换一批</a>
-                        <a href="javascript:void(0)" class="text-danger mg-l-10" onclick="$('#suggested-questions').hide()"><i class="fas fa-times"></i> 关闭</a>
+                        <a href="javascript:void(0)" onclick="changeQuestion()"><i class="fas fa-sync-alt"></i>
+                            换一批</a>
+                        <a href="javascript:void(0)" class="text-danger mg-l-10"
+                           onclick="$('#suggested-questions').hide()"><i class="fas fa-times"></i> 关闭</a>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-2">
@@ -170,7 +197,8 @@
                             <span class="image-upload-count" id="imageCount">0</span>
                         </div>
                         <div class="flex-grow-1 mr-2">
-                            <textarea id="Q" class="form-control" rows="1" placeholder="输入您的问题,Ctrl+Enter 或 Shift+Enter 换行,Enter发送"></textarea>
+                            <textarea id="Q" class="form-control" rows="1"
+                                      placeholder="输入您的问题,Ctrl+Enter 或 Shift+Enter 换行,Enter发送"></textarea>
                         </div>
                         <div>
                             <button id="send-button" class="btn btn-primary">
@@ -187,7 +215,7 @@
 <script src="~/system/js/pdfjs/pdf.min.js"></script>
 <script src="~/system/js/signalr.min.js"></script>
 <script src="~/system/js/marked.min.js"></script>
-<link href="~/system/css/atom-one-dark.min.css?v1" rel="stylesheet" />
+<link href="~/system/css/atom-one-dark.min.css?v1" rel="stylesheet"/>
 <script src="~/system/js/highlight.min.js"></script>
 <script src="~/system/js/dart.js"></script>
-<script src="~/system/js/chatpdf.js?v1.0.2"></script>
+<script src="~/system/js/chatpdf.js?v1.0.4"></script>

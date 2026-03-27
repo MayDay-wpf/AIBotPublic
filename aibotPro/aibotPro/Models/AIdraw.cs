@@ -6,20 +6,23 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Table("AIdraw")]
+public partial class AIdraw
 {
-    [Table("AIdraw")]
-    public partial class AIdraw
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string ModelName { get; set; }
-        [StringLength(100)]
-        public string BaseUrl { get; set; }
-        [StringLength(100)]
-        public string ApiKey { get; set; }
-        [StringLength(50)]
-        public string Channel { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string ModelName { get; set; }
+
+    [StringLength(100)]
+    public string BaseUrl { get; set; }
+
+    [StringLength(100)]
+    public string ApiKey { get; set; }
+
+    [StringLength(50)]
+    public string Channel { get; set; }
 }

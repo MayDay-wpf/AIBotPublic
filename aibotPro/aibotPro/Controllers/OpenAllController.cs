@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System.Threading;
-using static OpenAI.ObjectModels.SharedModels.IOpenAiModels;
+using static Betalgo.Ranul.OpenAI.ObjectModels.SharedModels.IOpenAIModels;
 
 namespace aibotPro.Controllers
 {
@@ -21,7 +21,10 @@ namespace aibotPro.Controllers
         private readonly ISystemService _systemService;
         private readonly IRedisService _redisService;
         private readonly IUsersService _usersService;
-        public OpenAllController(IAdminsService adminsService, JwtTokenManager jwtTokenManager, AIBotProContext context, IFinanceService financeService, ISystemService systemService, IRedisService redisService, IUsersService usersService)
+
+        public OpenAllController(IAdminsService adminsService, JwtTokenManager jwtTokenManager, AIBotProContext context,
+            IFinanceService financeService, ISystemService systemService, IRedisService redisService,
+            IUsersService usersService)
         {
             _adminsService = adminsService;
             _jwtTokenManager = jwtTokenManager;
@@ -31,15 +34,18 @@ namespace aibotPro.Controllers
             _redisService = redisService;
             _usersService = usersService;
         }
+
         private string GetUserFromToken()
         {
             var cookie = Request.Cookies["token"];
             return _jwtTokenManager.ValidateToken(cookie)?.Identity?.Name;
         }
+
         public IActionResult Index()
         {
             return View();
         }
+
         public IActionResult GetVisitor()
         {
             var username = GetUserFromToken();
@@ -47,8 +53,10 @@ namespace aibotPro.Controllers
             {
                 return RedirectToAction("Login", "Users");
             }
+
             return View();
         }
+
         public IActionResult Consumption()
         {
             var username = GetUserFromToken();
@@ -56,8 +64,10 @@ namespace aibotPro.Controllers
             {
                 return RedirectToAction("Login", "Users");
             }
+
             return View();
         }
+
         public IActionResult UsersList()
         {
             var username = GetUserFromToken();
@@ -65,8 +75,10 @@ namespace aibotPro.Controllers
             {
                 return RedirectToAction("Login", "Users");
             }
+
             return View();
         }
+
         public IActionResult VipList()
         {
             var username = GetUserFromToken();
@@ -74,8 +86,10 @@ namespace aibotPro.Controllers
             {
                 return RedirectToAction("Login", "Users");
             }
+
             return View();
         }
+
         public IActionResult BlackList()
         {
             var username = GetUserFromToken();
@@ -83,8 +97,10 @@ namespace aibotPro.Controllers
             {
                 return RedirectToAction("Login", "Users");
             }
+
             return View();
         }
+
         public IActionResult OrderList()
         {
             var username = GetUserFromToken();
@@ -92,8 +108,10 @@ namespace aibotPro.Controllers
             {
                 return RedirectToAction("Login", "Users");
             }
+
             return View();
         }
+
         public IActionResult ErrBillingList()
         {
             var username = GetUserFromToken();
@@ -101,8 +119,10 @@ namespace aibotPro.Controllers
             {
                 return RedirectToAction("Login", "Users");
             }
+
             return View();
         }
+
         public IActionResult Payment()
         {
             var username = GetUserFromToken();
@@ -110,8 +130,10 @@ namespace aibotPro.Controllers
             {
                 return RedirectToAction("Login", "Users");
             }
+
             return View();
         }
+
         public IActionResult AiChatModelSetting()
         {
             var username = GetUserFromToken();
@@ -119,8 +141,21 @@ namespace aibotPro.Controllers
             {
                 return RedirectToAction("Login", "Users");
             }
+
             return View();
         }
+
+        public IActionResult VibeCodingModelSetting()
+        {
+            var username = GetUserFromToken();
+            if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
+            {
+                return RedirectToAction("Login", "Users");
+            }
+
+            return View();
+        }
+
         public IActionResult AiDrawModelSetting()
         {
             var username = GetUserFromToken();
@@ -128,8 +163,10 @@ namespace aibotPro.Controllers
             {
                 return RedirectToAction("Login", "Users");
             }
+
             return View();
         }
+
         public IActionResult WorkShopModelSetting()
         {
             var username = GetUserFromToken();
@@ -137,8 +174,10 @@ namespace aibotPro.Controllers
             {
                 return RedirectToAction("Login", "Users");
             }
+
             return View();
         }
+
         public IActionResult ModelPriceSetting()
         {
             var username = GetUserFromToken();
@@ -146,8 +185,10 @@ namespace aibotPro.Controllers
             {
                 return RedirectToAction("Login", "Users");
             }
+
             return View();
         }
+
         public IActionResult SystemConfig()
         {
             var username = GetUserFromToken();
@@ -155,8 +196,10 @@ namespace aibotPro.Controllers
             {
                 return RedirectToAction("Login", "Users");
             }
+
             return View();
         }
+
         public IActionResult AdminSetting()
         {
             var username = GetUserFromToken();
@@ -164,8 +207,10 @@ namespace aibotPro.Controllers
             {
                 return RedirectToAction("Login", "Users");
             }
+
             return View();
         }
+
         public IActionResult SystemLog()
         {
             var username = GetUserFromToken();
@@ -173,8 +218,10 @@ namespace aibotPro.Controllers
             {
                 return RedirectToAction("Login", "Users");
             }
+
             return View();
         }
+
         public IActionResult SystemNotice()
         {
             var username = GetUserFromToken();
@@ -182,8 +229,10 @@ namespace aibotPro.Controllers
             {
                 return RedirectToAction("Login", "Users");
             }
+
             return View();
         }
+
         public IActionResult MailNotice()
         {
             var username = GetUserFromToken();
@@ -191,8 +240,10 @@ namespace aibotPro.Controllers
             {
                 return RedirectToAction("Login", "Users");
             }
+
             return View();
         }
+
         public IActionResult AssistantSetting()
         {
             var username = GetUserFromToken();
@@ -200,8 +251,10 @@ namespace aibotPro.Controllers
             {
                 return RedirectToAction("Login", "Users");
             }
+
             return View();
         }
+
         public IActionResult Grounding()
         {
             var username = GetUserFromToken();
@@ -209,8 +262,10 @@ namespace aibotPro.Controllers
             {
                 return RedirectToAction("Login", "Users");
             }
+
             return View();
         }
+
         public IActionResult Goods()
         {
             var username = GetUserFromToken();
@@ -218,8 +273,10 @@ namespace aibotPro.Controllers
             {
                 return RedirectToAction("Login", "Users");
             }
+
             return View();
         }
+
         public IActionResult Limit()
         {
             var username = GetUserFromToken();
@@ -227,6 +284,18 @@ namespace aibotPro.Controllers
             {
                 return RedirectToAction("Login", "Users");
             }
+
+            return View();
+        }
+
+        public IActionResult DeepResearchModelSetting()
+        {
+            var username = GetUserFromToken();
+            if (string.IsNullOrEmpty(username) || !_adminsService.IsAdmin(username))
+            {
+                return RedirectToAction("Login", "Users");
+            }
+
             return View();
         }
 
@@ -238,6 +307,7 @@ namespace aibotPro.Controllers
             var viewData = _context.IPlook_Stats_Views.AsNoTracking().ToList();
             return Json(viewData);
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> GetIps(int page, int page_size)
@@ -252,6 +322,7 @@ namespace aibotPro.Controllers
                 total = total
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> GetUsedData(DateTime startTime, DateTime endTime)
@@ -263,8 +334,8 @@ namespace aibotPro.Controllers
                 msg = "获取成功",
                 data = result
             });
-
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> GetLogs(int page, int page_size, string account)
@@ -279,6 +350,7 @@ namespace aibotPro.Controllers
                 total = total
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> GetUsersList(int page, int page_size, string name)
@@ -293,6 +365,7 @@ namespace aibotPro.Controllers
                 total = total
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> GetBlackList(int page, int page_size, string name)
@@ -307,6 +380,7 @@ namespace aibotPro.Controllers
                 total = total
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> GetVipList(int page, int page_size, string name)
@@ -321,6 +395,7 @@ namespace aibotPro.Controllers
                 total = total
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult EditUserEdit(int id, int type)
@@ -334,6 +409,7 @@ namespace aibotPro.Controllers
                     msg = "用户不存在"
                 });
             }
+
             user.IsBan = type;
             _context.Users.Update(user);
             var apikey = _context.APIKEYs.FirstOrDefault(x => x.Account == user.Account);
@@ -341,6 +417,7 @@ namespace aibotPro.Controllers
             {
                 _context.APIKEYs.Remove(apikey);
             }
+
             _context.SaveChanges();
             return Json(new
             {
@@ -348,6 +425,7 @@ namespace aibotPro.Controllers
                 msg = "操作成功"
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> Recharge(string account, decimal mcoin)
@@ -371,6 +449,7 @@ namespace aibotPro.Controllers
                 });
             }
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> RechargeVip(string account, string viptype)
@@ -378,7 +457,8 @@ namespace aibotPro.Controllers
             var user = _context.Users.FirstOrDefault(x => x.Account == account);
             if (viptype == "VIP|20")
             {
-                var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == account && x.VipType == "VIP|20");
+                var vipinfo = _context.VIPs.AsNoTracking()
+                    .FirstOrDefault(x => x.Account == account && x.VipType == "VIP|20");
                 if (vipinfo != null && vipinfo.VipType == "VIP|20")
                 {
                     if (vipinfo.EndTime > DateTime.Now)
@@ -389,6 +469,7 @@ namespace aibotPro.Controllers
                     {
                         vipinfo.EndTime = DateTime.Now.AddDays(30);
                     }
+
                     _context.VIPs.Update(vipinfo);
                 }
                 else
@@ -401,12 +482,14 @@ namespace aibotPro.Controllers
                     vip.CreateTime = DateTime.Now;
                     _context.VIPs.Add(vip);
                 }
+
                 _context.SaveChanges();
                 await _systemService.WriteLog("管理员充值VIP|20", Dtos.LogLevel.Info, account);
             }
             else if (viptype == "VIP|50")
             {
-                var vipinfo = _context.VIPs.AsNoTracking().FirstOrDefault(x => x.Account == account && x.VipType == "VIP|50");
+                var vipinfo = _context.VIPs.AsNoTracking()
+                    .FirstOrDefault(x => x.Account == account && x.VipType == "VIP|50");
                 if (vipinfo != null && vipinfo.VipType == "VIP|50")
                 {
                     if (vipinfo.EndTime > DateTime.Now)
@@ -417,6 +500,7 @@ namespace aibotPro.Controllers
                     {
                         vipinfo.EndTime = DateTime.Now.AddDays(30);
                     }
+
                     _context.VIPs.Update(vipinfo);
                 }
                 else
@@ -429,6 +513,7 @@ namespace aibotPro.Controllers
                     vip.CreateTime = DateTime.Now;
                     _context.VIPs.Add(vip);
                 }
+
                 //user.Mcoin = user.Mcoin + 100;
                 _context.Users.Update(user);
                 _context.SaveChanges();
@@ -442,11 +527,13 @@ namespace aibotPro.Controllers
                     msg = "VIP类型错误"
                 });
             }
+
             return Json(new
             {
                 success = true
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> CreateAccount(string account, string password)
@@ -485,6 +572,7 @@ namespace aibotPro.Controllers
                 total = total
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> GetErrorBilling(int page, int page_size, string account)
@@ -499,6 +587,7 @@ namespace aibotPro.Controllers
                 total = total
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult HandleErrorBilling(int id, int type, string reply)
@@ -510,6 +599,7 @@ namespace aibotPro.Controllers
                 msg = errMsg
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult GetLogInfo(int logId)
@@ -521,9 +611,11 @@ namespace aibotPro.Controllers
                 data = data
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
-        public async Task<IActionResult> SavePayment(int shopId, string apiKey, string submitUrl, string checkPayUrl, string notifyUrl, string returnUrl)
+        public async Task<IActionResult> SavePayment(int shopId, string apiKey, string submitUrl, string checkPayUrl,
+            string notifyUrl, string returnUrl)
         {
             //判断是否已经配置过支付
             var easypaysetting = _financeService.GetEasyPaySetting();
@@ -549,6 +641,7 @@ namespace aibotPro.Controllers
                 easypaysetting.SubmitUrl = submitUrl;
                 _context.EasyPaySettings.Update(easypaysetting);
             }
+
             _context.SaveChanges();
             //写入缓存
             await _redisService.SetAsync("PayInfo", JsonConvert.SerializeObject(easypaysetting));
@@ -558,6 +651,7 @@ namespace aibotPro.Controllers
                 msg = "保存成功"
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult GetPayInfo()
@@ -570,6 +664,7 @@ namespace aibotPro.Controllers
                 data = payinfo
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> SaveAiChatSetting(string aImodel)
@@ -593,6 +688,7 @@ namespace aibotPro.Controllers
                 });
             }
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult GetChatSetting()
@@ -606,6 +702,7 @@ namespace aibotPro.Controllers
                 data = chatSetting
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult GetDrawSetting()
@@ -618,6 +715,7 @@ namespace aibotPro.Controllers
                 data = drawSetting
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult SaveDrawSetting(string type, string baseUrl, string apiKey, string channel)
@@ -640,6 +738,7 @@ namespace aibotPro.Controllers
                 drawSetting.Channel = channel;
                 _context.AIdraws.Update(drawSetting);
             }
+
             _context.SaveChanges();
             return Json(new
             {
@@ -647,6 +746,7 @@ namespace aibotPro.Controllers
                 msg = "保存成功"
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult GetWorkShopSetting()
@@ -659,6 +759,7 @@ namespace aibotPro.Controllers
                 data = workShopSetting
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> SaveWorkShopSetting([FromForm] List<WorkShopAIModel> workShopAIModel)
@@ -681,6 +782,7 @@ namespace aibotPro.Controllers
                 });
             }
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult GetAssistantSetting()
@@ -693,6 +795,7 @@ namespace aibotPro.Controllers
                 data = workShopSetting
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> SaveAssistantSetting([FromForm] List<AssistantModelPrice> assistantModelPrices)
@@ -715,6 +818,7 @@ namespace aibotPro.Controllers
                 });
             }
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult GetModelPrice()
@@ -727,6 +831,7 @@ namespace aibotPro.Controllers
                 data = modelPrice
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> SaveModelPrice(string modelPrice)
@@ -750,6 +855,7 @@ namespace aibotPro.Controllers
                 });
             }
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult GetSystemConfig()
@@ -762,6 +868,7 @@ namespace aibotPro.Controllers
                 data = systemConfig
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> SaveSystemConfig([FromForm] List<SystemCfg> systemCfg)
@@ -784,6 +891,7 @@ namespace aibotPro.Controllers
                 });
             }
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> GetSystemLogs(int page, int page_size)
@@ -798,6 +906,7 @@ namespace aibotPro.Controllers
                 total = total
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> GetAdminList(int page, int page_size)
@@ -812,6 +921,7 @@ namespace aibotPro.Controllers
                 total = total
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult AddAdmin(string account)
@@ -825,6 +935,7 @@ namespace aibotPro.Controllers
                     msg = "用户不存在"
                 });
             }
+
             var admin = _context.Admins.Where(x => x.Account == account).FirstOrDefault();
             if (admin != null)
             {
@@ -834,6 +945,7 @@ namespace aibotPro.Controllers
                     msg = "用户已经是管理员"
                 });
             }
+
             Admin newAdmin = new Admin();
             newAdmin.Account = account;
             _context.Admins.Add(newAdmin);
@@ -844,6 +956,7 @@ namespace aibotPro.Controllers
                 msg = "添加成功"
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public async Task<IActionResult> SendMail(string tomail, string mailtitle, string mailcontent)
@@ -866,6 +979,7 @@ namespace aibotPro.Controllers
                 });
             }
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult SendSystemNotice(int id, string title, string content)
@@ -940,6 +1054,7 @@ namespace aibotPro.Controllers
                 string card = _systemService.ConvertToMD5(Guid.NewGuid().ToString(), 16, true);
                 cards.Add(card);
             }
+
             //保存到数据库
             foreach (var card in cards)
             {
@@ -953,6 +1068,7 @@ namespace aibotPro.Controllers
                 newCard.Account = account;
                 _context.Cards.Add(newCard);
             }
+
             _context.SaveChanges();
             return Json(new
             {
@@ -961,6 +1077,7 @@ namespace aibotPro.Controllers
                 data = cards
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult DeleteAdmin(int id)
@@ -974,6 +1091,7 @@ namespace aibotPro.Controllers
                     msg = "管理员不存在"
                 });
             }
+
             _context.Admins.Remove(admin);
             _context.SaveChanges();
             return Json(new
@@ -982,6 +1100,7 @@ namespace aibotPro.Controllers
                 msg = "删除成功",
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult DeleteVip(string account)
@@ -995,6 +1114,7 @@ namespace aibotPro.Controllers
                     msg = "VIP不存在"
                 });
             }
+
             _context.VIPs.Remove(vip);
             _context.SaveChanges();
             return Json(new
@@ -1003,6 +1123,7 @@ namespace aibotPro.Controllers
                 msg = "删除成功",
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult ReleaseGood([FromForm] GoodReleaseDto model)
@@ -1018,13 +1139,17 @@ namespace aibotPro.Controllers
                 return Json(new { success = false, msg = ex.Message });
             }
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult UploadGoodImage([FromForm] IFormFile file)
         {
             //保存图片
-            string path = Path.Combine("wwwroot/files/goodsimages", $"{DateTime.Now.ToString("yyyyMMdd")}");   //$"wwwroot\\files\\pluginavatar\\{DateTime.Now.ToString("yyyyMMdd")}";
-            string username = _jwtTokenManager.ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            string path =
+                Path.Combine("wwwroot/files/goodsimages",
+                    $"{DateTime.Now.ToString("yyyyMMdd")}"); //$"wwwroot\\files\\pluginavatar\\{DateTime.Now.ToString("yyyyMMdd")}";
+            string username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
             if (string.IsNullOrEmpty(username))
             {
                 return Json(new
@@ -1033,6 +1158,7 @@ namespace aibotPro.Controllers
                     msg = "账号异常"
                 });
             }
+
             string fileName = _systemService.SaveFiles(path, file, username);
             //返回文件名
             return Json(new
@@ -1041,6 +1167,7 @@ namespace aibotPro.Controllers
                 filePath = fileName
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult GetGoods(int pageIndex, int pageSize, string name, string onShelves)
@@ -1051,6 +1178,7 @@ namespace aibotPro.Controllers
             var data = _financeService.GetGoods(name, pageIndex, pageSize, OnShelves, out int total);
             return Json(new { success = true, data = data, total = total });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult GetGood(string goodCode)
@@ -1058,6 +1186,7 @@ namespace aibotPro.Controllers
             var data = _financeService.GetGood(goodCode);
             return Json(new { success = true, data = data });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult DeleteGood(string goodCode)
@@ -1065,6 +1194,7 @@ namespace aibotPro.Controllers
             _context.Goods.Remove(_context.Goods.FirstOrDefault(x => x.GoodCode == goodCode));
             return _context.SaveChanges() > 0 ? Json(new { success = true }) : Json(new { success = false });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult PutonOrOffShelves(string goodCode, bool shelves)
@@ -1074,10 +1204,12 @@ namespace aibotPro.Controllers
             {
                 return Json(new { success = false, msg = "商品不存在" });
             }
+
             good.OnShelves = shelves;
             _context.Goods.Update(good);
             return _context.SaveChanges() > 0 ? Json(new { success = true }) : Json(new { success = false });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult SaveLimit(string account, List<string> selectedModels, int limitValue)
@@ -1091,6 +1223,7 @@ namespace aibotPro.Controllers
                     msg = "该用户已存在限制，请先删除该用户再添加限制。"
                 });
             }
+
             var usersLimit = new UsersLimit
             {
                 Account = account,
@@ -1105,6 +1238,7 @@ namespace aibotPro.Controllers
                 success = _context.SaveChanges() > 0
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult EnableUsersLimits(int Id, bool enable)
@@ -1115,6 +1249,7 @@ namespace aibotPro.Controllers
                 success = usersLimit
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult GetUsersLimits(int page, int size, string account = "")
@@ -1126,6 +1261,7 @@ namespace aibotPro.Controllers
                 total = total
             });
         }
+
         [Authorize(Policy = "AdminOnly")]
         [HttpPost]
         public IActionResult DeleteLimit(int id)
@@ -1136,10 +1272,147 @@ namespace aibotPro.Controllers
                 _context.UsersLimits.Remove(userLimit);
                 _context.SaveChanges();
             }
+
             return Json(new
             {
                 success = true
             });
         }
-    }
+
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public IActionResult CreateTokenPackages(string account, int tokenTotal, List<string> selectedModels,
+            DateTime? expirationTime, int count)
+        {
+            if (string.IsNullOrEmpty(account) || tokenTotal <= 0 || count <= 0)
+            {
+                return Json(new
+                {
+                    success = false,
+                    msg = "参数错误"
+                });
+            }
+
+            // 设置默认过期时间为30天后（如果未提供）
+            if (!expirationTime.HasValue)
+            {
+                expirationTime = DateTime.Now.AddDays(30);
+            }
+
+            // 将选中的模型转换为逗号分隔的字符串
+            string modelList = selectedModels != null && selectedModels.Count > 0
+                ? string.Join(",", selectedModels)
+                : "";
+
+            // 生成指定数量的Token包码
+            List<string> codes = new List<string>();
+            for (int i = 0; i < count; i++)
+            {
+                string code = _systemService.ConvertToMD5(Guid.NewGuid().ToString(), 16, true);
+                codes.Add(code);
+
+                // 创建TokenPackage记录
+                var tokenPackage = new TokenPackage
+                {
+                    UseAccount = "", // 未使用
+                    TokenTotal = tokenTotal,
+                    TokenUsage = 0, // 初始化使用量为0
+                    Code = code,
+                    ModelList = modelList,
+                    ExpirationTime = expirationTime,
+                    CreateTime = DateTime.Now
+                };
+
+                _context.TokenPackages.Add(tokenPackage);
+            }
+
+            _context.SaveChanges();
+            _systemService.WriteLogUnAsync($"生成Token包码成功:{string.Join(',', codes)}", Dtos.LogLevel.Info, account);
+
+            return Json(new
+            {
+                success = true,
+                msg = "生成成功",
+                data = codes
+            });
+        }
+
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public async Task<IActionResult> SaveVibeCodingModelSetting(string vibeCodingModel)
+        {
+            List<VibeCodingModel> vibeCodingModels =
+                JsonConvert.DeserializeObject<List<VibeCodingModel>>(vibeCodingModel);
+            bool result = await _adminsService.SaveVibeCodingModelSetting(vibeCodingModels);
+            if (result)
+            {
+                return Json(new
+                {
+                    success = true,
+                    msg = "保存成功"
+                });
+            }
+            else
+            {
+                return Json(new
+                {
+                    success = false,
+                    msg = "保存失败"
+                });
+            }
+        }
+
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public IActionResult GetVibeCodingModelSetting()
+        {
+            var vibeCodingModels = _context.VibeCodingModels.AsNoTracking().ToList();
+            vibeCodingModels.Sort((x, y) => x.Seq.GetValueOrDefault().CompareTo(y.Seq));
+            return Json(new
+            {
+                success = true,
+                msg = "获取成功",
+                data = vibeCodingModels
+            });
+        }
+
+        [Authorize(Policy = "AdminOnly")]
+        [HttpPost]
+        public async Task<IActionResult> SaveDeepResearchModelSetting(string deepResearchModels)
+        {
+            List<DeepResearchModel> deepResearchModel =
+                JsonConvert.DeserializeObject<List<DeepResearchModel>>(deepResearchModels);
+            bool result = await _adminsService.SaveDeepResearchModelSetting(deepResearchModel);
+            if (result)
+            {
+                return Json(new
+                {
+                    success = true,
+                    msg = "保存成功"
+                });
+            }
+            else
+            {
+                return Json(new
+                {
+                    success = false,
+                    msg = "保存失败"
+                });
+            }
+        }
+
+        [Authorize(Policy = "AdminOnly")] 
+        [HttpPost]
+        public IActionResult GetDeepResearchModelSetting()
+        { 
+            var deepResearchModels = _context.DeepResearchModels.AsNoTracking().ToList();
+            deepResearchModels.Sort((x, y) => x.Seq.GetValueOrDefault().CompareTo(y.Seq));
+            return Json(new
+            {
+                success = true,
+                msg = "获取成功",
+                data = deepResearchModels
+            });
+        }
+    } 
 }

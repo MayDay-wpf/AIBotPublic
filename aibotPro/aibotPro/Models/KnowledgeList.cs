@@ -6,18 +6,20 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Table("KnowledgeList")]
+public partial class KnowledgeList
 {
-    [Table("KnowledgeList")]
-    public partial class KnowledgeList
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string FileCode { get; set; }
-        [StringLength(100)]
-        public string VectorId { get; set; }
-        [StringLength(50)]
-        public string Account { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string FileCode { get; set; }
+
+    [StringLength(100)]
+    public string VectorId { get; set; }
+
+    [StringLength(50)]
+    public string Account { get; set; }
 }

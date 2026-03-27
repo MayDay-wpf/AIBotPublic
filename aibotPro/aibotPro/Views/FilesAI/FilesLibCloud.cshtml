@@ -1,0 +1,146 @@
+﻿@{
+    ViewData["Title"] = "在线网盘（Cloud）";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link href="~/system/css/filesystem.css" rel="stylesheet" />
+<!-- 引入jstree和其他必要的库 -->
+<link href="~/system/js/filesystem/style.min.css" rel="stylesheet" />
+
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu">
+            </i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left">
+            </i>
+        </a>
+        <button type="button" class="btn btn-info clearRole" style="margin-left:10px;color:white"
+                onclick="uploadFiles()">
+            <i data-feather="file"></i> 文件上传
+        </button>
+        <button type="button" class="btn btn-outline-primary ml-2" onclick="createFolder()">
+            <i data-feather="folder-plus"></i> 新建文件夹
+        </button>
+        <div class="btn-group ml-2">
+            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false">
+                <i data-feather="more-horizontal"></i> 更多操作
+            </button>
+            <div class="dropdown-menu">
+                <a class="dropdown-item" href="#" onclick="refreshFiles()"><i data-feather="refresh-cw"></i> 刷新</a>
+                <a class="dropdown-item" href="#" onclick="deleteSelectedFiles()">
+                    <i data-feather="trash-2"></i>
+                    删除选中文件
+                </a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="#" onclick="deleteFolder()"><i data-feather="folder-minus"></i> 删除选中文件夹</a>
+            </div>
+        </div>
+    </div>
+    <div class="header-right">
+        <div class="input-group search-box">
+            <input type="text" class="form-control" placeholder="搜索文件..." id="searchFiles">
+            <div class="input-group-append">
+                <button class="btn btn-outline-secondary" type="button" onclick="searchFiles()">
+                    <i data-feather="search"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="content-body cloud-container" style="margin-top:30px;">
+    <div class="row">
+        <!-- 左侧文件夹树 -->
+        <div class="col-md-3 folder-tree-container">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">文件夹</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div id="folderTree"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧文件列表 -->
+        <div class="col-md-9 file-list-container">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0">文件列表</h6>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-secondary active" id="viewList">
+                                <i data-feather="list"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="viewGrid">
+                                <i data-feather="grid"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="current-path mb-3">
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="#" onclick="navigateTo('root')">根目录</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">当前文件夹</li>
+                            </ol>
+                        </nav>
+                    </div>
+
+                    <!-- 列表视图 -->
+                    <div class="files-list" id="filesList">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th width="40px"><input type="checkbox" id="selectAll"></th>
+                                    <th>名称</th>
+                                    <th>大小</th>
+                                    <th>修改日期</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="filesListBody">
+                                <!-- 文件将通过JS动态加载 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- 网格视图 (默认隐藏)-->
+                    <div class="files-grid  d-none" id="filesGrid">
+                        <!-- 文件将通过JS动态加载 -->
+                    </div>
+                    <div id="pagination_container" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 新建文件夹模态框 -->
+<div class="modal fade" id="createFolderModal" tabindex="-1" role="dialog" aria-labelledby="createFolderModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createFolderModalLabel">新建文件夹</h5>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="folderName">文件夹名称</label>
+                    <input type="text" class="form-control" id="folderName" placeholder="请输入文件夹名称">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="confirmCreateFolder()">创建</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 引入jstree和其他必要的库 -->
+<script src="~/system/js/filesystem/jstree.min.js"></script>
+<script src="~/system/js/filesystem/fileslibcloud.js"></script>

@@ -6,39 +6,52 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+public partial class SunoRe
 {
-    public partial class SunoRe
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string Account { get; set; }
-        [StringLength(50)]
-        public string TaskId { get; set; }
-        [StringLength(50)]
-        public string SongId { get; set; }
-        [StringLength(500)]
-        public string ImageUrl { get; set; }
-        [StringLength(500)]
-        public string ImageCosKey { get; set; }
-        [StringLength(500)]
-        public string ImageLargeUrl { get; set; }
-        [StringLength(500)]
-        public string ImageLargeCosKey { get; set; }
-        [StringLength(500)]
-        public string AudioUrl { get; set; }
-        [StringLength(500)]
-        public string AudioCosKey { get; set; }
-        [StringLength(500)]
-        public string VideoUrl { get; set; }
-        [StringLength(500)]
-        public string VideoCosKey { get; set; }
-        [StringLength(500)]
-        public string Title { get; set; }
-        [StringLength(3000)]
-        public string Prompt { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? CreateTime { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string Account { get; set; }
+
+    [StringLength(50)]
+    public string TaskId { get; set; }
+
+    [StringLength(50)]
+    public string SongId { get; set; }
+
+    [StringLength(500)]
+    public string ImageUrl { get; set; }
+
+    [StringLength(500)]
+    public string ImageCosKey { get; set; }
+
+    [StringLength(500)]
+    public string ImageLargeUrl { get; set; }
+
+    [StringLength(500)]
+    public string ImageLargeCosKey { get; set; }
+
+    [StringLength(500)]
+    public string AudioUrl { get; set; }
+
+    [StringLength(500)]
+    public string AudioCosKey { get; set; }
+
+    [StringLength(500)]
+    public string VideoUrl { get; set; }
+
+    [StringLength(500)]
+    public string VideoCosKey { get; set; }
+
+    [StringLength(500)]
+    public string Title { get; set; }
+
+    [StringLength(3000)]
+    public string Prompt { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? CreateTime { get; set; }
 }

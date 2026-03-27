@@ -8,11 +8,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
-using OpenAI;
-using OpenAI.Builders;
-using OpenAI.Managers;
-using OpenAI.ObjectModels.RequestModels;
-using OpenAI.ObjectModels.SharedModels;
+using Betalgo.Ranul.OpenAI;
+using Betalgo.Ranul.OpenAI.Builders;
+using Betalgo.Ranul.OpenAI.Managers;
+using Betalgo.Ranul.OpenAI.ObjectModels.RequestModels;
+using Betalgo.Ranul.OpenAI.ObjectModels.SharedModels;
 using TiktokenSharp;
 using LogLevel = aibotPro.Dtos.LogLevel;
 
@@ -98,7 +98,7 @@ public class OpenAPIController : Controller
                 .Where(x => x.Account == username && x.Pfunctionname == Pfunctionname).FirstOrDefault();
             if (result == null)
                 _context.SystemPlugins.Add(new SystemPlugin
-                { Account = username, ApiKey = apikey, Pfunctionname = Pfunctionname });
+                    { Account = username, ApiKey = apikey, Pfunctionname = Pfunctionname });
         }
         else if (type == "remove")
         {
@@ -141,7 +141,26 @@ public class OpenAPIController : Controller
             jsonBody = await reader.ReadToEndAsync();
         }
 
-        var chatSession = JsonConvert.DeserializeObject<ChatSession>(jsonBody);
+        IChatSession chatSession = null;
+        bool isVisionModel = false;
+
+        try
+        {
+            chatSession = JsonConvert.DeserializeObject<ChatSession>(jsonBody);
+        }
+        catch (Exception)
+        {
+            try
+            {
+                chatSession = JsonConvert.DeserializeObject<ChatVisionSession>(jsonBody);
+                isVisionModel = true;
+            }
+            catch (Exception e)
+            {
+                throw new Exception(e.Message);
+            }
+        }
+
         //获取模型关系映射并切换
         var openapiSetting = await _workShop.GetOpenAPIModelSetting(Account);
         if (openapiSetting != null)
@@ -178,35 +197,24 @@ public class OpenAPIController : Controller
             return Ok("模型不存在");
 
         //var useModel = aImodels.Where(x => x.ModelName == chatSession.Model).FirstOrDefault();
-        var openAiOptions = new OpenAiOptions();
+        var OpenAIOptions = new OpenAIOptions();
         if (useModel != null)
         {
-            openAiOptions.BaseDomain = aImodels.Where(x => x.ModelName == chatSession.Model).FirstOrDefault().BaseUrl;
-            openAiOptions.ApiKey = aImodels.Where(x => x.ModelName == chatSession.Model).FirstOrDefault().ApiKey;
+            OpenAIOptions.BaseDomain = aImodels.Where(x => x.ModelName == chatSession.Model).FirstOrDefault().BaseUrl;
+            OpenAIOptions.ApiKey = aImodels.Where(x => x.ModelName == chatSession.Model).FirstOrDefault().ApiKey;
         }
         else
         {
-            openAiOptions.BaseDomain =
+            OpenAIOptions.BaseDomain =
                 defaultAiModels.Where(x => x.ModelName == chatSession.Model).FirstOrDefault().BaseUrl;
-            openAiOptions.ApiKey = defaultAiModels.Where(x => x.ModelName == chatSession.Model).FirstOrDefault().ApiKey;
+            OpenAIOptions.ApiKey = defaultAiModels.Where(x => x.ModelName == chatSession.Model).FirstOrDefault().ApiKey;
             defaultModel = true;
         }
 
-        var openAiService = new OpenAIService(openAiOptions);
+        var openAiService = new OpenAIService(OpenAIOptions);
         //将ChatSession转换为OpenAI的ChatSession
-        var chatMessages = new List<ChatMessage>();
-        var input = string.Empty;
+        (List<ChatMessage> chatMessages, string input) = ProcessMessages(chatSession, usedefaultModel);
         var output = string.Empty;
-        foreach (var item in chatSession.Messages)
-        {
-            if (item.Role == "system")
-                chatMessages.Add(ChatMessage.FromSystem(item.Content));
-            else if (item.Role == "user")
-                chatMessages.Add(ChatMessage.FromUser(item.Content));
-            else if (item.Role == "assistant")
-                chatMessages.Add(ChatMessage.FromAssistant(item.Content));
-            input += item.Content;
-        }
 
         var chatCompletionCreate = new ChatCompletionCreateRequest();
         chatCompletionCreate.Messages = chatMessages;
@@ -295,26 +303,13 @@ public class OpenAPIController : Controller
         }
 
         chatCompletionCreate.Model = chatSession.Model;
-        if (usedefaultModel != null && !string.IsNullOrEmpty(usedefaultModel.AdminPrompt))
-        {
-            var systemMessage = chatSession.Messages.FirstOrDefault(item => item.Role == "system");
-
-            if (systemMessage != null)
-            {
-                systemMessage.Content = usedefaultModel.AdminPrompt + "\n\n" + systemMessage.Content;
-            }
-            else
-            {
-                chatMessages.Insert(0, ChatMessage.FromSystem(usedefaultModel.AdminPrompt));
-            }
-        }
         try
         {
             if (chatSession.Stream)
             {
                 chatCompletionCreate.Stream = true;
                 var pluginResDto = new PluginResDto();
-                var tikToken = TikToken.GetEncoding("cl100k_base");
+                var tikToken = TikToken.GetEncoding("o200k_base");
                 //流式输出
                 var response = Response;
                 response.Headers.Add("Content-Type", "text/event-stream;charset=utf-8");
@@ -323,7 +318,7 @@ public class OpenAPIController : Controller
                 if (channel == "ERNIE")
                 {
                     var pairs = await _openAPIService.CallERNIEAsStream(response,
-                        chatCompletionCreate, openAiOptions, useModel, Account);
+                        chatCompletionCreate, OpenAIOptions, useModel, Account);
                     input += string.Join(", ", pairs.Keys);
                     output += string.Join(", ", pairs.Values);
                 }
@@ -344,12 +339,12 @@ public class OpenAPIController : Controller
             {
                 chatCompletionCreate.Stream = false;
                 var pluginResDto = new PluginResDto();
-                var tikToken = TikToken.GetEncoding("cl100k_base");
+                var tikToken = TikToken.GetEncoding("o200k_base");
                 var completionResult = new ChatCompletionResponseUnStream();
                 if (channel == "ERNIE")
                 {
                     completionResult =
-                        await _openAPIService.CallERNIE(chatCompletionCreate, openAiOptions, useModel, Account);
+                        await _openAPIService.CallERNIE(chatCompletionCreate, OpenAIOptions, useModel, Account);
                     output += completionResult.Choices[0].message.Content;
                 }
                 else
@@ -371,6 +366,104 @@ public class OpenAPIController : Controller
         }
     }
 
+    public static (List<ChatMessage> chatMessages, string input) ProcessMessages(IChatSession chatSession,
+        AImodel usedefaultModel)
+    {
+        var chatMessages = new List<ChatMessage>();
+        var input = string.Empty;
+
+        if (chatSession is ChatSession regularSession)
+        {
+            foreach (var item in regularSession.Messages)
+            {
+                if (item.Role == "system")
+                    chatMessages.Add(ChatMessage.FromSystem(item.Content));
+                else if (item.Role == "user")
+                    chatMessages.Add(ChatMessage.FromUser(item.Content, ""));
+                else if (item.Role == "assistant")
+                    chatMessages.Add(ChatMessage.FromAssistant(item.Content));
+                input += item.Content;
+            }
+
+            if (usedefaultModel != null && !string.IsNullOrEmpty(usedefaultModel.AdminPrompt))
+            {
+                var systemMessage = regularSession.Messages.FirstOrDefault(item => item.Role == "system");
+
+                if (systemMessage != null)
+                {
+                    systemMessage.Content = usedefaultModel.AdminPrompt + "\n\n" + systemMessage.Content;
+                }
+                else
+                {
+                    chatMessages.Insert(0, ChatMessage.FromSystem(usedefaultModel.AdminPrompt));
+                }
+            }
+        }
+        else if (chatSession is ChatVisionSession visionSession)
+        {
+            foreach (var item in visionSession.Messages)
+            {
+                // 需要根据 VisionChatMessage 的结构来处理
+                if (item.role == "system")
+                    chatMessages.Add(ChatMessage.FromSystem(item.content.stringContent));
+                else if (item.role == "user")
+                {
+                    var visionMessageContent = new List<MessageContent>();
+                    foreach (var content in item.content.visionContentList)
+                    {
+                        if (content.text != null)
+                        {
+                            visionMessageContent.Add(new MessageContent
+                            {
+                                Type = "text",
+                                Text = content.text ?? ""
+                            });
+                        }
+
+                        if (content.image_url?.url != null)
+                        {
+                            visionMessageContent.Add(new MessageContent
+                            {
+                                Type = "image_url",
+                                ImageUrl = new MessageImageUrl
+                                {
+                                    Url = content.image_url.url
+                                }
+                            });
+                        }
+                    }
+
+                    chatMessages.Add(ChatMessage.FromUser(visionMessageContent));
+                }
+                else if (item.role == "assistant")
+                    chatMessages.Add(ChatMessage.FromAssistant(item.content.stringContent));
+
+                input += item.content.visionContentList[0].text;
+            }
+
+            if (usedefaultModel != null && !string.IsNullOrEmpty(usedefaultModel.AdminPrompt))
+            {
+                var systemMessage = visionSession.Messages.FirstOrDefault(item => item.role == "system");
+
+                if (systemMessage != null)
+                {
+                    systemMessage.content.stringContent =
+                        usedefaultModel.AdminPrompt + "\n\n" + systemMessage.content.stringContent;
+                }
+                else
+                {
+                    chatMessages.Insert(0, ChatMessage.FromSystem(usedefaultModel.AdminPrompt));
+                }
+            }
+        }
+        else
+        {
+            Console.WriteLine("Unknown chat session type.");
+        }
+
+        return (chatMessages, input);
+    }
+
     [Authorize]
     [HttpPost]
     public async Task<IActionResult> GetOpenAPISetting()
@@ -389,5 +482,59 @@ public class OpenAPIController : Controller
             .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
         var result = await _workShop.SaveOpenAPIModelSetting(username, openAPIModelSettings);
         return Ok(new { success = result });
+    }
+
+    [Authorize(Policy = "APIOnly")]
+    [HttpPost]
+    [HttpGet]
+    [Route("/v1/models")]
+    public async Task<IActionResult> Models()
+    {
+        var aiModels = _systemService.GetAImodel();
+        var workShopModels = _systemService.GetWorkShopAImodel();
+        var modelList = new List<ModelList>();
+        foreach (var item in aiModels)
+        {
+            modelList.Add(new ModelList
+            {
+                id = item.ModelName,
+                model = item.ModelName,
+                @object = "model",
+                created = 1678163938,
+                name = item.ModelName
+            });
+        }
+
+        foreach (var item in workShopModels)
+        {
+            modelList.Add(new ModelList
+            {
+                id = item.ModelName,
+                model = item.ModelName,
+                @object = "model",
+                created = 1678163938,
+                name = item.ModelName
+            });
+        }
+
+        //去重
+        modelList = modelList.Distinct().ToList();
+
+        return Ok(new
+        {
+            code = 200,
+            data = modelList,
+            msg = "Success"
+        });
+    }
+
+    public class ModelList
+    {
+        public string id { get; set; }
+        public string model { get; set; }
+        public string @object { get; set; }
+        public int created { get; set; }
+        public string name { get; set; }
+        public string owned_by { get; set; } = "aibotpro";
     }
 }

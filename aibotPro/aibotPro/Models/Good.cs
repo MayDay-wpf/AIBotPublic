@@ -6,32 +6,43 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+public partial class Good
 {
-    public partial class Good
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string GoodCode { get; set; }
-        [StringLength(500)]
-        public string GoodName { get; set; }
-        [StringLength(1000)]
-        public string GoodInfo { get; set; }
-        [StringLength(500)]
-        public string GoodImage { get; set; }
-        [Column(TypeName = "money")]
-        public decimal? GoodPrice { get; set; }
-        [StringLength(50)]
-        public string GoodPayType { get; set; }
-        public int? GoodStock { get; set; }
-        public int? VIPDays { get; set; }
-        [StringLength(50)]
-        public string VIPType { get; set; }
-        [Column(TypeName = "money")]
-        public decimal? Balance { get; set; }
-        public bool? OnShelves { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? CreateTime { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string GoodCode { get; set; }
+
+    [StringLength(500)]
+    public string GoodName { get; set; }
+
+    [StringLength(1000)]
+    public string GoodInfo { get; set; }
+
+    [StringLength(500)]
+    public string GoodImage { get; set; }
+
+    [Column(TypeName = "money")]
+    public decimal? GoodPrice { get; set; }
+
+    [StringLength(50)]
+    public string GoodPayType { get; set; }
+
+    public int? GoodStock { get; set; }
+
+    public int? VIPDays { get; set; }
+
+    [StringLength(50)]
+    public string VIPType { get; set; }
+
+    [Column(TypeName = "money")]
+    public decimal? Balance { get; set; }
+
+    public bool? OnShelves { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? CreateTime { get; set; }
 }

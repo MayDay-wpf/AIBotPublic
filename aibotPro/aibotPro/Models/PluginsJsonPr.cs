@@ -6,15 +6,16 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Table("PluginsJsonPr")]
+public partial class PluginsJsonPr
 {
-    [Table("PluginsJsonPr")]
-    public partial class PluginsJsonPr
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string PrCode { get; set; }
-        public string JsonContent { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string PrCode { get; set; }
+
+    public string JsonContent { get; set; }
 }

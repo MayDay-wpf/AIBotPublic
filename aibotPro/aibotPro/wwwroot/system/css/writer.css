@@ -379,6 +379,10 @@
     background-image: url('../images/modelsvg/amazon.svg');
 }
 
+.icon-test {
+    background-image: url('../images/modelsvg/test.svg');
+}
+
 #modelSearch {
     width: 0;
     transition: width 0.3s;

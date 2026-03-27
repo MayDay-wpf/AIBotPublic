@@ -23,6 +23,7 @@ function addStLine() {
                  <td><input type="checkbox" class="form-control"></td>
                  <td><input type="number" class="form-control seq-input" placeholder="排序"  /></td>
                  <td><input type="number" class="form-control" placeholder="流延时(ms)"  /></td>
+                 <td><input type="text" class="form-control" placeholder="最低使用余额"  /></td>
                  <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td></tr>`
     $("#AddSt").append(str);
     feather.replace();
@@ -49,6 +50,7 @@ function saveChatSetting() {
         var visionModel = $(row).find("input").eq(4).prop('checked');
         var seq = $(row).find("input").eq(5).val();
         var delay = $(row).find("input").eq(6).val() < 0 ? 0 : $(row).find("input").eq(6).val();
+        var minimumBalance = $(row).find("input").eq(7).val();
         var channel = $(row).find("select").eq(0).val();
         if (!removeSpaces(nickname) || !removeSpaces(name) || !removeSpaces(baseUrl) || !removeSpaces(apiKey)) {
             balert('请将空的输入行删除，或填写完整', 'danger', false, 1500, 'top');
@@ -63,6 +65,7 @@ function saveChatSetting() {
             formData.append(`WorkShopAIModel[${index}].Seq`, seq);
             formData.append(`WorkShopAIModel[${index}].Delay`, delay);
             formData.append(`WorkShopAIModel[${index}].Channel`, channel);
+            formData.append(`WorkShopAIModel[${index}].MinimumBalance`, minimumBalance);
         }
     });
     if (issave) {
@@ -117,6 +120,7 @@ function getChatSetting() {
                                 <td><input type="checkbox" class="form-control" ${checkedAttr}></td>
                                 <td><input type="number" class="form-control seq-input" placeholder="排序" value="${data[i].seq}" /></td>
                                 <td><input type="number" class="form-control" placeholder="流延时(ms)" value="${data[i].delay}" /></td>
+                                <td><input type="text" class="form-control" placeholder="最低使用余额" value="${data[i].minimumBalance}" /></td>
                                 <td><i data-feather="delete" style="color:red;cursor:pointer;" onclick="delLine()"></i></td>
                                </tr>`
                     $("#AddSt").append(str);

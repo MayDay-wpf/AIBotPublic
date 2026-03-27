@@ -32,6 +32,18 @@
     </div>
     <div class="container mt-5 payBox" style="padding: 20px;">
         <div class="mb-3">
+            <div class="alert alert-info" role="alert">
+                <p class="mb-0">
+                    <i class="fas fa-info-circle"></i> 温馨提示：如果充值未到账，请前往 【个人中心】 ->【我的】页面下滑到【订单记录】模块，点击右侧【点击核验】按钮。
+                </p>
+            </div>
+            <div class="alert alert-danger" role="alert">
+                <p class="mb-0">
+                    <i class="fas fa-info-circle"></i> 警告：本站不向“非完全民事行为能力人”提供任何服务，如您不符合条件，请勿充值。
+                    <br/>
+                    <i class="fas fa-question-circle"></i> 完全民事行为能力人的描述：年满18周岁且精神健康的公民或年满16周岁不满18周岁的公民，若以自己的劳动收入作为主要生活来源的，也视为完全民事行为能力人。
+                </p>
+            </div>
             <h4>选择充值金额：</h4>
             <div class="btn-group btn-group-toggle" data-toggle="buttons">
                 <label class="btn btn-outline-primary" onclick="setCustomAmount(5)">
@@ -46,22 +58,23 @@
                 <label class="btn btn-outline-primary" onclick="setCustomAmount(50)">
                     <input type="radio" name="amount" value="50" autocomplete="off"> 50元
                 </label>
-                <label class="btn btn-outline-primary" onclick="setCustomAmount(90)">
-                    <input type="radio" name="amount" value="90" autocomplete="off"> 90元
+                <label class="btn btn-outline-primary" onclick="setCustomAmount(100)">
+                    <input type="radio" name="amount" value="90" autocomplete="off"> 100元
                 </label>
             </div>
         </div>
         <div class="mb-3">
             <h4>或自定义金额：</h4>
-            <input type="number" class="form-control" id="customAmount" placeholder="输入自定义金额≥1的整数金额" min="1">
+            <input type="number" class="form-control" id="customAmount" placeholder="输入自定义金额≥5的整数金额"
+                   min="5">
         </div>
         <h4>选择支付方式：</h4>
         <!-- 支付方式按钮 -->
         <div class="mb-3">
-            <button class="btn btn-success" onclick="Pay('wxpay')"><img src="~/system/images/wechatpay.png" class="payimg"/> 微信支付</button>
-            <button class="btn btn-primary" onclick="Pay('alipay')"><img src="~/system/images/alipay.png" class="payimg"/> 支付宝支付</button>
+            <button class="btn btn-success" onclick="Pay('wxpay')"><img src="~/system/images/wechatpay.png" class="payimg" /> 微信支付</button>
+            <button class="btn btn-primary" onclick="Pay('alipay')"><img src="~/system/images/alipay.png" class="payimg" /> 支付宝支付</button>
         </div>
     </div>
 </div>
 
-<script src="~/system/js/balance.js?v1.0"></script>
+<script src="~/system/js/balance.js?v1.0.1"></script>

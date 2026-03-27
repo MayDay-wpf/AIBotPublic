@@ -6,20 +6,24 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+public partial class TxOrder
 {
-    public partial class TxOrder
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string Account { get; set; }
-        [StringLength(500)]
-        public string AliAccount { get; set; }
-        [Column(TypeName = "money")]
-        public decimal? Money { get; set; }
-        public int? IsOver { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? CreateTime { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string Account { get; set; }
+
+    [StringLength(500)]
+    public string AliAccount { get; set; }
+
+    [Column(TypeName = "money")]
+    public decimal? Money { get; set; }
+
+    public int? IsOver { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? CreateTime { get; set; }
 }

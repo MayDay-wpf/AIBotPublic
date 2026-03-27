@@ -114,10 +114,10 @@
                 SDK进行调用，请参考下方说明文档
             </p>
             <p class="font-weight-bold text-danger">
-                1、工坊API不支持高并发，请勿高并发调用，否则将被封禁账号。
+                1、工坊API<b class="text-danger">不允许并发</b>，请勿并发调用，否则将被封禁账号。
             </p>
             <p class="font-weight-bold text-danger">
-                2、如对API有高并发场景需求，请前往 [个人中心——>中转API] 了解详情。
+                2、如对API有并发场景需求，请前往 [个人中心——>中转API] 了解详情。
             </p>
         </div>
         <div class="card-body">
@@ -138,6 +138,15 @@
                     <i class="fas fa-question-circle" style="color:#689e38"></i> <b>两种模型区别</b>
                 </label><br>
                 <label>工坊模型可以根据账号安装的插件进行自动调用，基础对话模型不支持插件调用。</label>
+            </div>
+            <div class="form-group">
+                <label>
+                    <i class="fas fa-question-circle" style="color:#689e38"></i> <b>输出字段</b>
+                </label><br>
+                <ul>
+                    <li><b>reasoning_content</b>：思维链内容，与 content 同级，在输出最终回答之前，模型会先输出一段思维链内容，以提升最终答案的准确性</li>
+                    <li><b>content</b>：最终回答内容</li>
+                </ul>
             </div>
             <div class="form-group">
                 <ul class="nav nav-tabs" id="myTab" role="tablist">
@@ -165,27 +174,43 @@
                 <div class="tab-content mt-3" id="myTabContent">
                     <div class="tab-pane fade show active" id="curl" role="tabpanel">
                         <h4>
-                            <label>cURL示例</label>
+                            <label>cURL文本对话请求示例</label>
                         </h4>
                         <pre><code class="language-bash" id="curlCode"></code></pre>
+                        <h4>
+                            <label>cURL带图片对话请求示例(仅允许支持视觉的模型)</label>
+                        </h4>
+                        <pre><code class="language-bash" id="curlCodeVision"></code></pre>
                     </div>
                     <div class="tab-pane fade" id="python" role="tabpanel">
                         <h4>
-                            <label>Python示例</label>
+                            <label>Python文本对话请求示例</label>
                         </h4>
                         <pre><code class="language-python" id="pythonCode"></code></pre>
+                        <h4>
+                            <label>Python带图片对话请求示例(仅允许支持视觉的模型)</label>
+                        </h4>
+                        <pre><code class="language-python" id="pythonCodeVision"></code></pre>
                     </div>
                     <div class="tab-pane fade" id="csharp" role="tabpanel">
                         <h4>
-                            <label>C#示例</label>
+                            <label>C#文本对话请求示例</label>
                         </h4>
                         <pre><code class="language-csharp" id="csharpCode"></code></pre>
+                        <h4>
+                            <label>C#带图片对话请求示例(仅允许支持视觉的模型)</label>
+                        </h4>
+                        <pre><code class="language-python" id="csharpCodeVision"></code></pre>
                     </div>
                     <div class="tab-pane fade" id="java" role="tabpanel">
                         <h4>
-                            <label>Java示例</label>
+                            <label>Java文本对话请求示例</label>
                         </h4>
                         <pre><code class="language-java" id="javaCode"></code></pre>
+                        <h4>
+                            <label>Java带图片对话请求示例(仅允许支持视觉的模型)</label>
+                        </h4>
+                        <pre><code class="language-java" id="javaCodeVision"></code></pre>
                     </div>
                 </div>
             </div>
@@ -194,4 +219,4 @@
 </div>
 <script src="~/system/js/markdown-it.min.js"></script>
 <script src="~/system/js/highlight.min.js"></script>
-<script src="~/system/js/openapi.js?v1.1"></script>
+<script src="~/system/js/openapi.js?v1.2.1"></script>

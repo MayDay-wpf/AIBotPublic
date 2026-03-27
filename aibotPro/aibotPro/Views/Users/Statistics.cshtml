@@ -5,23 +5,128 @@
 <link href="~/system/chart/daterangepicker.css" rel="stylesheet" />
 <script src="~/system/chart/echarts.min.js"></script>
 <style>
-    .priceInfoUsers{
+    .priceInfoUsers {
         border: 2px solid deepskyblue;
         padding: 5px;
         border-radius: 5px;
         margin-bottom: 10px;
     }
-    .priceInfoVips{
+
+    .priceInfoVips {
         border: 2px solid gold;
         padding: 5px;
         border-radius: 5px;
         margin-bottom: 10px;
     }
-    .priceInfoSVips{
+
+    .priceInfoSVips {
         border: 2px solid orangered;
         padding: 5px;
         border-radius: 5px;
         margin-bottom: 10px;
+    }
+
+
+
+    .heatmap-container {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch; /* iOS平滑滚动 */
+    }
+
+    .contribution-box {
+        width: 10px;
+        height: 10px;
+        margin: 1px;
+        border-radius: 2px;
+        cursor: pointer;
+    }
+
+    .contribution-level {
+        width: 10px;
+        height: 10px;
+        margin: 0 1px;
+        border-radius: 2px;
+    }
+
+    .month-label {
+        font-size: 12px;
+        color: #767676;
+        text-align: center;
+        padding: 0;
+    }
+
+    .day-label {
+        font-size: 12px;
+        color: #767676;
+        height: 12px;
+        line-height: 12px;
+        padding-right: 4px;
+        margin: 0;
+    }
+
+    /* 移动端适配 */
+    @@media (max-width: 768px) {
+        .contribution-box {
+            width: 6px; /* 更小的方块尺寸 */
+            height: 6px;
+            margin: 0.5px; /* 更小的间距 */
+        }
+
+        .contribution-level {
+            width: 6px;
+            height: 6px;
+            margin: 0 0.5px;
+        }
+
+        .month-label {
+            font-size: 9px; /* 更小的字体 */
+            padding: 0;
+            margin: 0;
+        }
+
+        .day-label {
+            font-size: 9px;
+            height: 8px;
+            line-height: 8px;
+            padding-right: 2px; /* 减小右内边距 */
+            margin: 0;
+        }
+
+        #heatmap {
+            min-width: 400px; /* 减小最小宽度 */
+            padding: 0; /* 移除内边距 */
+        }
+
+        .container {
+            padding: 0 5px; /* 减小容器内边距 */
+        }
+    }
+
+    /* 更小屏幕的适配 */
+    @@media (max-width: 375px) {
+        .contribution-box {
+            width: 5px;
+            height: 5px;
+            margin: 0.5px;
+        }
+
+        .contribution-level {
+            width: 5px;
+            height: 5px;
+        }
+
+        .month-label {
+            font-size: 8px;
+        }
+
+        .day-label {
+            font-size: 8px;
+        }
+
+        #heatmap {
+            min-width: 350px;
+        }
     }
 </style>
 <div class="header">
@@ -56,6 +161,24 @@
                 <input type="text" class="form-control" id="totalUse" readonly style="width:200px;background-color:ghostwhite" />
             </div>
             <div id="pieChart" style="width: 100%; height: 400px;"></div>
+        </div>
+    </div>
+    <p></p>
+    <div class="container mt-4">
+        <div id="heatmap" class="mb-2 heatmap-container"></div>
+        <div style="width: fit-content;" class="mx-auto">
+            <!-- 居中对齐 -->
+            <div class="d-flex justify-content-between align-items-center" style="margin: 0 10px;">
+                <small class="text-muted" style="margin-right: 6px;">Less</small>
+                <div class="d-flex">
+                    <div class="contribution-level" style="background-color: #ebedf0;"></div>
+                    <div class="contribution-level" style="background-color: #9be9a8;"></div>
+                    <div class="contribution-level" style="background-color: #40c463;"></div>
+                    <div class="contribution-level" style="background-color: #30a14e;"></div>
+                    <div class="contribution-level" style="background-color: #216e39;"></div>
+                </div>
+                <small class="text-muted" style="margin-left: 6px;">More</small>
+            </div>
         </div>
     </div>
     <p></p>
@@ -145,5 +268,5 @@
 </div>
 <script src="~/system/chart/moment.min.js"></script>
 <script src="~/system/chart/daterangepicker.min.js"></script>
-<script src="~/system/js/statistics.js?v1.0.1"></script>
+<script src="~/system/js/statistics.js?v1.0.2"></script>
 

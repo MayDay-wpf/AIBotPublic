@@ -1,4 +1,6 @@
 ﻿using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 using aibotPro.Interface;
 using aibotPro.Models;
 using aibotPro.Service;
@@ -7,6 +9,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using LogLevel = aibotPro.Dtos.LogLevel;
+using aibotPro.Dtos;
+using System.Security.Claims;
+using Microsoft.Extensions.Options;
+using System.Text.RegularExpressions;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace aibotPro.Controllers;
 
@@ -17,18 +25,18 @@ public class UsersController : Controller
     private readonly IFinanceService _financeService;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly JwtTokenManager _jwtTokenManager;
-    private readonly IRedisService _redis;
+    private readonly IRedisService _redisService;
     private readonly ISystemService _systemService;
     private readonly IUsersService _usersService;
 
     public UsersController(AIBotProContext context, IUsersService usersService, ISystemService systemService,
-        IRedisService redis, IHttpContextAccessor httpContextAccessor, JwtTokenManager jwtTokenManager,
+        IRedisService redisService, IHttpContextAccessor httpContextAccessor, JwtTokenManager jwtTokenManager,
         IFinanceService financeService)
     {
         _context = context;
         _usersService = usersService;
         _systemService = systemService;
-        _redis = redis;
+        _redisService = redisService;
         _httpContextAccessor = httpContextAccessor;
         _jwtTokenManager = jwtTokenManager;
         _financeService = financeService;
@@ -332,7 +340,7 @@ public class UsersController : Controller
         var errorCountKey = $"{account}_passwordErrorCount";
         var errorCount = 0;
         var lockedKey = "lockedaccount_" + account;
-        var lockedTime = await _redis.GetAsync(lockedKey);
+        var lockedTime = await _redisService.GetAsync(lockedKey);
         if (!string.IsNullOrEmpty(lockedTime))
         {
             //查询解锁时间
@@ -348,8 +356,9 @@ public class UsersController : Controller
                 return Json(new { success = false, msg = errormsg, errorCount });
             }
         }
-        if (!string.IsNullOrEmpty(await _redis.GetAsync(errorCountKey)))
-            errorCount = Convert.ToInt32(await _redis.GetAsync(errorCountKey));
+
+        if (!string.IsNullOrEmpty(await _redisService.GetAsync(errorCountKey)))
+            errorCount = Convert.ToInt32(await _redisService.GetAsync(errorCountKey));
         if (string.IsNullOrEmpty(account))
         {
             errormsg = "账号不能为空";
@@ -379,12 +388,13 @@ public class UsersController : Controller
             errormsg = "验证码错误";
             return Json(new { success = false, msg = errormsg, errorCount });
         }
+
         if (errorCount >= 5)
         {
             //账号被锁定30分钟，写入redis
-            await _redis.SetAsync("lockedaccount_" + account, DateTime.Now.ToString(), TimeSpan.FromMinutes(30));
+            await _redisService.SetAsync("lockedaccount_" + account, DateTime.Now.ToString(), TimeSpan.FromMinutes(30));
             errormsg = "连续密码错误多次，账号已被锁定30分钟";
-            await _redis.DeleteAsync(errorCountKey);
+            await _redisService.DeleteAsync(errorCountKey);
             return Json(new { success = false, msg = errormsg, errorCount });
         }
 
@@ -399,7 +409,7 @@ public class UsersController : Controller
         {
             errormsg = "密码错误";
             errorCount++;
-            await _redis.SetAsync(errorCountKey, errorCount.ToString());
+            await _redisService.SetAsync(errorCountKey, errorCount.ToString());
             await _systemService.WriteLog("登录失败", LogLevel.Info, account);
             return Json(new { success = false, msg = errormsg, errorCount });
         }
@@ -411,7 +421,7 @@ public class UsersController : Controller
         }
 
         //生成token
-        await _redis.DeleteAsync(errorCountKey);
+        await _redisService.DeleteAsync(errorCountKey);
         var token = _jwtTokenManager.GenerateToken(user.Account);
         return Json(new { success = true, msg = "登录成功", token });
     }
@@ -457,10 +467,6 @@ public class UsersController : Controller
         if (!await _usersService.CheckCodeImage("", checkCode, codekey))
             return Json(new { success = false, msg = "验证码错误" });
         var user = _context.Users.AsNoTracking().Where(x => x.Account == toemail).FirstOrDefault();
-        if (user.IsBan == 1)
-        {
-            return Json(new { success = false, msg = "账号已被禁用" });
-        }
         if (user == null)
             return Json(new
             {
@@ -468,6 +474,11 @@ public class UsersController : Controller
                 msg = "用户不存在"
                 //captchaVerifyResult = result
             });
+        if (user.IsBan == 1)
+        {
+            return Json(new { success = false, msg = "账号已被禁用" });
+        }
+
         var title = "【找回密码】";
         var content = @"
                                 <!DOCTYPE html>
@@ -518,14 +529,24 @@ public class UsersController : Controller
         //    });
         //}
         var tomail = toemail.ToLower();
-        if (!toemail.Contains("qq.com") && !toemail.Contains("gmail.com") && !toemail.Contains("163.com") &&
-            !toemail.Contains("126.com"))
+        var systemCfg = _systemService.GetSystemCfgs();
+        bool isValidEmail = true;
+        string errorMessage = "";
+        if (!toemail.Contains("@"))
+        {
+            isValidEmail = false;
+            errorMessage = "请输入有效的邮箱地址";
+        }
+
+        if (!isValidEmail)
+        {
             return Json(new
             {
                 success = false,
-                msg = "只允许使用qq,gmail,163,126邮箱"
-                //captchaVerifyResult = result
+                msg = errorMessage
             });
+        }
+
         if (_usersService.SendFindEmail(toemail, title, content))
             return Json(new
             {
@@ -580,11 +601,8 @@ public class UsersController : Controller
 
     [Authorize]
     [HttpPost]
-    public IActionResult UploadAvatar([FromForm] IFormFile file)
+    public async Task<IActionResult> UploadAvatar([FromForm] IFormFile file)
     {
-        //保存图片
-        var path = Path.Combine("wwwroot/files/usersavatar",
-            $"{DateTime.Now.ToString("yyyyMMdd")}"); //$"wwwroot\\files\\pluginavatar\\{DateTime.Now.ToString("yyyyMMdd")}";
         var username = _jwtTokenManager
             .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
         if (string.IsNullOrEmpty(username))
@@ -593,7 +611,7 @@ public class UsersController : Controller
                 success = false,
                 msg = "账号异常"
             });
-        var fileName = _systemService.SaveFiles(path, file, username);
+        var fileName = await _systemService.UploadFileToImageHosting(file, username);
         //返回文件名
         return Json(new
         {
@@ -663,6 +681,7 @@ public class UsersController : Controller
             msg = "不是VIP"
         });
     }
+
     [Authorize]
     [HttpPost]
     public async Task<IActionResult> VipToBalance(int days)
@@ -731,8 +750,8 @@ public class UsersController : Controller
             });
         }
 
-        // 从VipType中解析出价格
-        decimal vipPrice = GetVipPriceFromType(vipType);
+        // 从VipType中解析出价格-赠送余额
+        decimal vipPrice = GetVipPriceFromType(vipType) / 2m;
         decimal ratePerDay = vipPrice / 30;
         decimal balanceToAdd = days * ratePerDay;
 
@@ -753,12 +772,12 @@ public class UsersController : Controller
         // 如果兑换的天数等于剩余天数，直接删除VIP记录
         if (days == daysRemaining)
         {
-            _context.VIPs.Remove(vip);  // 删除VIP记录
+            _context.VIPs.Remove(vip); // 删除VIP记录
         }
         else
         {
-            vip.EndTime = vip.EndTime.Value.AddDays(-days);  // 否则减少相应的天数
-            _context.VIPs.Update(vip);  // 标记VIP返回更新
+            vip.EndTime = vip.EndTime.Value.AddDays(-days); // 否则减少相应的天数
+            _context.VIPs.Update(vip); // 标记VIP返回更新
         }
 
         // 提交对数据库的所有更改
@@ -768,6 +787,7 @@ public class UsersController : Controller
             success = changesSaved
         });
     }
+
     // 从VipType提取出价格
     private decimal GetVipPriceFromType(string vipType)
     {
@@ -785,6 +805,7 @@ public class UsersController : Controller
 
         return price;
     }
+
     [Authorize]
     [HttpPost]
     public IActionResult GetTopVipType()
@@ -1568,6 +1589,32 @@ public class UsersController : Controller
     }
 
     [HttpGet]
+    public IActionResult InitiateLinuxDoLogin()
+    {
+        var systemCfgs = _systemService.GetSystemCfgs();
+        var clientId = systemCfgs.FirstOrDefault(x => x.CfgKey == "LinuxDoClientID")?.CfgValue;
+        var redirectUri = Url.Action("HandleGoogleCallback", "Users", null, Request.Scheme,
+            Request.Host.ToUriComponent());
+
+        var authorizationEndpoint =
+            "https://connect.linux.do/oauth2/authorize"; //"https://accounts.google.com/o/oauth2/v2/auth";
+        var scope = "openid email profile";
+
+        var authorizationRequest = new UriBuilder(authorizationEndpoint);
+        authorizationRequest.Query = string.Format(
+            "client_id={0}&state={1}&response_type=code&scope={2}",
+            clientId, Guid.NewGuid().ToString(), "user:profile");
+
+        return Redirect(authorizationRequest.ToString());
+    }
+
+    [HttpGet]
+    public IActionResult HandleLinuxDoCallback()
+    {
+        return View();
+    }
+
+    [HttpGet]
     public IActionResult InitiateGitHubLogin()
     {
         var systemCfgs = _systemService.GetSystemCfgs();
@@ -1586,10 +1633,11 @@ public class UsersController : Controller
     }
 
     [HttpGet]
-    public IActionResult HandleGitHubCallback(string code)
+    public IActionResult HandleGitHubCallback()
     {
         return View();
     }
+
     [HttpPost]
     public IActionResult GoogleOAuth(string JWT, string redirect)
     {
@@ -1601,17 +1649,19 @@ public class UsersController : Controller
         //检查用户是否存在
         var user = _context.Users.AsNoTracking().Where(u => u.Account == email).FirstOrDefault();
         string token = string.Empty;
-        if (user.IsBan == 1)
-        {
-            return Json(new
-            {
-                success = false,
-                msg = "用户被封禁",
-                token
-            });
-        }
+
         if (user != null)
         {
+            if (user.IsBan == 1)
+            {
+                return Json(new
+                {
+                    success = false,
+                    msg = "用户被封禁",
+                    token
+                });
+            }
+
             //直接登录
             token = _jwtTokenManager.GenerateToken(user.Account);
             return Json(new { success = true, msg = "登录成功", token });
@@ -1623,6 +1673,114 @@ public class UsersController : Controller
         }
 
         return Json(new { success = string.IsNullOrEmpty(token) ? false : true, token });
+    }
+
+    [HttpPost]
+    public IActionResult LinuxDoOAuth(string code, string redirect)
+    {
+        string JWT = GetLinuxDoTokenAsync(code);
+        // 获取LinuxDo用户信息
+        string url = "https://connect.linux.do/api/user";
+        string token = string.Empty;
+        using (HttpClient client = new HttpClient())
+        {
+            // 设置 Authorization Header
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", JWT);
+
+            // GET 请求
+            HttpResponseMessage response = client.GetAsync(url).Result;
+
+            if (response.IsSuccessStatusCode)
+            {
+                // 读取响应内容
+                string responseData = response.Content.ReadAsStringAsync().Result;
+                JwtTokenManager.LinuxDoJWT linuxDoJwt =
+                    JsonConvert.DeserializeObject<JwtTokenManager.LinuxDoJWT>(responseData);
+
+                string email = linuxDoJwt.email;
+                string nick = linuxDoJwt.username;
+                string headImg = linuxDoJwt.avatar_template;
+                //检查用户是否存在
+                var user = _context.Users.AsNoTracking().Where(u => u.Account == email).FirstOrDefault();
+
+                if (user != null)
+                {
+                    if (user.IsBan == 1)
+                    {
+                        return Json(new
+                        {
+                            success = false,
+                            msg = "用户被封禁",
+                            token
+                        });
+                    }
+
+                    //直接登录
+                    token = _jwtTokenManager.GenerateToken(user.Account);
+                    return Json(new { success = true, msg = "登录成功", token });
+                }
+                else
+                {
+                    //注册后登录
+                    token = _usersService.GetRegisterTokenByAnother(email, nick, headImg);
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Error: {response.StatusCode}");
+                Console.WriteLine(response.Content.ReadAsStringAsync().Result);
+            }
+        }
+
+        return Json(new { success = string.IsNullOrEmpty(token) ? false : true, token });
+    }
+
+    private string GetLinuxDoTokenAsync(string code)
+    {
+        var systemCfgs = _systemService.GetSystemCfgs();
+        var clientId = systemCfgs.FirstOrDefault(x => x.CfgKey == "LinuxDoClientID")?.CfgValue;
+        var clientSecret = systemCfgs.FirstOrDefault(x => x.CfgKey == "LinuxDoSecret")?.CfgValue;
+        var redirectUri = Url.Action("HandleGoogleCallback", "Users", null, Request.Scheme,
+            Request.Host.ToUriComponent());
+
+        var authorizationEndpoint = "https://connect.linux.do/oauth2/token";
+        string authorization = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{clientId}:{clientSecret}"));
+
+        using (var client = new HttpClient())
+        {
+            // Set the authorization header
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authorization);
+
+            // Create the POST content
+            var content = new FormUrlEncodedContent(new[]
+            {
+                new KeyValuePair<string, string>("grant_type", "authorization_code"),
+                new KeyValuePair<string, string>("code", code),
+                new KeyValuePair<string, string>("redirect_uri", redirectUri)
+            });
+
+            // Make the POST request
+            var response = client.PostAsync(authorizationEndpoint, content).Result;
+
+            if (response.IsSuccessStatusCode)
+            {
+                var responseContent = response.Content.ReadAsStringAsync().Result;
+
+                // Parse the JSON response to get access_token
+                var jsonDocument = JsonDocument.Parse(responseContent);
+                if (jsonDocument.RootElement.TryGetProperty("access_token", out JsonElement accessTokenElement))
+                {
+                    return accessTokenElement.GetString();
+                }
+
+                throw new Exception("Access token not found in the response.");
+            }
+            else
+            {
+                throw new Exception("Failed to retrieve the token: " + response.ReasonPhrase);
+            }
+        }
     }
 
     public async Task<IActionResult> GitHubOAuth(string code)
@@ -1704,6 +1862,11 @@ public class UsersController : Controller
         string token = string.Empty;
         if (user != null)
         {
+            if (user.IsBan == 1)
+            {
+                return token;
+            }
+
             //直接登录
             token = _jwtTokenManager.GenerateToken(user.Account);
         }
@@ -1751,5 +1914,471 @@ public class UsersController : Controller
             success = false,
             msg = "用户不存在"
         });
+    }
+
+    [Authorize]
+    [HttpPost]
+    public async Task<IActionResult> GetHeatmapData()
+    {
+        var username = _jwtTokenManager
+            .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", string.Empty))?.Identity
+            ?.Name;
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+
+        DateTime today = DateTime.Now;
+        DateTime oneYearAgo = today.AddYears(-1).Date; // 起始日期取Date部分
+
+        var dailyUsage = await _context.UseUpLogs
+            .Where(x => x.Account == username &&
+                        x.CreateTime.HasValue &&
+                        x.CreateTime.Value >= oneYearAgo &&
+                        x.CreateTime.Value <= today) // 使用 <= today 而不是 today.Date
+            .GroupBy(x => x.CreateTime.Value.Date)
+            .Select(g => new
+            {
+                Date = g.Key,
+                TotalUsage = g.Sum(x => (x.InputCount ?? 0) + (x.OutputCount ?? 0))
+            })
+            .ToListAsync();
+
+        var usageDict = dailyUsage.ToDictionary(x => x.Date.Date, x => x.TotalUsage);
+        List<object> result = new List<object>();
+
+        // 循环到今天（包含今天）
+        for (DateTime date = oneYearAgo; date <= today.Date; date = date.AddDays(1))
+        {
+            result.Add(new
+            {
+                Date = date.ToString("yyyy-MM-dd"),
+                Usage = usageDict.ContainsKey(date.Date) ? usageDict[date.Date] : 0
+            });
+        }
+
+        return Ok(result);
+    }
+
+    [Authorize]
+    [HttpPost]
+    public async Task<IActionResult> GetUserTokenPackages()
+    {
+        var username = _jwtTokenManager
+            .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", string.Empty))?.Identity
+            ?.Name;
+        if (string.IsNullOrEmpty(username))
+        {
+            return Unauthorized();
+        }
+
+        DateTime today = DateTime.Now;
+        DateTime oneYearAgo = today.AddYears(-1).Date; // 起始日期取Date部分
+
+        var dailyUsage = await _context.UseUpLogs
+            .Where(x => x.Account == username &&
+                        x.CreateTime.HasValue &&
+                        x.CreateTime.Value >= oneYearAgo &&
+                        x.CreateTime.Value <= today) // 使用 <= today 而不是 today.Date
+            .GroupBy(x => x.CreateTime.Value.Date)
+            .Select(g => new
+            {
+                Date = g.Key,
+                TotalUsage = g.Sum(x => (x.InputCount ?? 0) + (x.OutputCount ?? 0))
+            })
+            .ToListAsync();
+
+        var usageDict = dailyUsage.ToDictionary(x => x.Date.Date, x => x.TotalUsage);
+        List<object> result = new List<object>();
+
+        // 循环到今天（包含今天）
+        for (DateTime date = oneYearAgo; date <= today.Date; date = date.AddDays(1))
+        {
+            result.Add(new
+            {
+                Date = date.ToString("yyyy-MM-dd"),
+                Usage = usageDict.ContainsKey(date.Date) ? usageDict[date.Date] : 0
+            });
+        }
+
+        return Ok(result);
+    }
+
+    [Authorize]
+    [HttpPost]
+    public async Task<IActionResult> GetMyTokenPackages()
+    {
+        var username = _jwtTokenManager
+            .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+
+        if (string.IsNullOrEmpty(username))
+        {
+            return Json(new
+            {
+                success = false,
+                msg = "账号异常"
+            });
+        }
+
+        // 尝试从缓存获取Token包列表
+        string cacheKey = $"user_token_packages:{username}";
+        var cachedData = await _redisService.GetAsync(cacheKey);
+        List<TokenPackage> tokenPackages;
+
+        if (!string.IsNullOrEmpty(cachedData))
+        {
+            try
+            {
+                tokenPackages = JsonConvert.DeserializeObject<List<TokenPackage>>(cachedData);
+            }
+            catch
+            {
+                // 如果反序列化失败，从数据库获取并更新缓存
+                tokenPackages = await _context.TokenPackages
+                    .Where(tp => tp.UseAccount == username &&
+                                 tp.ExpirationTime > DateTime.Now)
+                    .OrderByDescending(tp => tp.ExpirationTime)
+                    .ToListAsync();
+
+                // 更新缓存
+                await _redisService.SetAsync(cacheKey, JsonConvert.SerializeObject(tokenPackages),
+                    TimeSpan.FromMinutes(5));
+            }
+        }
+        else
+        {
+            // 从数据库获取
+            tokenPackages = await _context.TokenPackages
+                .Where(tp => tp.UseAccount == username &&
+                             tp.ExpirationTime > DateTime.Now)
+                .OrderByDescending(tp => tp.ExpirationTime)
+                .ToListAsync();
+
+            // 更新缓存
+            await _redisService.SetAsync(cacheKey, JsonConvert.SerializeObject(tokenPackages), TimeSpan.FromMinutes(5));
+        }
+
+        // 处理Token包列表，转换为前端所需格式
+        var result = new List<object>();
+
+        foreach (var package in tokenPackages)
+        {
+            // 计算Token使用情况
+            int totalTokens = package.TokenTotal ?? 0;
+            int usedTokens = package.TokenUsage ?? 0;
+
+            // 计算使用百分比
+            double percentage =
+                totalTokens > 0 ? Math.Min(100, Math.Round((double)usedTokens / totalTokens * 100, 0)) : 0;
+
+            // 计算剩余天数
+            int remainingDays = (int)Math.Ceiling((package.ExpirationTime.Value - DateTime.Now).TotalDays);
+
+            // 获取可用模型列表
+            var modelNames = string.IsNullOrEmpty(package.ModelList)
+                ? new List<string> { "所有模型" }
+                : package.ModelList.Split(',').ToList();
+
+            result.Add(new
+            {
+                id = package.Id,
+                code = package.Code,
+                totalTokens = totalTokens,
+                usedTokens = usedTokens,
+                remainingTokens = Math.Max(0, totalTokens - usedTokens),
+                percentage = percentage,
+                expirationDate = package.ExpirationTime.Value.ToString("yyyy-MM-dd"),
+                remainingDays = remainingDays,
+                models = modelNames
+            });
+        }
+
+        return Json(new
+        {
+            success = true,
+            data = result
+        });
+    }
+
+    [Authorize]
+    [HttpPost]
+    public async Task<IActionResult> RedeemTokenPackage(string code)
+    {
+        var username = _jwtTokenManager
+            .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+
+        if (string.IsNullOrEmpty(username))
+        {
+            return Json(new
+            {
+                success = false,
+                msg = "账号异常"
+            });
+        }
+
+        if (string.IsNullOrEmpty(code))
+        {
+            return Json(new
+            {
+                success = false,
+                msg = "兑换码不能为空"
+            });
+        }
+
+        // 使用缓存方法查找Token包
+        var tokenPackage = await _financeService.GetTokenPackageByCodeAsync(code);
+
+        if (tokenPackage == null || !string.IsNullOrEmpty(tokenPackage.UseAccount))
+        {
+            return Json(new
+            {
+                success = false,
+                msg = "兑换码不存在或已被使用"
+            });
+        }
+
+        if (tokenPackage.ExpirationTime < DateTime.Now)
+        {
+            return Json(new
+            {
+                success = false,
+                msg = "该兑换码已过期"
+            });
+        }
+
+        // 更新Token包的使用者
+        tokenPackage.UseAccount = username;
+        // 确保TokenUsage有初始值
+        if (tokenPackage.TokenUsage == null)
+        {
+            tokenPackage.TokenUsage = 0;
+        }
+
+        _context.TokenPackages.Update(tokenPackage);
+        await _context.SaveChangesAsync();
+
+        // 清除相关缓存
+        string userCacheKey = $"user_token_packages:{username}";
+        string packageCacheKey = $"token_package_code:{code}";
+        await _redisService.DeleteAsync(userCacheKey);
+        await _redisService.DeleteAsync(packageCacheKey);
+
+        await _systemService.WriteLog($"用户兑换Token包: {code}", Dtos.LogLevel.Info, username);
+
+        return Json(new
+        {
+            success = true,
+            msg = "兑换成功",
+            data = new
+            {
+                tokenPackage.TokenTotal,
+                Models = string.IsNullOrEmpty(tokenPackage.ModelList) ? "所有模型" : tokenPackage.ModelList,
+                ExpirationDate = tokenPackage.ExpirationTime.Value.ToString("yyyy-MM-dd")
+            }
+        });
+    }
+
+    [Authorize]
+    [HttpPost]
+    public async Task<IActionResult> GetCompleteUserInfo()
+    {
+        var username = _jwtTokenManager
+            .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+
+        if (string.IsNullOrEmpty(username))
+        {
+            return Json(new
+            {
+                success = false,
+                msg = "账号异常"
+            });
+        }
+
+        try
+        {
+            // 获取用户基本信息
+            var user = _usersService.GetUserData(username);
+            if (user == null)
+            {
+                return Json(new
+                {
+                    success = false,
+                    msg = "用户不存在"
+                });
+            }
+
+            // 获取VIP信息
+            var vipData = await _financeService.GetVipData(username);
+            DateTime? vipEndTime = null;
+            string vipType = null;
+
+            if (vipData != null && vipData.Any())
+            {
+                // 按过期时间倒序排列，取最晚过期的VIP
+                var latestVip = vipData.OrderByDescending(x => x.EndTime).FirstOrDefault();
+                if (latestVip != null && latestVip.EndTime > DateTime.Now)
+                {
+                    vipEndTime = latestVip.EndTime;
+                    vipType = latestVip.VipType;
+                }
+            }
+
+            // 获取Token包信息
+            var tokenPackages = await _context.TokenPackages
+                .Where(tp => tp.UseAccount == username &&
+                             tp.ExpirationTime > DateTime.Now)
+                .OrderByDescending(tp => tp.ExpirationTime)
+                .ToListAsync();
+
+            var tokenPackageList = new List<object>();
+
+            foreach (var package in tokenPackages)
+            {
+                int totalTokens = package.TokenTotal ?? 0;
+                int usedTokens = package.TokenUsage ?? 0;
+                int remainingTokens = Math.Max(0, totalTokens - usedTokens);
+                double percentage = totalTokens > 0
+                    ? Math.Min(100, Math.Round((double)usedTokens / totalTokens * 100, 1))
+                    : 0;
+                int remainingDays = (int)Math.Ceiling((package.ExpirationTime.Value - DateTime.Now).TotalDays);
+
+                var modelNames = string.IsNullOrEmpty(package.ModelList)
+                    ? new List<string> { "所有模型" }
+                    : package.ModelList.Split(',').ToList();
+
+                tokenPackageList.Add(new
+                {
+                    id = package.Id,
+                    code = package.Code,
+                    totalTokens = totalTokens,
+                    usedTokens = usedTokens,
+                    remainingTokens = remainingTokens,
+                    usagePercentage = percentage,
+                    expirationDate = package.ExpirationTime.Value.ToString("yyyy-MM-dd"),
+                    remainingDays = remainingDays,
+                    models = modelNames
+                });
+            }
+
+            // 构建返回数据
+            var userInfo = new
+            {
+                account = user.Account,
+                nickname = user.Nick,
+                avatar = user.HeadImg,
+                balance = user.Mcoin,
+                createTime = user.CreateTime,
+                vipInfo = vipEndTime.HasValue
+                    ? new
+                    {
+                        isVip = true,
+                        vipType = vipType,
+                        endTime = vipEndTime.Value.ToString("yyyy-MM-dd HH:mm:ss"),
+                        remainingDays = (int)Math.Ceiling((vipEndTime.Value - DateTime.Now).TotalDays)
+                    }
+                    : new
+                    {
+                        isVip = false,
+                        vipType = (string)null,
+                        endTime = (string)null,
+                        remainingDays = 0
+                    },
+                tokenPackages = tokenPackageList
+            };
+
+            return Json(new
+            {
+                success = true,
+                msg = "获取成功",
+                data = userInfo
+            });
+        }
+        catch (Exception ex)
+        {
+            await _systemService.WriteLog($"获取用户完整信息失败: {ex.Message}", Dtos.LogLevel.Error, username);
+            return Json(new
+            {
+                success = false,
+                msg = "获取用户信息失败"
+            });
+        }
+    }
+
+    [Authorize]
+    [HttpPost]
+    public IActionResult GetMyCollectionModel()
+    {
+        var username = _jwtTokenManager
+            .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+
+        if (string.IsNullOrEmpty(username))
+        {
+            return Json(new
+            {
+                success = false,
+                msg = "账号异常"
+            });
+        }
+
+        try
+        {
+            var collectionModels = _systemService.GetMyCollectionModel(username);
+            //信息脱敏 - 直接返回数据，因为已经不包含敏感字段
+            
+            return Json(new
+            {
+                success = true,
+                msg = "获取成功",
+                data = collectionModels
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new
+            {
+                success = false,
+                msg = "获取失败: " + ex.Message
+            });
+        }
+    }
+
+    [Authorize]
+    [HttpPost]
+    public IActionResult UpdateMyCollectionModel(string modelNames)
+    {
+        var username = _jwtTokenManager
+            .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+
+        if (string.IsNullOrEmpty(username))
+        {
+            return Json(new
+            {
+                success = false,
+                msg = "账号异常"
+            });
+        }
+
+        if (modelNames == null)
+        {
+            modelNames = "";
+        }
+
+        try
+        {
+            var result = _systemService.UpdateMyCollectionModel(username, modelNames);
+            return Json(new
+            {
+                success = result,
+                msg = result ? "更新成功" : "更新失败"
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new
+            {
+                success = false,
+                msg = "更新失败: " + ex.Message
+            });
+        }
     }
 }

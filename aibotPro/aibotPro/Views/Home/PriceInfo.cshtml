@@ -2,7 +2,7 @@
     ViewData["Title"] = "价格说明（Price Info）";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-<link href="~/system/css/priceinfo.css?v1.0.0" rel="stylesheet"/>
+<link href="~/system/css/priceinfo.css?v1.0.0" rel="stylesheet" />
 <div class="header">
     <div class="header-left">
         <a id="menuMain" href="" class="burger-menu">
@@ -25,22 +25,31 @@
                 <h4>筛选</h4>
                 <div class="filter-buttons">
                 </div>
-                <hr/>
+                <hr />
                 <div class="pricing-info" style="font-size: 0.9em; line-height: 1.4;">
                     <p><strong>原则：</strong>不限期无理由退款，用户体验第一，余额长期有效</p>
-                    <p><strong>退款：</strong>加【菜单】【左下角QQ群】找任意【管理员】或群主 | <strong>金额：</strong>充值-使用-所有赠送金额
+                    <p><strong>退款：</strong>加【菜单】【左下角QQ群】找任意【管理员】或群主</p>
+                    <p><strong>余额退款说明：</strong>退款金额=充值金额-已使用金额-所有赠送金额</p>
+                    <p>
+                        <strong>会员退款说明：</strong>
+                        <ul>
+                            <li>VIP退款金额=充值金额-6元/天，或，充值金额-按照普通用户统计会员日的token消耗（允许用户自行选择退款模式）</li>
+                            <li>SVIP退款金额=充值金额-18元/天，或，充值金额-按照普通用户统计会员日的token消耗（允许用户自行选择退款模式）</li>
+                            <li>会员完成退款后将立即撤回所有权益和赠送余额</li>
+                        </ul>
                     </p>
                     <p><strong>计费：</strong>1k token≈600汉字 | (输入+输出)*倍率，倍率 < 1 为折扣</p>
                     <p><strong>频率：</strong>所有模型无频率限制，含免费模型、订阅会员</p>
-                    <p><strong>标签：</strong>
-                    <ul>
-                        <li>🆓:全员免费，非订阅会员余额需>0</li>
-                        <li>✨:VIP折扣，可能是免费亦可能是折扣价格，以实时计费显示为准</li>
-                        <li>👑:SVIP折扣，可能是免费亦可能是折扣价格，以实时计费显示为准</li>
-                        <li>🖼️:可AI识图的模型，没有这个标识系统会自动使用文字识别和场景识别</li>
-                        <li>⚠️:稳定性较差的模型，当前不建议使用</li>
-                        <li>🚀:高质量直连模型，高可用，价格较贵</li>
-                    </ul>
+                    <p>
+                        <strong>标签：</strong>
+                        <ul>
+                            <li>🆓:全员免费，非订阅会员余额需>0</li>
+                            <li>✨:VIP折扣，可能是免费亦可能是折扣价格，以实时计费显示为准</li>
+                            <li>👑:SVIP折扣，可能是免费亦可能是折扣价格，以实时计费显示为准</li>
+                            <li>🖼️:可AI识图的模型，没有这个标识系统会自动使用文字识别和场景识别</li>
+                            <li>⚠️:稳定性较差的模型，当前不建议使用</li>
+                            <li>🚀:高质量直连模型，高可用，价格较贵</li>
+                        </ul>
                     <p>
                         <strong>什么是Azure、官方直连、逆向：</strong>
                     </p>

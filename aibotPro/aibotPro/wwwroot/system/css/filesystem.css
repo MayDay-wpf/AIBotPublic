@@ -1,0 +1,145 @@
+﻿
+.cloud-container {
+    height: calc(100vh - 120px);
+    overflow: hidden;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+}
+
+.search-box {
+    width: 300px;
+}
+
+.folder-tree-container {
+    height: 100%;
+}
+
+.folder-tree-container .card-body {
+    overflow: auto;
+}
+
+.file-list-container {
+    height: 100%;
+}
+
+
+.file-list-container .card-body {
+    overflow: auto;
+}
+
+/* 网格视图样式 */
+.files-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+}
+
+.file-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.file-item:hover {
+    background-color: #f8f9fa;
+}
+
+.file-item.selected {
+    background-color: #e3f2fd;
+}
+
+.file-icon {
+    font-size: 40px;
+    margin-bottom: 10px;
+}
+
+.file-name {
+    text-align: center;
+    word-break: break-word;
+    font-size: 12px;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 文件类型图标颜色 */
+.file-icon.folder {
+    color: #ffc107;
+}
+
+.file-icon.image {
+    color: #4caf50;
+}
+
+.file-icon.document {
+    color: #2196f3;
+}
+
+.file-icon.video {
+    color: #f44336;
+}
+
+.file-icon.audio {
+    color: #9c27b0;
+}
+
+.file-icon.archive {
+    color: #795548;
+}
+
+.file-icon.code {
+    color: #607d8b;
+}
+
+.file-icon.other {
+    color: #9e9e9e;
+}
+
+/* 列表视图样式 */
+.files-list table {
+    margin-bottom: 0;
+}
+
+/* JSTree 自定义样式 */
+#folderTree {
+    overflow: auto;
+    max-height: 100%;
+}
+
+.jstree-default .jstree-anchor {
+    height: 28px;
+    line-height: 28px;
+}
+
+.breadcrumb {
+    background-color: #f8f9fa;
+    padding: 8px 15px;
+    margin-bottom: 0;
+}
+
+.card,
+.row {
+    height: calc(100vh - 120px) !important;
+}

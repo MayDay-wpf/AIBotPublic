@@ -6,26 +6,33 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Table("Card")]
+public partial class Card
 {
-    [Table("Card")]
-    public partial class Card
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string CardNo { get; set; }
-        [Column(TypeName = "money")]
-        public decimal? Mcoin { get; set; }
-        [StringLength(50)]
-        public string VipType { get; set; }
-        public int? VipDay { get; set; }
-        [StringLength(50)]
-        public string Account { get; set; }
-        [StringLength(50)]
-        public string UseAccount { get; set; }
-        public int? Used { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? CreateTime { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string CardNo { get; set; }
+
+    [Column(TypeName = "money")]
+    public decimal? Mcoin { get; set; }
+
+    [StringLength(50)]
+    public string VipType { get; set; }
+
+    public int? VipDay { get; set; }
+
+    [StringLength(50)]
+    public string Account { get; set; }
+
+    [StringLength(50)]
+    public string UseAccount { get; set; }
+
+    public int? Used { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? CreateTime { get; set; }
 }

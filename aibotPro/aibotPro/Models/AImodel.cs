@@ -6,27 +6,41 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+public partial class AImodel
 {
-    public partial class AImodel
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(200)]
-        public string ModelNick { get; set; }
-        [StringLength(200)]
-        public string ModelName { get; set; }
-        [StringLength(100)]
-        public string BaseUrl { get; set; }
-        [StringLength(100)]
-        public string ApiKey { get; set; }
-        [StringLength(500)]
-        public string ModelInfo { get; set; }
-        [StringLength(500)]
-        public string ModelGroup { get; set; }
-        public string AdminPrompt { get; set; }
-        public bool? VisionModel { get; set; }
-        public int? Seq { get; set; }
-        public int? Delay { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(200)]
+    public string ModelNick { get; set; }
+
+    [StringLength(200)]
+    public string ModelName { get; set; }
+
+    [StringLength(100)]
+    public string BaseUrl { get; set; }
+
+    [StringLength(100)]
+    public string ApiKey { get; set; }
+
+    [StringLength(500)]
+    public string ModelInfo { get; set; }
+
+    [StringLength(500)]
+    public string ModelGroup { get; set; }
+
+    public string AdminPrompt { get; set; }
+
+    public bool? VisionModel { get; set; }
+
+    [Column(TypeName = "money")]
+    public decimal? MinimumBalance { get; set; }
+
+    public int? Seq { get; set; }
+
+    public int? Delay { get; set; }
+
+    public bool? Responses { get; set; }
 }

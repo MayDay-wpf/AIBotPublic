@@ -1,0 +1,390 @@
+/* 文本差异比较器样式 */
+
+/* 编辑器容器 */
+.editor-container {
+    height: 500px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.diff-editor-container {
+    height: 700px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+/* 紧凑工具栏 */
+.diff-toolbar-compact {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 10px 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    flex-wrap: wrap;
+}
+
+.toolbar-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.toolbar-label {
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0;
+    color: #495057;
+    min-width: fit-content;
+}
+
+.toolbar-section .form-control-sm {
+    min-width: 100px;
+}
+
+.toolbar-section .form-check {
+    margin: 0;
+}
+
+.toolbar-section .form-check-label {
+    font-size: 14px;
+    color: #495057;
+    margin-left: 4px;
+}
+
+/* 比较选项 */
+.compare-options {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    align-items: center;
+}
+
+.form-check-inline {
+    margin-right: 0;
+    margin-bottom: 0;
+}
+
+/* 统计卡片 */
+.stat-card {
+    padding: 20px;
+    border-radius: 8px;
+    background-color: #fff;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background-color: currentColor;
+}
+
+.stat-card.added {
+    color: #28a745;
+    border-color: rgba(40, 167, 69, 0.2);
+}
+
+.stat-card.deleted {
+    color: #dc3545;
+    border-color: rgba(220, 53, 69, 0.2);
+}
+
+.stat-card.modified {
+    color: #ffc107;
+    border-color: rgba(255, 193, 7, 0.2);
+}
+
+.stat-card.unchanged {
+    color: #6c757d;
+    border-color: rgba(108, 117, 125, 0.2);
+}
+
+.stat-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.stat-number {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: inherit;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+/* 按钮样式增强 */
+#compareBtn {
+    position: relative;
+    overflow: hidden;
+}
+
+#compareBtn:active {
+    transform: scale(0.98);
+}
+
+#compareBtn.comparing {
+    pointer-events: none;
+}
+
+#compareBtn.comparing::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* Monaco Editor 自定义样式 */
+.monaco-editor {
+    border-radius: 4px;
+}
+
+.monaco-editor .margin {
+    background-color: #f8f9fa;
+}
+
+.monaco-editor .current-line {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+/* 差异高亮样式 */
+.monaco-diff-editor .diffOverview {
+    background-color: #f8f9fa;
+}
+
+.monaco-diff-editor .added {
+    background-color: rgba(40, 167, 69, 0.2);
+}
+
+.monaco-diff-editor .deleted {
+    background-color: rgba(220, 53, 69, 0.2);
+}
+
+.monaco-diff-editor .modified {
+    background-color: rgba(255, 193, 7, 0.2);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .editor-container {
+        height: 400px;
+    }
+
+    .diff-editor-container {
+        height: 500px;
+    }
+
+    .diff-toolbar-compact {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+
+    .toolbar-section {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .toolbar-section.ml-auto {
+        margin-left: 0;
+    }
+
+    .stat-card {
+        margin-bottom: 15px;
+        padding: 15px;
+    }
+
+    .stat-number {
+        font-size: 24px;
+    }
+
+    .compare-options {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+}
+
+/* 加载状态 */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 文件拖拽区域 */
+.file-drop-zone {
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    color: #6c757d;
+    transition: all 0.3s ease;
+    margin-bottom: 15px;
+    cursor: pointer;
+}
+
+.file-drop-zone:hover,
+.file-drop-zone.drag-over {
+    border-color: #007bff;
+    background-color: rgba(0, 123, 255, 0.05);
+    color: #007bff;
+}
+
+.file-drop-zone i {
+    font-size: 24px;
+    margin-bottom: 10px;
+    display: block;
+}
+
+/* 工具栏样式 */
+.diff-toolbar {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.diff-toolbar .toolbar-left,
+.diff-toolbar .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.diff-info {
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.diff-navigation {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.diff-navigation button {
+    padding: 5px 10px;
+    border: 1px solid #dee2e6;
+    background-color: #fff;
+    color: #495057;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.diff-navigation button:hover {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.diff-navigation button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 自定义滚动条 */
+.monaco-editor .monaco-scrollable-element > .scrollbar > .slider {
+    background-color: rgba(0, 123, 255, 0.3);
+}
+
+.monaco-editor .monaco-scrollable-element > .scrollbar > .slider:hover {
+    background-color: rgba(0, 123, 255, 0.5);
+}
+
+/* 内联差异高亮样式 */
+.diff-line-added {
+    background-color: rgba(40, 167, 69, 0.15) !important;
+}
+
+.diff-line-deleted {
+    background-color: rgba(220, 53, 69, 0.15) !important;
+}
+
+.diff-line-modified-original {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+}
+
+.diff-line-modified-new {
+    background-color: rgba(40, 167, 69, 0.1) !important;
+}
+
+/* 行号边距样式 */
+.diff-margin-added {
+    background-color: rgba(40, 167, 69, 0.3) !important;
+}
+
+.diff-margin-deleted {
+    background-color: rgba(220, 53, 69, 0.3) !important;
+}
+
+.diff-margin-modified {
+    background-color: rgba(255, 193, 7, 0.3) !important;
+}
+
+/* 编辑器差异装饰 */
+.monaco-editor .diff-line-added {
+    background-color: rgba(40, 167, 69, 0.15) !important;
+}
+
+.monaco-editor .diff-line-deleted {
+    background-color: rgba(220, 53, 69, 0.15) !important;
+}
+
+.monaco-editor .diff-line-modified-original {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+    border-left: 3px solid #dc3545;
+}
+
+.monaco-editor .diff-line-modified-new {
+    background-color: rgba(40, 167, 69, 0.1) !important;
+    border-left: 3px solid #28a745;
+}

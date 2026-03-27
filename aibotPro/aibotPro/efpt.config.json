@@ -1,5 +1,5 @@
 ﻿{
-   "CodeGenerationMode": 2,
+   "CodeGenerationMode": 4,
    "ContextClassName": "AIBotProContext",
    "ContextNamespace": null,
    "DefaultDacpacSchema": null,
@@ -37,6 +37,22 @@
       },
       {
          "Name": "[dbo].[AIdrawRes]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[AIGroup]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[AIGroupChatHistory]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[AIGroupSetting]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[AIGroupUsers]",
          "ObjectType": 0
       },
       {
@@ -84,6 +100,22 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[DeepResearchActiveList]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DeepResearchChatHistory]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DeepResearchList]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DeepResearchModels]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[EasyPaySetting]",
          "ObjectType": 0
       },
@@ -93,6 +125,14 @@
       },
       {
          "Name": "[dbo].[FilesLib]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[FilesLibCloud]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[FoldersLib]",
          "ObjectType": 0
       },
       {
@@ -137,6 +177,10 @@
       },
       {
          "Name": "[dbo].[KnowledgeType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ModelFavorites]",
          "ObjectType": 0
       },
       {
@@ -232,11 +276,19 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[TokenPackage]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[TxOrders]",
          "ObjectType": 0
       },
       {
          "Name": "[dbo].[UISetting]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[UserMCP]",
          "ObjectType": 0
       },
       {
@@ -264,6 +316,14 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[VibeCodingChatHistory]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[VibeCodingModels]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[VIP]",
          "ObjectType": 0
       },
@@ -284,7 +344,7 @@
          "ObjectType": 3
       }
    ],
-   "UiHint": "cunngadtpd.AIBotPro.dbo",
+   "UiHint": "hkecs87610.AIBotPro.dbo",
    "UncountableWords": null,
    "UseBoolPropertiesWithoutDefaultSql": false,
    "UseDatabaseNames": true,

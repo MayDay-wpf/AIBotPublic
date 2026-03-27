@@ -1,0 +1,146 @@
+﻿@{
+    ViewData["Title"] = "MCP 配置";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<link rel="stylesheet" href="~/system/js/mcp/css/mcp.css">
+
+<div class="header">
+    <div class="header-left">
+        <a id="menuMain" href="" class="burger-menu">
+            <i data-feather="menu"></i>
+        </a>
+        <a id="menuBack" href="" class="burger-menu d-none">
+            <i data-feather="arrow-left"></i>
+        </a>
+    </div>
+</div>
+
+<div class="content-body" style="margin-top:10px;">
+    <div class="mcp-container">
+        <!-- 左侧配置编辑器 -->
+        <div class="mcp-left-panel">
+            <div class="panel-header">
+                <h4>MCP 配置 JSON</h4>
+                <div class="header-actions">
+                    <button type="button" id="visualConfigBtn" class="btn btn-sm btn-outline-success">可视化配置</button>
+                    <button type="button" id="loadTemplateBtn" class="btn btn-sm btn-outline-primary">加载模板</button>
+                    <button type="button" id="clearConfigBtn" class="btn btn-sm btn-outline-danger">清空配置</button>
+                </div>
+            </div>
+            <div class="editor-container">
+                <textarea id="mcpConfigEditor" placeholder="请输入MCP配置JSON"></textarea>
+            </div>
+            <div class="editor-footer">
+                <small class="text-muted">
+                    <i data-feather="info"></i>
+                    配置格式请参考 <a href="https://modelcontextprotocol.io/" target="_blank">MCP 官方文档</a>
+                </small>
+            </div>
+        </div>
+
+        <!-- 中间控制面板 -->
+        <div class="mcp-center-panel">
+            <div class="control-section">
+                <button type="button" id="validateConfigBtn" class="btn btn-primary btn-lg">
+                    <i data-feather="check-circle"></i>
+                    验证并加载
+                </button>
+                <div id="validationResult" class="validation-result"></div>
+            </div>
+
+            <div class="control-section">
+                <button type="button" id="saveConfigBtn" class="btn btn-success btn-lg" disabled>
+                    <i data-feather="save"></i>
+                    保存配置
+                </button>
+            </div>
+            <div class="form-group little-tips">
+                <p>
+                    <b style="font-size: 18px"><i class="fas fa-exclamation"></i> 重要事项</b>
+                </p>
+                <p> ⚪ MCP服务器会一次性全部加载，如果服务器较多时，加载时间会比较长，请耐心等待。</p>
+                <p> ⚪ 您无法使用控制您系统的MCP，因为网页无法控制本地电脑。</p>
+                <p> ⚪ 您可以使用线上的MCP服务。</p>
+            </div>
+
+            <div class="status-section">
+                <div class="status-indicator">
+                    <span class="status-dot status-disconnected"></span>
+                    <span id="connectionStatus">未连接</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧服务信息 -->
+        <div class="mcp-right-panel">
+            <div class="panel-header">
+                <h4>MCP 服务信息</h4>
+                <div class="header-actions">
+                    <button type="button" id="refreshServersBtn" class="btn btn-sm btn-outline-secondary">
+                        <i data-feather="refresh-cw"></i>
+                        刷新
+                    </button>
+                </div>
+            </div>
+
+            <!-- 服务列表 -->
+            <div class="servers-container">
+                <div id="serversList" class="servers-list">
+                    <div class="empty-state">
+                        <i data-feather="server"></i>
+                        <p>暂无服务信息</p>
+                        <small>请先配置并验证MCP配置</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 工具列表 -->
+            <div class="tools-container">
+                <div class="panel-subheader">
+                    <h5>可用工具</h5>
+                </div>
+                <div id="toolsContainer">
+                    <div class="tools-list">
+                        <div class="empty-state">
+                            <i data-feather="settings"></i>
+                            <p>暂无工具信息</p>
+                            <small>加载服务后将显示可用工具</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 可视化配置模态框 -->
+<div class="modal fade" id="visualConfigModal" tabindex="-1" aria-labelledby="visualConfigModalLabel" aria-hidden="true"
+    data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="visualConfigModalLabel">可视化MCP配置</h5>
+                <button type="button" class="btn-close" onclick="mcpCloseVisualConfig()"></button>
+            </div>
+            <div class="modal-body">
+                <div id="mcpServersConfig">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6>MCP 服务器配置</h6>
+                        <button type="button" id="addServerBtn" class="btn btn-sm btn-primary">
+                            <i class="fas fa-plus"></i> 添加服务器
+                        </button>
+                    </div>
+                    <div id="serversConfigList" class="servers-config-list">
+                        <!-- 服务器配置项将动态添加到这里 -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="mcpCloseVisualConfig()">取消</button>
+                <button type="button" id="applyVisualConfigBtn" class="btn btn-primary">应用配置</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/system/js/mcp/js/mcp.js"></script>

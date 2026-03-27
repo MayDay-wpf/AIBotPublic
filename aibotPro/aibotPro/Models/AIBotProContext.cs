@@ -3,135 +3,251 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+public partial class AIBotProContext : DbContext
 {
-    public partial class AIBotProContext : DbContext
+    public AIBotProContext()
     {
-        public AIBotProContext()
-        {
-        }
-
-        public AIBotProContext(DbContextOptions<AIBotProContext> options)
-            : base(options)
-        {
-        }
-
-        public virtual DbSet<AIBook> AIBooks { get; set; }
-        public virtual DbSet<AIBookChapter> AIBookChapters { get; set; }
-        public virtual DbSet<AIBookPortraitImage> AIBookPortraitImages { get; set; }
-        public virtual DbSet<AIdraw> AIdraws { get; set; }
-        public virtual DbSet<AIdrawRe> AIdrawRes { get; set; }
-        public virtual DbSet<AImodel> AImodels { get; set; }
-        public virtual DbSet<AImodelsUserSeq> AImodelsUserSeqs { get; set; }
-        public virtual DbSet<APIKEY> APIKEYs { get; set; }
-        public virtual DbSet<Admin> Admins { get; set; }
-        public virtual DbSet<AssistantFile> AssistantFiles { get; set; }
-        public virtual DbSet<AssistantGPT> AssistantGPTs { get; set; }
-        public virtual DbSet<AssistantModelPrice> AssistantModelPrices { get; set; }
-        public virtual DbSet<BindNewApi> BindNewApis { get; set; }
-        public virtual DbSet<Card> Cards { get; set; }
-        public virtual DbSet<ChatCollection> ChatCollections { get; set; }
-        public virtual DbSet<ChatHistory> ChatHistories { get; set; }
-        public virtual DbSet<ChatSetting> ChatSettings { get; set; }
-        public virtual DbSet<EasyPaySetting> EasyPaySettings { get; set; }
-        public virtual DbSet<ErrorBilling> ErrorBillings { get; set; }
-        public virtual DbSet<FilesLib> FilesLibs { get; set; }
-        public virtual DbSet<ForumNotification> ForumNotifications { get; set; }
-        public virtual DbSet<ForumTopic> ForumTopics { get; set; }
-        public virtual DbSet<ForumTopicAddendum> ForumTopicAddenda { get; set; }
-        public virtual DbSet<ForumTopicComment> ForumTopicComments { get; set; }
-        public virtual DbSet<ForumTopicStatement> ForumTopicStatements { get; set; }
-        public virtual DbSet<ForumUserSetting> ForumUserSettings { get; set; }
-        public virtual DbSet<Good> Goods { get; set; }
-        public virtual DbSet<IPlook> IPlooks { get; set; }
-        public virtual DbSet<IPlook_Stats_View> IPlook_Stats_Views { get; set; }
-        public virtual DbSet<Knowledge> Knowledges { get; set; }
-        public virtual DbSet<KnowledgeList> KnowledgeLists { get; set; }
-        public virtual DbSet<KnowledgeType> KnowledgeTypes { get; set; }
-        public virtual DbSet<ModelPrice> ModelPrices { get; set; }
-        public virtual DbSet<MutedUser> MutedUsers { get; set; }
-        public virtual DbSet<NewApiCollectLog> NewApiCollectLogs { get; set; }
-        public virtual DbSet<Notice> Notices { get; set; }
-        public virtual DbSet<NoticeRead> NoticeReads { get; set; }
-        public virtual DbSet<OpenAPIModelSetting> OpenAPIModelSettings { get; set; }
-        public virtual DbSet<Order> Orders { get; set; }
-        public virtual DbSet<Plugin> Plugins { get; set; }
-        public virtual DbSet<PluginsCookie> PluginsCookies { get; set; }
-        public virtual DbSet<PluginsHeader> PluginsHeaders { get; set; }
-        public virtual DbSet<PluginsInstall> PluginsInstalls { get; set; }
-        public virtual DbSet<PluginsJsonPr> PluginsJsonPrs { get; set; }
-        public virtual DbSet<PluginsParam> PluginsParams { get; set; }
-        public virtual DbSet<RoleChat> RoleChats { get; set; }
-        public virtual DbSet<RoleSetting> RoleSettings { get; set; }
-        public virtual DbSet<Share> Shares { get; set; }
-        public virtual DbSet<ShareLog> ShareLogs { get; set; }
-        public virtual DbSet<SignIn> SignIns { get; set; }
-        public virtual DbSet<SunoRe> SunoRes { get; set; }
-        public virtual DbSet<SystemCfg> SystemCfgs { get; set; }
-        public virtual DbSet<SystemLog> SystemLogs { get; set; }
-        public virtual DbSet<SystemPlugin> SystemPlugins { get; set; }
-        public virtual DbSet<SystemPluginsInstall> SystemPluginsInstalls { get; set; }
-        public virtual DbSet<TxOrder> TxOrders { get; set; }
-        public virtual DbSet<UISetting> UISettings { get; set; }
-        public virtual DbSet<UseUpLog> UseUpLogs { get; set; }
-        public virtual DbSet<User> Users { get; set; }
-        public virtual DbSet<UserPrompt> UserPrompts { get; set; }
-        public virtual DbSet<UserSetting> UserSettings { get; set; }
-        public virtual DbSet<UsersLimit> UsersLimits { get; set; }
-        public virtual DbSet<UsersMessage> UsersMessages { get; set; }
-        public virtual DbSet<VIP> VIPs { get; set; }
-        public virtual DbSet<WorkFlow> WorkFlows { get; set; }
-        public virtual DbSet<WorkShopAIModel> WorkShopAIModels { get; set; }
-        public virtual DbSet<WorkShopModelUserSeq> WorkShopModelUserSeqs { get; set; }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            if (!optionsBuilder.IsConfigured)
-            {
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
-                optionsBuilder.UseSqlServer("Data Source=.;Initial Catalog=AIBotPro;Persist Security Info=True;User ID=sa;Password=Abc123@#");
-            }
-        }
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<AImodel>(entity =>
-            {
-                entity.Property(e => e.VisionModel).HasDefaultValueSql("((0))");
-            });
-
-            modelBuilder.Entity<ChatHistory>(entity =>
-            {
-                entity.Property(e => e.IsTop).HasDefaultValueSql("((0))");
-            });
-
-            modelBuilder.Entity<IPlook_Stats_View>(entity =>
-            {
-                entity.ToView("IPlook_Stats_View");
-            });
-
-            modelBuilder.Entity<ModelPrice>(entity =>
-            {
-                entity.Property(e => e.OnceFee).HasDefaultValueSql("((0))");
-
-                entity.Property(e => e.VipOnceFee).HasDefaultValueSql("((0))");
-            });
-
-            modelBuilder.Entity<PluginsInstall>(entity =>
-            {
-                entity.Property(e => e.MustHit).HasDefaultValueSql("((0))");
-            });
-
-            modelBuilder.Entity<UISetting>(entity =>
-            {
-                entity.Property(e => e.Id).ValueGeneratedNever();
-            });
-
-            OnModelCreatingPartial(modelBuilder);
-        }
-
-        partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
     }
+
+    public AIBotProContext(DbContextOptions<AIBotProContext> options)
+        : base(options)
+    {
+    }
+
+    public virtual DbSet<AIBook> AIBooks { get; set; }
+
+    public virtual DbSet<AIBookChapter> AIBookChapters { get; set; }
+
+    public virtual DbSet<AIBookPortraitImage> AIBookPortraitImages { get; set; }
+
+    public virtual DbSet<AIGroup> AIGroups { get; set; }
+
+    public virtual DbSet<AIGroupChatHistory> AIGroupChatHistories { get; set; }
+
+    public virtual DbSet<AIGroupSetting> AIGroupSettings { get; set; }
+
+    public virtual DbSet<AIGroupUser> AIGroupUsers { get; set; }
+
+    public virtual DbSet<AIdraw> AIdraws { get; set; }
+
+    public virtual DbSet<AIdrawRe> AIdrawRes { get; set; }
+
+    public virtual DbSet<AImodel> AImodels { get; set; }
+
+    public virtual DbSet<AImodelsUserSeq> AImodelsUserSeqs { get; set; }
+
+    public virtual DbSet<APIKEY> APIKEYs { get; set; }
+
+    public virtual DbSet<Admin> Admins { get; set; }
+
+    public virtual DbSet<AssistantFile> AssistantFiles { get; set; }
+
+    public virtual DbSet<AssistantGPT> AssistantGPTs { get; set; }
+
+    public virtual DbSet<AssistantModelPrice> AssistantModelPrices { get; set; }
+
+    public virtual DbSet<BindNewApi> BindNewApis { get; set; }
+
+    public virtual DbSet<Card> Cards { get; set; }
+
+    public virtual DbSet<ChatCollection> ChatCollections { get; set; }
+
+    public virtual DbSet<ChatHistory> ChatHistories { get; set; }
+
+    public virtual DbSet<ChatSetting> ChatSettings { get; set; }
+
+    public virtual DbSet<DeepResearchActiveList> DeepResearchActiveLists { get; set; }
+
+    public virtual DbSet<DeepResearchChatHistory> DeepResearchChatHistories { get; set; }
+
+    public virtual DbSet<DeepResearchList> DeepResearchLists { get; set; }
+
+    public virtual DbSet<DeepResearchModel> DeepResearchModels { get; set; }
+
+    public virtual DbSet<EasyPaySetting> EasyPaySettings { get; set; }
+
+    public virtual DbSet<ErrorBilling> ErrorBillings { get; set; }
+
+    public virtual DbSet<FilesLib> FilesLibs { get; set; }
+
+    public virtual DbSet<FilesLibCloud> FilesLibClouds { get; set; }
+
+    public virtual DbSet<FoldersLib> FoldersLibs { get; set; }
+
+    public virtual DbSet<ForumNotification> ForumNotifications { get; set; }
+
+    public virtual DbSet<ForumTopic> ForumTopics { get; set; }
+
+    public virtual DbSet<ForumTopicAddendum> ForumTopicAddenda { get; set; }
+
+    public virtual DbSet<ForumTopicComment> ForumTopicComments { get; set; }
+
+    public virtual DbSet<ForumTopicStatement> ForumTopicStatements { get; set; }
+
+    public virtual DbSet<ForumUserSetting> ForumUserSettings { get; set; }
+
+    public virtual DbSet<Good> Goods { get; set; }
+
+    public virtual DbSet<IPlook> IPlooks { get; set; }
+
+    public virtual DbSet<IPlook_Stats_View> IPlook_Stats_Views { get; set; }
+
+    public virtual DbSet<Knowledge> Knowledges { get; set; }
+
+    public virtual DbSet<KnowledgeList> KnowledgeLists { get; set; }
+
+    public virtual DbSet<KnowledgeType> KnowledgeTypes { get; set; }
+
+    public virtual DbSet<ModelFavorite> ModelFavorites { get; set; }
+
+    public virtual DbSet<ModelPrice> ModelPrices { get; set; }
+
+    public virtual DbSet<MutedUser> MutedUsers { get; set; }
+
+    public virtual DbSet<NewApiCollectLog> NewApiCollectLogs { get; set; }
+
+    public virtual DbSet<Notice> Notices { get; set; }
+
+    public virtual DbSet<NoticeRead> NoticeReads { get; set; }
+
+    public virtual DbSet<OpenAPIModelSetting> OpenAPIModelSettings { get; set; }
+
+    public virtual DbSet<Order> Orders { get; set; }
+
+    public virtual DbSet<Plugin> Plugins { get; set; }
+
+    public virtual DbSet<PluginsCookie> PluginsCookies { get; set; }
+
+    public virtual DbSet<PluginsHeader> PluginsHeaders { get; set; }
+
+    public virtual DbSet<PluginsInstall> PluginsInstalls { get; set; }
+
+    public virtual DbSet<PluginsJsonPr> PluginsJsonPrs { get; set; }
+
+    public virtual DbSet<PluginsParam> PluginsParams { get; set; }
+
+    public virtual DbSet<RoleChat> RoleChats { get; set; }
+
+    public virtual DbSet<RoleSetting> RoleSettings { get; set; }
+
+    public virtual DbSet<Share> Shares { get; set; }
+
+    public virtual DbSet<ShareLog> ShareLogs { get; set; }
+
+    public virtual DbSet<SignIn> SignIns { get; set; }
+
+    public virtual DbSet<SunoRe> SunoRes { get; set; }
+
+    public virtual DbSet<SystemCfg> SystemCfgs { get; set; }
+
+    public virtual DbSet<SystemLog> SystemLogs { get; set; }
+
+    public virtual DbSet<SystemPlugin> SystemPlugins { get; set; }
+
+    public virtual DbSet<SystemPluginsInstall> SystemPluginsInstalls { get; set; }
+
+    public virtual DbSet<TokenPackage> TokenPackages { get; set; }
+
+    public virtual DbSet<TxOrder> TxOrders { get; set; }
+
+    public virtual DbSet<UISetting> UISettings { get; set; }
+
+    public virtual DbSet<UseUpLog> UseUpLogs { get; set; }
+
+    public virtual DbSet<User> Users { get; set; }
+
+    public virtual DbSet<UserMCP> UserMCPs { get; set; }
+
+    public virtual DbSet<UserPrompt> UserPrompts { get; set; }
+
+    public virtual DbSet<UserSetting> UserSettings { get; set; }
+
+    public virtual DbSet<UsersLimit> UsersLimits { get; set; }
+
+    public virtual DbSet<UsersMessage> UsersMessages { get; set; }
+
+    public virtual DbSet<VIP> VIPs { get; set; }
+
+    public virtual DbSet<VibeCodingChatHistory> VibeCodingChatHistories { get; set; }
+
+    public virtual DbSet<VibeCodingModel> VibeCodingModels { get; set; }
+
+    public virtual DbSet<WorkFlow> WorkFlows { get; set; }
+
+    public virtual DbSet<WorkShopAIModel> WorkShopAIModels { get; set; }
+
+    public virtual DbSet<WorkShopModelUserSeq> WorkShopModelUserSeqs { get; set; }
+
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<AIBook>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_AIBook");
+        });
+
+        modelBuilder.Entity<AIdrawRe>(entity =>
+        {
+            entity.Property(e => e.NSFW).HasDefaultValue(false);
+        });
+
+        modelBuilder.Entity<AImodel>(entity =>
+        {
+            entity.Property(e => e.Responses).HasDefaultValueSql("('0')");
+            entity.Property(e => e.VisionModel).HasDefaultValue(false);
+        });
+
+        modelBuilder.Entity<ChatCollection>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__ChatColl__3214EC07CDE90CAC");
+        });
+
+        modelBuilder.Entity<ChatHistory>(entity =>
+        {
+            entity.Property(e => e.IsTop).HasDefaultValue(false);
+        });
+
+        modelBuilder.Entity<ForumTopicStatement>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_ForumStatement");
+        });
+
+        modelBuilder.Entity<IPlook_Stats_View>(entity =>
+        {
+            entity.ToView("IPlook_Stats_View");
+        });
+
+        modelBuilder.Entity<KnowledgeType>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_KonwledgeType");
+        });
+
+        modelBuilder.Entity<ModelPrice>(entity =>
+        {
+            entity.Property(e => e.OnceFee).HasDefaultValue(0m);
+            entity.Property(e => e.VipOnceFee).HasDefaultValue(0m);
+        });
+
+        modelBuilder.Entity<PluginsInstall>(entity =>
+        {
+            entity.Property(e => e.MustHit).HasDefaultValue(false);
+        });
+
+        modelBuilder.Entity<PluginsParam>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK_Params");
+        });
+
+        modelBuilder.Entity<UISetting>(entity =>
+        {
+            entity.Property(e => e.Id).ValueGeneratedNever();
+        });
+
+        OnModelCreatingPartial(modelBuilder);
+    }
+
+    partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }

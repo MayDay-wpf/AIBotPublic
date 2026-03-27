@@ -6,9 +6,7 @@
         modelGrouping: 'Ctrl+G',
         createAiPrompt: 'Ctrl+J',
         readingMode: 'Ctrl+R',
-        autoChange: 'Ctrl+N',
-        shortcuts: 'Ctrl+K',
-        stream: 'Ctrl+S',
+        autoChange: 'Ctrl+N', shortcuts: 'Ctrl+K', stream: 'Ctrl+S', beforeThink: 'Ctrl+T',
         seniorSetting: 'Ctrl+B'
     };
 
@@ -19,8 +17,27 @@
     function loadShortcuts() {
         const storedShortcuts = localStorage.getItem('shortcutsConfig');
         if (storedShortcuts) {
-            shortcutsConfig = JSON.parse(storedShortcuts);
+            // 从存储中加载快捷键
+            const parsedShortcuts = JSON.parse(storedShortcuts);
+
+            // 确保所有默认键都存在，如果不存在则从默认配置中补充
+            shortcutsConfig = { ...defaultShortcuts, ...parsedShortcuts };
+
+            // 检查是否有新的默认快捷键不在已存储的配置中
+            let needsUpdate = false;
+            for (const key in defaultShortcuts) {
+                if (!(key in parsedShortcuts)) {
+                    needsUpdate = true;
+                    break;
+                }
+            }
+
+            // 如果发现有缺失的快捷键，更新存储
+            if (needsUpdate) {
+                localStorage.setItem('shortcutsConfig', JSON.stringify(shortcutsConfig));
+            }
         } else {
+            // 如果没有存储的配置，使用默认配置
             shortcutsConfig = { ...defaultShortcuts };
             localStorage.setItem('shortcutsConfig', JSON.stringify(shortcutsConfig));
         }
@@ -399,20 +416,112 @@
             balert("模型自动切换已关闭", "info", false, 1500, "top");
     });
 
-    $('#searchIcon').on('click', function (event) {
-        event.stopPropagation();
-        $('#searchIcon').hide();
-        $('#modelSearch').addClass('expand').fadeIn().focus();
+    // 前置推理
+    var beforeThink_cache = localStorage.getItem('beforeThink');
+    if (beforeThink_cache) {
+        var cachedData = JSON.parse(beforeThink_cache);
+        if (Date.now() - cachedData.time < 24 * 60 * 60 * 1000) { // 检查是否在24小时内
+            $('.beforeThink').prop('checked', cachedData.value);
+            beforeThink = cachedData.value;
+            beforeThinkModel = cachedData.modelName;
+            if (cachedData.value) {
+                $('#beforeModelBox').show();
+                getBeforeThinlAIModelList();
+            }
+        } else {
+            $('.beforeThink').prop('checked', false);
+            localStorage.removeItem('beforeThink');
+            beforeThink = false;
+        }
+    } else {
+        $('.beforeThink').prop('checked', false);
+        beforeThink = false;
+    }
+
+    $('.beforeThink').change(function () {
+        var isChecked = $(this).is(':checked');
+        // 存入缓存
+        var cacheData = {
+            value: isChecked, time: Date.now(), modelName: beforeThinkModel
+        };
+        localStorage.setItem('beforeThink', JSON.stringify(cacheData));
+        beforeThink = cacheData.value;
+        if (isChecked) {
+            $('#beforeModelBox').show();
+            beforeThink = true;
+            balert("前置推理已启用", "success", false, 1500, "top");
+            getBeforeThinlAIModelList();
+        } else {
+            $('#beforeModelBox').hide();
+            beforeThink = false;
+            balert("前置推理已关闭", "info", false, 1500, "top");
+        }
     });
 
-    // 搜索框失去焦点时恢复成放大镜图标
-    $('#modelSearch').on('blur', function () {
-        $(this).removeClass('expand').fadeOut(function () {
-            $('#searchIcon').fadeIn();
+    function getBeforeThinlAIModelList() {
+        $.ajax({
+            type: "Post", url: "/Home/GetAImodel", dataType: "json", success: function (res) {
+                var html = "";
+                if (res.success) {
+                    //modelPriceInfo(res.data[0].modelName);
+                    //检查缓存
+                    if (beforeThink) {
+                        for (var i = 0; i < res.data.length; i++) {
+                            if (res.data[i].modelName == beforeThinkModel) {
+                                $("#beforeThinkfirstModel").html(res.data[i].modelNick);
+                                break;
+                            }
+                        }
+                    } else {
+                        $("#beforeThinkfirstModel").html(res.data[0].modelNick);
+                        beforeThinkModel = res.data[0].modelName;
+                        //更新beforeThink缓存
+                        var cacheData = {
+                            value: beforeThink, time: Date.now(), modelName: beforeThinkModel
+                        };
+                        localStorage.setItem('beforeThink', JSON.stringify(cacheData));
+                    }
+                    for (var i = 0; i < res.data.length; i++) {
+                        var modelNick = stripHTML(res.data[i].modelNick);
+                        var modelName = res.data[i].modelName;
+                        modelList.push({
+                            model: modelName, modelNick: res.data[i].modelNick
+                        });
+                        html += `<a class="dropdown-item font-14" href="#" data-model-name="${modelName}" data-model-nick="${modelNick}" data-seq="${res.data[i].seq}">${res.data[i].modelNick}</a>`;
+                    }
+                    $('#beforeThinkmodelList').html(html);
+                    bindBeforeThinkClickEvent();
+                    $(".dropdown-item").css("margin-left", 0);
+                }
+            }, error: function (err) {
+                // balert("系统未配置AI模型", "info", false, 2000, "center");
+            }
         });
-        $(this).val('');
-        filterModels();
-    });
+    }
+
+    function bindBeforeThinkClickEvent() {
+        $('#beforeThinkmodelList a').on('click', function (e) {
+            e.preventDefault();
+            var modelName = $(this).data('model-name');
+            var modelNick = $(this).html();
+            beforeThinkchangeModel(modelName, modelNick);
+        });
+    }
+
+    function beforeThinkchangeModel(modelName, modelNick) {
+        $("#beforeThinkfirstModel").html(modelNick);
+        feather.replace();
+        $("#beforeThinkfirstModel").attr("data-modelName", modelName);
+        $("#beforeThinkfirstModel").attr("data-modelNick", modelNick);
+        beforeThinkModel = modelName;
+        //更新beforeThink缓存
+        var cacheData = {
+            value: beforeThink, time: Date.now(), modelName: beforeThinkModel
+        };
+        localStorage.setItem('beforeThink', JSON.stringify(cacheData));
+        //modelPriceInfo(modelName);
+        //balert("切换模型【" + modelNick + "】成功", "success", false, 1000);
+    }
 
     if (pure) {
         $('.sidebar').hide();
@@ -449,8 +558,7 @@
     }
     if (localStorage.getItem('maxTokensValue')) {
         let maxTokensValue = localStorage.getItem('maxTokensValue');
-        $('#maxTokensSlider').val(maxTokensValue);
-        $('#maxTokensValue').text(parseInt(maxTokensValue));
+        $('#maxTokensValue').val(maxTokensValue);
     }
     // 更新滑块值显示
     $('#temperatureSlider').on('input', function () {
@@ -465,12 +573,23 @@
     $('#presencePenaltySlider').on('input', function () {
         $('#presencePenaltyValue').text(parseFloat($(this).val()).toFixed(2));
     });
-    $('#maxTokensSlider').on('input', function () {
-        $('#maxTokensValue').text(parseInt($(this).val()));
-    });
     $('#settingsModal').on('show.bs.modal', function (e) {
         // 激活"基础设置"标签
         $('#settingsTabs a[href="#basic"]').tab('show');
     });
     $('#settingsTabs a[href="#basic"]').tab('show');
 });
+
+function beforeThinkfilterModels() {
+    var input = document.getElementById("beforeThinkmodelSearch");
+    var filter = input.value.toLowerCase();
+    var nodes = document.querySelectorAll('#beforeThinkmodelList a');
+    nodes.forEach(function (node) {
+        var modelNick = node.getAttribute('data-model-nick').toLowerCase();
+        if (modelNick.includes(filter)) {
+            node.style.display = "block";
+        } else {
+            node.style.display = "none";
+        }
+    });
+}

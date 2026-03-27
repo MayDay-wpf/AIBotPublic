@@ -6,16 +6,18 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Table("RoleChat")]
+public partial class RoleChat
 {
-    [Table("RoleChat")]
-    public partial class RoleChat
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string RoleChatCode { get; set; }
-        public string UserInput { get; set; }
-        public string AssistantOutput { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string RoleChatCode { get; set; }
+
+    public string UserInput { get; set; }
+
+    public string AssistantOutput { get; set; }
 }

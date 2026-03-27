@@ -64,6 +64,7 @@ public class AIdrawController : Controller
         // 如果你想返回可以访问的URL，请生成和返回相应的URL。
         return Ok(new { path });
     }
+
     [Authorize]
     [HttpPost]
     public async Task<IActionResult> ImageUpload([FromForm] IFormFile file)
@@ -78,10 +79,12 @@ public class AIdrawController : Controller
             msg = path
         });
     }
+
     [Authorize]
     [HttpPost]
     public async Task<IActionResult> CreateMJTask(string prompt, string botType, string referenceImgPath,
-        string drawmodel, List<string> blendImages, string FS, string dimensions, string yourFace, string starFace, bool agreeTerms = false)
+        string drawmodel, List<string> blendImages, string FS, string dimensions, string yourFace, string starFace,
+        bool agreeTerms = false)
     {
         var username = _jwtTokenManager
             .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
@@ -99,6 +102,7 @@ public class AIdrawController : Controller
         {
             usecount = int.Parse(cachefreemj);
         }
+
         if (usecount >= 3 && agreeTerms)
         {
             return Ok(new
@@ -107,6 +111,7 @@ public class AIdrawController : Controller
                 msg = "免费次数已耗尽，请10分钟后继续"
             });
         }
+
         //从数据库获取AIdraw模型
         var aiModel = _context.AIdraws.AsNoTracking().Where(x => x.ModelName == botType).FirstOrDefault();
         if (aiModel == null)
@@ -121,6 +126,7 @@ public class AIdrawController : Controller
             aiModel.ApiKey = chatSetting.MyDall.ApiKey;
             needToPay = false;
         }
+
         if (agreeTerms)
         {
             needToPay = false;
@@ -128,6 +134,7 @@ public class AIdrawController : Controller
             await _redisService.SetAsync(cachefreemjkey, usecount.ToString(), TimeSpan.FromMinutes(10));
             await _systemService.WriteLog($"{username}:使用免费MJ绘画-CREATE", Dtos.LogLevel.Info, username);
         }
+
         //如果有参考图，则转base64
         string[] imageData = { };
         if (!string.IsNullOrEmpty(referenceImgPath))
@@ -136,14 +143,17 @@ public class AIdrawController : Controller
             var dataHeader = "data:image/jpeg;base64,";
             imageData = new[] { dataHeader + base64Image };
         }
+
         string taskId = string.Empty;
         //发起请求
         if (FS == "imagine")
             taskId = await _ai.CreateMJdraw(prompt, botType, imageData, aiModel.BaseUrl, aiModel.ApiKey, drawmodel);
         else if (FS == "blend")
-            taskId = await _ai.CreateMJdrawByBlend(botType, blendImages, aiModel.BaseUrl, aiModel.ApiKey, drawmodel, dimensions);
+            taskId = await _ai.CreateMJdrawByBlend(botType, blendImages, aiModel.BaseUrl, aiModel.ApiKey, drawmodel,
+                dimensions);
         else if (FS == "swap")
-            taskId = await _ai.CreateMJdrawBySwap(botType, aiModel.BaseUrl, aiModel.ApiKey, drawmodel, yourFace, starFace);
+            taskId = await _ai.CreateMJdrawBySwap(botType, aiModel.BaseUrl, aiModel.ApiKey, drawmodel, yourFace,
+                starFace);
         if (string.IsNullOrEmpty(taskId))
             return Ok(new { success = false, msg = "AI任务创建失败" });
         if (needToPay)
@@ -164,7 +174,8 @@ public class AIdrawController : Controller
 
     [Authorize]
     [HttpPost]
-    public async Task<IActionResult> CreateMJChange(string action, int index, string taskId, string drawmodel, bool agreeTerms = false)
+    public async Task<IActionResult> CreateMJChange(string action, int index, string taskId, string drawmodel,
+        bool agreeTerms = false)
     {
         var username = _jwtTokenManager
             .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
@@ -189,11 +200,13 @@ public class AIdrawController : Controller
             aiModel.ApiKey = chatSetting.MyDall.ApiKey;
             needToPay = false;
         }
+
         if (agreeTerms)
         {
             needToPay = false;
             await _systemService.WriteLog($"{username}:使用免费MJ绘画-{action}", Dtos.LogLevel.Info, username);
         }
+
         //发起请求
         var newTaskId = await _ai.CreateMJchange(action, index, taskId, aiModel.BaseUrl, aiModel.ApiKey, drawmodel);
         if (string.IsNullOrEmpty(newTaskId))
@@ -273,7 +286,7 @@ public class AIdrawController : Controller
                 if (agreeTerms)
                     username = "system";
                 await _ai.SaveAiDrawResult(username, "Midjourney", imgResPath, taskResponse.prompt, referenceImgPath,
-                thumbSavePath, thumbKey);
+                    thumbSavePath, thumbKey);
                 var key = $"{username}_MJtask";
                 await _redisService.DeleteAsync(key);
                 return Ok(new { success = true, msg = "获取任务状态成功", taskResponse });
@@ -409,8 +422,114 @@ public class AIdrawController : Controller
 
     [Authorize]
     [HttpPost]
+    public async Task<IActionResult> CreateGptImage1Task(string prompt, string action, string imageSize, string quality,
+        string image, string mask)
+    {
+        // 获取用户名
+        var username = _jwtTokenManager
+            .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+        var user = _usersService.GetUserData(username);
+        if (user.Mcoin <= 0)
+            return Ok(new
+            {
+                success = false,
+                msg = "余额不足，请充值后再使用"
+            });
+        //从数据库获取AIdraw模型
+        var aiModel = _context.AIdraws.AsNoTracking().Where(x => x.ModelName == "DALLE3").FirstOrDefault();
+        if (aiModel == null)
+            return Ok(new { success = false, msg = "AI模型不存在" });
+        //获取对话设置
+        var chatSetting = _usersService.GetChatSetting(username);
+        var needToPay = true;
+        if (chatSetting != null && chatSetting.MyDall != null &&
+            !string.IsNullOrEmpty(chatSetting.MyDall.BaseURL) && !string.IsNullOrEmpty(chatSetting.MyDall.ApiKey))
+        {
+            aiModel.BaseUrl = chatSetting.MyDall.BaseURL;
+            aiModel.ApiKey = chatSetting.MyDall.ApiKey;
+            needToPay = false;
+        }
+
+        //发起请求
+        var base64Image = await _ai.CreateGptImage1Task(prompt, action, imageSize, quality, image, mask,
+            aiModel.BaseUrl, aiModel.ApiKey);
+        if (string.IsNullOrEmpty(base64Image)) return Ok(new { success = false, msg = "AI任务创建失败" });
+
+        // 直接返回在线图片链接给客户端
+        // 注意：这里返回的是原始的在线图片链接
+        if (needToPay)
+            await _financeService.CreateUseLogAndUpadteMoney(username, "GPT-Image-1-" + action, 0, 0, true);
+        var base64Data = base64Image;
+        if (base64Image.Contains(","))
+        {
+            base64Data = base64Image.Substring(base64Image.IndexOf(',') + 1);
+        }
+
+// 转成字节数组
+        byte[] imageBytes = Convert.FromBase64String(base64Data);
+
+// 生成文件名
+        var newFileName = DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString().Replace("-", "");
+
+// 定义存储路径（相对于 wwwroot）
+        var saveDir = Path.Combine("files", "gptimage1res", username);
+        var savePath = Path.Combine("wwwroot", saveDir);
+        Directory.CreateDirectory(savePath); // 确保目录存在
+
+// 保存图片
+        var filePath = Path.Combine(savePath, newFileName + ".png");
+        await System.IO.File.WriteAllBytesAsync(filePath, imageBytes);
+
+// 构造前端访问路径（相对URL）
+        var imgurlPath = "/" + Path.Combine(saveDir, newFileName + ".png").Replace("\\", "/");
+
+// 返回给前端
+        var response = new { success = true, msg = "AI任务创建成功", imgurl = imgurlPath, localhosturl = imgurlPath };
+        var referenceImgPath = prompt;
+        var thumbKey = string.Empty;
+        // 在后台启动一个任务下载图片
+        _ = Task.Run(async () =>
+        {
+            using (var scope = _serviceProvider.CreateScope()) // _serviceProvider 是 IServiceProvider 的一个实例。
+            {
+                // 这里做一些后续处理，比如更新数据库记录等
+                var savePath = Path.Combine("wwwroot", "files/gptimage1res", username);
+                var aiSaveService = scope.ServiceProvider.GetRequiredService<IAiServer>();
+                var cosService = scope.ServiceProvider.GetRequiredService<ICOSService>();
+                var systemService = scope.ServiceProvider.GetRequiredService<ISystemService>();
+                var thumbSavePath = systemService.CompressImage(Path.Combine(savePath, newFileName + ".png"), 75);
+                //查询是否启用了COS
+                var systemCfg = systemService.GetSystemCfgs();
+                var cos_switch = systemCfg.FirstOrDefault(x => x.CfgKey == "COS_Switch");
+                if (cos_switch != null)
+                {
+                    var cos_switch_val = cos_switch.CfgValue;
+                    if (!string.IsNullOrEmpty(cos_switch_val) && cos_switch_val == "1")
+                    {
+                        var coskey = $"gptimage1res/{DateTime.Now.ToString("yyyyMMdd")}/{newFileName}.png";
+                        var thumbFileName = Path.GetFileName(thumbSavePath);
+                        thumbKey = coskey.Replace(Path.GetFileName(imgurlPath), thumbFileName);
+                        imgurlPath = cosService.PutObject(coskey, Path.Combine(savePath, newFileName + ".png"),
+                            newFileName + ".png");
+                        thumbSavePath = cosService.PutObject(thumbKey, thumbSavePath, thumbFileName);
+                        referenceImgPath = coskey;
+                    }
+                }
+
+                await aiSaveService.SaveAiDrawResult(username, "GPT-Image-1-" + action, imgurlPath, prompt,
+                    referenceImgPath,
+                    thumbSavePath, thumbKey);
+            }
+        });
+
+        // 立即返回给客户端，不需要等待图片下载完成
+        return Ok(response);
+    }
+
+    [Authorize]
+    [HttpPost]
     public async Task<IActionResult> CreateSDTask(string prompt, string model, string imageSize, int numberImages,
-        int seed, int inferenceSteps, float guidanceScale, string negativePrompt)
+        long seed, int inferenceSteps, float guidanceScale, string negativePrompt, string referenceImagePath = "")
     {
         // 获取用户名
         var username = _jwtTokenManager
@@ -426,12 +545,18 @@ public class AIdrawController : Controller
         var aiModel = _context.AIdraws.AsNoTracking().Where(x => x.ModelName == "SD").FirstOrDefault();
         if (aiModel == null)
             return Ok(new { success = false, msg = "AI模型不存在" });
+        string referenceImageData = string.Empty;
+        if (!string.IsNullOrEmpty(referenceImagePath))
+        {
+            referenceImageData = await _systemService.ImgConvertToBase64(referenceImagePath, true);
+        }
+
         //发起请求
         var sdResponse = new SDResponse();
         try
         {
             sdResponse = await _ai.CreateSDdraw(prompt, model, imageSize, numberImages, seed, inferenceSteps,
-                guidanceScale, negativePrompt, aiModel.ApiKey, aiModel.BaseUrl, aiModel.Channel);
+                guidanceScale, negativePrompt, aiModel.ApiKey, aiModel.BaseUrl, aiModel.Channel, referenceImageData);
             if (sdResponse == null || sdResponse.Images.Count == 0)
                 return Ok(new { success = false, msg = "AI任务创建失败" });
         }
@@ -541,6 +666,62 @@ public class AIdrawController : Controller
         return Ok(new { success = false, msg = "删除失败" });
     }
 
+    [Authorize(Policy = "AdminOnly")]
+    [HttpPost]
+    public async Task<IActionResult> DeleteAIdrawResByAdmin(int id)
+    {
+        var res = await _context.AIdrawRes.FirstOrDefaultAsync(x => x.Id == id);
+        if (res != null)
+        {
+            _context.AIdrawRes.Remove(res);
+            await _context.SaveChangesAsync();
+            var systemCfg = _systemService.GetSystemCfgs();
+            var cos_switch = systemCfg.FirstOrDefault(x => x.CfgKey == "COS_Switch");
+            //删除文件
+            if (cos_switch != null)
+            {
+                var cos_switch_val = cos_switch.CfgValue;
+                if (!string.IsNullOrEmpty(cos_switch_val) && cos_switch_val == "1")
+                {
+                    _cosservice.DeleteObject(res.ReferenceImgPath);
+                    if (!string.IsNullOrEmpty(res.ThumbSavePath))
+                        _cosservice.DeleteObject(res.ThumbKey);
+                }
+                else
+                {
+                    _systemService.DeleteFile($"wwwroot{res.ImgSavePath}");
+                    if (!string.IsNullOrEmpty(res.ThumbSavePath))
+                        _systemService.DeleteFile(res.ThumbSavePath);
+                }
+            }
+            else
+            {
+                _systemService.DeleteFile($"wwwroot{res.ImgSavePath}");
+            }
+
+            return Ok(new { success = true, msg = "删除成功" });
+        }
+
+        return Ok(new { success = false, msg = "删除失败" });
+    }
+
+    [Authorize(Policy = "AdminOnly")]
+    [HttpPost]
+    public async Task<IActionResult> ToggleNsfw(int id)
+    {
+        var res = await _context.AIdrawRes.FirstOrDefaultAsync(x => x.Id == id);
+        bool nsfw = false;
+        if (res != null)
+        {
+            res.NSFW = !res.NSFW;
+            await _context.SaveChangesAsync();
+            nsfw = res.NSFW.Value;
+            return Ok(new { success = true, msg = "操作成功", isNsfw = nsfw });
+        }
+
+        return Ok(new { success = false, msg = "操作失败" });
+    }
+
     [Authorize]
     [HttpPost]
     public async Task<IActionResult> EnglishPrompt(string prompt)
@@ -555,7 +736,12 @@ public class AIdrawController : Controller
                                 'translatedText': 'Your translated English text will appear here'
                              }";
         prompt = $"Text waiting to be translated: {prompt}";
-        var resultJson = await _ai.GPTJsonModel(systemPrompt, prompt, "gpt-4o-mini", username);
+        var aiModel = "gpt-4.1-nano-openai";
+        var systemCfg = _systemService.GetSystemCfgs();
+        var aICodeCheckModel = systemCfg.FirstOrDefault(x => x.CfgKey == "AICodeCheckModel");
+        if (aICodeCheckModel != null)
+            aiModel = aICodeCheckModel.CfgValue;
+        var resultJson = await _ai.GPTJsonModel(systemPrompt, prompt, aiModel, username);
         if (!string.IsNullOrEmpty(resultJson))
         {
             var resultData = JsonConvert.DeserializeObject<TranslationResult>(resultJson);
@@ -572,9 +758,11 @@ public class AIdrawController : Controller
             success = false
         });
     }
+
     [Authorize]
     [HttpPost]
-    public async Task<IActionResult> CreateSunoTask(string mode, string gptDescription, string prompt, string tags, string mv, string title)
+    public async Task<IActionResult> CreateSunoTask(string mode, string gptDescription, string prompt, string tags,
+        string mv, string title)
     {
         if (mode != "inspiration" && mode != "custom")
             return Ok(new
@@ -583,7 +771,7 @@ public class AIdrawController : Controller
                 msg = "生成失败,请重试！"
             });
         var username = _jwtTokenManager
-           .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
         var user = _usersService.GetUserData(username);
         if (user.Mcoin <= 0)
             return Ok(new
@@ -606,7 +794,8 @@ public class AIdrawController : Controller
         }
         //查询 baseUrl和APIkey
 
-        string taskId = await _ai.CreateSunoTask(mode, gptDescription, prompt, tags, mv, title, aiModel.BaseUrl, aiModel.ApiKey, username);
+        string taskId = await _ai.CreateSunoTask(mode, gptDescription, prompt, tags, mv, title, aiModel.BaseUrl,
+            aiModel.ApiKey, username);
         if (!string.IsNullOrEmpty(taskId))
         {
             await _financeService.CreateUseLogAndUpadteMoney(username, mode, 0, 0, false);
@@ -626,11 +815,10 @@ public class AIdrawController : Controller
 
     [Authorize]
     [HttpPost]
-
     public async Task<IActionResult> GetSunoTask()
     {
         var username = _jwtTokenManager
-           .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
         string taskId = await _redisService.GetAsync($"{username}-suno");
         //从数据库获取AIdraw模型
         var aiModel = _context.AIdraws.AsNoTracking().Where(x => x.ModelName == "Suno").FirstOrDefault();
@@ -660,7 +848,7 @@ public class AIdrawController : Controller
     public IActionResult GetSongList(string keyword, int page = 1, int pageSize = 20)
     {
         var username = _jwtTokenManager
-           .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
 
         var query = _context.SunoRes.AsNoTracking()
             .Where(s => s.Account == username);
@@ -765,19 +953,19 @@ public class AIdrawController : Controller
         {
             return BadRequest(new { success = false, msg = "您已达到每小时下载限制（10次）" });
         }
+
         var tempDirName = Guid.NewGuid().ToString();
         var tempDir = Path.Combine("wwwroot", "files", "temp", tempDirName);
         Directory.CreateDirectory(tempDir);
         try
         {
-
             var filesToDownload = new Dictionary<string, string>
-        {
-            { "image", res.ImageUrl },
-            { "image_large", res.ImageLargeUrl },
-            { "audio", res.AudioUrl },
-            { "video", res.VideoUrl }
-        };
+            {
+                { "image", res.ImageUrl },
+                { "image_large", res.ImageLargeUrl },
+                { "audio", res.AudioUrl },
+                { "video", res.VideoUrl }
+            };
 
             foreach (var file in filesToDownload)
             {
@@ -802,6 +990,7 @@ public class AIdrawController : Controller
             {
                 await stream.CopyToAsync(memory);
             }
+
             memory.Position = 0;
 
             // 清理临时文件
@@ -820,6 +1009,7 @@ public class AIdrawController : Controller
             {
                 Directory.Delete(tempDir, true);
             }
+
             await _systemService.WriteLog("下载过程中发生错误:" + ex.Message, Dtos.LogLevel.Error, username);
             throw ex;
         }

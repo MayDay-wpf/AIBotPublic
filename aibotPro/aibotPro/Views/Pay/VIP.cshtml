@@ -9,10 +9,10 @@
         cursor: pointer; /* 鼠标悬停时显示手势 */
     }
 
-        .member-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
+    .member-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
 </style>
 <div class="header">
     <div class="header-left">
@@ -43,6 +43,20 @@
     </div>
 </div>
 <div class="container mt-5">
+    <div class="alert alert-info" role="alert">
+        <p class="mb-0">
+            <i class="fas fa-info-circle"></i> 温馨提示：如果充值未到账，请前往 【个人中心】
+            ->【我的】页面下滑到【订单记录】模块，点击右侧【点击核验】按钮。
+        </p>
+    </div>
+    <div class="alert alert-danger" role="alert">
+        <p class="mb-0">
+            <i class="fas fa-info-circle"></i> 警告：本站不向“非完全民事行为能力人”提供任何服务，如您不符合条件，请勿充值。
+            <br/>
+            <i class="fas fa-question-circle"></i>
+            完全民事行为能力人的描述：年满18周岁且精神健康的公民或年满16周岁不满18周岁的公民，若以自己的劳动收入作为主要生活来源的，也视为完全民事行为能力人。
+        </p>
+    </div>
     <div class="row">
         <div class="col-md-6 mb-4 align-items-stretch">
             <div class="card member-card">
@@ -53,21 +67,25 @@
                     <p class="card-text">价格：<b style="color:darkgoldenrod">￥20/月</b></p>
                     <p class="card-text">
                         1、享有优惠模型（详见模型列表：带【✨】标志的模型）
-                        <br />
+                        <br/>
                         2、专项会员折扣
-                        <br />
+                        <br/>
                         3、专属会员功能
-                        <br />
+                        <br/>
                         4、客服优先处理
-                        <br />
+                        <br/>
                         5、获得10余额
-                        <br />
+                        <br/>
                         6、每日签到，随机抽取0.5~0.6余额,每月可获得总余额15~18
                         <br/>
                         7、无专属模型
                     </p>
-                    <button class="btn btn-success" onclick="Pay(20,'wxpay','VIP|20')"><img src="~/system/images/wechatpay.png" class="payimg" /> 微信支付</button>
-                    <button class="btn btn-primary" onclick="Pay(20,'alipay','VIP|20')"><img src="~/system/images/alipay.png" class="payimg" /> 支付宝支付</button>
+                    <button class="btn btn-success" onclick="Pay(20,'wxpay','VIP|20')"><img
+                            src="~/system/images/wechatpay.png" class="payimg"/> 微信支付
+                    </button>
+                    <button class="btn btn-primary" onclick="Pay(20,'alipay','VIP|20')"><img
+                            src="~/system/images/alipay.png" class="payimg"/> 支付宝支付
+                    </button>
                     @* <button class="btn btn-info" onclick="BalncePayVIP(15)"><i data-feather="dollar-sign"></i> 余额支付</button> *@
                 </div>
             </div>
@@ -83,20 +101,24 @@
                         1、享有优惠模型（详见模型列表：带【✨】标志的模型）
                         <br/>
                         <b style="color:orangered">2、享有专属优惠模型（详见模型列表：带【👑】标志的模型）</b>
-                        <br />
+                        <br/>
                         <b style="color:orangered">3、专项高级会员折扣</b>
-                        <br />
+                        <br/>
                         4、专属会员功能
-                        <br />
+                        <br/>
                         5、客服优先处理
-                        <br />
+                        <br/>
                         6、获得25余额
                         <br/>
                         <b>7、每日签到，随机抽取0.5~0.6余额,每月可获得总余额15~18</b>
 
                     </p>
-                    <button class="btn btn-success" onclick="Pay(50,'wxpay','VIP|50')"><img src="~/system/images/wechatpay.png" class="payimg" /> 微信支付</button>
-                    <button class="btn btn-primary" onclick="Pay(50,'alipay','VIP|50')"><img src="~/system/images/alipay.png" class="payimg" /> 支付宝支付</button>
+                    <button class="btn btn-success" onclick="Pay(50,'wxpay','VIP|50')"><img
+                            src="~/system/images/wechatpay.png" class="payimg"/> 微信支付
+                    </button>
+                    <button class="btn btn-primary" onclick="Pay(50,'alipay','VIP|50')"><img
+                            src="~/system/images/alipay.png" class="payimg"/> 支付宝支付
+                    </button>
                 </div>
             </div>
         </div>

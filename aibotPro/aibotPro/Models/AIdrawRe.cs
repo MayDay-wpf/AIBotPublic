@@ -6,23 +6,33 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+public partial class AIdrawRe
 {
-    public partial class AIdrawRe
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(100)]
-        public string Account { get; set; }
-        [StringLength(50)]
-        public string AImodel { get; set; }
-        public string ImgSavePath { get; set; }
-        public string Prompt { get; set; }
-        public string ReferenceImgPath { get; set; }
-        public string ThumbSavePath { get; set; }
-        public string ThumbKey { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? CreateTime { get; set; }
-        public int? IsDel { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(100)]
+    public string Account { get; set; }
+
+    [StringLength(50)]
+    public string AImodel { get; set; }
+
+    public string ImgSavePath { get; set; }
+
+    public string Prompt { get; set; }
+
+    public string ReferenceImgPath { get; set; }
+
+    public string ThumbSavePath { get; set; }
+
+    public string ThumbKey { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? CreateTime { get; set; }
+
+    public bool? NSFW { get; set; }
+
+    public int? IsDel { get; set; }
 }

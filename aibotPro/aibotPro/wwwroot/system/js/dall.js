@@ -1,6 +1,9 @@
 ﻿var d3imgsize = '1024x1024';
 var quality = 'standard';
-let thisAiModel = 'gpt-4o-mini';
+let thisAiModel = 'gpt-4.1-nano-openai';
+// 上传图片的数据存储
+let currentImage = null;
+let currentMask = null;
 $(function () {
     $('.nav-sub-link').removeClass('active');
     $('.nav-link').removeClass('active');
@@ -12,6 +15,7 @@ $(function () {
 $(document).ready(function () {
     bindEnglishPromptTranslation("#inputText");
     bindOptimizePrompt("#inputText");
+
     // 更新字符计数的函数
     function updateCharCount() {
         var charCount = $('#inputText').val().length;
@@ -39,57 +43,111 @@ $(document).ready(function () {
 
     $('#createTaskBtn').click(function () {
         var prompt = $('#inputText').val().trim();
+        var drawModel = $('#modelSelect').val();
         if (prompt != "") {
             //禁用按钮
             $("#createTaskBtn").prop('disabled', true).addClass('btn-secondary').removeClass('btn-success');
-            //发起请求
-            $("#resview").show();
-            $('html, body').animate({ scrollTop: $('.content-body').height() }, 1000);
-            balert('发送任务创建请求成功', 'success', false, 1000, "center");
-            $("#nt").text('绘图中，请勿刷新页面...');
-            $.ajax({
-                type: "POST",
-                url: "/AIdraw/CreateDALLTask",
-                data: {
-                    prompt: prompt,
-                    imgSize: d3imgsize,
-                    quality: quality
-                },
-                success: function (data) {
-                    if (data.success) {
-                        //显示图片
-                        $("#nt").text('绘制完成');
-                        $("#resimgurl").attr("src", data.imgurl);
-                        $("#resimgurl-a").attr("href", data.imgurl);
-                        //恢复按钮
-                        $("#createTaskBtn").prop('disabled', false).addClass('btn-success').removeClass('btn-secondary');
-                        //跳转到任务列表
-                        $('html, body').animate({ scrollTop: $('.content-body').height() }, 1000);
-                        $('.image-popup').magnificPopup({
-                            type: 'image',
-                            gallery: {
-                                enabled: true
-                            }
-                        });
-                    } else {
+            if (drawModel === 'dall-e-3') {
+                //发起请求
+                $("#resview").show();
+                $("#resimgurl").attr("src", "/system/images/loading.gif");
+                $('html, body').animate({scrollTop: $('.content-body').height()}, 1000);
+                balert('发送任务创建请求成功', 'success', false, 1000, "center");
+                $("#nt").text('绘图中，请勿刷新页面...');
+                $.ajax({
+                    type: "POST",
+                    url: "/AIdraw/CreateDALLTask",
+                    data: {
+                        prompt: prompt,
+                        imgSize: d3imgsize,
+                        quality: quality
+                    },
+                    success: function (data) {
+                        if (data.success) {
+                            //显示图片
+                            $("#nt").text('绘制完成');
+                            $("#resimgurl").attr("src", data.imgurl);
+                            $("#resimgurl-a").attr("href", data.imgurl);
+                            //恢复按钮
+                            $("#createTaskBtn").prop('disabled', false).addClass('btn-success').removeClass('btn-secondary');
+                            //跳转到任务列表
+                            $('html, body').animate({scrollTop: $('.content-body').height()}, 1000);
+                            $('.image-popup').magnificPopup({
+                                type: 'image',
+                                gallery: {
+                                    enabled: true
+                                }
+                            });
+                        } else {
+                            //恢复按钮
+                            $("#createTaskBtn").prop('disabled', false).addClass('btn-success').removeClass('btn-secondary');
+                            $("#resview").hide();
+                            balert(data.msg, 'danger', false, 1000, "center");
+                        }
+                    },
+                    error: function (xhr, status, error) {
                         //恢复按钮
                         $("#createTaskBtn").prop('disabled', false).addClass('btn-success').removeClass('btn-secondary');
                         $("#resview").hide();
-                        balert(data.msg, 'danger', false, 1000, "center");
+                        balert('任务创建失败', 'danger', false, 1000, "center");
                     }
-                },
-                error: function (xhr, status, error) {
-                    //恢复按钮
-                    $("#createTaskBtn").prop('disabled', false).addClass('btn-success').removeClass('btn-secondary');
-                    $("#resview").hide();
-                    balert('任务创建失败', 'danger', false, 1000, "center");
-                }
-            });
+                });
+            } else if (drawModel === 'gpt-image-1') {
+                //发起请求
+                $("#resview").show();
+                $("#resimgurl").attr("src", "/system/images/loading.gif");
+                $('html, body').animate({scrollTop: $('.content-body').height()}, 1000);
+                balert('发送任务创建请求成功', 'success', false, 1000, "center");
+                $("#nt").text('绘图中，请勿刷新页面...');
+                $.ajax({
+                    type: "POST",
+                    url: "/AIdraw/CreateGptImage1Task",
+                    data: {
+                        prompt: prompt,
+                        action: $('#modelAction').val(),
+                        imageSize: d3imgsize,
+                        quality: quality,
+                        // 传递图片的base64数据，移除data:image前缀
+                        image: currentImage != null ? currentImage.replace(/^data:image\/(png|jpeg|jpg);base64,/, '') : null,
+                        // 传递掩码的base64数据，移除data:image前缀
+                        mask: currentMask != null ? currentMask.replace(/^data:image\/(png|jpeg|jpg);base64,/, '') : null
+                    },
+                    success: function (data) {
+                        if (data.success) {
+                            //显示图片
+                            $("#nt").text('绘制完成');
+                            $("#resimgurl").attr("src", data.imgurl);
+                            $("#resimgurl-a").attr("href", data.imgurl);
+                            //恢复按钮
+                            $("#createTaskBtn").prop('disabled', false).addClass('btn-success').removeClass('btn-secondary');
+                            //跳转到任务列表
+                            $('html, body').animate({scrollTop: $('.content-body').height()}, 1000);
+                            $('.image-popup').magnificPopup({
+                                type: 'image',
+                                gallery: {
+                                    enabled: true
+                                }
+                            });
+                        } else {
+                            //恢复按钮
+                            $("#createTaskBtn").prop('disabled', false).addClass('btn-success').removeClass('btn-secondary');
+                            $("#resview").hide();
+                            balert(data.msg, 'danger', false, 1000, "center");
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        //恢复按钮
+                        $("#createTaskBtn").prop('disabled', false).addClass('btn-success').removeClass('btn-secondary');
+                        $("#resview").hide();
+                        balert('任务创建失败', 'danger', false, 1000, "center");
+                    }
+                });
+            }
 
 
         } else {
             balert('请输入绘画提示词', 'danger', false, 1000, "center");
-            $('html, body').animate({ scrollTop: 0 }, 'slow');
+            $('html, body').animate({scrollTop: 0}, 'slow');
             //输入框获得焦点
             $('#inputText').focus();
         }
@@ -117,9 +175,7 @@ function toggleQuality() {
 function DALLinfo() {
     var content = `<p>1、请按照步骤执行绘画任务</p>
                    <p>2、图片绘制完成前，请【切勿刷新页面】</p>
-                   <p>3、图片绘制完成前如果刷新页面，图片将无法存入图库，费用依旧会扣除，请【切勿刷新页面】</p>
-                   <p>4、DALL-E3绘画，对于自然语言理解能力很强</p>
-                   <p>5、DALL-E3 源于OpenAI</p>`;
+                   <p>3、图片绘制完成前如果刷新页面，图片将无法存入图库，费用依旧会扣除，请【切勿刷新页面】</p>`;
     showConfirmationModal("DALL·E3说明", content);
 }
 
@@ -286,3 +342,455 @@ function englishPrompt() {
     })
 
 }
+
+// gpt-image-1
+$('#modelSelect').change(function () {
+    var selectedModel = $(this).val();
+    if (selectedModel === 'gpt-image-1') {
+        $('#modelAction').show();
+        $('#modelAction').val('generations');
+    } else {
+        $('#modelAction').hide();
+        $('.image-editor-container').hide();
+        $('.image-variations-container').hide();
+    }
+});
+$('#modelAction').change(function () {
+    var selectedAction = $(this).val();
+    if (selectedAction === 'edit') {
+        $('.image-editor-container').show();
+        $('.image-variations-container').hide();
+    } else if (selectedAction === 'variations') {
+        $('.image-editor-container').hide();
+        $('.image-variations-container').show();
+    } else {
+        $('.image-editor-container').hide();
+        $('.image-variations-container').hide();
+    }
+});
+//画布
+document.addEventListener('DOMContentLoaded', function () {
+    // 获取DOM元素
+    const uploadPlaceholder = document.getElementById('upload-placeholder');
+    const imageUpload = document.getElementById('image-upload');
+    const imageEditor = document.getElementById('image-editor');
+    const originalCanvas = document.getElementById('original-canvas');
+    const drawCanvas = document.getElementById('draw-canvas');
+    const maskCanvas = document.getElementById('mask-canvas');
+    const maskPlaceholder = document.getElementById('mask-placeholder');
+    const maskDisplay = document.getElementById('mask-display');
+    const brushControls = document.getElementById('brush-controls');
+    const brushSize = document.getElementById('brush-size');
+    const brushDecrease = document.getElementById('brush-decrease');
+    const brushIncrease = document.getElementById('brush-increase');
+    const clearMask = document.getElementById('clear-mask');
+    const reupload = document.getElementById('reupload');
+    const downloadMask = document.getElementById('download-mask');
+
+    // 获取画布上下文
+    const originalCtx = originalCanvas.getContext('2d');
+    const drawCtx = drawCanvas.getContext('2d');
+    const maskCtx = maskCanvas.getContext('2d', {willReadFrequently: true});
+
+    // 初始变量
+    let isDrawing = false;
+    let currentBrushSize = 10;
+    let originalImage = null;
+    currentImage = null;
+    currentMask = null;
+
+    // 上传图片事件处理
+    uploadPlaceholder.addEventListener('click', function () {
+        imageUpload.click();
+    });
+
+    imageUpload.addEventListener('change', function (e) {
+        if (e.target.files && e.target.files[0]) {
+            handleImageUpload(e.target.files[0]);
+        }
+    });
+
+    // 拖放处理
+    uploadPlaceholder.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        this.style.backgroundColor = '#f7f8fa';
+        this.style.borderColor = '#a8b1bd';
+    });
+
+    uploadPlaceholder.addEventListener('dragleave', function (e) {
+        e.preventDefault();
+        this.style.backgroundColor = '';
+        this.style.borderColor = '#dde1e6';
+    });
+
+    uploadPlaceholder.addEventListener('drop', function (e) {
+        e.preventDefault();
+        this.style.backgroundColor = '';
+        this.style.borderColor = '#dde1e6';
+
+        if (e.dataTransfer.files.length) {
+            handleImageUpload(e.dataTransfer.files[0]);
+        }
+    });
+
+    // 处理图片上传
+    function handleImageUpload(file) {
+        if (!file.type.match('image.*')) {
+            balert("请选择图片文件", "warning", false, 2000, "center");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            originalImage = new Image();
+            originalImage.onload = function () {
+                // 确定图像尺寸
+                let width = originalImage.width;
+                let height = originalImage.height;
+
+                // 调整尺寸以适应显示区域，最大宽度/高度为500px
+                const maxDimension = 500;
+                if (width > maxDimension || height > maxDimension) {
+                    const ratio = Math.min(maxDimension / width, maxDimension / height);
+                    width = Math.floor(width * ratio);
+                    height = Math.floor(height * ratio);
+                }
+
+                // 设置画布尺寸
+                originalCanvas.width = width;
+                originalCanvas.height = height;
+                drawCanvas.width = width;
+                drawCanvas.height = height;
+                maskCanvas.width = width;
+                maskCanvas.height = height;
+
+                // 绘制原图
+                originalCtx.clearRect(0, 0, width, height);
+                originalCtx.drawImage(originalImage, 0, 0, width, height);
+
+                // 初始化绘图和mask画布（透明背景）
+                drawCtx.clearRect(0, 0, width, height);
+                maskCtx.clearRect(0, 0, width, height);
+
+                // 初始化mask画布为原图的复制，后续将在这个画布上创建透明区域
+                maskCtx.drawImage(originalImage, 0, 0, width, height);
+
+                // 显示图像编辑界面，隐藏上传界面
+                uploadPlaceholder.style.display = 'none';
+                imageEditor.style.display = 'flex';
+                maskPlaceholder.style.display = 'none';
+                maskDisplay.style.display = 'flex';
+                brushControls.style.display = 'flex';
+                downloadMask.style.display = 'block';
+
+                // 调整绘图画布位置
+                positionDrawCanvas();
+
+                // 更新全局变量存储原始图像和初始mask
+                currentImage = originalCanvas.toDataURL('image/png');
+                currentMask = maskCanvas.toDataURL('image/png');
+            };
+            originalImage.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // 调整绘图画布位置以匹配原始画布
+    function positionDrawCanvas() {
+        const rect = originalCanvas.getBoundingClientRect();
+        drawCanvas.style.width = rect.width + 'px';
+        drawCanvas.style.height = rect.height + 'px';
+        drawCanvas.style.left = (originalCanvas.offsetLeft) + 'px';
+        drawCanvas.style.top = (originalCanvas.offsetTop) + 'px';
+    }
+
+    // 窗口大小变化时重新定位绘图画布
+    window.addEventListener('resize', function () {
+        if (originalImage) {
+            positionDrawCanvas();
+        }
+    });
+
+    // 绘图相关事件
+    drawCanvas.addEventListener('mousedown', startDrawing);
+    drawCanvas.addEventListener('mousemove', draw);
+    window.addEventListener('mouseup', stopDrawing);
+
+    // 触摸支持
+    drawCanvas.addEventListener('touchstart', function (e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        startDrawing({
+            clientX: touch.clientX,
+            clientY: touch.clientY
+        });
+    });
+
+    drawCanvas.addEventListener('touchmove', function (e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        draw({
+            clientX: touch.clientX,
+            clientY: touch.clientY
+        });
+    });
+
+    window.addEventListener('touchend', function (e) {
+        stopDrawing();
+    });
+
+    // 开始绘图
+    function startDrawing(e) {
+        isDrawing = true;
+        draw(e);
+    }
+
+    // 绘图函数
+    function draw(e) {
+        if (!isDrawing) return;
+
+        const rect = drawCanvas.getBoundingClientRect();
+        const scaleX = drawCanvas.width / rect.width;
+        const scaleY = drawCanvas.height / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+
+        // 在绘图画布上绘制半透明红色来显示用户的绘制操作
+        drawCtx.fillStyle = "rgba(255, 0, 0, 0.5)";
+        drawCtx.beginPath();
+        drawCtx.arc(x, y, currentBrushSize, 0, Math.PI * 2);
+        drawCtx.fill();
+
+        // 在mask画布上设置透明区域
+        maskCtx.globalCompositeOperation = 'destination-out';
+        maskCtx.beginPath();
+        maskCtx.arc(x, y, currentBrushSize, 0, Math.PI * 2);
+        maskCtx.fill();
+        maskCtx.globalCompositeOperation = 'source-over';
+    }
+
+    // 停止绘图
+    function stopDrawing() {
+        isDrawing = false;
+
+        // 每次停止绘制后更新mask
+        if (maskCanvas.width > 0 && maskCanvas.height > 0) {
+            currentMask = maskCanvas.toDataURL('image/png');
+        }
+    }
+
+    // 画笔大小控制
+    brushDecrease.addEventListener('click', function () {
+        currentBrushSize = Math.max(5, currentBrushSize - 5);
+        updateBrushSizeText();
+    });
+
+    brushIncrease.addEventListener('click', function () {
+        currentBrushSize = Math.min(50, currentBrushSize + 5);
+        updateBrushSizeText();
+    });
+
+    function updateBrushSizeText() {
+        brushSize.textContent = `画笔: ${currentBrushSize}px`;
+    }
+
+    // 初始化画笔大小显示
+    updateBrushSizeText();
+
+    // 清除涂抹时也要更新mask
+    clearMask.addEventListener('click', function () {
+        if (originalImage) {
+            // 清除绘图画布
+            drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+
+            // 重置mask画布为原图
+            maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+            maskCtx.drawImage(originalImage, 0, 0, maskCanvas.width, maskCanvas.height);
+
+            // 更新mask数据
+            currentMask = maskCanvas.toDataURL('image/png');
+        }
+    });
+
+    // 重新上传时清除所有图像数据
+    reupload.addEventListener('click', function () {
+        // 重置状态并显示上传界面
+        uploadPlaceholder.style.display = 'flex';
+        imageEditor.style.display = 'none';
+        maskPlaceholder.style.display = 'flex';
+        maskDisplay.style.display = 'none';
+        brushControls.style.display = 'none';
+        downloadMask.style.display = 'none';
+
+        // 清除画布
+        originalCtx.clearRect(0, 0, originalCanvas.width, originalCanvas.height);
+        drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+        maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+
+        // 重置全局变量
+        originalImage = null;
+        currentImage = null;
+        currentMask = null;
+
+        // 重置上传控件
+        imageUpload.value = '';
+    });
+
+    // 下载mask图片
+    downloadMask.addEventListener('click', function () {
+        if (originalImage) {
+            // 创建下载链接
+            const link = document.createElement('a');
+            link.download = 'mask.png';
+
+            // 获取含透明区域的PNG
+            link.href = maskCanvas.toDataURL('image/png');
+
+            // 触发下载
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    });
+});
+
+
+//图片变体
+
+document.addEventListener('DOMContentLoaded', function () {
+    // 获取DOM元素
+    const variationsUpload = document.getElementById('variations-upload');
+    const variationsFileInput = document.getElementById('variations-file-input');
+    const uploadedImagesContainer = document.getElementById('uploaded-images-container');
+    const imageGrid = document.getElementById('image-grid');
+    const clearVariations = document.getElementById('clear-variations');
+    const changeImage = document.getElementById('change-image');
+
+    // 点击上传区域触发文件选择
+    variationsUpload.addEventListener('click', function () {
+        variationsFileInput.click();
+    });
+
+    // 监听文件选择变化
+    variationsFileInput.addEventListener('change', function (e) {
+        if (e.target.files.length > 0) {
+            handleFile(e.target.files[0]);
+        }
+    });
+
+    // 拖放处理
+    variationsUpload.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        this.style.backgroundColor = '#f1f3f5';
+        this.style.borderColor = '#adb5bd';
+    });
+
+    variationsUpload.addEventListener('dragleave', function (e) {
+        e.preventDefault();
+        this.style.backgroundColor = '#f8f9fa';
+        this.style.borderColor = '#dde1e6';
+    });
+
+    variationsUpload.addEventListener('drop', function (e) {
+        e.preventDefault();
+        this.style.backgroundColor = '#f8f9fa';
+        this.style.borderColor = '#dde1e6';
+
+        if (e.dataTransfer.files.length > 0) {
+            handleFile(e.dataTransfer.files[0]);
+        }
+    });
+
+    // 处理上传的单个文件
+    // 处理上传的单个文件
+    function handleFile(file) {
+        // 确保文件是图片
+        if (!file.type.match('image.*')) {
+            return;
+        }
+
+        // 读取文件
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            // 清除之前的图片
+            imageGrid.innerHTML = '';
+
+            // 创建唯一ID
+            const imageId = 'img-' + Date.now();
+
+            // 获取图片的base64数据
+            const imageDataUrl = e.target.result;
+
+            // 更新全局变量，存储图片数据
+            currentImage = imageDataUrl;
+
+            // 变体模式下不需要mask
+            currentMask = null;
+
+            // 创建预览元素
+            createImagePreview(imageId, imageDataUrl);
+
+            // 显示图片网格，隐藏上传区域
+            uploadedImagesContainer.style.display = 'block';
+            variationsUpload.style.display = 'none';
+        };
+
+        reader.readAsDataURL(file);
+
+        // 重置文件输入，允许再次选择相同的文件
+        variationsFileInput.value = '';
+    }
+
+    // 创建图片预览
+    function createImagePreview(id, dataUrl) {
+        const imageItem = document.createElement('div');
+        imageItem.className = 'image-item';
+        imageItem.id = id;
+
+        // 创建图片元素
+        const img = document.createElement('img');
+        img.src = dataUrl;
+        img.alt = '上传的图片';
+
+        // 创建删除按钮
+        const removeBtn = document.createElement('div');
+        removeBtn.className = 'remove-image';
+        removeBtn.innerHTML = '×';
+        removeBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            clearImage();
+        });
+
+        // 添加到图片项
+        imageItem.appendChild(img);
+        imageItem.appendChild(removeBtn);
+
+        // 添加到网格
+        imageGrid.appendChild(imageItem);
+    }
+
+    // 清除图片
+    // 清除图片
+    function clearImage() {
+        // 清空图片网格
+        imageGrid.innerHTML = '';
+
+        // 清除全局变量
+        currentImage = null;
+        currentMask = null;
+
+        // 显示上传区域，隐藏图片网格
+        uploadedImagesContainer.style.display = 'none';
+        variationsUpload.style.display = 'flex';
+    }
+
+    // 清除图片按钮
+    clearVariations.addEventListener('click', function () {
+        clearImage();
+    });
+
+    // 更换图片按钮
+    changeImage.addEventListener('click', function () {
+        variationsFileInput.click();
+    });
+});

@@ -7,7 +7,105 @@
     $("#userlist_userlists_nav").addClass('active');
     loadUsersList(page, page_size);
     $("#cards").val('');
+    $("#token-codes").val('');
+    
+    // Initialize select2 for token models
+    $('#token-models').select2({
+        placeholder: "选择模型（不选则所有模型可用）",
+        allowClear: true
+    });
+    
+    // Load models for token package
+    loadModelsForToken();
+    
+    // Set default expiration date to 30 days from now
+    const defaultExpDate = new Date();
+    defaultExpDate.setDate(defaultExpDate.getDate() + 30);
+    $('#token-expiration').val(formatDateTimeForInput(defaultExpDate));
 });
+
+// Format date for datetime-local input
+function formatDateTimeForInput(date) {
+    return date.getFullYear() + '-' + 
+           ('0' + (date.getMonth() + 1)).slice(-2) + '-' + 
+           ('0' + date.getDate()).slice(-2) + 'T' + 
+           ('0' + date.getHours()).slice(-2) + ':' + 
+           ('0' + date.getMinutes()).slice(-2);
+}
+
+// Load models for token package select
+function loadModelsForToken() {
+    $.ajax({
+        url: '/OpenAll/GetChatSetting',
+        type: 'Post',
+        dataType: 'json',
+        success: function (response) {
+            if (response.success) {
+                var models = response.data;
+                var tokenModels = $('#token-models');
+                tokenModels.empty();
+                
+                for (var i = 0; i < models.length; i++) {
+                    tokenModels.append(`<option value="${models[i].modelName}">${models[i].modelNick}</option>`);
+                }
+            } else {
+                balert('加载模型失败', 'danger', false, 1500, 'center');
+            }
+        },
+        error: function (error) {
+            console.log(error);
+            balert('加载模型失败', 'danger', false, 1500, 'center');
+        }
+    });
+}
+
+// Create token packages
+function createTokenPackages() {
+    var account = $("#token-account").val();
+    var tokenTotal = $("#token-total").val();
+    var selectedModels = $("#token-models").val();
+    var expirationTime = $("#token-expiration").val();
+    var count = $("#token-count").val();
+    
+    if (account == "" || tokenTotal == "" || count == "") {
+        balert('请输入账号、Token数量和生成数量', 'danger', false, 1500, 'center');
+        return;
+    }
+    
+    loadingBtn('.createtokens');
+    $.ajax({
+        url: '/OpenAll/CreateTokenPackages',
+        type: 'Post',
+        data: {
+            account: account,
+            tokenTotal: tokenTotal,
+            selectedModels: selectedModels,
+            expirationTime: expirationTime,
+            count: count
+        },
+        dataType: 'json',
+        success: function (response) {
+            unloadingBtn('.createtokens');
+            if (response.success) {
+                balert('生成成功', 'success', false, 1500, 'center');
+                $("#token-codes").val(''); // Clear previous codes
+                
+                for (var i = 0; i < response.data.length; i++) {
+                    var code = response.data[i];
+                    $("#token-codes").val($("#token-codes").val() + code + "\n");
+                }
+            } else {
+                balert('生成失败，请稍后再试', 'danger', false, 1500, 'center');
+            }
+        },
+        error: function (error) {
+            unloadingBtn('.createtokens');
+            console.log(error);
+            balert('生成失败，请稍后再试', 'danger', false, 1500, 'center');
+        }
+    });
+}
+
 let page = 1;
 let page_size = 15;
 let total = 0;

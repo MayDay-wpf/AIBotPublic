@@ -43,6 +43,12 @@ namespace aibotPro.Dtos
         public int n { get; set; }
     }
 
+    public class GptImageEditBody : DALLdrawBody
+    {
+        public string image { get; set; }
+        public string mask { get; set; }
+    }
+
     public class SDdrawBody
     {
         public string model { get; set; }
@@ -51,7 +57,8 @@ namespace aibotPro.Dtos
         public int batch_size { get; set; }
         public int num_inference_steps { get; set; }
         public float guidance_scale { get; set; }
-        public int seed { get; set; }
+        public long seed { get; set; }
+        public string image { get; set; }
     }
 
     public class SDResponse
@@ -104,6 +111,8 @@ namespace aibotPro.Dtos
     {
         public string revised_prompt { get; set; }
         public string url { get; set; }
+
+        public string b64_json { get; set; }
     }
 
     public class MJchangeBody

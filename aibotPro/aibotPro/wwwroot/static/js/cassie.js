@@ -61,9 +61,15 @@ $(function () {
     }
     // 设置初始状态
     if ($(window).width() >= 992) {
-        if (!pure)
+        if (!pure && pathname != '/product/vibecoding' && pathname != '/product/deepresearch') {
             // PC端默认展开非纯净模式
             $body.addClass('sidebar-open');
+        }
+        if (pathname == '/product/vibecoding' || pathname == '/product/deepresearch') {
+            $body.removeClass('sidebar-open');
+            $body.addClass('sidebar-closed');
+        }
+
     } else {
         // 移动端默认缩回
         $body.removeClass('sidebar-open');
@@ -134,7 +140,7 @@ $(function () {
         })
     }
 })
-;
+    ;
 if (location.href.indexOf('ile:') < 0) {
     if (location.href.indexOf('stra') < 0) {
     }

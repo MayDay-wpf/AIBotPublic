@@ -18,15 +18,22 @@ namespace aibotPro.Controllers
         private readonly JwtTokenManager _jwtTokenManager;
         private readonly IFinanceService _financeService;
         private readonly IUsersService _usersService;
+        private readonly IProductService _productService;
+        private readonly IRedisService _redisService;
+        private readonly IDeepResearchService _deepResearchService;
 
         public ProductController(IAiServer aiServer, ISystemService systemService, JwtTokenManager jwtTokenManager,
-            IFinanceService financeService, IUsersService usersService)
+            IFinanceService financeService, IUsersService usersService, IProductService productService,
+            IRedisService redisService, IDeepResearchService deepResearchService)
         {
             _aiServer = aiServer;
             _systemService = systemService;
             _jwtTokenManager = jwtTokenManager;
             _financeService = financeService;
             _usersService = usersService;
+            _productService = productService;
+            _redisService = redisService;
+            _deepResearchService = deepResearchService;
         }
 
         public IActionResult ChatGrid()
@@ -50,6 +57,16 @@ namespace aibotPro.Controllers
         }
 
         public IActionResult RealTime()
+        {
+            return View();
+        }
+
+        public IActionResult VibeCoding()
+        {
+            return View();
+        }
+
+        public IActionResult DeepResearch()
         {
             return View();
         }
@@ -306,7 +323,7 @@ namespace aibotPro.Controllers
             if (!string.IsNullOrEmpty(result))
             {
                 success = true;
-                var tikToken = TikToken.GetEncoding("cl100k_base");
+                var tikToken = TikToken.GetEncoding("o200k_base");
                 await _financeService.CreateUseLogAndUpadteMoney(username, model,
                     tikToken.Encode(prompt + schema).Count, tikToken.Encode(result).Count);
             }
@@ -316,6 +333,246 @@ namespace aibotPro.Controllers
                 success = success,
                 data = question.Questions
             });
+        }
+
+        #endregion
+
+        #region VibeCoding
+
+        public IActionResult GetVibeCodingModels()
+        {
+            var models = _productService.GetVibeCodingModels();
+            models.Sort((x, y) => x.Seq.GetValueOrDefault().CompareTo(y.Seq));
+            //移除Baseurl和ApiKey
+            foreach (var model in models)
+            {
+                model.BaseUrl = "";
+                model.ApiKey = "";
+                model.Delay = 0;
+                model.AdminPrompt = "";
+            }
+
+            return Json(new
+            {
+                success = true,
+                data = models
+            });
+        }
+
+        public IActionResult GetDeepResearchModels()
+        {
+            var models = _productService.GetDeepResearchModels();
+            models.Sort((x, y) => x.Seq.GetValueOrDefault().CompareTo(y.Seq));
+            foreach (var model in models)
+            {
+                model.BaseUrl = "";
+                model.ApiKey = "";
+                model.Delay = 0;
+                model.AdminPrompt = "";
+            }
+            return Json(new
+            {
+                success = true,
+                data = models
+            });
+        }
+
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> GetVibeCodingHistoriesList(int pageIndex = 1, int pageSize = 10,
+            string searchKey = "")
+        {
+            var username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+
+            var histories = await _productService.GetVibeCodingHistoriesList(username, pageIndex, pageSize, searchKey);
+
+            return Json(new
+            {
+                success = true,
+                data = histories
+            });
+        }
+
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> GetVibeCodingHistoryDetail(string chatId)
+        {
+            var username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+
+            var historyDetail = await _productService.GetVibeCodingHistoryDetail(chatId, username);
+
+            return Json(new
+            {
+                success = true,
+                data = historyDetail
+            });
+        }
+
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> DeleteVibeCodingHistory(string chatId)
+        {
+            var username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+
+            var result = await _productService.DeleteVibeCodingHistory(chatId, username);
+
+            return Json(new
+            {
+                success = result,
+                message = result ? "删除成功" : "删除失败"
+            });
+        }
+
+        public async Task<IActionResult> CreateCache(string codeContext, string key)
+        {
+            var username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            await _redisService.SetAsync(key, codeContext, TimeSpan.FromMinutes(10));
+            // 返回缓存的key
+            return Json(new
+            {
+                success = true,
+                data = key
+            });
+        }
+
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> GetVibeCodingSearchCode(string content, string question)
+        {
+            var username = _jwtTokenManager
+                .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+            string systemPrompt = @"你是一个代码查找搜索引擎。根据用户的关键词和提供的相关代码块进行分析和查找。
+                                    分析要求：
+                                    1. 仔细分析代码片段中是否存在与用户问题相关的代码
+                                    2. 如果存在相关代码，请按以下格式回复：
+                                       **行号范围：[起始行号-结束行号]**
+                                       **相关代码说明：**[简要说明该代码段的作用及与问题的关系]
+
+                                    3. 如果代码片段中不存在与用户问题相关的代码，请直接回复：
+                                       **无关代码**
+
+                                    4. 最大的容错率，只要可能与用户关键词相关的代码段，即便不完整也视为有效
+
+                                    注意：
+                                    - 行号必须准确对应代码片段中的实际行号
+                                    - 如果有多个相关代码段，请分别标注
+                                    - 回复要简洁明确，避免冗余描述"";
+                                    ```
+
+                                    ## 示例演示
+
+                                    **用户问题：** 这段代码中有数据库连接的相关代码吗？
+
+                                    **代码片段：**
+                                    ```
+                                    1  public class UserService 
+                                    2  {
+                                    3      private readonly IConfiguration _config;
+                                    4      private readonly string _connectionString;
+                                    5      
+                                    6      public UserService(IConfiguration config)
+                                    7      {
+                                    8          _config = config;
+                                    9          _connectionString = _config.GetConnectionString(""DefaultConnection"");
+                                    10     }
+                                    11     
+                                    12     public async Task<User> GetUserAsync(int id)
+                                    13     {
+                                    14         using var connection = new SqlConnection(_connectionString);
+                                    15         await connection.OpenAsync();
+                                    16         var sql = ""SELECT * FROM Users WHERE Id = @id"";
+                                    17         return await connection.QueryFirstOrDefaultAsync<User>(sql, new { id });
+                                    18     }
+                                    19     
+                                    20     public void LogMessage(string message)
+                                    21     {
+                                    22         Console.WriteLine($""[{DateTime.Now}] {message}"");
+                                    23     }
+                                    24 }
+                                    ```
+
+                                    **AI回复示例1（存在相关代码）：**
+                                    ```
+                                    **行号范围：[4-4]**
+                                    **相关代码说明：**定义数据库连接字符串字段
+
+                                    **行号范围：[9-9]**
+                                    **相关代码说明：**从配置中获取数据库连接字符串
+
+                                    **行号范围：[14-17]**
+                                    **相关代码说明：**创建并打开数据库连接，执行SQL查询
+                                    ```
+
+                                    **AI回复示例2（不存在相关代码）：**
+                                    如果代码片段只包含日志记录功能，用户问的是数据库连接：
+                                    ```
+                                    **无关代码:[1-24]**
+                                    ```";
+            var systemCfgs = _systemService.GetSystemCfgs();
+            var model = systemCfgs.FirstOrDefault(x => x.CfgKey == "QAmodel")?.CfgValue;
+            var aiChat = new AiChat();
+            aiChat.Model = model;
+            aiChat.Messages = new List<Message>();
+            aiChat.Messages.Add(new Message()
+            {
+                Role = "system",
+                Content = systemPrompt
+            });
+            aiChat.Messages.Add(new Message()
+            {
+                Role = "user",
+                Content = $"用户关键词：{question}\n代码片段：{content}"
+            });
+            aiChat.Stream = false;
+            var apiSetting = _aiServer.CreateAPISetting(model);
+            var result = await _aiServer.CallingAINotStream(aiChat, apiSetting);
+            return Json(new
+            {
+                success = true,
+                data = result
+            });
+        }
+
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> GetVibeCodingWebSearch(string query)
+        {
+            try
+            {
+                var username = _jwtTokenManager
+                    .ValidateToken(Request.Headers["Authorization"].ToString().Replace("Bearer ", "")).Identity?.Name;
+
+                if (string.IsNullOrEmpty(query))
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "搜索查询不能为空"
+                    });
+                }
+
+                // 使用JINA AI进行联网搜索
+                var keywords = new List<string> { query };
+                var searchResult = await _deepResearchService.GetJinaSearchResultAsync(keywords);
+
+                return Json(new
+                {
+                    success = true,
+                    data = searchResult
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = $"搜索失败: {ex.Message}"
+                });
+            }
         }
 
         #endregion

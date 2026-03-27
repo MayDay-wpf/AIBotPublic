@@ -3,19 +3,656 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <style>
-    table {
+    .model-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .model-card {
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 12px;
+        background: #fff;
+        position: relative;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .model-card:hover {
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+        border-color: #007bff;
+    }
+
+    .model-card.dragging {
+        opacity: 0.8;
+        transform: scale(1.02);
+        z-index: 1000;
+    }
+
+    .drag-placeholder {
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        height: 80px;
+        border-radius: 6px;
+        margin: 4px 0;
+    }
+
+    .card-header-custom {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #eee;
+        gap: 8px;
+    }
+
+    .card-title {
+        font-weight: 600;
+        color: #495057;
+        font-size: 0.95em;
+        margin: 0;
+        flex-grow: 1;
+    }
+
+    .card-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .card-actions span {
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 3px;
+        transition: all 0.2s;
+        font-size: 16px;
+    }
+
+    .card-actions .delete-btn {
+        /*background-color: #ffebee;*/
+        color: #d32f2f;
+    }
+
+    .card-actions .add-btn {
+        color: #28a745;
+    }
+
+    .card-actions .add-btn:hover {
+        background: rgba(40, 167, 69, 0.1);
+    }
+
+    .card-actions .delete-btn::before {
+        /*content: '🗑️';*/
+        font-size: 14px;
+    }
+
+    .drag-handle {
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: move;
+        /*background: #f8f9fa;*/
+        /*border: 1px solid #dee2e6;*/
+        /*border-radius: 3px;*/
+        color: #6c757d;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+
+    .drag-handle:hover {
+        /*background: #e9ecef;*/
+        color: #495057;
+        /*border-color: #007bff;*/
+    }
+
+    /*.drag-handle::before {*/
+    /*    content: '⋮⋮';*/
+    /*    font-size: 14px;*/
+    /*    line-height: 1;*/
+    /*    letter-spacing: -2px;*/
+    /*}*/
+    .form-row-custom {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 8px;
+    }
+
+    .form-group-custom {
+        margin-bottom: 6px;
+    }
+
+    .form-group-custom label {
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 3px;
+        display: block;
+        font-size: 0.8em;
+    }
+
+    .form-group-custom .form-control {
+        border-radius: 4px;
+        border: 1px solid #ced4da;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        padding: 4px 8px;
+        font-size: 0.85em;
+        height: 28px;
+    }
+
+    .form-group-custom .form-control:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, .25);
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+        margin: 0 4px 0 0;
+        transform: scale(0.9);
+    }
+
+    .checkbox-group label {
+        font-size: 0.8em;
+        margin-bottom: 0;
+    }
+
+    .model-badge {
+        display: inline-block;
+        background: #e9ecef;
+        color: #495057;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.85em;
+        margin-left: 10px;
+    }
+
+    .seq-badge {
+        background: #007bff;
+        color: white;
+        font-weight: 500;
+        min-width: 24px;
+        text-align: center;
+    }
+
+    .add-model-card {
+        border: 2px dashed #dee2e6;
+        background: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 50px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-radius: 6px;
+        margin-top: 8px;
+    }
+
+    .add-model-card:hover {
+        border-color: #007bff;
+        background: #e3f2fd;
+        color: #007bff;
+    }
+
+    /* 浮动按钮组 */
+    .floating-btn-group {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    /* 浮动按钮共用样式 */
+    .floating-add-btn,
+    .floating-save-btn {
+        width: 60px;
+        height: 60px;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        transition: all 0.3s ease;
+        opacity: 0.9;
+    }
+
+    /* 浮动新增按钮 */
+    .floating-add-btn {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    }
+
+    .floating-add-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 16px rgba(0, 123, 255, 0.4);
+        opacity: 1;
+    }
+
+    /* 浮动保存按钮 */
+    .floating-save-btn {
+        background: linear-gradient(135deg, #28a745, #1e7e34);
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    }
+
+    .floating-save-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+        opacity: 1;
+    }
+
+    .floating-add-btn:active,
+    .floating-save-btn:active {
+        transform: scale(0.95);
+    }
+
+    /* 隐藏原有的底部新增按钮 */
+    .tab-pane .add-model-card {
+        display: none;
+    }
+
+    .add-model-text {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        font-size: 0.9em;
+    }
+
+    .add-model-text::before {
+        /*content: '➕';*/
+        font-size: 16px;
+    }
+
+    /* 搜索相关样式 */
+    .search-container {
+        margin-bottom: 16px;
+    }
+
+    .search-input-group {
+        position: relative;
+        display: flex;
+        align-items: center;
         width: 100%;
+        max-width: 500px;
+    }
+
+    .search-input {
+        padding-right: 80px;
+        border-radius: 25px;
+        border: 2px solid #e9ecef;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        font-size: 0.9em;
+        height: 42px;
+    }
+
+    .search-input:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, .25);
+        outline: none;
+    }
+
+    .search-actions {
+        position: absolute;
+        right: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    #clearSearch {
+        border: none;
+        background: transparent;
+        color: #6c757d;
+        padding: 4px 8px;
+        border-radius: 15px;
+        transition: all 0.2s ease;
+    }
+
+    #clearSearch:hover {
+        background: #f8f9fa;
+        color: #495057;
+    }
+
+    .search-icon {
+        color: #6c757d;
+        font-size: 16px;
+        pointer-events: none;
+    }
+
+    .search-stats {
+        margin-top: 8px;
+        font-size: 0.85em;
+        color: #6c757d;
+        font-weight: 500;
+    }
+
+    .no-results {
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        padding: 30px;
+        text-align: center;
+    }
+
+    .model-card.hidden {
+        display: none;
+    }
+
+    .model-card.highlight-new {
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        border-color: #2196f3;
+        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+    }
+
+    /* Tab相关样式 */
+    .group-tabs-container {
+        margin-bottom: 1rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .tabs-navigation {
+        display: flex;
+        align-items: center;
+        position: relative;
+        background: #fff;
+        border-radius: 8px 8px 0 0;
+    }
+
+    .tab-nav-btn {
+        width: 36px;
+        height: 40px;
+        border: none;
+        background: #f8f9fa;
+        color: #6c757d;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .tab-nav-prev {
+        border-radius: 8px 0 0 0;
+        border-right: 1px solid #dee2e6;
+    }
+
+    .tab-nav-next {
+        border-radius: 0 8px 0 0;
+        border-left: 1px solid #dee2e6;
+    }
+
+    .tab-nav-btn:hover {
+        background: #e9ecef;
+        color: #495057;
+    }
+
+    .tab-nav-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: #f8f9fa;
+    }
+
+    .tabs-scroll-container {
+        flex: 1;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .group-tabs {
+        display: flex;
+        flex-wrap: nowrap;
+        border-bottom: none;
+        margin: 0;
+        padding: 0;
+        transition: transform 0.3s ease;
+        width: max-content;
+        min-width: 100%;
+    }
+
+    .group-tabs .nav-item {
+        flex-shrink: 0;
+    }
+
+    .group-tabs .nav-link {
+        border: none;
+        border-radius: 0;
+        padding: 10px 16px;
+        margin: 0;
+        color: #6c757d;
+        font-size: 0.85em;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        background: transparent;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        position: relative;
+        border-bottom: 3px solid transparent;
+    }
+
+    .group-tabs .nav-link i {
+        font-size: 0.9em;
+        opacity: 0.8;
+    }
+
+    .group-tabs .nav-link:hover {
+        background: rgba(0, 123, 255, 0.05);
+        color: #007bff;
+        border-bottom-color: rgba(0, 123, 255, 0.3);
+    }
+
+    .group-tabs .nav-link.active {
+        color: #007bff;
+        background: rgba(0, 123, 255, 0.08);
+        border-bottom-color: #007bff;
+        font-weight: 600;
+    }
+
+    .group-tabs .nav-link.active i {
+        opacity: 1;
+    }
+
+    .group-tabs .badge {
+        background: linear-gradient(135deg, #6c757d, #5a6268);
+        color: white;
+        font-size: 0.7em;
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-weight: 500;
+        min-width: 18px;
+        text-align: center;
+    }
+
+    .group-tabs .nav-link.active .badge {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+    }
+
+    .tab-content {
+        padding-top: 1rem;
+    }
+
+    .tab-pane {
+        min-height: 200px;
+    }
+
+    @@media (max-width: 768px) {
+        .form-row-custom {
+            grid-template-columns: 1fr;
+        }
+
+        .card-header-custom {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .drag-handle {
+            width: 14px;
+            height: 35px;
+        }
+
+        .search-input-group {
+            max-width: 100%;
+        }
+
+        /* 移动端Tab样式 */
+        .tab-nav-btn {
+            width: 32px;
+            height: 36px;
+        }
+
+        .group-tabs .nav-link {
+            padding: 8px 12px;
+            font-size: 0.8em;
+        }
+
+        .group-tabs .nav-link i {
+            font-size: 0.85em;
+        }
+
+        .group-tabs .badge {
+            font-size: 0.65em;
+            padding: 1px 4px;
+        }
+
+        /* 移动端浮动按钮组 */
+        .floating-btn-group {
+            bottom: 20px;
+            right: 20px;
+            gap: 10px;
+        }
+
+        .floating-add-btn,
+        .floating-save-btn {
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+        }
+    }
+
+    .icon {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        background-size: contain;
+        background-repeat: no-repeat;
+        vertical-align: middle;
+    }
+
+    .icon-360 {
+        background-image: url('/system/images/modelsvg/360.svg');
+    }
+
+    .icon-bing {
+        background-image: url('/system/images/modelsvg/bing.svg');
+    }
+
+    .icon-claude {
+        background-image: url('/system/images/modelsvg/claude.svg');
+    }
+
+    .icon-deepseek {
+        background-image: url('/system/images/modelsvg/deepseek.svg');
+    }
+
+    .icon-ernie {
+        background-image: url('/system/images/modelsvg/ernie.svg');
+    }
+
+    .icon-gemini {
+        background-image: url('/system/images/modelsvg/gemini.svg');
+    }
+
+    .icon-glm {
+        background-image: url('/system/images/modelsvg/glm.svg');
+    }
+
+    .icon-gpt {
+        background-image: url('/system/images/modelsvg/gpt.svg');
+    }
+
+    .icon-hunyuan {
+        background-image: url('/system/images/modelsvg/hunyuan.svg');
+    }
+
+    .icon-llama {
+        background-image: url('/system/images/modelsvg/llama.svg');
+    }
+
+    .icon-minimax {
+        background-image: url('/system/images/modelsvg/minimax.svg');
+    }
+
+    .icon-mistral {
+        background-image: url('/system/images/modelsvg/mistral.svg');
+    }
+
+    .icon-moonshot {
+        background-image: url('/system/images/modelsvg/moonshot.svg');
+    }
+
+    .icon-qwen {
+        background-image: url('/system/images/modelsvg/qwen.svg');
+    }
+
+    .icon-sparkdesk {
+        background-image: url('/system/images/modelsvg/sparkdesk.svg');
+    }
+
+    .icon-suno {
+        background-image: url('/system/images/modelsvg/suno.svg');
+    }
+
+    .icon-cohere {
+        background-image: url('/system/images/modelsvg/cohere.svg');
+    }
+
+    .icon-internlm {
+        background-image: url('/system/images/modelsvg/internlm.svg');
+    }
+
+    .icon-yi {
+        background-image: url('/system/images/modelsvg/yi.svg');
+    }
+
+    .icon-xai {
+        background-image: url('/system/images/modelsvg/xai.svg');
+    }
+
+    .icon-doubao {
+        background-image: url('/system/images/modelsvg/doubao.png');
+    }
+
+    .icon-amazon {
+        background-image: url('/system/images/modelsvg/amazon.svg');
+    }
+
+    .icon-test {
+        background-image: url('/system/images/modelsvg/test.svg');
     }
 </style>
 <div class="header">
     <div class="header-left">
         <a id="menuMain" href="" class="burger-menu">
-            <i data-feather="menu">
-            </i>
+            <i data-feather="menu"></i>
         </a>
         <a id="menuBack" href="" class="burger-menu d-none">
-            <i data-feather="arrow-left">
-            </i>
+            <i data-feather="arrow-left"></i>
         </a>
         <button type="button" class="btn btn-primary save" onclick="saveChatSetting()">
             <i data-feather="save"></i>保存设置
@@ -30,33 +667,83 @@
             </h6>
         </div>
         <div class="card-body">
-            <div class="form-group">
-                <table class="form-table">
-                    <thead>
-                        <tr>
-                            <td>拖拽排序</td>
-                            <td>模型昵称</td>
-                            <td>模型名称</td>
-                            <td>BaseUrl</td>
-                            <td>ApiKey</td>
-                            <td>视觉模型</td>
-                            <td>分组</td>
-                            <td>排序</td>
-                            <td>流延时(ms)</td>
-                            <td>预设系统提示词</td>
-                            <td>模型说明</td>
-                            <td>删除</td>
-                            <td>编辑</td>
-                        </tr>
-                    </thead>
-                    <tbody id="AddSt">
-                    </tbody>
-                </table>
-                <button type="button" class="btn btn-success" onclick="addStLine()">
-                    <i data-feather="plus"></i>新增一行
+            <!-- 搜索框 -->
+            <div class="search-container mb-3">
+                <div class="search-input-group">
+                    <input type="text" id="modelSearch" class="form-control search-input"
+                           placeholder="搜索模型昵称、模型名称、分组或说明...">
+                    <div class="search-actions">
+                        <button type="button" id="clearSearch" class="btn btn-sm btn-outline-secondary"
+                                title="清除搜索">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <div class="search-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="search-stats" id="searchStats"></div>
+            </div>
+
+            <!-- 分组Tab导航 -->
+            <div class="group-tabs-container mb-3" id="groupTabsContainer">
+                <div class="tabs-navigation">
+                    <button class="tab-nav-btn tab-nav-prev" id="tabNavPrev" title="向左滚动">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="tabs-scroll-container">
+                        <ul class="nav nav-tabs group-tabs" id="groupTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="all-tab" data-bs-toggle="tab"
+                                        data-bs-target="#all-content"
+                                        type="button" role="tab" aria-controls="all-content" aria-selected="true">
+                                    <i class="fas fa-th-large"></i> 全部 <span class="badge badge-secondary ms-1"
+                                                                               id="all-count">0</span>
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                    <button class="tab-nav-btn tab-nav-next" id="tabNavNext" title="向右滚动">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab内容区域 -->
+            <div class="tab-content" id="groupTabContent">
+                <div class="tab-pane fade show active" id="all-content" role="tabpanel" aria-labelledby="all-tab">
+                    <div id="model-cards-container" class="model-cards">
+                        <!-- 模型卡片将动态插入此处 -->
+                    </div>
+                    <div class="add-model-card" onclick="addStLine()">
+                        <div class="add-model-text">
+                            <span><i class="fas fa-plus"></i> 新增模型配置</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 无搜索结果提示 -->
+            <div id="noResults" class="no-results" style="display: none;">
+                <div class="text-center py-4">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">未找到匹配的模型</h5>
+                    <p class="text-muted">请尝试其他搜索关键词</p>
+                </div>
+            </div>
+            
+            <!-- 浮动按钮组 -->
+            <div class="floating-btn-group">
+                <!-- 浮动保存按钮 -->
+                <button class="floating-save-btn" onclick="saveChatSetting()" title="保存配置">
+                    <i class="fas fa-save"></i>
+                </button>
+                <!-- 浮动新增按钮 -->
+                <button class="floating-add-btn" onclick="addStLineFromFloat()" title="新增模型配置">
+                    <i class="fas fa-plus"></i>
                 </button>
             </div>
         </div>
     </div>
 </div>
-<script src="~/system/js/openall/aichatmodelsetting.js?v3.0.1"></script>
+<script src="~/system/js/openall/aichatmodelsetting.js?v3.0.6"></script>

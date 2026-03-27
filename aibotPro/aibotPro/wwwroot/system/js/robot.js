@@ -207,7 +207,7 @@ function getNotice() {
     });
 }
 
-var thisAiModel_bot = "gpt-4o-mini-CYGF"; //当前AI模型
+var thisAiModel_bot = "gpt-4.1-nano-openai"; //当前AI模型
 var processOver_bot = true; //是否处理完毕
 var chatid_bot = "";
 var assistansBoxId_bot = "";

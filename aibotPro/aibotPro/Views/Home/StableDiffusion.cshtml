@@ -3,7 +3,7 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<link href="~/system/css/sd.css?v1.1" rel="stylesheet"/>
+<link href="~/system/css/sd.css?v1.1" rel="stylesheet" />
 <div class="header">
     <div class="header-left">
         <a id="menuMain" href="" class="burger-menu">
@@ -45,8 +45,8 @@
         <div class="card">
             <div class="card-header">
                 <h5>第一步：输入提示词</h5>
-                <button class="btn btn-outline-success greatePrompt" onclick="sendMsg()"><img src="~/system/images/magic_stick.png" style="width:20px;"/>优化提示词</button>
-                <button class="btn btn-outline-info englishPrompt" onclick="englishPrompt()"><img src="~/system/images/translated.png" style="width:20px;"/>转英语提示词</button>
+                <button class="btn btn-outline-success greatePrompt" onclick="sendMsg()"><img src="~/system/images/magic_stick.png" style="width:20px;" />优化提示词</button>
+                <button class="btn btn-outline-info englishPrompt" onclick="englishPrompt()"><img src="~/system/images/translated.png" style="width:20px;" />转英语提示词</button>
             </div>
             <div class="card-body">
                 <div class="textarea-container">
@@ -83,9 +83,29 @@
                             <option value="stabilityai/stable-diffusion-3-5-large">Stable-Diffusion-3-5-large</option>
                             <option value="black-forest-labs/FLUX.1-schnell">FLUX.1-Schnell</option>
                             <option value="black-forest-labs/FLUX.1-dev">FLUX.1-DEV</option>
+                            <option value="Kwai-Kolors/Kolors">Kolors</option>
                         </select>
                     </div>
-
+                    <div class="form-group reference-image-upload" style="display: none;">
+                        <label>
+                            <b>参考图上传（可选）</b>
+                        </label>
+                        <div class="reference-image-container">
+                            <div class="reference-image-preview">
+                                <img id="referenceImagePreview" src="" style="max-width: 100%; max-height: 200px; display: none;" />
+                            </div>
+                            <div class="reference-image-controls mg-t-10">
+                                <button type="button" class="btn btn-outline-primary" id="uploadReferenceBtn">
+                                    <i data-feather="upload"></i> 上传参考图
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" id="removeReferenceBtn" style="display: none;">
+                                    <i data-feather="trash-2"></i> 移除
+                                </button>
+                            </div>
+                            <input type="hidden" id="referenceImagePath" value="" />
+                            <small class="form-text text-muted">上传参考图片以指导模型生成相似风格的图像</small>
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label>
                             <b>绘制尺寸</b>
@@ -95,7 +115,7 @@
                                 <input type="radio" name="imageSize" value="1024x1024" checked>
                                 <div class="image-size-border">
                                     <svg viewBox="0 0 24 24" width="24" height="24">
-                                        <rect width="22" height="22" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2"/>
+                                        <rect width="22" height="22" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" />
                                     </svg>
                                 </div>
                                 <span>1:1</span>
@@ -104,7 +124,7 @@
                                 <input type="radio" name="imageSize" value="1024x2048">
                                 <div class="image-size-border">
                                     <svg viewBox="0 0 24 48" width="24" height="48">
-                                        <rect width="22" height="46" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2"/>
+                                        <rect width="22" height="46" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" />
                                     </svg>
                                 </div>
                                 <span>1:2</span>
@@ -113,7 +133,7 @@
                                 <input type="radio" name="imageSize" value="1536x1024">
                                 <div class="image-size-border">
                                     <svg viewBox="0 0 36 24" width="36" height="24">
-                                        <rect width="34" height="22" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2"/>
+                                        <rect width="34" height="22" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" />
                                     </svg>
                                 </div>
                                 <span>3:2</span>
@@ -122,7 +142,7 @@
                                 <input type="radio" name="imageSize" value="1536x2048">
                                 <div class="image-size-border">
                                     <svg viewBox="0 0 24 32" width="24" height="32">
-                                        <rect width="22" height="30" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2"/>
+                                        <rect width="22" height="30" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" />
                                     </svg>
                                 </div>
                                 <span>3:4</span>
@@ -131,7 +151,7 @@
                                 <input type="radio" name="imageSize" value="2048x1152">
                                 <div class="image-size-border">
                                     <svg viewBox="0 0 48 27" width="48" height="27">
-                                        <rect width="46" height="25" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2"/>
+                                        <rect width="46" height="25" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" />
                                     </svg>
                                 </div>
                                 <span>16:9</span>
@@ -140,7 +160,7 @@
                                 <input type="radio" name="imageSize" value="1152x2048">
                                 <div class="image-size-border">
                                     <svg viewBox="0 0 27 48" width="27" height="48">
-                                        <rect width="25" height="46" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2"/>
+                                        <rect width="25" height="46" x="1" y="1" fill="none" stroke="#6c5ce7" stroke-width="2" />
                                     </svg>
                                 </div>
                                 <span>9:16</span>
@@ -234,4 +254,4 @@
 <script src="~/system/js/signalr.min.js"></script>
 <link rel="stylesheet" href="~/system/css/magnific-popup.min.css">
 <script src="~/system/js/jquery.magnific-popup.min.js"></script>
-<script src="~/system/js/sd.js?v1.0.2"></script>
+<script src="~/system/js/sd.js?v1.0.3"></script>

@@ -6,16 +6,18 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+public partial class PluginsHeader
 {
-    public partial class PluginsHeader
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string HdCode { get; set; }
-        [StringLength(500)]
-        public string HdName { get; set; }
-        public string HdValue { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string HdCode { get; set; }
+
+    [StringLength(500)]
+    public string HdName { get; set; }
+
+    public string HdValue { get; set; }
 }

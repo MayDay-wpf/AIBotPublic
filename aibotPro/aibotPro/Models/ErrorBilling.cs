@@ -6,26 +6,33 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Table("ErrorBilling")]
+public partial class ErrorBilling
 {
-    [Table("ErrorBilling")]
-    public partial class ErrorBilling
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(50)]
-        public string Account { get; set; }
-        public int? LogId { get; set; }
-        [Column(TypeName = "money")]
-        public decimal? UseMoney { get; set; }
-        [StringLength(2000)]
-        public string Cause { get; set; }
-        public int? Status { get; set; }
-        [StringLength(2000)]
-        public string Reply { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? CreateTime { get; set; }
-        [Column(TypeName = "datetime")]
-        public DateTime? HandlingTime { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(50)]
+    public string Account { get; set; }
+
+    public int? LogId { get; set; }
+
+    [Column(TypeName = "money")]
+    public decimal? UseMoney { get; set; }
+
+    [StringLength(2000)]
+    public string Cause { get; set; }
+
+    public int? Status { get; set; }
+
+    [StringLength(2000)]
+    public string Reply { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? CreateTime { get; set; }
+
+    [Column(TypeName = "datetime")]
+    public DateTime? HandlingTime { get; set; }
 }

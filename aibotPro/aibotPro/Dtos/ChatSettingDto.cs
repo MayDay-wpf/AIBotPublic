@@ -15,6 +15,7 @@
         public string ChatBaseURL { get; set; }
         public string ChatApiKey { get; set; }
         public bool? VisionModel { get; set; }
+        public bool? Responses { get; set; }
     }
     public class MyDall
     {

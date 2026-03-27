@@ -42,9 +42,10 @@ namespace aibotPro.Service
         {
             errorMsg = string.Empty;
             NewApiUserInfoResult result = new NewApiUserInfoResult();
-            var client = new RestClient($"{_newApiUrl}/api/user/search?keyword={newusername}");
+            var client = new RestClient($"{_newApiUrl}/api/user/search?keyword={newusername}&group=&p=1&page_size=10");
             var request = new RestRequest("", Method.Get);
             request.AddHeader("Authorization", $"Bearer {_newApiAccessToken}");
+            request.AddHeader("New-Api-User", 1);
             request.AddHeader("Accept", "*/*");
             request.AddHeader("Connection", "keep-alive");
             var response = client.Execute(request);
@@ -53,7 +54,7 @@ namespace aibotPro.Service
                 result = JsonConvert.DeserializeObject<NewApiUserInfoResult>(response.Content);
                 if (result.success)
                 {
-                    if (result.data.Count <= 0)
+                    if (result.data.items.Count <= 0)
                         errorMsg = "用户不存在";
                 }
                 else
@@ -82,12 +83,13 @@ namespace aibotPro.Service
                 return false;
             }
 
-            if (newApiUser.data.Count > 0 && !string.IsNullOrEmpty(password))
+            if (newApiUser.data.items.Count > 0 && !string.IsNullOrEmpty(password))
             {
                 errorMsg = "用户名已被使用,换一个试试吧";
                 return false;
             }
-            if (newApiUser.data.Count <= 0)
+
+            if (newApiUser.data.items.Count <= 0)
             {
                 if (string.IsNullOrEmpty(password))
                 {
@@ -96,16 +98,18 @@ namespace aibotPro.Service
                     return false;
                 }
                 //创建新用户
-                var client = new RestClient($"{_newApiUrl}/api/user/register");
+                var client = new RestClient($"{_newApiUrl}/api/user/");
                 var request = new RestRequest("", Method.Post);
                 request.AddHeader("Content-Type", "application/json");
                 request.AddHeader("Accept", "*/*");
+                request.AddHeader("Authorization", $"Bearer {_newApiAccessToken}");
+                request.AddHeader("New-Api-User", 1);
                 request.AddHeader("Connection", "keep-alive");
                 var body = new
                 {
                     username = newapiAcount,
-                    password = password,
-                    password2 = password
+                    display_name = newapiAcount,
+                    password = password
                 };
                 request.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
                 var response = client.Execute(request);
@@ -127,7 +131,7 @@ namespace aibotPro.Service
             var bindNewApi = new BindNewApi();
             bindNewApi.Account = account;
             bindNewApi.ApiUserName = newapiAcount;
-            bindNewApi.ApiId = newApiUser.data[0].id;
+            bindNewApi.ApiId = newApiUser.data.items.Where(x => x.username == newapiAcount).FirstOrDefault().id;
             _context.BindNewApis.Add(bindNewApi);
             return _context.SaveChanges() > 0;
         }
@@ -206,6 +210,7 @@ namespace aibotPro.Service
             };
             request.AddJsonBody(body);
             request.AddHeader("Authorization", $"Bearer {_newApiAccessToken}");
+            request.AddHeader("New-Api-User", 1);
             var response = client.Execute(request);
             if (response.IsSuccessful)
             {

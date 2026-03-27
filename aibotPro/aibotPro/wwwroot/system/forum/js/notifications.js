@@ -12,7 +12,6 @@ $(function () {
     $("#ai-main-menu").parent().siblings().removeClass('show');
     $("#forum-nav").addClass('active');
     loadNotifications(currentPage);
-    bindMenu();
 });
 
 function loadNotifications(page) {
@@ -181,26 +180,3 @@ $('.message-list').on('click', '.deleteItem', function () {
         });
     });
 });
-function bindMenu() {
-    $('.nav-sidebar .with-sub').on('click', function (e) {
-        e.preventDefault();
-
-        var $this = $(this);
-        var $parentLi = $this.parent();
-        var $subMenu = $parentLi.find('.nav-sub');
-        var wasVisible = $subMenu.is(':visible');
-
-        // 处理当前点击的子菜单
-        if (!wasVisible) {
-            // 如果子菜单之前不可见（收起状态），则把它展开
-            $subMenu.stop(true, true).slideDown(300, function () {
-                $parentLi.addClass('show');
-            });
-        } else {
-            // 如果子菜单之前可见（展开状态），则把它收起
-            $subMenu.stop(true, true).slideUp(300, function () {
-                $parentLi.removeClass('show');
-            });
-        }
-    });
-}

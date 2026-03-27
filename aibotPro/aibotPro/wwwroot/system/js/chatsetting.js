@@ -98,10 +98,10 @@ function saveChatSetting() {
             success: function (res) {
                 if (res.success) {
                     balert(res.msg, 'success', false, 1500, 'top');
-                    if (userobot == 1)
-                        $(".robot-container").show();
-                    else
-                        $(".robot-container").hide();
+                    // if (userobot == 1)
+                    //     $(".robot-container").show();
+                    // else
+                    //     $(".robot-container").hide();
                 } else {
                     balert(res.msg, 'danger', false, 1500, 'top');
                 }

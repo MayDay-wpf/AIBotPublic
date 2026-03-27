@@ -2,7 +2,7 @@
 {
     public class TokenizerByJinaDto
     {
-        public static readonly string Cl100kBase = "cl100k_base";
+        public static readonly string Cl100kBase = "o200k_base";
         public static readonly string O200kBase = "o200k_base";
         public static readonly string P50kBase = "p50k_base";
         public static readonly string R50kBase = "r50k_base";

@@ -26,11 +26,11 @@ function Pay(type) {
     var payMoney = $('#customAmount').val();
     // 如果自定义金额为空，则提示用户输入金额
     if (payMoney == "") {
-        balert("请输入金额", "danger", false, 1500, "center");
+        balert("请输入金额", "warning", false, 1500, "center");
         return;
     }
-    if (payMoney <= 0) {
-        balert("金额需要大于0", "danger", false, 1500, "center");
+    if (payMoney < 5) {
+        balert("最低充值金额5元", "warning", false, 1500, "center");
         return;
     }
     loadingOverlay.show();

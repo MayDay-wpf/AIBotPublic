@@ -6,22 +6,28 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace aibotPro.Models
+namespace aibotPro.Models;
+
+[Table("UserSetting")]
+public partial class UserSetting
 {
-    [Table("UserSetting")]
-    public partial class UserSetting
-    {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(100)]
-        public string Account { get; set; }
-        public int? UseHistory { get; set; }
-        public int? GoodHistory { get; set; }
-        public int? HistoryCount { get; set; }
-        public int? Scrolling { get; set; }
-        [StringLength(100)]
-        public string MyAPIUrl { get; set; }
-        [StringLength(100)]
-        public string MyAPIKey { get; set; }
-    }
+    [Key]
+    public int Id { get; set; }
+
+    [StringLength(100)]
+    public string Account { get; set; }
+
+    public int? UseHistory { get; set; }
+
+    public int? GoodHistory { get; set; }
+
+    public int? HistoryCount { get; set; }
+
+    public int? Scrolling { get; set; }
+
+    [StringLength(100)]
+    public string MyAPIUrl { get; set; }
+
+    [StringLength(100)]
+    public string MyAPIKey { get; set; }
 }

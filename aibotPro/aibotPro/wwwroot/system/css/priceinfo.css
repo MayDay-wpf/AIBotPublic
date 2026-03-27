@@ -1,12 +1,12 @@
 ﻿.filter-sidebar {
     padding: 15px;
     border-right: 1px solid #dee2e6;
-    /*height: calc(100vh - 260px);*/
+    height: calc(100vh - 120px);
     overflow-y: auto;
 }
 
 .model-list {
-    height: calc(100vh - 60px);
+    height: calc(100vh - 120px);
     overflow-y: auto;
 }
 
@@ -28,32 +28,32 @@
     transition: all 0.3s ease;
 }
 
-    .filter-button.active {
-        background-color: #28a745;
-        color: #fff;
-    }
+.filter-button.active {
+    background-color: #28a745;
+    color: #fff;
+}
 
 .model-card {
     margin-bottom: 20px;
 }
 
-    .model-card .card-body {
-        padding: 10px;
-    }
+.model-card .card-body {
+    padding: 10px;
+}
 
-    .model-card .card-title {
-        font-size: 1rem;
-        margin-bottom: 5px;
-    }
+.model-card .card-title {
+    font-size: 1rem;
+    margin-bottom: 5px;
+}
 
-    .model-card .card-text {
-        font-size: 0.9rem;
-    }
+.model-card .card-text {
+    font-size: 0.9rem;
+}
 
-    .model-card .badge {
-        margin-right: 5px;
-        font-size: 0.8rem;
-    }
+.model-card .badge {
+    margin-right: 5px;
+    font-size: 0.8rem;
+}
 
 @media (max-width: 767px) {
     .filter-sidebar {
@@ -159,4 +159,8 @@
 
 .icon-amazon {
     background-image: url('../images/modelsvg/amazon.svg');
+}
+
+.icon-test {
+    background-image: url('../images/modelsvg/test.svg');
 }

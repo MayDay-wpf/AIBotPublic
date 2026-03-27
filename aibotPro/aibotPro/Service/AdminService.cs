@@ -222,5 +222,27 @@ namespace aibotPro.Service
             }
             return true;
         }
+        public async Task<bool> SaveVibeCodingModelSetting(List<VibeCodingModel> vibeCodingModels)
+        {
+            //删除所有编程模型设置
+            _context.VibeCodingModels.RemoveRange(_context.VibeCodingModels);
+            //保存编程模型设置
+            _context.VibeCodingModels.AddRange(vibeCodingModels);
+            //更新缓存
+            await _redisService.SetAsync("VibeCodingModel", JsonConvert.SerializeObject(vibeCodingModels));
+            //保存到数据库
+            return _context.SaveChanges() > 0;
+        }
+        public async Task<bool> SaveDeepResearchModelSetting(List<DeepResearchModel> deepResearchModels)
+        {
+            //删除所有深度研究模型设置
+            _context.DeepResearchModels.RemoveRange(_context.DeepResearchModels);
+            //保存深度研究模型设置
+            _context.DeepResearchModels.AddRange(deepResearchModels);
+            //更新缓存
+            await _redisService.SetAsync("DeepResearchModel", JsonConvert.SerializeObject(deepResearchModels));
+            //保存到数据库
+            return _context.SaveChanges() > 0;
+        }
     }
 }

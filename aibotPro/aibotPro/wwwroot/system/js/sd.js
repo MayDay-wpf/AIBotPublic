@@ -1,4 +1,5 @@
-﻿let thisAiModel = 'gpt-4o-mini';
+﻿let thisAiModel = 'gpt-4.1-nano-openai';
+let referenceImagePath = '';
 $(function () {
     $('.nav-sub-link').removeClass('active');
     $('.nav-link').removeClass('active');
@@ -91,6 +92,7 @@ $(document).ready(function () {
             var imageSize = $('input[name="imageSize"]:checked').val();
             var numberImages = $('#numberImages').val();
             var seed = $('#seedInput').val();
+            if (!seed || isNaN(parseInt(seed))) seed = "0";
             var inferenceSteps = $('#inferenceSteps').val();
             var guidanceScale = $('#guidanceScale').val();
             var negativePrompt = $('#negativePrompt').val().trim();
@@ -100,7 +102,7 @@ $(document).ready(function () {
             //发起请求
             $("#resview").show();
             $("#resBox").empty();
-            $('html, body').animate({scrollTop: $('.content-body').height()}, 1000);
+            $('html, body').animate({ scrollTop: $('.content-body').height() }, 1000);
             balert('发送任务创建请求成功', 'success', false, 1000, "center");
             $("#nt").text('绘图中，请勿刷新页面...');
             $.ajax({
@@ -112,7 +114,8 @@ $(document).ready(function () {
                     seed: seed,
                     inferenceSteps: inferenceSteps,
                     guidanceScale: guidanceScale,
-                    negativePrompt: negativePrompt
+                    negativePrompt: negativePrompt,
+                    referenceImagePath: referenceImagePath
                 }, success: function (data) {
                     if (!$('#fixSeedCheckbox').is(':checked')) {
                         $('#seedInput').val(getRandomSeed());
@@ -155,7 +158,7 @@ $(document).ready(function () {
                         //恢复按钮
                         $("#createTaskBtn").prop('disabled', false).addClass('btn-success').removeClass('btn-secondary');
                         //跳转到任务列表
-                        $('html, body').animate({scrollTop: $('.content-body').height()}, 1000);
+                        $('html, body').animate({ scrollTop: $('.content-body').height() }, 1000);
                         $('.image-popup').magnificPopup({
                             type: 'image', gallery: {
                                 enabled: true
@@ -179,7 +182,7 @@ $(document).ready(function () {
             });
         } else {
             balert('请输入绘画提示词', 'danger', false, 1000, "center");
-            $('html, body').animate({scrollTop: 0}, 'slow');
+            $('html, body').animate({ scrollTop: 0 }, 'slow');
             //输入框获得焦点
             $('#inputText').focus();
         }
@@ -187,6 +190,7 @@ $(document).ready(function () {
 
     $('#modelSelect').change(function () {
         var selectedValue = $(this).val();  // 获取选中选项的值
+        referenceImagePath = '';
         if (selectedValue === "black-forest-labs/FLUX.1-schnell" || selectedValue === "black-forest-labs/FLUX.1-dev") {
             $('.numberImagesValue').slideUp();
             $('.inferenceSteps').slideUp();
@@ -198,8 +202,98 @@ $(document).ready(function () {
             $('.guidanceScale').slideDown();
             $('.negativePrompt').slideDown();
         }
+        // 控制参考图上传模块的显示与隐藏
+        if (selectedValue === "Kwai-Kolors/Kolors") {
+            $('.reference-image-upload').slideDown();
+        } else {
+            $('.reference-image-upload').slideUp();
+            // 清空已上传的参考图
+            $('#referenceImagePreview').attr('src', '').hide();
+            $('#referenceImagePath').val('');
+            $('#removeReferenceBtn').hide();
+        }
+    });
+    // 参考图上传按钮点击事件
+    $('#uploadReferenceBtn').click(function () {
+        // 创建一个隐藏的文件输入框
+        var fileInput = $('<input type="file" accept="image/*" style="display:none">');
+        $('body').append(fileInput);
+
+        // 触发文件选择对话框
+        fileInput.click();
+
+        // 监听文件选择事件
+        fileInput.on('change', function (e) {
+            if (e.target.files.length > 0) {
+                var file = e.target.files[0];
+                handleReferenceImageUpload(file);
+            }
+            // 移除临时创建的文件输入框
+            fileInput.remove();
+        });
     });
 
+    // 移除参考图按钮点击事件
+    $('#removeReferenceBtn').click(function () {
+        $('#referenceImagePreview').attr('src', '').hide();
+        $('#referenceImagePath').val('');
+        $(this).hide();
+    });
+    // 处理参考图上传
+    function handleReferenceImageUpload(file) {
+        var reader = new FileReader();
+        reader.onload = function (event) {
+            var base64 = event.target.result;
+            var imageFile = dataURLtoFile(base64, "reference_image-" + new Date().toISOString() + ".png");
+            var destroyAlert = balert(`<i data-feather="loader" style="width:20px;"></i> 正在上传参考图...`, "info", false, 0, "center");
+
+            // 使用chat.js中的上传图片函数
+            uploadReferenceImage(imageFile, destroyAlert);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // 上传参考图片函数
+    function uploadReferenceImage(file, destroyAlert) {
+        var formData = new FormData();
+        formData.append("file", file);
+
+        $.ajax({
+            url: '/Home/SaveImg',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (response) {
+                destroyAlert();
+                if (response.success) {
+                    // 显示预览图
+                    $('#referenceImagePreview').attr('src', response.data).show();
+                    // 保存图片路径
+                    $('#referenceImagePath').val(response.data);
+                    // 显示移除按钮
+                    $('#removeReferenceBtn').show();
+                    balert("参考图上传成功", "success", false, 1500);
+                    referenceImagePath = response.data;
+                } else {
+                    balert("参考图上传失败: " + response.msg, "danger", false, 2000);
+                }
+            },
+            error: function () {
+                destroyAlert();
+                balert("参考图上传失败，请重试", "danger", false, 2000);
+            }
+        });
+    }
+
+    function dataURLtoFile(dataurl, filename) {
+        var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1], bstr = atob(arr[1]), n = bstr.length,
+            u8arr = new Uint8Array(n);
+        while (n--) {
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new File([u8arr], filename, { type: mime });
+    }
 });
 
 
