@@ -1,7 +1,6 @@
 [简体中文](https://github.com/MayDay-wpf/AIBotPublic/blob/main/Readme.md) | [English](https://github.com/MayDay-wpf/AIBotPublic/blob/main/Readme-en.md)
 ![aibotprologo](https://github.com/user-attachments/assets/2ce92d4a-e1de-4803-aed3-bffd261f3033)
 # AIBotPro 开源版
-## 作者运营地址：[https://embbot.com](https://embbot.com)
 ## 赞助我们❤：[https://afdian.com/a/aibotpro](https://afdian.com/a/aibotpro)
 ## 赞助商：
 * 优云智算（上市云计算公司UCloud旗下GPU算力平台），提供高性价比GPU算力，万卡规模4090，资源充足不排队。支持windows操作系统，配备独立外IP地址，免费200GSSD磁盘。注册即享免费5小时4090！[点击立即领取](https://compshare.cn?ytag=GPU_yy_aibotpublic)
